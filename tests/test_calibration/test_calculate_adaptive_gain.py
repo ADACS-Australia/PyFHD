@@ -1,12 +1,12 @@
 import pytest
 import numpy as np
-from pathlib import Path
+from glob import glob
 from tests.test_utils import get_data, get_data_items
 from fhd_core.calibration.calculate_adaptive_gain import calculate_adaptive_gain
 
 @pytest.fixture
 def data_dir():
-    return list(Path.glob(Path.cwd(), "**/calculate_adaptive_gain"))[0]
+    return glob("**/calculate_adaptive_gain", recursive = True)[0]
 
 def test_calc_adapt_gain_one(data_dir):
     gain_list, convergence_list, iter, base_gain, final_con_est, expected_gain = get_data_items(

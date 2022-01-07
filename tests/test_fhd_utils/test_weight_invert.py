@@ -1,12 +1,12 @@
 import pytest
 import numpy as np
-from pathlib import Path
+from glob import glob
 from tests.test_utils import get_data_items
 from fhd_utils.weight_invert import weight_invert
 
 @pytest.fixture
 def data_dir():
-    return list(Path.glob(Path.cwd(), "**/weight_invert"))[0]
+    return glob("**/weight_invert", recursive = True)[0]
 
 def test_weight_invert_one(data_dir):
     threshold, weights, expected_result = get_data_items(data_dir, 'visibility_grid_input_threshold_1.npy', 

@@ -1,12 +1,12 @@
 import pytest
 import numpy as np
-from pathlib import Path
+from glob import glob
 from fhd_core.gridding.dirty_image_generate import dirty_image_generate
 from tests.test_utils import get_data, get_data_items
 
 @pytest.fixture
 def data_dir():
-    return list(Path.glob(Path.cwd(), '**/dirty_image_generate/'))[0]
+    return glob('**/dirty_image_generate/', recursive = True)[0]
 
 def test_dirty_one(data_dir):
     dirty_image_uv, no_real, expected_dirty_image = get_data_items(

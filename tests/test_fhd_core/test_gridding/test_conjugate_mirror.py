@@ -1,12 +1,12 @@
 import pytest
 import numpy as np
-from pathlib import Path
+from glob import glob
 from fhd_core.gridding.conjugate_mirror import conjugate_mirror
 from tests.test_utils import get_data_items
 
 @pytest.fixture
 def data_dir():
-    return list(Path.glob(Path.cwd(), "**/conjugate_mirror"))[0]
+    return glob("**/conjugate_mirror", recursive = True)[0]
 
 def test_conj_mirror_one(data_dir):
     input, expected_image = get_data_items(data_dir, 

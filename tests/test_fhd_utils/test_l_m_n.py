@@ -1,12 +1,12 @@
 import pytest
 import numpy as np
-from pathlib import Path
+from glob import glob
 from tests.test_utils import get_data, get_data_items
 from fhd_utils.l_m_n import l_m_n
 
 @pytest.fixture
 def data_dir():
-    return list(Path.glob(Path.cwd(), '**/l_m_n'))[0]
+    return glob('**/l_m_n', recursive = True)[0]
 
 def test_l_m_n_one(data_dir):
     obs, psf = get_data(data_dir, 'visibility_grid_input_obs.npy', 'visibility_grid_input_psf.npy')

@@ -1,13 +1,13 @@
 import pytest
 import numpy as np
-from pathlib import Path
+from glob import glob
 from tests.test_utils import get_data_items
 from fhd_utils.FFT.deriv_coefficients import deriv_coefficients
 
 @pytest.fixture
 def data_dir():
     # This assumes you have used the splitter.py and have done a general format of **/FHD/PyFHD/tests/test_fhd_*/data/<function_name_being_tested>/*.npy
-    return list(Path.glob(Path.cwd(), '**/deriv_coefficients/'))[0]
+    return glob('**/deriv_coefficients/', recursive = True)[0]
 
 def test_deriv_coefficients_one(data_dir):
     n, divide_fact, expected = get_data_items(

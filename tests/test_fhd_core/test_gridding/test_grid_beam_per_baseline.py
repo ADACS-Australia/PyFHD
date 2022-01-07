@@ -1,12 +1,12 @@
 import pytest
 import numpy as np
-from pathlib import Path
+from glob import glob
 from fhd_core.gridding.grid_beam_per_baseline import grid_beam_per_baseline
 from tests.test_utils import get_data, get_data_items
 
 @pytest.fixture
 def data_dir():
-    return list(Path.glob(Path.cwd(), '**/grid_beam_per_baseline/'))[0]
+    return glob('**/grid_beam_per_baseline/', recursive = True)[0]
 
 def test_grid_beam_one(data_dir):
     psf, extras = get_data(

@@ -1,13 +1,13 @@
 import numpy as np
-from pathlib import Path
+from glob import glob
 from tests.test_utils import get_data_items
 from fhd_utils.idl_tools.array_match import array_match
 import pytest
 
 @pytest.fixture
 def data_dir():
-    # This assumes you have used the splitter.py and have done a general format of **/FHD/PyFHD/tests/test_fhd_*/data/<function_name_being_tested>/*.npy
-    return list(Path.glob(Path.cwd(), '**/array_match/'))[0]
+    # glob the directory we need, this assumes you have a directory named array_match with the data inside
+    return glob('**/array_match/', recursive = True)[0]
 
 def test_array_match_1(data_dir):
     array1, array2, value_match, expected_indices, expected_n_match =  get_data_items(

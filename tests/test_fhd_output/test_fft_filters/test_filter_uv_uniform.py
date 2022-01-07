@@ -1,12 +1,12 @@
 import pytest
 import numpy as np
-from pathlib import Path
+from glob import glob
 from fhd_output.fft_filters.filter_uv_uniform import filter_uv_uniform
 from tests.test_utils import get_data_items
 
 @pytest.fixture
 def data_dir():
-    return list(Path.glob(Path.cwd(), '**/filter_uv_uniform/'))[0]
+    return glob('**/filter_uv_uniform/', recursive = True)[0]
 
 def test_filter_uni_one(data_dir):
     image_uv, return_name_only, expected_image_uv, expected_name = get_data_items(

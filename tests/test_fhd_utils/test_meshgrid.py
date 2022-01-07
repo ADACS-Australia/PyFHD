@@ -1,13 +1,13 @@
 import pytest
 import numpy as np
-from pathlib import Path
+from glob import glob
 from tests.test_utils import get_data_items
 from fhd_utils.modified_astro.meshgrid import meshgrid
 
 @pytest.fixture
 def data_dir():
     # This assumes you have used the splitter.py and have done a general format of **/FHD/PyFHD/tests/test_fhd_*/data/<function_name_being_tested>/*.npy
-    return list(Path.glob(Path.cwd(), '**/meshgrid/'))[0]
+    return glob('**/meshgrid/', recursive = True)[0]
 
 def test_meshgrid_one(data_dir):
     axis, dimension, elements, integer, expected = get_data_items(

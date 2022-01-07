@@ -1,12 +1,12 @@
 import pytest
 import numpy as np
-from pathlib import Path
+from glob import glob
 from tests.test_utils import get_data, get_data_items
 from fhd_core.gridding.visibility_count import visibility_count
 
 @pytest.fixture
 def data_dir():
-    return list(Path.glob(Path.cwd(), '**/visibility_count/'))[0]
+    return glob('**/visibility_count/', recursive = True)[0]
 
 def test_vis_count_one(data_dir):
     # Get the inputs

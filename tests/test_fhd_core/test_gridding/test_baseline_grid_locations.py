@@ -1,6 +1,6 @@
 import pytest
 import numpy as np
-from pathlib import Path
+from glob import glob
 from tests.test_utils import get_data, get_data_items
 from fhd_utils.idl_tools.array_match import array_match
 from fhd_utils.histogram import histogram
@@ -8,7 +8,7 @@ from fhd_core.gridding.baseline_grid_locations import baseline_grid_locations
 
 @pytest.fixture
 def data_dir():
-    return list(Path.glob(Path.cwd(), '**/baseline_grid_locations/'))[0]
+    return glob('**/baseline_grid_locations/', recursive = True)[0]
 
 def test_baseline_one(data_dir):
     # Get the inputs

@@ -1,12 +1,12 @@
 import numpy as np
-from pathlib import Path
+from glob import glob
 import pytest
 from fhd_core.gridding.interpolate_kernel import interpolate_kernel
 from tests.test_utils import get_data_items
 
 @pytest.fixture
 def data_dir():
-    return list(Path.glob(Path.cwd(), '**/interpolate_kernel/'))[0]
+    return glob('**/interpolate_kernel/', recursive = True)[0]
 
 def test_interpolate_kernel_one(data_dir):
     kernel_arr, x_offset, y_offset, dx0dy0, dx1dy0, dx0dy1, dx1dy1, expected_kernel = get_data_items(

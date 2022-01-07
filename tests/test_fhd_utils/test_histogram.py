@@ -1,13 +1,17 @@
 import pytest
 import numpy as np
 from fhd_utils.histogram import histogram
-from pathlib import Path
+from glob import glob
 from tests.test_utils import get_data, get_data_items
 
 @pytest.fixture
 def data_dir():
     # This assumes you have used the splitter.py and have done a general format of **/FHD/PyFHD/tests/test_fhd_*/data/<function_name_being_tested>/*.npy
-    return list(Path.glob(Path.cwd(), '**/histogram/'))[0]
+    return glob('**/histogram/', recursive = True)[0]
+
+@pytest.fixture
+def full_data_dir():
+    return glob('**/full_size_histogram/', recursive = True)[0]
 
 def test_idl_example(data_dir) :
     """
@@ -137,10 +141,10 @@ def test_billion_floats(data_dir):
     assert np.array_equal(hist, expected_hist)
     assert np.array_equal(indices, expected_indices)
 
-def test_full_size(data_dir):
+def test_full_size(full_data_dir):
     # Read the histogram file
     data, binsize, min, expected_hist, expected_indices = get_data_items(
-        Path(data_dir, 'full_size'),
+        full_data_dir,
         'input_1.npy',
         'binsize_1.npy', 
         'min_1.npy', 
