@@ -186,7 +186,7 @@ def histogram(data, bin_size = 1, num_bins = None, min = None, max = None):
     """
     The histogram function combines the use of the get_bins, get_hist and get_ri
     functions into one function. For the descriptions and docs of those functions
-    look in see below. This function will return the histogram, bin/bin_edges and
+    look in See Also. This function will return the histogram, bin/bin_edges and
     the reverse indices.
 
     Parameters

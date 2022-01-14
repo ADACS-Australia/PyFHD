@@ -192,6 +192,4 @@ def test_baseline_three(data_dir):
     # assert np.array_equal(expected_dx0dy0, baselines_dict['dx0dy0_arr'])
     # assert np.array_equal(expected_dx0dy1, baselines_dict['dx0dy1_arr'])
     # assert np.array_equal(expected_dx1dy0, baselines_dict['dx1dy0_arr'])
-    # assert np.array_equal(expected_dx1dy1, baselines_dict['dx1dy1_arr'])
-
-    
+    # assert np.array_equal(expected_dx1dy1, baselines_dict['dx1dy1_arr'])    

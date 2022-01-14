@@ -39,7 +39,6 @@ def test_interpolate_kernel_two(data_dir):
     assert np.array_equal(kernel, expected_kernel)
     
 def test_interpolate_kernel_three(data_dir):
-    # TODO: Its failing, precision errors? Its such a simple function, I'm not sure what else.
     kernel_arr, x_offset, y_offset, dx0dy0, dx1dy0, dx0dy1, dx1dy1, expected_kernel = get_data_items(
         data_dir,
         'visibility_grid_input_kernel_arr_3.npy',

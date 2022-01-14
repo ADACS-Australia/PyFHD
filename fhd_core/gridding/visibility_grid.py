@@ -2,20 +2,20 @@ import numpy as np
 from fhd_utils.idl_tools.array_match import array_match
 from fhd_utils.l_m_n import l_m_n
 from fhd_utils.histogram import histogram
-from interpolate_kernel import interpolate_kernel
-from baseline_grid_locations import baseline_grid_locations
-from grid_beam_per_baseline import grid_beam_per_baseline
+from fhd_core.gridding.interpolate_kernel import interpolate_kernel
+from fhd_core.gridding.baseline_grid_locations import baseline_grid_locations
+from fhd_core.gridding.grid_beam_per_baseline import grid_beam_per_baseline
 from fhd_utils.rebin import rebin
-from holo_mapfn_convert import holo_mapfn_convert
-from fhd_utils. weight_invert import weight_invert
-from conjugate_mirror import conjugate_mirror
+from fhd_core.gridding.holo_mapfn_convert import holo_mapfn_convert
+from fhd_utils.weight_invert import weight_invert
+from fhd_core.gridding.conjugate_mirror import conjugate_mirror
 
 def visibility_grid(visibility, vis_weights, obs, status_str, psf, params,
                     file_path_fhd= "/.", weights_flag = False, variance_flag = False, polarization = 0,
                     map_flag = False, uniform_flag = False, fi_use = None, bi_use = None, no_conjugate = False, 
                     return_mapfn = False, mask_mirror_indices = False, no_save = False, model = None, 
-                    model_flag = False, preserve_visibilities = False, error = False, 
-                    grid_spectral = False, spectral_model_uv = 0, beam_per_baseline = False, uv_grid_phase_only = True) :
+                    model_flag = False, grid_spectral = False, spectral_model_uv = 0, beam_per_baseline = False, 
+                    uv_grid_phase_only = True) :
     """[summary]
     TODO: docstring
     Parameters
@@ -84,19 +84,26 @@ def visibility_grid(visibility, vis_weights, obs, status_str, psf, params,
     elements = obs['elements']
     interp_flag = psf['interpolate_kernel']
     alpha = obs['alpha']
-    freq_bin_i = obs['baseline_info']['fbin_i']
+    freq_bin_i = obs['baseline_info'][0]['fbin_i'][0]
     n_freq = obs['n_freq']
     if fi_use is None:
-        fi_use = np.nonzero(obs['baseline_info']['freq_use'])
+        fi_use = np.nonzero(obs['baseline_info'][0]['freq_use'][0])
     n_f_use = fi_use.size
     freq_bin_i = freq_bin_i[fi_use]
     n_vis_arr = obs['nf_vis']
 
     # For each unflagged baseline, get the minimum contributing pixel number for gridding 
     # and the 2D derivatives for bilinear interpolation
-    baselines_dict = baseline_grid_locations(obs, psf, params, vis_weights, fi_use=fi_use, 
-                                             mask_mirror_indices = mask_mirror_indices, 
-                                             interp_flag = interp_flag)
+    baselines_dict = baseline_grid_locations(
+        obs, 
+        psf, 
+        params, 
+        vis_weights,
+        fi_use = fi_use, 
+        bi_use = bi_use,
+        mask_mirror_indices = mask_mirror_indices, 
+        interp_flag = interp_flag
+    )
     # Extract data from the returned dictionary 
     bin_n = baselines_dict['bin_n']
     bin_i = baselines_dict['bin_i']
@@ -108,28 +115,29 @@ def visibility_grid(visibility, vis_weights, obs, status_str, psf, params,
     x_offset = baselines_dict['x_offset']
     y_offset = baselines_dict['y_offset']
     if interp_flag:
-        dx0dy0_arr = baselines_dict['dx0dy0']
-        dx0dy1_arr = baselines_dict['dx0dy1']
-        dx1dy0_arr = baselines_dict['dx1dy0']
-        dx1dy1_arr = baselines_dict['dx1dy1']
+        dx0dy0_arr = baselines_dict['dx0dy0_arr']
+        dx0dy1_arr = baselines_dict['dx0dy1_arr']
+        dx1dy0_arr = baselines_dict['dx1dy0_arr']
+        dx1dy1_arr = baselines_dict['dx1dy1_arr']
     bi_use = baselines_dict['bi_use']
 
     # Instead of checking the visibilitity pointer we just take the vis_inds_use from visibility
-    vis_arr_use = visibility[vis_inds_use]
+    vis_arr_use = visibility.flat[vis_inds_use]
     # When model_flag is true, then so is model_return, hence ignoring model_return and only 
     # allowing model_flag. Although, if a model is provided then take the vis_inds_use
     if model_flag:
         if model is not None:
-            model_use = model[vis_inds_use]
+            model_use = model.flat[vis_inds_use]
         model_return = np.zeros((elements, dimension), dtype = complex)
 
     # Now with the information we need, retrieve more data from the structures
-    frequency_array = obs['baseline_info']['freq']
+    frequency_array = obs['baseline_info'][0]['freq'][0]
     frequency_array = frequency_array[fi_use]
     complex_flag = psf['complex_flag']
     psf_dim = psf['dim']
     psf_resolution = psf['resolution']
-    group_arr = np.reshape(psf['id'][bi_use, freq_bin_i[fi_use], polarization])
+    # TODO: Fix the below line, in IDL going beyond the index takes the last value when going beyond the index
+    group_arr = np.reshape(psf['id'][0][bi_use, freq_bin_i[fi_use], polarization])
     beam_arr = psf['beam_ptr']
     nbaselines = obs['nbaselines']
     n_samples = obs['n_time']
@@ -187,7 +195,6 @@ def visibility_grid(visibility, vis_weights, obs, status_str, psf, params,
     n_vis = np.sum(bin_n)
     for fi in range(n_f_use):
         n_vis_arr[fi_use[fi]] = np.sum(xmin[:, fi] > 0)
-    # TODO: Returning obs?
     obs['nf_vis'] = n_vis_arr
 
     index_arr = np.reshape(np.arange(elements * dimension), (elements, dimension))
@@ -380,7 +387,7 @@ def visibility_grid(visibility, vis_weights, obs, status_str, psf, params,
             wts_box = np.dot(np.transpose(box_matrix_dag), np.transpose(psf_weight / n_vis))
             weights[ymin_use : ymin_use + psf_dim - 1, xmin_use : xmin_use + psf_dim - 1] += wts_box
         
-        if variance_flag
+        if variance_flag:
             # If variance visibilities are being gridded, calculate the product the weight (1 per vis) and the square
             # of the beam kernel for all vis which contribute to the same static uv-pixels, and add to the static uv-plane
             var_box = np.dot(np.transpose(np.abs(box_matrix_dag) ** 2), np.transpose(psf_weight / n_vis))

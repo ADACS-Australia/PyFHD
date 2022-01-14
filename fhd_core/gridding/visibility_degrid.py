@@ -1,10 +1,10 @@
 import numpy as np
 from fhd_utils.FFT.deriv_coefficients import deriv_coefficients
 from fhd_utils.histogram import histogram
-from baseline_grid_locations import baseline_grid_locations
+from fhd_core.gridding.baseline_grid_locations import baseline_grid_locations
 from fhd_utils.l_m_n import l_m_n
-from interpolate_kernel import interpolate_kernel
-from grid_beam_per_baseline import grid_beam_per_baseline
+from fhd_core.gridding.interpolate_kernel import interpolate_kernel
+from fhd_core.gridding.grid_beam_per_baseline import grid_beam_per_baseline
 from fhd_utils.rebin import rebin
 from fhd_utils.weight_invert import weight_invert
 
@@ -41,9 +41,9 @@ def visibility_degrid(image_uv, vis_weights, obs, psf, params, polarization = 0,
         [description], by default False
     """
 
-    complex = psf['complex_flag']
-    n_spectral = obs['degrid_spectral_terms']
-    interp_flag = psf['interpolate_kernel']
+    complex = psf['complex_flag'][0]
+    n_spectral = obs['degrid_spectral_terms'][0]
+    interp_flag = psf['interpolate_kernel'][0]
     if conserve_memory:
         # memory threshold is in bytes
         if memory_threshold < 1e6:
@@ -60,37 +60,33 @@ def visibility_degrid(image_uv, vis_weights, obs, psf, params, polarization = 0,
     ri = baselines_dict['ri']
     xmin = baselines_dict['xmin']
     ymin = baselines_dict['ymin']
-    vis_inds_use = baselines_dict['vis_inds_use']
     x_offset = baselines_dict['x_offset']
     y_offset = baselines_dict['y_offset']
     if interp_flag:
-        dx0dy0_arr = baselines_dict['dx0dy0']
-        dx0dy1_arr = baselines_dict['dx0dy1']
-        dx1dy0_arr = baselines_dict['dx1dy0']
-        dx1dy1_arr = baselines_dict['dx1dy1']
-    bi_use = baselines_dict['bi_use']
-    dimension = obs['dimension']
-    elements = obs['elements']
-    kbinsize = obs['kpix']
-    freq_bin_i = obs['baseline_info']['fbin_i']
-    frequency_array = obs['baseline_info']['freq']
-    freq_delta = (frequency_array - obs['freq_center']) / obs['freq_center']
-    psf_dim = psf['dim']
-    psf_resolution = psf['resolution']
-    psf_dim3 = psf_dim ** 2
-    nbaselines = obs['nbaselines']
-    n_samples = obs['n_time']
+        dx0dy0_arr = baselines_dict['dx0dy0_arr']
+        dx0dy1_arr = baselines_dict['dx0dy1_arr']
+        dx1dy0_arr = baselines_dict['dx1dy0_arr']
+        dx1dy1_arr = baselines_dict['dx1dy1_arr']
+    dimension = obs['dimension'][0]
+    kbinsize = obs['kpix'][0]
+    freq_bin_i = obs['baseline_info'][0]['fbin_i'][0]
+    frequency_array = obs['baseline_info'][0]['freq'][0]
+    freq_delta = (frequency_array - obs['freq_center'][0]) / obs['freq_center'][0]
+    psf_dim = psf['dim'][0]
+    psf_resolution = psf['resolution'][0]
+    psf_dim3 = int(psf_dim ** 2)
+    nbaselines = obs['nbaselines'][0]
+    n_samples = obs['n_time'][0]
     n_freq_use = frequency_array.size
-    n_freq = obs['n_freq']
-    psf_dim2 = 2 * psf_dim
-    group_arr = np.squeeze(psf['id'][:, freq_bin_i, polarization])
-    beam_arr = psf['beam_ptr']
+    n_freq = obs['n_freq'][0]
+    group_arr = np.squeeze(psf['id'][0][:, freq_bin_i, polarization])
+    beam_arr = psf['beam_ptr'][0]
 
     if beam_per_baseline:
-        uu = params['uu']
-        vv = params['vv']
-        ww = params['ww']
-        psf_image_dim = psf['image_info']['psf_image_dim']
+        uu = params['uu'][0]
+        vv = params['vv'][0]
+        ww = params['ww'][0]
+        psf_image_dim = psf['image_info'][0]['psf_image_dim'][0]
         psf_intermediate_res = np.min(np.ceil(np.sqrt(psf_resolution) / 2) * 2, psf_resolution)
         image_bot = -(psf_dim / 2) * psf_intermediate_res + psf_image_dim / 2
         image_top = (psf_dim * psf_resolution - 1) - (psf_dim / 2) * psf_intermediate_res + psf_image_dim / 2
@@ -101,12 +97,17 @@ def visibility_degrid(image_uv, vis_weights, obs, psf, params, polarization = 0,
         if uv_grid_phase_only:
             n_tracked = np.zeros_like(n_tracked)
         
-        beam_int = beam2_int = n_grp_use = primary_beam_area = primary_beam_sq_area =  np.zeros(n_freq)
+        beam_int = np.zeros(n_freq)
+        beam2_int = np.zeros(n_freq)
+        n_grp_use = np.zeros(n_freq)
+        primary_beam_area = np.zeros(n_freq)
+        primary_beam_sq_area =  np.zeros(n_freq)
 
-        x = y = (np.arange(dimension) - dimension / 2) * kbinsize
+        x = (np.arange(dimension) - dimension / 2) * kbinsize
+        y = x.copy()
     
-    conj_i = np.where(params['vv'] > 0)
-    if conj_i.size > 0:
+    conj_i = np.where(params['vv'][0] > 0)
+    if conj_i[0].size > 0:
         if beam_per_baseline:
             uu[conj_i] = -uu[conj_i]
             vv[conj_i] = -vv[conj_i]
@@ -124,19 +125,19 @@ def visibility_degrid(image_uv, vis_weights, obs, psf, params, polarization = 0,
         arr_type = float
     
     if n_spectral:
-        prefactor = [0] * n_spectral
+        prefactor = np.zeros(n_spectral)
         for s_i in range(n_spectral):
             prefactor[s_i] = deriv_coefficients(s_i + 1, divide_factorial = True)
         box_arr_ptr = np.zeros(n_spectral)
 
     for bi in range(n_bin_use):
         vis_n = bin_n[bin_i[bi]]
-        inds = ri[ri[bin_i[bi]] : ri[bin_i[bi] + 1] - 1]
+        inds = ri[ri[bin_i[bi]] : ri[bin_i[bi + 1]]]
 
         # if constraining memory usage, then est number of loops needed
         if conserve_memory:
             required_bytes = 8 * vis_n * psf_dim3
-            mem_iter = np.ceil(required_bytes / memory_threshold)
+            mem_iter = int(np.ceil(required_bytes / memory_threshold))
         else:
             mem_iter = 1
         # These variables will get used in the case of mem_iter > 1
@@ -155,28 +156,29 @@ def visibility_degrid(image_uv, vis_weights, obs, psf, params, polarization = 0,
                 vis_n = max_ind - vis_n_per_iter * mem_i
             
             ind0 = inds[0]
-            x_off = x_offset[inds]
-            y_off = y_offset[inds]
-            xmin_use = xmin[ind0]
-            ymin_use = ymin[ind0]
+            x_off = x_offset.flat[inds].astype(np.int64)
+            y_off = y_offset.flat[inds].astype(np.int64)
+            xmin_use = xmin.flat[ind0]
+            ymin_use = ymin.flat[ind0]
             freq_i = inds % n_freq_use
             fbin = freq_bin_i[freq_i]
-            baseline_inds = (inds / n_freq_use) % nbaselines
+            baseline_inds = (inds / n_freq_use).astype(int) % nbaselines
 
             box_matrix = np.zeros((vis_n, psf_dim3), dtype = arr_type)
-            box_arr = np.flatten(image_uv[ymin_use : ymin_use + psf_dim - 1, xmin_use : xmin_use + psf_dim - 1])
+            box_arr = image_uv[ymin_use : ymin_use + psf_dim, xmin_use : xmin_use + psf_dim].flatten()
 
             if interp_flag:
-                dx0dy0 = dx0dy0_arr[inds]    
-                dx0dy1 = dx0dy1_arr[inds]    
-                dx1dy0 = dx1dy0_arr[inds]    
-                dx1dy1 = dx1dy1_arr[inds]
+                dx0dy0 = dx0dy0_arr.flat[inds]    
+                dx0dy1 = dx0dy1_arr.flat[inds]    
+                dx1dy0 = dx1dy0_arr.flat[inds]    
+                dx1dy1 = dx1dy1_arr.flat[inds]
                 ind_remap_flag = False
                 bt_index = inds / n_freq_use
                 for ii in range(vis_n):
-                    box_matrix[psf_dim3 * ii] = interpolate_kernel(beam_arr[baseline_inds[ii], fbin[ii], polarization], 
+                    kernel = interpolate_kernel(beam_arr[baseline_inds[ii], fbin[ii], polarization], 
                                                                    x_off[ii], y_off[ii], dx0dy0[ii], dx1dy0[ii], dx0dy1[ii],
                                                                    dx1dy1[ii])
+                    box_matrix.flat[psf_dim3 * ii : psf_dim3 * ii + kernel.size] = kernel
             else:
                 group_id = group_arr[inds]
                 group_max = np.max(group_id) + 1
@@ -228,7 +230,7 @@ def visibility_degrid(image_uv, vis_weights, obs, psf, params, polarization = 0,
                     # s_i loop is over terms of the Taylor expansion, starting from the lowest-order term
                     prefactor_use = prefactor[s_i]
                     box_matrix *= freq_term_arr
-                    box_arr_ptr[s_i] = np.flatten(spectral_model_uv_arr[s_i][ymin_use : ymin_use + psf_dim - 1, xmin_use : xmin_use + psf_dim - 1])
+                    box_arr_ptr[s_i] = spectral_model_uv_arr[s_i][ymin_use : ymin_use + psf_dim - 1, xmin_use : xmin_use + psf_dim - 1].flatten()
 
                     for s_i_i in range(s_i):
                         # s_i_i loop is over powers of the model x alpha^n, n=s_i_i+1
@@ -239,7 +241,7 @@ def visibility_degrid(image_uv, vis_weights, obs, psf, params, polarization = 0,
                 vis_box = np.dot(box_arr, np.transpose(box_matrix))
             if ind_remap_flag:
                 vis_box = vis_box[ind_remap]
-            visibility_array[inds] = vis_box
+            visibility_array.flat[inds] = vis_box
     
     if beam_per_baseline:
         # factor of kbinsize^2 is FFT units normalization
