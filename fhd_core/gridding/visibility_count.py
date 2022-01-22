@@ -1,5 +1,5 @@
-from fhd_core.gridding.baseline_grid_locations import baseline_grid_locations
-from fhd_core.gridding.conjugate_mirror import conjugate_mirror
+from PyFHD.fhd_core.gridding.baseline_grid_locations import baseline_grid_locations
+from PyFHD.fhd_core.gridding.conjugate_mirror import conjugate_mirror
 import numpy as np
 
 def visibility_count(obs, psf, params, vis_weights, fi_use = None, bi_use = None, mask_mirror_indices = False,

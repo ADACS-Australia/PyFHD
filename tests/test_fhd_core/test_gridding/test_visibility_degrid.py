@@ -1,5 +1,6 @@
 import pytest
 import numpy as np
+from numpy.testing import assert_almost_equal
 from glob import glob
 from fhd_core.gridding.visibility_degrid import visibility_degrid
 from tests.test_utils import get_data, get_data_items
@@ -36,7 +37,7 @@ def test_visibility_degrid_one(data_dir):
         image_uv, 
         vis_weights, 
         obs, 
-        psf, 
+        psf,
         params,
         polarization = polarization,
         fill_model_visibilities = fill_model_visibilities,
@@ -44,9 +45,10 @@ def test_visibility_degrid_one(data_dir):
         conserve_memory = conserve_memory
     )
 
-    assert np.array_equal(vis_return, expected_vis_return)
+    assert assert_almost_equal(vis_return, expected_vis_return, decimal = 7)
 
 def test_visibility_degrid_two(data_dir):
+
     psf = get_data(
         data_dir,
         'input_psf_2.npy',
@@ -78,7 +80,8 @@ def test_visibility_degrid_two(data_dir):
         conserve_memory = conserve_memory
     )
 
-    assert np.array_equal(vis_return, expected_vis_return)
+    assert assert_almost_equal(vis_return, expected_vis_return, decimal = 7)
+
 
 def test_visibility_degrid_three(data_dir):
     psf = get_data(

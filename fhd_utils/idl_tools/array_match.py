@@ -1,4 +1,4 @@
-from fhd_utils.histogram import histogram
+from PyFHD.fhd_utils.histogram import histogram
 import numpy as np
 
 def array_match(array_1, value_match, array_2 = None) :

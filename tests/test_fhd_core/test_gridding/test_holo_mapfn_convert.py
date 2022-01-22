@@ -8,7 +8,7 @@ from tests.test_utils import get_data_items
 def data_dir():
     return glob("**/holo_mapfn_convert", recursive = True)[0]
 
-def test_holo_mapfn_one(data_dir):
+def not_yet_test_holo_mapfn_one(data_dir):
     map_fn, psf_dim, n_vis, dimension, expected_map_fn  = get_data_items(data_dir,
                                                                          'visibility_grid_input_mapfn.npy',
                                                                          'visibility_grid_input_psf_dim.npy',

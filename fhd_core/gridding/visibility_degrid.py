@@ -115,7 +115,7 @@ def visibility_degrid(image_uv, vis_weights, obs, psf, params, polarization = 0,
     
     # Create the correct size visibility array
     vis_dimension = nbaselines * n_samples
-    visibility_array = np.zeros((vis_dimension, n_freq), dtype = complex)
+    visibility_array = np.zeros((vis_dimension, n_freq), dtype = np.cdouble)
     
     ind_ref = np.arange(max(bin_n))
 
@@ -130,7 +130,7 @@ def visibility_degrid(image_uv, vis_weights, obs, psf, params, polarization = 0,
             prefactor[s_i] = deriv_coefficients(s_i + 1, divide_factorial = True)
         box_arr_ptr = np.zeros(n_spectral)
 
-    for bi in range(n_bin_use):
+    for bi in range(n_bin_use - 1):
         vis_n = bin_n[bin_i[bi]]
         inds = ri[ri[bin_i[bi]] : ri[bin_i[bi + 1]]]
 
@@ -254,10 +254,10 @@ def visibility_degrid(image_uv, vis_weights, obs, psf, params, polarization = 0,
         obs['primary_beam_sq_area'][polarization] = primary_beam_sq_area
 
     del(x_offset, y_offset, xmin, ymin, bin_n)
-    if conj_i.size > 0:
+    if conj_i[0].size > 0:
         visibility_array[conj_i, :] = np.conj(visibility_array[conj_i, :])
 
-    if vis_input.size > 0:
+    if vis_input is not None:
         return vis_input + visibility_array
     else:
         return visibility_array 

@@ -1,5 +1,5 @@
 import numpy as np
-from fhd_core.gridding.dirty_image_generate import dirty_image_generate
+from PyFHD.fhd_core.gridding.dirty_image_generate import dirty_image_generate
 from math import pi
 
 def grid_beam_per_baseline(psf, uu, vv, ww, l_mode, m_mode, n_tracked, frequency_array, x, y,
