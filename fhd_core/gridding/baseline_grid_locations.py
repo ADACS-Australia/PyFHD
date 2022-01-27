@@ -66,7 +66,6 @@ def baseline_grid_locations(obs, psf, params, vis_weights, bi_use = None, fi_use
         fi_use = np.nonzero(b_info[0]['freq_use'][0])[0]
     frequency_array = b_info[0]['freq'][0]
     frequency_array = frequency_array[fi_use]
-    n_freq_use = frequency_array.size
 
     # At this point the vis_weight_switch is configured, 
     # but there's no point to us doing that because its never a pointer!
@@ -128,7 +127,7 @@ def baseline_grid_locations(obs, psf, params, vis_weights, bi_use = None, fi_use
     if interp_flag:
         # Derivatives from pixel edge to baseline center for use in interpolation
         dx_arr = (xcen - np.floor(xcen)) * psf_resolution - np.floor((xcen - np.floor(xcen)) * psf_resolution)
-        dy_arr = (xcen - np.floor(ycen)) * psf_resolution - np.floor((ycen - np.floor(ycen)) * psf_resolution)
+        dy_arr = (ycen - np.floor(ycen)) * psf_resolution - np.floor((ycen - np.floor(ycen)) * psf_resolution)
         baselines_dict['dx0dy0_arr'] = (1 - dx_arr) * (1 - dy_arr)
         baselines_dict['dx0dy1_arr'] = (1 - dx_arr) * dy_arr
         baselines_dict['dx1dy0_arr'] = dx_arr * (1 - dy_arr)

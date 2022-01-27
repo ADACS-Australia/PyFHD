@@ -41,7 +41,7 @@ def visibility_degrid(image_uv, vis_weights, obs, psf, params, polarization = 0,
         [description], by default False
     """
 
-    complex = psf['complex_flag'][0]
+    complex_flag = psf['complex_flag'][0]
     n_spectral = obs['degrid_spectral_terms'][0]
     interp_flag = psf['interpolate_kernel'][0]
     if conserve_memory:
@@ -119,10 +119,10 @@ def visibility_degrid(image_uv, vis_weights, obs, psf, params, polarization = 0,
     
     ind_ref = np.arange(max(bin_n))
 
-    if complex:
-        arr_type = complex
+    if complex_flag:
+        arr_type = np.cdouble
     else:
-        arr_type = float
+        arr_type = np.double
     
     if n_spectral:
         prefactor = np.zeros(n_spectral)
@@ -140,13 +140,12 @@ def visibility_degrid(image_uv, vis_weights, obs, psf, params, polarization = 0,
             mem_iter = int(np.ceil(required_bytes / memory_threshold))
         else:
             mem_iter = 1
-        # These variables will get used in the case of mem_iter > 1
-        vis_n_full = vis_n
-        inds_full = inds
-        vis_n_per_iter = np.ceil(vis_n_full/mem_iter)
         # loop over chunks of visibilities to grid to conserve memory
         for mem_i in range(mem_iter):
             if mem_iter > 1:
+                vis_n_full = vis_n
+                inds_full = inds
+                vis_n_per_iter = np.ceil(vis_n_full/mem_iter)
                 # calculate the indices of this visibility chunk if split into multiple chunks
                 if vis_n_per_iter * (mem_i + 1) > vis_n_full:
                     max_ind = vis_n_full
