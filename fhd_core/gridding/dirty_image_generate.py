@@ -1,7 +1,7 @@
 import numpy as np
-from PyFHD.fhd_utils.modified_astro.meshgrid import meshgrid
-from PyFHD.fhd_output.fft_filters.filter_uv_uniform import filter_uv_uniform
-from PyFHD.fhd_utils.rebin import rebin
+from fhd_utils.modified_astro.meshgrid import meshgrid
+from fhd_output.fft_filters.filter_uv_uniform import filter_uv_uniform
+from fhd_utils.rebin import rebin
 from scipy.signal import convolve
 from astropy.convolution import Box2DKernel
 

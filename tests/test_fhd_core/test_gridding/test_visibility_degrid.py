@@ -1,6 +1,6 @@
 import pytest
 import numpy as np
-from numpy.testing import assert_almost_equal
+import numpy.testing as npt
 from glob import glob
 from fhd_core.gridding.visibility_degrid import visibility_degrid
 from tests.test_utils import get_data, get_data_items
@@ -45,7 +45,8 @@ def test_visibility_degrid_one(data_dir):
         conserve_memory = conserve_memory
     )
 
-    assert assert_almost_equal(vis_return, expected_vis_return, decimal = 7)
+    npt.assert_allclose(vis_return.real, expected_vis_return.real, atol = 1e-3)
+    npt.assert_allclose(vis_return.imag, expected_vis_return.imag, atol = 1e-3)
 
 def test_visibility_degrid_two(data_dir):
 
@@ -80,7 +81,8 @@ def test_visibility_degrid_two(data_dir):
         conserve_memory = conserve_memory
     )
 
-    assert assert_almost_equal(vis_return, expected_vis_return, decimal = 7)
+    npt.assert_allclose(vis_return.real, expected_vis_return.real, atol = 1e-3)
+    npt.assert_allclose(vis_return.imag, expected_vis_return.imag, atol = 1e-3)
 
 
 def test_visibility_degrid_three(data_dir):
@@ -105,7 +107,7 @@ def test_visibility_degrid_three(data_dir):
         'output_vis_return_3.npy'
     )
 
-    vis_return = visibility_degrid(
+    vis_return, obs = visibility_degrid(
         image_uv, 
         vis_weights, 
         obs, 
@@ -119,4 +121,5 @@ def test_visibility_degrid_three(data_dir):
         conserve_memory = conserve_memory
     )
 
-    assert np.array_equal(vis_return, expected_vis_return)
+    npt.assert_allclose(vis_return.real, expected_vis_return.real, atol = 1e-3)
+    npt.assert_allclose(vis_return.imag, expected_vis_return.imag, atol = 1e-3)

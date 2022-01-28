@@ -1,7 +1,7 @@
 import numpy as np
-from PyFHD.fhd_utils.weight_invert import weight_invert
-from PyFHD.fhd_core.gridding.visibility_count import visibility_count
-from PyFHD.fhd_core.setup_metadata.fhd_save_io import fhd_save_io
+from fhd_utils.weight_invert import weight_invert
+from fhd_core.gridding.visibility_count import visibility_count
+from fhd_core.setup_metadata.fhd_save_io import fhd_save_io
 
 def filter_uv_uniform(image_uv, vis_count = None, obs = None, psf = None, params = None, weights = None, fi_use = None, bi_use = None, 
                       mask_mirror_indices = None, name = "uniform", return_name_only = False):

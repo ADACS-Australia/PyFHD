@@ -1,4 +1,5 @@
 import numpy as np
+from math import ceil
 from fhd_utils.FFT.deriv_coefficients import deriv_coefficients
 from fhd_utils.histogram import histogram
 from fhd_core.gridding.baseline_grid_locations import baseline_grid_locations
@@ -130,35 +131,46 @@ def visibility_degrid(image_uv, vis_weights, obs, psf, params, polarization = 0,
             prefactor[s_i] = deriv_coefficients(s_i + 1, divide_factorial = True)
         box_arr_ptr = np.zeros(n_spectral)
 
-    for bi in range(n_bin_use - 1):
+    for bi in range(n_bin_use):
         vis_n = bin_n[bin_i[bi]]
-        inds = ri[ri[bin_i[bi]] : ri[bin_i[bi + 1]]]
+        """
+            Python is not inclusive of end of loop 
+            while IDL is, as such n_bin_use - 1 does not do
+            the last index properly on Python, as such when we
+            have reached the last index we need to change the 
+            indexation of ri to include from that point to the end.
+        """
+        if bi == n_bin_use - 1:
+            inds = ri[ri[bin_i[bi]] :]
+        else:
+            inds = ri[ri[bin_i[bi]] : ri[bin_i[bi + 1]]]
 
         # if constraining memory usage, then est number of loops needed
         if conserve_memory:
             required_bytes = 8 * vis_n * psf_dim3
             mem_iter = int(np.ceil(required_bytes / memory_threshold))
+            if mem_iter > 1:
+                vis_n_full = vis_n
+                inds_full = inds
+                vis_n_per_iter = ceil(vis_n_full/mem_iter)
         else:
             mem_iter = 1
         # loop over chunks of visibilities to grid to conserve memory
         for mem_i in range(mem_iter):
             if mem_iter > 1:
-                vis_n_full = vis_n
-                inds_full = inds
-                vis_n_per_iter = np.ceil(vis_n_full/mem_iter)
                 # calculate the indices of this visibility chunk if split into multiple chunks
                 if vis_n_per_iter * (mem_i + 1) > vis_n_full:
                     max_ind = vis_n_full
                 else:
                     max_ind = vis_n_per_iter * (mem_i + 1)
-                inds = inds_full[vis_n_per_iter * mem_i : max_ind - 1]
+                inds = inds_full[vis_n_per_iter * mem_i : max_ind]
                 vis_n = max_ind - vis_n_per_iter * mem_i
-            
-            ind0 = inds[0]
+    
             x_off = x_offset.flat[inds].astype(np.int64)
             y_off = y_offset.flat[inds].astype(np.int64)
-            xmin_use = xmin.flat[ind0]
-            ymin_use = ymin.flat[ind0]
+            # xmin and ymin should be all the same
+            xmin_use = xmin.flat[inds[0]]
+            ymin_use = ymin.flat[inds[0]]
             freq_i = inds % n_freq_use
             fbin = freq_bin_i[freq_i]
             baseline_inds = (inds / n_freq_use).astype(int) % nbaselines
@@ -257,7 +269,10 @@ def visibility_degrid(image_uv, vis_weights, obs, psf, params, polarization = 0,
         visibility_array[conj_i, :] = np.conj(visibility_array[conj_i, :])
 
     if vis_input is not None:
-        return vis_input + visibility_array
+        visibility_array += vis_input
+
+    if beam_per_baseline:
+        return visibility_array, obs
     else:
-        return visibility_array 
+        return visibility_array
 

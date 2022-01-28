@@ -194,14 +194,5 @@ def test_grid_beam_three(data_dir):
         vis_n,
         beam_clip_floor = beam_clip_floor,
     )
-    '''
-    The explanation for this threshold comes from line 142
-    box_matrix[:vis_n, :] *=  np.reshape(psf_val_ref / ref_temp, (psf_val_ref.size, 1))
-    Up until this point in this test, all maximum error values are less than single precision
-    (1e-8, in fact most are below 1e-10) however after this point, which is the last code applied to box_matrix, 
-    the values are out by 1e-5 after a simple division on two small vectors. 
-    That error of 1e-5 is then multiplied to box_matrix.
-    The 1.5e-4 is due to rounding errors from that precision error.
-    '''
     assert np.max(np.abs(expected_box_matrix.real - output_box_matrix.real)) < 1e-8
     assert np.max(np.abs(expected_box_matrix.imag - output_box_matrix.imag)) < 1e-8

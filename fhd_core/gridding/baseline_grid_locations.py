@@ -1,6 +1,6 @@
 import numpy as np
-from PyFHD.fhd_utils.idl_tools.array_match import array_match
-from PyFHD.fhd_utils.histogram import histogram
+from fhd_utils.idl_tools.array_match import array_match
+from fhd_utils.histogram import histogram
 
 def baseline_grid_locations(obs, psf, params, vis_weights, bi_use = None, fi_use = None, 
                             fill_model_visibilities = False, interp_flag = False, mask_mirror_indices = False):
