@@ -116,3 +116,26 @@ def get_data_sav(data_dir, sav_file, *args):
         return return_list
     return data
 
+def get_sav_list(data_dir, sav_file, *args):
+    """
+    Takes in the path for many sav files and reads them without
+    reading their keys. Assumes the sav files here have more than one key.
+    If you use one sav_path only then the function acts as a wrapper for scipy's readsav.
+
+    Parameters
+    ----------
+    data_dir : Path
+        Path to the data directory
+    sav_file : Path
+        Path to the sav file, which will load a python dictionary
+    args: Paths
+        If given, is expected to be more filenames
+    """
+    data = readsav(Path(data_dir, sav_file), python_dict=True)
+    if len(args) > 0:
+        data = [data]
+        for file in args:
+            new_data = readsav(Path(data_dir, file), python_dict=True)
+            data.append(new_data)
+    return data
+

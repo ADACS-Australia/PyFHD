@@ -6,6 +6,8 @@ from fhd_utils.idl_tools.array_match import array_match
 from fhd_utils.histogram import histogram
 from fhd_core.gridding.baseline_grid_locations import baseline_grid_locations
 
+# TODO: Adjust tests for the derivatives to all_close
+
 @pytest.fixture
 def data_dir():
     return glob('**/baseline_grid_locations/', recursive = True)[0]
