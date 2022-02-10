@@ -3,7 +3,7 @@ import numpy as np
 def rebin_columns(a, ax, shape, col_sizer):
     # tile the range of col_sizer
     tiles = np.tile(np.arange(col_sizer), (shape[0], shape[1] // col_sizer-1))
-    # Get the differences between the  columns
+    # Get the differences between the columns
     differences = np.diff(a, axis = ax) / col_sizer
     # Multiply this by the tiles
     inferences_non_pad = np.repeat(differences, col_sizer, axis = ax) * tiles
@@ -33,8 +33,11 @@ def rebin_rows(a, ax, shape, old_shape, row_sizer):
 
 def rebin(a, shape, sample = False):
     """
-    Resizes a 2d array by averaging or repeating elements, 
-    new dimensions must be integral factors of original dimensions
+    Resizes a 2d array by averaging or repeating elements, new dimensions must be integral factors of original dimensions.
+
+    In the case of expanding an existing array, rebin will interpolate between the original values with a linear function.
+    In the case of compressing an existing array, rebin will average
+
     Parameters
     ----------
     a : array_like
@@ -51,28 +54,40 @@ def rebin(a, shape, sample = False):
         If the new shape is smaller of the input array, the data are averaged, 
         if the new shape is bigger array elements are repeated and interpolated
 
-    TODO: Adjust Examples
     Examples
     --------
     >>> test = np.array([0,10,20,30])
-    >>> rebin(test, (1,8))
-    >>> array([ 0,  5, 10, 15, 20, 25, 30, 30])
-    >>> rebin(test, (2,8))
-    >>> array([[ 0,  5, 10, 15, 20, 25, 30, 30],
-               [ 0,  5, 10, 15, 20, 25, 30, 30]])
-    >>> data = np.array([[ -5,   4,   2,  -8,   1],
-                         [  3,   0,   5,  -5,   1],
+    >>> rebin(test, (1,8)) # Expand Columns
+    array([ 0,  5, 10, 15, 20, 25, 30, 30])
+    >>> rebin(test, (2,8)) # Expand Rows and Columns
+    array([[ 0,  5, 10, 15, 20, 25, 30, 30],
+           [ 0,  5, 10, 15, 20, 25, 30, 30]])
+    >>> data = np.array([[ -5,   4,   2,  -8,   1], 
+                         [  3,   0,   5,  -5,   1], 
                          [  6,  -7,   4,  -4,  -8],
                          [ -1,  -5, -14,   2,   1]])
-    >>> rebin(data, (8,10))
-    >>> array([[ -3,   0,   2,   2,   1,  -2,  -6,  -2,   1,   1],
-               [  0,   0,   1,   2,   2,  -1,  -5,  -1,   1,   1],
-               [  2,   0,   0,   1,   3,   0,  -4,  -1,   0,   0],
-               [  3,   0,  -3,   0,   3,   0,  -4,  -3,  -3,  -3],
-               [  4,   0,  -5,  -1,   2,   0,  -3,  -5,  -7,  -7],
-               [  1,  -1,  -5,  -5,  -5,  -2,  -1,  -2,  -3,  -3],
-               [ -1,  -3,  -5,  -9, -13,  -5,   1,   1,   1,   1],
-               [ -1,  -3,  -5,  -9, -13,  -5,   1,   1,   1,   1]])
+    >>> rebin(data, (8,10)) # 2D Array example
+    array([[ -5,  -1,   4,   3,   2,  -3,  -8,  -4,   1,   1],
+           [ -1,   0,   2,   2,   3,  -2,  -7,  -3,   1,   1],
+           [  3,   1,   0,   2,   5,   0,  -5,  -2,   1,   1],
+           [  4,   0,  -4,   0,   4,  -1,  -5,  -5,  -4,  -4],
+           [  6,  -1,  -7,  -2,   4,   0,  -4,  -6,  -8,  -8],
+           [  2,  -2,  -6,  -6,  -5,  -3,  -1,  -3,  -4,  -4],
+           [ -1,  -3,  -5, -10, -14,  -6,   2,   1,   1,   1],
+           [ -1,  -3,  -5, -10, -14,  -6,   2,   1,   1,   1]])
+    >>> rebin(data, (2,5)) # Compression
+    array([[-1,  2,  3, -6,  1],
+           [ 2, -6, -5, -1, -3]])
+    >>> to_compress = np.array([[3, 9, 7, 0, 1, 5],
+                                [7, 7, 1, 9, 7, 3],
+                                [9, 2, 2, 3, 1, 1],
+                                [0, 3, 5, 0, 4, 3],
+                                [5, 7, 7, 1, 9, 1],
+                                [7, 2, 1, 1, 3, 0]])
+    >>> rebin(to_compress, (3,3)) # Compression
+    array([[6, 4, 4],
+           [3, 2, 2],
+           [5, 2, 3]])
 
     References
     ----------

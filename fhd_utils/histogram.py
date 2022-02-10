@@ -103,11 +103,12 @@ def get_ri(data, bins, hist, min, max):
     and only the first bin I can use the reverse indices array, ri to do this. Let's say I wanted to flag
     all values of bins[0] with -1 for some reason to make them invalid in other calculations with the data, 
     then I could do this:
-    >>> data[ri[ri[0] : ri[1]]] = -1
+
+    `data[ri[ri[0] : ri[1]]] = -1`
 
     Or more generally
 
-    >>> data[ri[ri[i] : ri[i + 1]]] = -1
+    `data[ri[ri[i] : ri[i + 1]]] = -1`
 
     Where i is 0 <= i <= bins.size.
 
@@ -135,7 +136,7 @@ def get_ri(data, bins, hist, min, max):
 
     Returns
     -------
-    ri
+    ri : np.array
         An array containing the reverse indices, which is two vectors, the first vector containing indexes for the second vector.
         The second vector contains indexes for the data.
 

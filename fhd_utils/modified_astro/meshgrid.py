@@ -7,9 +7,9 @@ def meshgrid(dimension, elements, axis = None, return_integer = False):
     Parameters
     ----------
     dimension: int
-        Sets the size of the array to return
+        Sets the column size of the array to return
     elements: int
-        Sets the size of the array to return
+        Sets the row size of the array to return
     axis = int, optional
         Set axis = 1 for X values, set axis = 2 for Y values, default is None
     return_float: bool, optional
