@@ -1,5 +1,8 @@
 # PyFHD
 Python Fast Holographic Deconvolution
+
+[![Documentation Status](https://readthedocs.org/projects/pyfhd/badge/?version=latest)](https://pyfhd.readthedocs.io/en/latest/?badge=latest)
+
 TODO: Add Testing Results and Testing coverage
 
 ## FHD
