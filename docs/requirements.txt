@@ -1,2 +1,2 @@
 sphinx-rtd-theme
-numpy>=1.22.2
+numpy>=1.20
