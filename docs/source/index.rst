@@ -33,8 +33,6 @@ fhd_core
 
 .. automodule:: fhd_core.gridding.baseline_grid_locations
    :members:
-   :undoc-members:
-   :inherited-members:
 
 fhd_utils
 ---------
