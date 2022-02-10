@@ -34,6 +34,9 @@ fhd_core
 .. automodule:: fhd_core.gridding.baseline_grid_locations
    :members:
 
+-- automodule:: fhd_core.gridding.interpolate_kernel
+   :members:
+
 fhd_utils
 ---------
 
