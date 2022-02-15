@@ -1,8 +1,7 @@
 import pytest
-import numpy as np
 from glob import glob
-from tests.test_utils import get_data, get_data_items
-from fhd_core.calibration.calculate_adaptive_gain import calculate_adaptive_gain
+from PyFHD.pyfhd_tools.test_utils import get_data_items
+from PyFHD.calibration.calibration_utils import calculate_adaptive_gain
 
 @pytest.fixture
 def data_dir():

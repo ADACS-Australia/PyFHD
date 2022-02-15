@@ -28,20 +28,47 @@ Contents
 Modules
 =======
 
-fhd_core
+Data Setup
+----------
+
+Beam Setup
+----------
+
+Calibration
+-----------
+
+.. automodule:: PyFHD.calibration.calibration_utils
+   :members:
+
+.. automodule:: PyFHD.calibration.vis_calibrate_subroutine
+   :members:
+
+Gridding
 --------
 
-.. automodule:: fhd_core.gridding.baseline_grid_locations
+.. automodule:: PyFHD.gridding.gridding_utils
    :members:
 
--- automodule:: fhd_core.gridding.interpolate_kernel
+.. automodule:: PyFHD.gridding.visibility_grid
    :members:
 
-fhd_utils
----------
-
-.. automodule:: fhd_utils.histogram
+.. automodule:: PyFHD.gridding.visibility_degrid
    :members:
 
-.. automodule:: fhd_utils.rebin
+Input & Output
+--------------
+
+.. automodule:: PyFHD.io.pyfhd_save
+   :members:
+
+.. automodule:: PyFHD.io.pyfhd_restore
+   :members:
+
+Tools & Utilities
+-----------------
+
+.. automodule:: PyFHD.pyfhd_tools.pyfhd_utils
+   :members:
+
+.. automodule:: PyFHD.pyfhd_tools.test_utils
    :members:
