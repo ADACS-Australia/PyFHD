@@ -1,0 +1,17 @@
+name: pyfhd
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python
+  - astropy
+  - configargparse
+  - numba
+  - numpy
+  - pytest
+  - scipy
+  - setuptools
+  - sphinx
+  - conda
+  - pip:
+    - sphinx-rtd-theme
