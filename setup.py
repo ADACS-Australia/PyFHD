@@ -3,7 +3,7 @@ from setuptools import setup
 setup(
     name = "PyFHD",
     version = 1.0,
-    author = "ADACS - Astronomy Data and Compute Services",
+    author = "ADACS - Astronomy Data and Computing Services",
     url = "https://github.com/ADACS-Australia/PyFHD",
     python_requires=">=3.7",
     packages = ['PyFHD'],
@@ -19,5 +19,3 @@ setup(
         'console_scripts' : ['pyfhd = PyFHD.pyfhd:main'],
     }
 )
-
-#TODO: Add More Fields and complete Setup.py

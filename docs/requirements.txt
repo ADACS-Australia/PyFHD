@@ -1,3 +1,5 @@
 sphinx-rtd-theme
-numpy>=1.20
+numpy
 numba
+scipy
+astropy
