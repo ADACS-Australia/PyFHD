@@ -2,7 +2,7 @@
 Python Fast Holographic Deconvolution
 
 [![Documentation Status](https://readthedocs.org/projects/pyfhd/badge/?version=latest)](https://pyfhd.readthedocs.io/en/latest/?badge=latest)
-[![Python](https://img.shields.io/badge/python-3.7.12-blue.svg)](https://www.python.org/downloads/release/python-3712/)
+[![Python](https://img.shields.io/badge/python-3.7%20%7C%203.8%20%7C%203.9%20%7C%203.10-blue)](https://www.python.org/downloads/release/)
 
 TODO: Add Testing Results and Testing coverage
 
