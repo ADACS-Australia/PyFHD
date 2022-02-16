@@ -7,8 +7,8 @@ Welcome to PyFHD's documentation!
 =================================
 
 .. toctree::
-   :maxdepth: 4
-   :caption: Contents:
+   :maxdepth: 2
+   :caption: Contents
 
 **Py**\thon 
 **F**\ast 
@@ -25,38 +25,60 @@ Contents
 * :ref:`genindex`
 * :ref:`modindex`
 
-Modules
-=======
+Usage
+=====
 
 Data Setup
-----------
+==========
 
 Beam Setup
-----------
+==========
 
 Calibration
------------
+===========
+
+
+calibration_utils
+-----------------
 
 .. automodule:: PyFHD.calibration.calibration_utils
    :members:
+
+vis_calibrate_subroutine
+------------------------
 
 .. automodule:: PyFHD.calibration.vis_calibrate_subroutine
    :members:
 
 Gridding
---------
+========
+
+Gridding Utilities
+------------------
 
 .. automodule:: PyFHD.gridding.gridding_utils
    :members:
 
+Filters
+-------
+
+.. automodule:: PyFHD.gridding.filters
+   :members:
+
+Visibility Grid
+---------------
+
 .. automodule:: PyFHD.gridding.visibility_grid
    :members:
+
+Visibility Degrid
+-----------------
 
 .. automodule:: PyFHD.gridding.visibility_degrid
    :members:
 
 Input & Output
---------------
+==============
 
 .. automodule:: PyFHD.io.pyfhd_save
    :members:
@@ -65,10 +87,21 @@ Input & Output
    :members:
 
 Tools & Utilities
------------------
+=================
 
 .. automodule:: PyFHD.pyfhd_tools.pyfhd_utils
    :members:
 
+Testing Utilities
+=================
+
 .. automodule:: PyFHD.pyfhd_tools.test_utils
    :members:
+
+Version History
+===============
+
+1.0
+---
+
+This repository is currently in development.

@@ -10,6 +10,7 @@ def visibility_grid(visibility, vis_weights, obs, status_str, psf, params,
                     uv_grid_phase_only = True) :
     """[summary]
     TODO: docstring
+    
     Parameters
     ----------
     visibility : [type]
