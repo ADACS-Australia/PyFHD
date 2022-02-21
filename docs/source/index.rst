@@ -28,6 +28,11 @@ Contents
 Usage
 =====
 
+.. argparse::
+   :ref: PyFHD.pyfhd.pyfhd_parser
+   :prog: pyfhd
+
+
 Data Setup
 ==========
 

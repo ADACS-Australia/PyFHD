@@ -1,0 +1,7 @@
+# Default Arguments for PyFHD
+# Adjust these as needed
+test : false
+stringy : I'm a string
+test2 : false
+path : \home\skywatcher
+
