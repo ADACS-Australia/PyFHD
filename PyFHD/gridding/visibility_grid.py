@@ -5,9 +5,8 @@ from PyFHD.pyfhd_tools.pyfhd_utils import weight_invert, rebin, l_m_n
 def visibility_grid(visibility, vis_weights, obs, status_str, psf, params,
                     file_path_fhd= "/.", weights_flag = False, variance_flag = False, polarization = 0,
                     map_flag = False, uniform_flag = False, fi_use = None, bi_use = None, no_conjugate = False, 
-                    return_mapfn = False, mask_mirror_indices = False, no_save = False, model = None, 
-                    model_flag = False, grid_spectral = False, spectral_model_uv = 0, beam_per_baseline = False, 
-                    uv_grid_phase_only = True) :
+                    mask_mirror_indices = False, model = None, grid_spectral = False, 
+                    spectral_model_uv = 0, beam_per_baseline = False, uv_grid_phase_only = True) :
     """[summary]
     TODO: docstring
     
@@ -51,8 +50,6 @@ def visibility_grid(visibility, vis_weights, obs, status_str, psf, params,
         [description], by default False
     model : [type], optional
         [description], by default None
-    model_flag : bool, optional
-        [description], by default False
     preserve_visibilities : bool, optional
         [description], by default False
     error : bool, optional
@@ -83,7 +80,9 @@ def visibility_grid(visibility, vis_weights, obs, status_str, psf, params,
         fi_use = np.nonzero(obs['baseline_info'][0]['freq_use'][0])
     n_f_use = fi_use.size
     freq_bin_i = freq_bin_i[fi_use]
-    n_vis_arr = obs['nf_vis']
+    n_vis_arr = obs['nf_vis'][0].copy()
+    # Getting a read-only error for some reason, setting as writeable
+    n_vis_arr.flags.writeable = True
 
     # For each unflagged baseline, get the minimum contributing pixel number for gridding 
     # and the 2D derivatives for bilinear interpolation
@@ -112,16 +111,20 @@ def visibility_grid(visibility, vis_weights, obs, status_str, psf, params,
         dx0dy1_arr = baselines_dict['dx0dy1_arr']
         dx1dy0_arr = baselines_dict['dx1dy0_arr']
         dx1dy1_arr = baselines_dict['dx1dy1_arr']
-    bi_use = baselines_dict['bi_use']
+    if bi_use is None:
+        bi_use = baselines_dict['bi_use']
 
     # Instead of checking the visibilitity pointer we just take the vis_inds_use from visibility
     vis_arr_use = visibility.flat[vis_inds_use]
-    # When model_flag is true, then so is model_return, hence ignoring model_return and only 
-    # allowing model_flag. Although, if a model is provided then take the vis_inds_use
-    if model_flag:
-        if model is not None:
+    # Model_flag has been removed in favor of just the model taking advantage that the model default is None
+    # If it has been specified at all with anything other than None or False, then it should be a numpy array
+    # if it isn't exit
+    if model is not None:
+        if isinstance(model, np.ndarray):
             model_use = model.flat[vis_inds_use]
-        model_return = np.zeros((elements, dimension), dtype = complex)
+            model_return = np.zeros((elements, dimension), dtype = complex)
+        else:
+            raise ValueError('Your model must be a numpy array when used as an argument')
 
     # Now with the information we need, retrieve more data from the structures
     frequency_array = obs['baseline_info'][0]['freq'][0]
@@ -129,11 +132,10 @@ def visibility_grid(visibility, vis_weights, obs, status_str, psf, params,
     complex_flag = psf['complex_flag']
     psf_dim = psf['dim']
     psf_resolution = psf['resolution']
-    # TODO: Fix the below line, in IDL going beyond the index takes the last value when going beyond the index
-    group_arr = np.reshape(psf['id'][0][bi_use, freq_bin_i[fi_use], polarization])
-    beam_arr = psf['beam_ptr']
     nbaselines = obs['nbaselines']
     n_samples = obs['n_time']
+    group_arr = np.squeeze(psf['id'][0][:, freq_bin_i, polarization])
+    beam_arr = psf['beam_ptr'][0]
     n_freq_use = frequency_array.size
     psf_dim2 = 2 * psf_dim
     psf_dim3 = psf_dim ** 2
@@ -160,23 +162,23 @@ def visibility_grid(visibility, vis_weights, obs, status_str, psf, params,
             n_tracked = np.zeros_like(n_tracked)
     
     # Initialize uv-arrays 
-    image_uv = np.zeros(elements, dimension)
-    weights = np.zeros(elements, dimension)
-    variance = np.zeros(elements, dimension)
-    uniform_filter = np.zeros(elements, dimension)
+    image_uv = np.zeros((elements, dimension))
+    weights = np.zeros((elements, dimension))
+    variance = np.zeros((elements, dimension))
+    uniform_filter = np.zeros((elements, dimension))
 
     # mapfn is incompatible with uniformly gridded images
     if uniform_flag:
         map_flag = False
     
-    conj_i = np.where(params['vv'][bi_use] > 0)
+    conj_i = np.where(params['vv'][0].flat[bi_use] > 0)
     if conj_i.size > 0:
         if beam_per_baseline:
             uu[conj_i] = -uu[conj_i]
             vv[conj_i] = -vv[conj_i]
             ww[conj_i] = -ww[conj_i]
         vis_arr_use[conj_i, :] = np.conj(vis_arr_use[conj_i, :])
-        if model_flag:
+        if model:
             model_use[conj_i, :] = np.conj(model_use[conj_i, :])
     
     # Return if all baselines have been flagged
@@ -184,11 +186,10 @@ def visibility_grid(visibility, vis_weights, obs, status_str, psf, params,
         print("All data has been flagged")
         return np.zeros([elements, dimension], dtype = complex)
     
-    ind_ref = np.arange(np.max(bin_n))
     n_vis = np.sum(bin_n)
     for fi in range(n_f_use):
         n_vis_arr[fi_use[fi]] = np.sum(xmin[:, fi] > 0)
-    obs['nf_vis'] = n_vis_arr
+    obs['nf_vis'][0] = n_vis_arr
 
     index_arr = np.reshape(np.arange(elements * dimension), (elements, dimension))
     if complex_flag:
@@ -201,7 +202,7 @@ def visibility_grid(visibility, vis_weights, obs, status_str, psf, params,
         spectral_A = np.zeros([elements, dimension], dtype = complex)
         spectral_B = np.zeros([elements, dimension])
         spectral_D = np.zeros([elements, dimension])
-        if model_flag:
+        if model:
             spectral_model_A = np.zeros([elements, dimension], dtype = complex)
     
     # In the IDL visibility_grid, map_fn is set up as a 2D array of null pointers
@@ -217,12 +218,12 @@ def visibility_grid(visibility, vis_weights, obs, status_str, psf, params,
         # the gridding operation per set using each visibilities' hyperresolved kernel 
 
         # Select the indices of the visibilities which contribute to the same data/model uv-plane pixels
-        inds = ri[ri[bin_i[bi]] : ri[bin_i[bi] + 1] - 1]
+        inds = ri[ri[bin_i[bi]] : ri[bin_i[bi] + 1]]
         ind0 = inds[0]
 
         # Select the pixel offsets of the hyperresolution uv-kernel of the selected visibilities 
-        x_off = x_offset[inds]
-        y_off = y_offset[inds]
+        x_off = x_offset[inds].flatten()
+        y_off = y_offset[inds].flatten()
 
         # Since all selected visibilities have the same minimum x,y pixel they contribute to,
         # reduce the array
@@ -249,7 +250,7 @@ def visibility_grid(visibility, vis_weights, obs, status_str, psf, params,
 
             # Select the model/data visibility values of the set, each with a weight of 1
             rep_flag = False
-            if model_flag:
+            if model:
                 model_box = model_use[inds]
             vis_box = vis_arr_use[inds]
             psf_weight = np.ones(vis_n)
@@ -258,8 +259,8 @@ def visibility_grid(visibility, vis_weights, obs, status_str, psf, params,
             for ii in range(vis_n):
                 # For each visibility, calculate the kernel values on the static uv-grid given the
                 # hyperresolved kernel and an interpolation involving the derivatives
-                box_matrix[psf_dim3 * ii] = interpolate_kernel(beam_arr[baseline_inds[ii], fbin[ii], polarization],
-                                                               x_off[ii], y_off[ii], dx0dy0, dx1dy0, dx0dy1, dx1dy1)
+                box_matrix[ii] = interpolate_kernel(beam_arr[baseline_inds[ii], fbin[ii], polarization],
+                                                    x_off[ii], y_off[ii], dx0dy0[ii], dx1dy0[ii], dx0dy1[ii], dx1dy1[ii])
         else:
             # Calculate the beam kernel at each baseline location given the hyperresolved pre-calculated
             # beam kernel
@@ -298,7 +299,7 @@ def visibility_grid(visibility, vis_weights, obs, status_str, psf, params,
 
                 vis_box1 = vis_arr_use[inds]
                 vis_box = vis_box1[xyf_ui]
-                if model_flag:
+                if model:
                     model_box1 = model_use[inds]
                     model_box = model_box1[xyf_ui]
                 
@@ -311,14 +312,14 @@ def visibility_grid(visibility, vis_weights, obs, status_str, psf, params,
                 xyf_ui0 = xyf_ui0[repeat_i]
                 for rep_ii in range(repeat_i.size):
                     vis_box[repeat_i[rep_ii]] = np.sum(vis_box1[xyf_ui0[rep_ii]:xyf_ui[rep_ii]])
-                    if model_flag:
+                    if model:
                         model_box[repeat_i[rep_ii]] = np.sum(model_box1[xyf_ui0[rep_ii]:xyf_ui[rep_ii]])
                 vis_n = n_xyf_bin
             else:
                 # If there are not enough baselines which use the same beam kernel and discretized
                 # location to warrent reduction, then perform the gridding operation per baseline
                 rep_flag = False
-                if model_flag:
+                if model:
                     model_box = model_use[inds]
                 vis_box = vis_arr_use[inds]
                 psf_weight = np.ones(vis_n)
@@ -340,13 +341,13 @@ def visibility_grid(visibility, vis_weights, obs, status_str, psf, params,
                     box_matrix[psf_dim3 * ii] = beam_arr[baseline_inds[ii], fbin[ii], polarization][y_off[ii], x_off[ii]]
         
         #  Calculate the conjugate transpose (dagger) of the uv-pixels that the current beam kernel contributes to
-        if map_flag:
-            if complex_flag:
-                box_matrix_dag = np.conj(box_matrix)
-            else:
-                box_matrix = box_matrix.real
-            if rep_flag:
-                box_matrix *= rebin(np.transpose(psf_weight), (vis_n, psf_dim3))
+        #  Calculate the conjugate transpose (dagger) of the uv-pixels that the current beam kernel contributes to
+        if complex_flag:
+            box_matrix_dag = np.conj(box_matrix)
+        else:
+            box_matrix_dag = box_matrix.real
+        if map_flag and rep_flag:
+            box_matrix *= rebin(np.transpose(psf_weight), (vis_n, psf_dim3))
         
         if grid_spectral:
             term_A_box = np.dot(np.transpose(box_matrix_dag), np.transpose((freq_i * vis_box) / n_vis))
@@ -358,11 +359,11 @@ def visibility_grid(visibility, vis_weights, obs, status_str, psf, params,
             spectral_D[ymin_use : ymin_use + psf_dim - 1, xmin_use : xmin_use + psf_dim - 1] =+ term_D_box
 
             del(term_A_box, term_B_box, term_D_box)
-            if model_flag:
+            if model:
                 term_Am_box = np.dot(np.transpose(box_matrix_dag), np.transpose((freq_i * model_box) / n_vis))
                 spectral_model_A[ymin_use : ymin_use + psf_dim - 1, xmin_use : xmin_use + psf_dim - 1] += term_Am_box
         
-        if model_flag:
+        if model:
             # If model visibilities are being gridded, calculate the product of the model vis and the beam kernel
             # for all vis which contribute to the same static uv-pixels, and add to the static uv-plane 
             box_arr = np.dot(np.transpose(box_matrix_dag), np.transpose(model_box / n_vis))
@@ -387,7 +388,7 @@ def visibility_grid(visibility, vis_weights, obs, status_str, psf, params,
             variance[ymin_use : ymin_use + psf_dim - 1, xmin_use : xmin_use + psf_dim - 1] += var_box
         
         if uniform_flag:
-            uniform_filter[ymin_use : ymin_use + psf_dim - 1, xmin_use : xmin_use + psf_dim - 1] += bin_n[bin_i[bi]]
+            uniform_filter[ymin_use : ymin_use + psf_dim, xmin_use : xmin_use + psf_dim] += bin_n[bin_i[bi]]
         
         if map_flag:
             # If the mapping function is being calculated, then calculate the beam mapping for the current
@@ -407,11 +408,11 @@ def visibility_grid(visibility, vis_weights, obs, status_str, psf, params,
     # Option to use spectral index information to scale the uv-plane 
     if grid_spectral:
         spectral_uv = (spectral_A - n_vis * spectral_B * image_uv) * weight_invert(spectral_D - spectral_B ** 2)
-        if model_flag:
+        if model:
             spectral_model_uv = (spectral_model_A - n_vis * spectral_B * model_return) * weight_invert(spectral_D - spectral_B ** 2)
         if not no_conjugate:
             spectral_uv = (spectral_uv + conjugate_mirror(spectral_uv)) / 2
-            if model_flag:
+            if model:
                 spectral_model_uv = (spectral_model_uv + conjugate_mirror(spectral_model_uv)) / 2
     
     # Option to apply a uniform weighted filter to all uv-planes
@@ -427,7 +428,7 @@ def visibility_grid(visibility, vis_weights, obs, status_str, psf, params,
             weights *= weight_invert(filter_use)
         if variance_flag:
             variance *= weight_invert(filter_use)
-        if model_flag:
+        if model:
             model_return *= weight_invert(filter_use)
     
     if not no_conjugate:
@@ -438,12 +439,12 @@ def visibility_grid(visibility, vis_weights, obs, status_str, psf, params,
             weights = (weights + conjugate_mirror(weights)) / 2
         if variance_flag:
             variance = (variance + conjugate_mirror(variance)) / 4
-        if model_flag:
+        if model:
             model_return = (model_return + conjugate_mirror(model_return)) / 2
         if uniform_flag:
             uniform_filter = (uniform_filter + conjugate_mirror(uniform_filter)) / 2
 
-    if model_flag:
-        return image_uv, weights, variance, uniform_filter, model_return
+    if model:
+        return image_uv, weights, variance, uniform_filter, obs, model_return
     else:
-        return image_uv, weights, variance, uniform_filter
+        return image_uv, weights, variance, uniform_filter, obs

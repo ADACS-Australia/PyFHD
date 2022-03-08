@@ -1,5 +1,5 @@
 import numpy as np
-import PyFHD.gridding.filters as filters
+import PyFHD.gridding.filters
 from PyFHD.pyfhd_tools.pyfhd_utils import rebin, histogram, array_match, meshgrid
 from scipy.signal import convolve
 from astropy.convolution import Box2DKernel
@@ -185,8 +185,8 @@ def baseline_grid_locations(obs, psf, params, vis_weights, bi_use = None, fi_use
     ycen = np.outer(ky_arr, frequency_array)
 
     # Pixel number offset per baseline for each uv-box subset
-    x_offset = np.fix(np.floor((xcen - np.floor(xcen)) * psf_resolution) % psf_resolution)
-    y_offset = np.fix(np.floor((ycen - np.floor(ycen)) * psf_resolution) % psf_resolution)
+    x_offset = np.fix(np.floor((xcen - np.floor(xcen)) * psf_resolution) % psf_resolution).astype(int)
+    y_offset = np.fix(np.floor((ycen - np.floor(ycen)) * psf_resolution) % psf_resolution).astype(int)
 
     if interp_flag:
         # Derivatives from pixel edge to baseline center for use in interpolation
@@ -654,7 +654,6 @@ def visibility_count(obs, psf, params, vis_weights, fi_use = None, bi_use = None
 def holo_mapfn_convert(map_fn, psf_dim, dimension, elements = None, norm = 1, threshold = 0):
     """
     TODO: Description
-
     Parameters
     ----------
     map_fn: ndarray
@@ -669,7 +668,6 @@ def holo_mapfn_convert(map_fn, psf_dim, dimension, elements = None, norm = 1, th
         TODO: Description
     threshold: int, float, optional
         TODO: Description
-
     Returns
     -------
     

@@ -12,6 +12,5 @@ dependencies:
   - scipy
   - setuptools
   - sphinx
-  - conda
   - pip:
     - sphinx-rtd-theme

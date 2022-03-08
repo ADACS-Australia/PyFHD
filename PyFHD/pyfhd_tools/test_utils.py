@@ -1,6 +1,9 @@
 import numpy as np
 from scipy.io import readsav
 from pathlib import Path
+import numpy.testing as npt
+from colorama import Fore
+from colorama import Style
 
 def get_data(data_dir, data_filename, *args):
     """
@@ -139,3 +142,26 @@ def get_sav_list(data_dir, sav_file, *args):
             data.append(new_data)
     return data
 
+def try_assert_all_close(actual : np.ndarray, target : np.ndarray, name : str, tolerance = 1e-8):
+    """
+    Uses the numpy testing assert_all_close but uses a try and except wrapper around it to print
+    the error instead of doing an AssertionError which stops the running of the program. This is helpful
+    when doing testing with expected precision errors, but wanting to avoid stopping the program or constantly 
+    setting the tolerances on multiple assert statements.
+
+    Parameters
+    ----------
+    actual : np.ndarray
+        The array we calculated
+    target : np.ndarray
+        The array we actually want to calculate
+    name : str
+        The name of the variable we are testing
+    tolerance : float, optional
+        This is the tolerance for the error in absolute values, by default 1e-8
+    """
+    try :
+        npt.assert_allclose(actual, target, atol = tolerance)
+        print(Fore.GREEN + Style.BRIGHT + "Test Passed for {}".format(name) + Style.RESET_ALL)
+    except AssertionError as error:
+        print(Fore.RED + Style.BRIGHT + "Test Failed for {}:".format(name) + Style.RESET_ALL + "{}".format(error) + Style.RESET_ALL)
