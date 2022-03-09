@@ -162,8 +162,8 @@ def visibility_grid(visibility, vis_weights, obs, status_str, psf, params,
             n_tracked = np.zeros_like(n_tracked)
     
     # Initialize uv-arrays 
-    image_uv = np.zeros((elements, dimension))
-    weights = np.zeros((elements, dimension))
+    image_uv = np.zeros((elements, dimension), dtype = np.complex128)
+    weights = np.zeros((elements, dimension), dtype = np.complex128)
     variance = np.zeros((elements, dimension))
     uniform_filter = np.zeros((elements, dimension))
 
@@ -227,8 +227,8 @@ def visibility_grid(visibility, vis_weights, obs, status_str, psf, params,
 
         # Since all selected visibilities have the same minimum x,y pixel they contribute to,
         # reduce the array
-        xmin_use = xmin[ind0]
-        ymin_use = ymin[ind0]
+        xmin_use = xmin[ind0][0]
+        ymin_use = ymin[ind0][0]
 
         # Find the frequency group per index
         freq_i = inds % n_freq_use
@@ -252,7 +252,7 @@ def visibility_grid(visibility, vis_weights, obs, status_str, psf, params,
             rep_flag = False
             if model:
                 model_box = model_use[inds]
-            vis_box = vis_arr_use[inds]
+            vis_box = vis_arr_use[inds].flatten()
             psf_weight = np.ones(vis_n)
 
             box_matrix = np.zeros((vis_n, psf_dim3), dtype = arr_type)
@@ -371,21 +371,21 @@ def visibility_grid(visibility, vis_weights, obs, status_str, psf, params,
         
         # Calculate the product of the data vis and the beam kernel
         # for all vis which contribute to the same static uv-pixels, and add to the static uv-plane
-        box_arr = np.dot(np.transpose(box_matrix_dag), np.transpose(vis_box / n_vis))
-        image_uv[ymin_use : ymin_use + psf_dim - 1, xmin_use : xmin_use + psf_dim - 1] += box_arr
+        box_arr = np.dot(np.transpose(box_matrix_dag), vis_box / n_vis)
+        image_uv[ymin_use : ymin_use + psf_dim, xmin_use : xmin_use + psf_dim].flat += box_arr
         del(box_arr)
 
         if weights_flag:
             # If weight visibilities are being gridded, calculate the product the weight (1 per vis) and the beam kernel
             # for all vis which contribute to the same static uv-pixels, and add to the static uv-plane
             wts_box = np.dot(np.transpose(box_matrix_dag), np.transpose(psf_weight / n_vis))
-            weights[ymin_use : ymin_use + psf_dim - 1, xmin_use : xmin_use + psf_dim - 1] += wts_box
+            weights[ymin_use : ymin_use + psf_dim, xmin_use : xmin_use + psf_dim].flat += wts_box
         
         if variance_flag:
             # If variance visibilities are being gridded, calculate the product the weight (1 per vis) and the square
             # of the beam kernel for all vis which contribute to the same static uv-pixels, and add to the static uv-plane
             var_box = np.dot(np.transpose(np.abs(box_matrix_dag) ** 2), np.transpose(psf_weight / n_vis))
-            variance[ymin_use : ymin_use + psf_dim - 1, xmin_use : xmin_use + psf_dim - 1] += var_box
+            variance[ymin_use : ymin_use + psf_dim, xmin_use : xmin_use + psf_dim].flat += var_box
         
         if uniform_flag:
             uniform_filter[ymin_use : ymin_use + psf_dim, xmin_use : xmin_use + psf_dim] += bin_n[bin_i[bi]]
