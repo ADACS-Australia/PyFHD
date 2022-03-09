@@ -6,7 +6,7 @@ def visibility_grid(visibility, vis_weights, obs, status_str, psf, params,
                     file_path_fhd= "/.", weights_flag = False, variance_flag = False, polarization = 0,
                     map_flag = False, uniform_flag = False, fi_use = None, bi_use = None, no_conjugate = False, 
                     mask_mirror_indices = False, model = None, grid_spectral = False, 
-                    spectral_model_uv = 0, beam_per_baseline = False, uv_grid_phase_only = True) :
+                    beam_per_baseline = False, uv_grid_phase_only = True) :
     """[summary]
     TODO: docstring
     
@@ -70,14 +70,14 @@ def visibility_grid(visibility, vis_weights, obs, status_str, psf, params,
     """
 
     # Get information from the data structures
-    dimension = obs['dimension']
-    elements = obs['elements']
+    dimension = int(obs['dimension'][0])
+    elements = int(obs['elements'][0])
     interp_flag = psf['interpolate_kernel']
     alpha = obs['alpha']
     freq_bin_i = obs['baseline_info'][0]['fbin_i'][0]
     n_freq = obs['n_freq']
     if fi_use is None:
-        fi_use = np.nonzero(obs['baseline_info'][0]['freq_use'][0])
+        fi_use = np.nonzero(obs['baseline_info'][0]['freq_use'][0])[0]
     n_f_use = fi_use.size
     freq_bin_i = freq_bin_i[fi_use]
     n_vis_arr = obs['nf_vis'][0].copy()
@@ -130,10 +130,10 @@ def visibility_grid(visibility, vis_weights, obs, status_str, psf, params,
     frequency_array = obs['baseline_info'][0]['freq'][0]
     frequency_array = frequency_array[fi_use]
     complex_flag = psf['complex_flag']
-    psf_dim = psf['dim']
+    psf_dim = psf['dim'][0]
     psf_resolution = psf['resolution']
-    nbaselines = obs['nbaselines']
-    n_samples = obs['n_time']
+    nbaselines = obs['nbaselines'][0]
+    n_samples = obs['n_time'][0]
     group_arr = np.squeeze(psf['id'][0][:, freq_bin_i, polarization])
     beam_arr = psf['beam_ptr'][0]
     n_freq_use = frequency_array.size
@@ -171,7 +171,7 @@ def visibility_grid(visibility, vis_weights, obs, status_str, psf, params,
     if uniform_flag:
         map_flag = False
     
-    conj_i = np.where(params['vv'][0].flat[bi_use] > 0)
+    conj_i = np.where(params['vv'][0].flat[bi_use] > 0)[0]
     if conj_i.size > 0:
         if beam_per_baseline:
             uu[conj_i] = -uu[conj_i]
@@ -236,7 +236,7 @@ def visibility_grid(visibility, vis_weights, obs, status_str, psf, params,
 
         # Calculate the number of selected visibilities and their baseline index
         vis_n = bin_n[bin_i[bi]]
-        baseline_inds = bi_use_reduced[(inds / n_f_use) % nbaselines]
+        baseline_inds = bi_use_reduced[((inds / n_f_use) % nbaselines).astype(int)]
 
         if interp_flag:
             # Calculate the interpolated kernel on the uv-grid given the derivatives to baseline locations
@@ -400,7 +400,10 @@ def visibility_grid(visibility, vis_weights, obs, status_str, psf, params,
                     # TODO: access map function
         
     # Free Up Memory
-    del(vis_arr_use, model_use, xmin, ymin, ri, inds, x_offset, y_offset, bin_i, bin_n)
+    del(vis_arr_use, xmin, ymin, ri, inds, x_offset, y_offset, bin_i, bin_n)
+
+    if model:
+        del(model_use)
 
     if map_flag:
         map_fn = holo_mapfn_convert(map_fn, psf_dim, dimension, norm = n_vis)

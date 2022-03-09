@@ -1,12 +1,13 @@
 import pytest
 import numpy as np
-from glob import glob
+from os import environ as env
+from pathlib import Path
 from PyFHD.gridding.gridding_utils import grid_beam_per_baseline
 from PyFHD.pyfhd_tools.test_utils import get_data, get_data_items
 
 @pytest.fixture
 def data_dir():
-    return glob('../**/grid_beam_per_baseline/', recursive = True)[0]
+    return Path(env.get('PYFHD_TEST_PATH'), 'grid_beam_per_baseline')
 
 def test_grid_beam_one(data_dir):
     psf, extras = get_data(

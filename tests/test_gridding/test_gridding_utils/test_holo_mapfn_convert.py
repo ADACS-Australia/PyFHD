@@ -1,12 +1,13 @@
 import pytest
 import numpy as np
-from glob import glob
+from os import environ as env
+from pathlib import Path
 from PyFHD.gridding.gridding_utils import holo_mapfn_convert
 from PyFHD.pyfhd_tools.test_utils import get_data_items
 
 @pytest.fixture
 def data_dir():
-    return glob("**/holo_mapfn_convert", recursive = True)[0]
+    return Path(env.get('PYFHD_TEST_PATH'), "holo_mapfn_convert")
 
 def not_yet_test_holo_mapfn_one(data_dir):
     map_fn, psf_dim, n_vis, dimension, expected_map_fn  = get_data_items(data_dir,

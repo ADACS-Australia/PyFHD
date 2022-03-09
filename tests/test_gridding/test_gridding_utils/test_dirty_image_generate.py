@@ -1,12 +1,13 @@
 import pytest
 import numpy as np
-from glob import glob
+from os import environ as env
+from pathlib import Path
 from PyFHD.gridding.gridding_utils import dirty_image_generate
 from PyFHD.pyfhd_tools.test_utils import get_data, get_data_items
 
 @pytest.fixture
 def data_dir():
-    return glob('../**/dirty_image_generate/', recursive = True)[0]
+    return Path(env.get('PYFHD_TEST_PATH'), 'dirty_image_generate')
 
 def test_dirty_one(data_dir):
     dirty_image_uv, no_real, expected_dirty_image = get_data_items(

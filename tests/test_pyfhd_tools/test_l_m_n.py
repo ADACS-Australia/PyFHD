@@ -1,12 +1,13 @@
 import pytest
 import numpy as np
-from glob import glob
+from os import environ as env
+from pathlib import Path
 from PyFHD.pyfhd_tools.test_utils import get_data, get_data_items
 from PyFHD.pyfhd_tools.pyfhd_utils import l_m_n
 
 @pytest.fixture
 def data_dir():
-    return glob('../**/l_m_n', recursive = True)[0]
+    return Path(env.get('PYFHD_TEST_PATH'), 'l_m_n')
 
 def test_l_m_n_one(data_dir):
     obs, psf = get_data(data_dir, 'visibility_grid_input_obs.npy', 'visibility_grid_input_psf.npy')

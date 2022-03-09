@@ -1,11 +1,12 @@
 import pytest
-from glob import glob
+from os import environ as env
+from pathlib import Path
 from PyFHD.pyfhd_tools.test_utils import get_data_items
 from PyFHD.calibration.calibration_utils import calculate_adaptive_gain
 
 @pytest.fixture
 def data_dir():
-    return glob("**/calculate_adaptive_gain", recursive = True)[0]
+    return Path(env.get('PYFHD_TEST_PATH'), "calculate_adaptive_gain")
 
 def test_calc_adapt_gain_one(data_dir):
     gain_list, convergence_list, iter, base_gain, final_con_est, expected_gain = get_data_items(

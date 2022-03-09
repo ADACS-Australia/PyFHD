@@ -119,7 +119,7 @@ def get_data_sav(data_dir, sav_file, *args):
         return return_list
     return data
 
-def get_sav_list(data_dir, sav_file, *args):
+def get_savs(data_dir, sav_file, *args):
     """
     Takes in the path for many sav files and reads them without
     reading their keys. Assumes the sav files here have more than one key.

@@ -1,5 +1,6 @@
 import numpy as np
-from glob import glob
+from os import environ as env
+from pathlib import Path
 from PyFHD.pyfhd_tools.test_utils import get_data_items
 from PyFHD.pyfhd_tools.pyfhd_utils import array_match
 import pytest
@@ -7,17 +8,17 @@ import pytest
 @pytest.fixture
 def data_dir():
     # glob the directory we need, this assumes you have a directory named array_match with the data inside
-    return glob('../**/array_match/', recursive = True)[0]
+    return Path(env.get('PYFHD_TEST_PATH'), 'array_match')
 
 def test_array_match_1(data_dir):
     array1, array2, value_match, expected_indices, expected_n_match =  get_data_items(
-                                                                                        data_dir, 
-                                                                                        'vis_weights_update_input_array1.npy', 
-                                                                                        'vis_weights_update_input_array2.npy', 
-                                                                                        'vis_weights_update_input_value_match.npy',
-                                                                                        'vis_weights_update_output_match_indices.npy',
-                                                                                        'vis_weights_update_output_n_match.npy'
-                                                                                     )
+        data_dir, 
+        'vis_weights_update_input_array1.npy', 
+        'vis_weights_update_input_array2.npy', 
+        'vis_weights_update_input_value_match.npy',
+        'vis_weights_update_output_match_indices.npy',
+        'vis_weights_update_output_n_match.npy'
+    )
 
     # Get the result and see if they match.
     indices, n_match = array_match(array1, value_match, array_2 = array2)

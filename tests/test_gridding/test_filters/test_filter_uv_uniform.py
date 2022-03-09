@@ -1,12 +1,13 @@
 import pytest
 import numpy as np
-from glob import glob
+from os import environ as env
+from pathlib import Path
 from PyFHD.gridding.filters import filter_uv_uniform
 from PyFHD.pyfhd_tools.test_utils import get_data_items
 
 @pytest.fixture
 def data_dir():
-    return glob('../**/filter_uv_uniform/', recursive = True)[0]
+    return Path(env.get('PYFHD_TEST_PATH'), 'filter_uv_uniform')
 
 def test_filter_uni_one(data_dir):
     image_uv, return_name_only, expected_image_uv, expected_name = get_data_items(

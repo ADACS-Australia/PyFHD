@@ -1,17 +1,18 @@
 import pytest
 import numpy as np
+from os import environ as env
+from pathlib import Path
 from PyFHD.pyfhd_tools.pyfhd_utils import histogram
-from glob import glob
 from PyFHD.pyfhd_tools.test_utils import get_data, get_data_items
 
 @pytest.fixture
 def data_dir():
     # This assumes you have used the splitter.py and have done a general format of **/FHD/PyFHD/tests/test_fhd_*/data/<function_name_being_tested>/*.npy
-    return glob('../**/histogram/', recursive = True)[0]
+    return Path(env.get('PYFHD_TEST_PATH'), 'histogram')
 
 @pytest.fixture
 def full_data_dir():
-    return glob('../**/full_size_histogram/', recursive = True)[0]
+    return Path(env.get('PYFHD_TEST_PATH'), 'full_size_histogram')
 
 def test_idl_example(data_dir) :
     """

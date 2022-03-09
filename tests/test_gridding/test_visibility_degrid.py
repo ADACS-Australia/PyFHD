@@ -1,17 +1,18 @@
 import pytest
 import numpy as np
 import numpy.testing as npt
-from glob import glob
+from os import environ as env
+from pathlib import Path
 from PyFHD.gridding.visibility_degrid import visibility_degrid
 from PyFHD.pyfhd_tools.test_utils import get_data, get_data_items
 
 @pytest.fixture
 def data_dir():
-    return glob('../**/visibility_degrid/', recursive = True)[0]
+    return Path(env.get('PYFHD_TEST_PATH'), 'visibility_degrid/')
 
 @pytest.fixture
 def full_data_dir():
-    return glob('../**/full_size_visibility_degrid/', recursive = True)[0]
+    return Path(env.get('PYFHD_TEST_PATH'), 'full_size_visibility_degrid/')
 
 def test_visibility_degrid_one(data_dir):
     psf = get_data(

@@ -1,13 +1,14 @@
 import pytest
 import numpy as np
-from glob import glob
+from os import environ as env
+from pathlib import Path
 from PyFHD.pyfhd_tools.test_utils import get_data_items
 from PyFHD.pyfhd_tools.pyfhd_utils import meshgrid
 
 @pytest.fixture
 def data_dir():
     # This assumes you have used the splitter.py and have done a general format of **/FHD/PyFHD/tests/test_fhd_*/data/<function_name_being_tested>/*.npy
-    return glob('../**/meshgrid/', recursive = True)[0]
+    return Path(env.get('PYFHD_TEST_PATH'), 'meshgrid/')
 
 def test_meshgrid_one(data_dir):
     axis, dimension, elements, integer, expected = get_data_items(

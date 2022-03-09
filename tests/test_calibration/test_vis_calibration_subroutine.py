@@ -1,12 +1,13 @@
 import pytest
 import numpy as np
-from glob import glob
+from os import environ as env
+from pathlib import Path
 from PyFHD.calibration.vis_calibrate_subroutine import vis_calibrate_subroutine
 from PyFHD.pyfhd_tools.test_utils import get_data_items
 
 @pytest.fixture
 def data_dir():
-    return glob('../**/vis_calibrate_subroutine/', recursive = True)[0]
+    return Path(env.get('PYFHD_TEST_PATH'), 'vis_calibrate_subroutine')
 
 @pytest.fixture
 def full_data_dir():

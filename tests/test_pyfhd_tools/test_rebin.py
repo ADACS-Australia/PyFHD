@@ -1,14 +1,14 @@
-from numpy.core.numeric import array_equal
 import pytest
 import numpy as np
+from os import environ as env
+from pathlib import Path
 from PyFHD.pyfhd_tools.pyfhd_utils import rebin
-from glob import glob
 from PyFHD.pyfhd_tools.test_utils import get_data
 
 @pytest.fixture
 def data_dir():
     # This assumes you have used the splitter.py and have done a general format of **/FHD/PyFHD/tests/test_fhd_*/data/<function_name_being_tested>/*.npy
-    return glob('../**/rebin/', recursive = True)[0]
+    return Path(env.get('PYFHD_TEST_PATH'), 'rebin/')
 
 def test_rebin_oneD_up(data_dir):
     """Testing rebin with using a 1D array and expanding it"""

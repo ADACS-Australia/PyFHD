@@ -1,6 +1,7 @@
 import pytest
 import numpy as np
-from glob import glob
+from os import environ as env
+from pathlib import Path
 from PyFHD.pyfhd_tools.test_utils import get_data, get_data_items
 from PyFHD.gridding.gridding_utils import baseline_grid_locations
 
@@ -8,7 +9,7 @@ from PyFHD.gridding.gridding_utils import baseline_grid_locations
 
 @pytest.fixture
 def data_dir():
-    return glob('../**/baseline_grid_locations/', recursive = True)[0]
+    return Path(env.get('PYFHD_TEST_PATH'), 'baseline_grid_locations')
 
 def test_baseline_one(data_dir):
     # Get the inputs

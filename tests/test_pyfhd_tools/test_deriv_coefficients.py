@@ -1,12 +1,13 @@
 import pytest
 import numpy as np
-from glob import glob
+from os import environ as env
+from pathlib import Path
 from PyFHD.pyfhd_tools.test_utils import get_data_items
 from PyFHD.pyfhd_tools.pyfhd_utils import deriv_coefficients
 
 @pytest.fixture
 def data_dir():
-    return glob('../**/deriv_coefficients/', recursive = True)[0]
+    return Path(env.get('PYFHD_TEST_PATH'), 'deriv_coefficients')
 
 def test_deriv_coefficients_one(data_dir):
     n, divide_fact, expected = get_data_items(
