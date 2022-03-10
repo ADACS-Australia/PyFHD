@@ -503,9 +503,6 @@ def weight_invert(weights, threshold = None):
         A real number set as the threshold for the array.
         By default its set to None, in this case function checks
         for zeros.
-    abs: bool, optional
-        Set to False by default. When True, weights are compared against
-        threshold or search for zeros using absolute values.
 
     Returns
     -------
@@ -513,7 +510,8 @@ def weight_invert(weights, threshold = None):
         The weights array that has had NaNs and Infinities removed, and zeros OR
         values that don't meet the threshold.
     """
-    result = np.zeros(weights.shape, dtype = weights.dtype)
+
+    result = np.zeros_like(weights)
     '''
     Python and IDL use the where function on complex numbers differently.
     On Python, if you apply a real threshold, it applies to only the real numbers,
@@ -542,7 +540,7 @@ def weight_invert(weights, threshold = None):
         # Otherwise get where they are not zero
         i_use = np.where(weights_use)
     if np.size(i_use) > 0:
-            result[i_use] = 1 / weights[i_use]
+        result[i_use] = 1 / weights[i_use]
     # Replace all NaNs with Zeros
     if np.size(np.where(np.isnan(result))) != 0:
         result[np.where(np.isnan(result))] = 0

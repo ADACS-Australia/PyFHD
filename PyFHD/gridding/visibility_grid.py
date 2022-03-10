@@ -1,11 +1,12 @@
 import numpy as np
+import warnings
 from PyFHD.gridding.gridding_utils import interpolate_kernel, baseline_grid_locations, grid_beam_per_baseline, conjugate_mirror, holo_mapfn_convert
 from PyFHD.pyfhd_tools.pyfhd_utils import weight_invert, rebin, l_m_n
 
 def visibility_grid(visibility, vis_weights, obs, status_str, psf, params,
                     file_path_fhd= "/.", weights_flag = False, variance_flag = False, polarization = 0,
-                    map_flag = False, uniform_flag = False, fi_use = None, bi_use = None, no_conjugate = False, 
-                    mask_mirror_indices = False, model = None, grid_spectral = False, 
+                    map_flag = False, uniform_flag = False, grid_uniform = False, fi_use = None, bi_use = None, 
+                    no_conjugate = False, mask_mirror_indices = False, model = None, grid_spectral = False, 
                     beam_per_baseline = False, uv_grid_phase_only = True) :
     """[summary]
     TODO: docstring
@@ -122,7 +123,7 @@ def visibility_grid(visibility, vis_weights, obs, status_str, psf, params,
     if model is not None:
         if isinstance(model, np.ndarray):
             model_use = model.flat[vis_inds_use]
-            model_return = np.zeros((elements, dimension), dtype = complex)
+            model_return = np.zeros((elements, dimension), dtype = np.complex128)
         else:
             raise ValueError('Your model must be a numpy array when used as an argument')
 
@@ -147,17 +148,16 @@ def visibility_grid(visibility, vis_weights, obs, status_str, psf, params,
     if beam_per_baseline:
         # Initialization for gridding operation via a low-res beam kernel, calculated per
         # baseline using offsets from image-space delays
-        uu = params['uu'][bi_use]
-        vv = params['vv'][bi_use]
-        ww = params['ww'][bi_use]
-        x = y = (np.arange(dimension) - dimension / 2) * obs['kpix']
-        psf_intermediate_res = np.min(np.ceil(np.sqrt(psf_resolution) / 2) * 2, psf_resolution)
-        psf_image_dim = psf['image_info']['psf_image_dim']
+        uu = params['uu'][0][bi_use]
+        vv = params['vv'][0][bi_use]
+        ww = params['ww'][0][bi_use]
+        x = (np.arange(dimension) - dimension / 2) * obs['kpix'][0]
+        y = x.copy()
+        psf_intermediate_res = np.min([np.ceil(np.sqrt(psf_resolution) / 2) * 2, psf_resolution])
+        psf_image_dim = psf['image_info'][0]['psf_image_dim'][0]
         image_bot = -(psf_dim / 2) * psf_intermediate_res + psf_image_dim / 2
         image_top = (psf_dim * psf_resolution - 1) - (psf_dim / 2) * psf_intermediate_res + psf_image_dim / 2
-
         l_mode, m_mode, n_tracked = l_m_n(obs, psf)
-
         if uv_grid_phase_only:
             n_tracked = np.zeros_like(n_tracked)
     
@@ -167,9 +167,12 @@ def visibility_grid(visibility, vis_weights, obs, status_str, psf, params,
     variance = np.zeros((elements, dimension))
     uniform_filter = np.zeros((elements, dimension))
 
-    # mapfn is incompatible with uniformly gridded images
-    if uniform_flag:
-        map_flag = False
+    # If the uniform gridding has been activated we need to activate the uniform filter and switch off mapping if it has been activated
+    if grid_uniform:
+        if map_flag:
+            map_flag = False
+            warnings.warn("You cannot turn on uniform gridding and the mapping functions at the same time, map functions have been disabled")
+        uniform_flag = True
     
     conj_i = np.where(params['vv'][0].flat[bi_use] > 0)[0]
     if conj_i.size > 0:
@@ -184,7 +187,7 @@ def visibility_grid(visibility, vis_weights, obs, status_str, psf, params,
     # Return if all baselines have been flagged
     if n_bin_use == 0:
         print("All data has been flagged")
-        return np.zeros([elements, dimension], dtype = complex)
+        return np.zeros([elements, dimension], dtype = np.complex128)
     
     n_vis = np.sum(bin_n)
     for fi in range(n_f_use):
@@ -193,17 +196,17 @@ def visibility_grid(visibility, vis_weights, obs, status_str, psf, params,
 
     index_arr = np.reshape(np.arange(elements * dimension), (elements, dimension))
     if complex_flag:
-        init_arr = np.zeros([psf_dim2, psf_dim2], dtype = complex)
+        init_arr = np.zeros([psf_dim2, psf_dim2], dtype = np.complex128)
     else:
         init_arr = np.zeros([psf_dim2, psf_dim2])
     arr_type = init_arr.dtype
     if grid_spectral:
         # Spectral B and Spectral D shouldn't reference each other just in case
-        spectral_A = np.zeros([elements, dimension], dtype = complex)
+        spectral_A = np.zeros([elements, dimension], dtype = np.complex128)
         spectral_B = np.zeros([elements, dimension])
         spectral_D = np.zeros([elements, dimension])
         if model:
-            spectral_model_A = np.zeros([elements, dimension], dtype = complex)
+            spectral_model_A = np.zeros([elements, dimension], dtype = np.complex128)
     
     # In the IDL visibility_grid, map_fn is set up as a 2D array of null pointers
     # In the case of Ptr_Valid, null pointers return False (0)
@@ -222,13 +225,13 @@ def visibility_grid(visibility, vis_weights, obs, status_str, psf, params,
         ind0 = inds[0]
 
         # Select the pixel offsets of the hyperresolution uv-kernel of the selected visibilities 
-        x_off = x_offset[inds].flatten()
-        y_off = y_offset[inds].flatten()
+        x_off = x_offset.flat[inds]
+        y_off = y_offset.flat[inds]
 
         # Since all selected visibilities have the same minimum x,y pixel they contribute to,
         # reduce the array
-        xmin_use = xmin[ind0][0]
-        ymin_use = ymin[ind0][0]
+        xmin_use = xmin.flat[ind0]
+        ymin_use = ymin.flat[ind0]
 
         # Find the frequency group per index
         freq_i = inds % n_freq_use
@@ -243,16 +246,16 @@ def visibility_grid(visibility, vis_weights, obs, status_str, psf, params,
             # and the hyperresolved pre-calculated beam kernel
 
             # Select the 2D derivatives to baseline locations
-            dx1dy1 = dx1dy1_arr[inds]
-            dx1dy0 = dx1dy0_arr[inds]
-            dx0dy1 = dx0dy1_arr[inds]
-            dx0dy0 = dx0dy0_arr[inds]
+            dx1dy1 = dx1dy1_arr.flat[inds]
+            dx1dy0 = dx1dy0_arr.flat[inds]
+            dx0dy1 = dx0dy1_arr.flat[inds]
+            dx0dy0 = dx0dy0_arr.flat[inds]
 
             # Select the model/data visibility values of the set, each with a weight of 1
             rep_flag = False
             if model:
                 model_box = model_use[inds]
-            vis_box = vis_arr_use[inds].flatten()
+            vis_box = vis_arr_use.flat[inds]
             psf_weight = np.ones(vis_n)
 
             box_matrix = np.zeros((vis_n, psf_dim3), dtype = arr_type)
@@ -353,21 +356,19 @@ def visibility_grid(visibility, vis_weights, obs, status_str, psf, params,
             term_A_box = np.dot(np.transpose(box_matrix_dag), np.transpose((freq_i * vis_box) / n_vis))
             term_B_box = np.dot(np.transpose(box_matrix_dag), np.transpose(freq_i / n_vis))
             term_D_box = np.dot(np.transpose(box_matrix_dag), np.transpose(freq_i ** 2 / n_vis))
-
-            spectral_A[ymin_use : ymin_use + psf_dim - 1, xmin_use : xmin_use + psf_dim - 1] += term_A_box
-            spectral_B[ymin_use : ymin_use + psf_dim - 1, xmin_use : xmin_use + psf_dim - 1] += term_B_box
-            spectral_D[ymin_use : ymin_use + psf_dim - 1, xmin_use : xmin_use + psf_dim - 1] =+ term_D_box
-
-            del(term_A_box, term_B_box, term_D_box)
+            spectral_A[ymin_use : ymin_use + psf_dim, xmin_use : xmin_use + psf_dim].flat += term_A_box
+            spectral_B[ymin_use : ymin_use + psf_dim, xmin_use : xmin_use + psf_dim].flat += term_B_box.real
+            spectral_D[ymin_use : ymin_use + psf_dim, xmin_use : xmin_use + psf_dim].flat += term_D_box.real
+            #del(term_A_box, term_B_box, term_D_box)
             if model:
                 term_Am_box = np.dot(np.transpose(box_matrix_dag), np.transpose((freq_i * model_box) / n_vis))
-                spectral_model_A[ymin_use : ymin_use + psf_dim - 1, xmin_use : xmin_use + psf_dim - 1] += term_Am_box
+                spectral_model_A[ymin_use : ymin_use + psf_dim, xmin_use : xmin_use + psf_dim] += term_Am_box
         
         if model:
             # If model visibilities are being gridded, calculate the product of the model vis and the beam kernel
             # for all vis which contribute to the same static uv-pixels, and add to the static uv-plane 
             box_arr = np.dot(np.transpose(box_matrix_dag), np.transpose(model_box / n_vis))
-            model_return[ymin_use : ymin_use + psf_dim - 1, xmin_use : xmin_use + psf_dim - 1]+= box_arr
+            model_return[ymin_use : ymin_use + psf_dim, xmin_use : xmin_use + psf_dim]+= box_arr
         
         # Calculate the product of the data vis and the beam kernel
         # for all vis which contribute to the same static uv-pixels, and add to the static uv-plane
@@ -419,7 +420,7 @@ def visibility_grid(visibility, vis_weights, obs, status_str, psf, params,
                 spectral_model_uv = (spectral_model_uv + conjugate_mirror(spectral_model_uv)) / 2
     
     # Option to apply a uniform weighted filter to all uv-planes
-    if uniform_flag:
+    if grid_uniform:
         filter_use = weight_invert(uniform_filter, threshold = 1)
         wts_i = np.nonzero(filter_use)
         if wts_i.size > 0:
@@ -447,7 +448,21 @@ def visibility_grid(visibility, vis_weights, obs, status_str, psf, params,
         if uniform_flag:
             uniform_filter = (uniform_filter + conjugate_mirror(uniform_filter)) / 2
 
+    # Arrange returns into a dictionary
+    gridding_dict = {
+        'image_uv' : image_uv,
+        'weights' : weights,
+        'variance' : variance,
+        'uniform_filter' : uniform_filter,
+        'obs' : obs,
+    }
+
+    if grid_spectral:
+        gridding_dict['spectral_uv'] = spectral_uv
+
     if model:
-        return image_uv, weights, variance, uniform_filter, obs, model_return
-    else:
-        return image_uv, weights, variance, uniform_filter, obs
+        gridding_dict['model_return'] = model_return
+        if grid_spectral:
+            gridding_dict['spectral_model_uv'] = spectral_model_uv
+    
+    return gridding_dict

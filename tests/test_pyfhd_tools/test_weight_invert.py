@@ -2,7 +2,7 @@ import pytest
 import numpy as np
 from os import environ as env
 from pathlib import Path
-from PyFHD.pyfhd_tools.test_utils import get_data_items
+from PyFHD.pyfhd_tools.test_utils import get_data_items, get_data_sav
 from PyFHD.pyfhd_tools.pyfhd_utils import weight_invert
 
 @pytest.fixture
@@ -37,5 +37,12 @@ def test_weight_invert_four(data_dir):
     weights, expected_result = get_data_items(data_dir,  
                                               'visibility_grid_input_weights_4.npy', 
                                               'visibility_grid_output_result_4.npy')
+    result = weight_invert(weights)
+    assert np.array_equal(result, expected_result)
+
+def test_weight_invert_five(data_dir):
+    weights, expected_result = get_data_sav(data_dir,  
+                                            'input_5.sav', 
+                                            'output_5.sav')
     result = weight_invert(weights)
     assert np.array_equal(result, expected_result)
