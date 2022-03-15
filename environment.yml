@@ -14,3 +14,4 @@ dependencies:
   - sphinx
   - pip:
     - sphinx-rtd-theme
+    - sphinx-argparse

@@ -3,3 +3,4 @@ numpy
 numba
 scipy
 astropy
+sphinx-argparse
