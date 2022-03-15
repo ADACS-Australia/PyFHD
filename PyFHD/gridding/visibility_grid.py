@@ -1,7 +1,7 @@
 import numpy as np
 import warnings
 from PyFHD.gridding.gridding_utils import interpolate_kernel, baseline_grid_locations, grid_beam_per_baseline, conjugate_mirror, holo_mapfn_convert
-from PyFHD.pyfhd_tools.pyfhd_utils import weight_invert, rebin, l_m_n
+from PyFHD.pyfhd_tools.pyfhd_utils import weight_invert, rebin, l_m_n, idl_argunique
 
 def visibility_grid(visibility, vis_weights, obs, status_str, psf, params,
                     file_path_fhd= "/.", weights_flag = False, variance_flag = False, polarization = 0,
@@ -135,7 +135,10 @@ def visibility_grid(visibility, vis_weights, obs, status_str, psf, params,
     psf_resolution = psf['resolution']
     nbaselines = obs['nbaselines'][0]
     n_samples = obs['n_time'][0]
+    # New group_arr code, needs to be checked
     group_arr = np.squeeze(psf['id'][0][:, freq_bin_i, polarization])
+    group_arr = np.repeat(np.squeeze(psf['id'][0][:, freq_bin_i, polarization]), n_samples)
+    group_arr = group_arr.flatten()
     beam_arr = psf['beam_ptr'][0]
     n_freq_use = frequency_array.size
     psf_dim2 = 2 * psf_dim
@@ -274,10 +277,10 @@ def visibility_grid(visibility, vis_weights, obs, status_str, psf, params,
             group_max = np.max(group_id) + 1
             xyf_i = (x_off + y_off * psf_resolution + fbin * psf_resolution ** 2) * group_max + group_id
 
-            # Calculate the unique number of kernel locations/types
-            xyf_si = np.sort(xyf_i)
-            xyf_i = xyf_i[xyf_si]
-            xyf_ui = np.unique(xyf_i)
+            # Calculate the unique number of kernel locations/types 
+            xyf_si = xyf_i.argsort(kind='stable')
+            xyf_i = np.sort(xyf_i)
+            xyf_ui = idl_argunique(xyf_i)
             n_xyf_bin = xyf_ui.size
 
             # There might be a better selection criteria to determine which is most efficient
@@ -295,13 +298,13 @@ def visibility_grid(visibility, vis_weights, obs, status_str, psf, params,
                 fbin = fbin[inds_use]
                 baseline_inds = baseline_inds[inds_use]
                 if n_xyf_bin > 1:
-                    xyf_ui0 = [xyf_ui[0: n_xyf_bin - 1] + 1, 0]
+                    xyf_ui0 = np.insert(xyf_ui[0: n_xyf_bin - 1] + 1, 0, 0)
                 else:
-                    xyf_ui0 = 0
+                    xyf_ui0 = np.array([0])
                 psf_weight = xyf_ui - xyf_ui0 + 1
 
-                vis_box1 = vis_arr_use[inds]
-                vis_box = vis_box1[xyf_ui]
+                vis_box1 = vis_arr_use.flat[inds]
+                vis_box = vis_box1.flat[xyf_ui]
                 if model:
                     model_box1 = model_use[inds]
                     model_box = model_box1[xyf_ui]
@@ -309,14 +312,16 @@ def visibility_grid(visibility, vis_weights, obs, status_str, psf, params,
                 # For the baselines which map to the same pixels and use the same beam,
                 # add the underlying data/model pixels such that the gridding operation
                 # only needs to be performed once for the set
-                repeat_i = np.where(psf_weight > 1)
-
+                if xyf_ui0.size == 1:
+                    repeat_i = np.array([0])
+                else:
+                    repeat_i = np.where(psf_weight > 1)[0]
                 xyf_ui = xyf_ui[repeat_i]
                 xyf_ui0 = xyf_ui0[repeat_i]
                 for rep_ii in range(repeat_i.size):
-                    vis_box[repeat_i[rep_ii]] = np.sum(vis_box1[xyf_ui0[rep_ii]:xyf_ui[rep_ii]])
+                    vis_box[repeat_i[rep_ii]] = np.sum(vis_box1[xyf_ui0[rep_ii]:xyf_ui[rep_ii] + 1])
                     if model:
-                        model_box[repeat_i[rep_ii]] = np.sum(model_box1[xyf_ui0[rep_ii]:xyf_ui[rep_ii]])
+                        model_box[repeat_i[rep_ii]] = np.sum(model_box1[xyf_ui0[rep_ii]:xyf_ui[rep_ii] + 1])
                 vis_n = n_xyf_bin
             else:
                 # If there are not enough baselines which use the same beam kernel and discretized
@@ -328,7 +333,7 @@ def visibility_grid(visibility, vis_weights, obs, status_str, psf, params,
                 psf_weight = np.ones(vis_n)
                 bt_index = inds / n_freq_use
             
-            box_matrix = np.zeros(vis_n, psf_dim3, dtype = arr_type)
+            box_matrix = np.zeros((vis_n, psf_dim3), dtype = arr_type)
             if beam_per_baseline:
                 # Make the beams on the fly with corrective phases given the baseline location for each visibility
                 # to the static uv-grid
@@ -341,7 +346,7 @@ def visibility_grid(visibility, vis_weights, obs, status_str, psf, params,
                 for ii in range(vis_n):
                     # For each visibility, calculate the kernel values on the static uv-grid given the
                     # hyperresolved kernel
-                    box_matrix[psf_dim3 * ii] = beam_arr[baseline_inds[ii], fbin[ii], polarization][y_off[ii], x_off[ii]]
+                    box_matrix[ii, :] = beam_arr[baseline_inds[ii], fbin[ii], polarization][y_off[ii], x_off[ii]]
         
         #  Calculate the conjugate transpose (dagger) of the uv-pixels that the current beam kernel contributes to
         #  Calculate the conjugate transpose (dagger) of the uv-pixels that the current beam kernel contributes to
@@ -372,6 +377,9 @@ def visibility_grid(visibility, vis_weights, obs, status_str, psf, params,
         
         # Calculate the product of the data vis and the beam kernel
         # for all vis which contribute to the same static uv-pixels, and add to the static uv-plane
+
+        # Ensure vis_box is flat, sometimes odd shapes can come in from metadata
+        vis_box = vis_box.flatten()
         box_arr = np.dot(np.transpose(box_matrix_dag), vis_box / n_vis)
         image_uv[ymin_use : ymin_use + psf_dim, xmin_use : xmin_use + psf_dim].flat += box_arr
         del(box_arr)
@@ -423,7 +431,7 @@ def visibility_grid(visibility, vis_weights, obs, status_str, psf, params,
     if grid_uniform:
         filter_use = weight_invert(uniform_filter, threshold = 1)
         wts_i = np.nonzero(filter_use)
-        if wts_i.size > 0:
+        if wts_i[0].size > 0:
             filter_use /= np.mean(filter_use[wts_i])
         else:
             filter_use /= np.mean(filter_use)

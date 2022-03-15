@@ -694,3 +694,28 @@ def deriv_coefficients(n, divide_factorial = False):
     
     # Return coefficients
     return coeff
+
+def idl_argunique(arr : np.ndarray) -> np.ndarray:
+    """
+    In IDL the UNIQ function returns the indexes of the unique values within
+    an array (that is assumed to be sorted beforehand). In NumPy they use the first
+    unique index when using return index, where as in IDL they use the last index.
+        
+
+    Parameters
+    ----------
+    arr : np.ndarray
+        A sorted numpy array of any type.
+
+    Returns
+    -------
+    np.ndarray
+        An array containing indexes of the last occurence of the unique value in arr
+
+    Examples
+    --------
+    >>> test = np.array([10, 30, 5, 100, 200, 75, 200, 100, 30])
+    >>> idl_argunique(test)
+    array([0, 1, 3, 4, 6, 8])
+    """
+    return np.searchsorted(arr, np.unique(arr), side = 'right') - 1

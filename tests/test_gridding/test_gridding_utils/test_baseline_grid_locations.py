@@ -1,11 +1,10 @@
 import pytest
 import numpy as np
+import numpy.testing as npt
 from os import environ as env
 from pathlib import Path
 from PyFHD.pyfhd_tools.test_utils import get_data, get_data_items
 from PyFHD.gridding.gridding_utils import baseline_grid_locations
-
-# TODO: Adjust tests for the derivatives to all_close
 
 @pytest.fixture
 def data_dir():
@@ -44,6 +43,7 @@ def test_baseline_one(data_dir):
         'output_dx1dy0_arr_1.npy',
         'output_dx1dy1_arr_1.npy',
     )
+    print(interp_flag)
     # Use the baseline grid locations function
     baselines_dict = baseline_grid_locations(obs, psf, params, vis_weights, fi_use = fi_use, interp_flag = interp_flag)
     # Check we got the right results from the dictionary
@@ -75,12 +75,12 @@ def test_baseline_one(data_dir):
     assert np.array_equal(expected_bin_i, baselines_dict['bin_i'])
     # Check the number of indices from the histogram
     assert expected_n_bin_use == baselines_dict['n_bin_use']
-    # Precision errors with xcen and ycen cause huge differences in the second derivatives
+    # Rounding Precision errors with xcen and ycen can cause differences in the second derivatives by 1
     # Hopefully in theory, the Python is a better result, even though its different from the IDL output
-    # assert np.array_equal(expected_dx0dy0, baselines_dict['dx0dy0_arr'])
-    # assert np.array_equal(expected_dx0dy1, baselines_dict['dx0dy1_arr'])
-    # assert np.array_equal(expected_dx1dy0, baselines_dict['dx1dy0_arr'])
-    # assert np.array_equal(expected_dx1dy1, baselines_dict['dx1dy1_arr'])
+    npt.assert_allclose(baselines_dict['dx0dy0_arr'], expected_dx0dy0, atol = 1)
+    npt.assert_allclose(baselines_dict['dx0dy1_arr'], expected_dx0dy1, atol = 1)
+    npt.assert_allclose(baselines_dict['dx1dy0_arr'], expected_dx1dy0, atol = 1)
+    npt.assert_allclose(baselines_dict['dx1dy1_arr'], expected_dx1dy1, atol = 1)
 
 def test_baseline_two(data_dir):
     # Get the inputs
@@ -132,10 +132,10 @@ def test_baseline_two(data_dir):
     assert expected_n_bin_use == baselines_dict['n_bin_use']
     # Precision errors with xcen and ycen cause huge differences in the second derivatives
     # Hopefully in theory, the Python is a better result, even though its different from the IDL output
-    # assert np.array_equal(expected_dx0dy0, baselines_dict['dx0dy0_arr'])
-    # assert np.array_equal(expected_dx0dy1, baselines_dict['dx0dy1_arr'])
-    # assert np.array_equal(expected_dx1dy0, baselines_dict['dx1dy0_arr'])
-    # assert np.array_equal(expected_dx1dy1, baselines_dict['dx1dy1_arr'])
+    npt.assert_allclose(baselines_dict['dx0dy0_arr'], expected_dx0dy0, atol = 1)
+    npt.assert_allclose(baselines_dict['dx0dy1_arr'], expected_dx0dy1, atol = 1)
+    npt.assert_allclose(baselines_dict['dx1dy0_arr'], expected_dx1dy0, atol = 1)
+    npt.assert_allclose(baselines_dict['dx1dy1_arr'], expected_dx1dy1, atol = 1)
 
 def test_baseline_three(data_dir):
     # Get the inputs
@@ -190,7 +190,7 @@ def test_baseline_three(data_dir):
     assert expected_n_bin_use == baselines_dict['n_bin_use']
     # Precision errors with xcen and ycen cause huge differences in the second derivatives
     # Hopefully in theory, the Python is a better result, even though its different from the IDL output
-    # assert np.array_equal(expected_dx0dy0, baselines_dict['dx0dy0_arr'])
-    # assert np.array_equal(expected_dx0dy1, baselines_dict['dx0dy1_arr'])
-    # assert np.array_equal(expected_dx1dy0, baselines_dict['dx1dy0_arr'])
-    # assert np.array_equal(expected_dx1dy1, baselines_dict['dx1dy1_arr'])    
+    npt.assert_allclose(baselines_dict['dx0dy0_arr'], expected_dx0dy0, atol = 1)
+    npt.assert_allclose(baselines_dict['dx0dy1_arr'], expected_dx0dy1, atol = 1)
+    npt.assert_allclose(baselines_dict['dx1dy0_arr'], expected_dx1dy0, atol = 1)
+    npt.assert_allclose(baselines_dict['dx1dy1_arr'], expected_dx1dy1, atol = 1) 
