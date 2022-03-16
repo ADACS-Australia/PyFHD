@@ -26,3 +26,32 @@ Please cite [Sullivan et al 2012](https://arxiv.org/abs/1209.1653) and [Barry et
 FHD was built by Ian Sullivan and the University of Washington radio astronomy team. Maintainance is a group effort split across University of Washington and Brown University, with contributions from University of Melbourne and Arizona State University. 
 
 PyFHD is currently being created by Nichole Barry and Astronomy Data and Computing Services (ADACS) members Joel Dunstan and Paul Hancock. ADACS is a collaboration between the University of Swinburne and Curtin Institute for Computation (CIC) located in Curtin University.
+
+# TODO
+
+- [ ] Reproduce the full_size_visibility_grid test with the group_arr fix (**Joel**)
+- [ ] Produce a test for visibility_grid that specifically depends on how group_arr is created (**Nichole**)
+- [ ] Produce a test for the model_ptr on visibility_grid (**Nichole**)
+- [ ] Reproduce the third test for visibility_degrid and add a warning for having beam_per_baseline and interp_flag on at the same time. (**Joel**)
+- [ ] Provide multiple examples for the input of fhd_main and fhd_setup (**Nichole**)
+- [ ] Create Tests for in_situ_sim_setup and beam_setup, I hope I got them all, but I might've missed one somewhere. Feel free to check the IDL functions yourself, whereever there is a function from the FHD package, it should have a test ideally. (**Nichole**)
+  - [ ] vis_noise_simulation
+  - [ ] in_situ_sim_setup 
+  - [ ] fhd_struct_init_antenna
+  - [ ] mwa_dipole_mutual_coupling
+  - [ ] mwa_beam_setup_init
+  - [ ] mwa_beam_setup_gain
+  - [ ] general_antenna_response
+  - [ ] beam_power
+  - [ ] beam_gaussian_decomp (This one may require some more thinking, I'll talk to Paul)
+  - [ ] beam_image_hyperresolved
+  - [ ] beam_dim_fit
+  - [ ] fhd_struct_init_psf
+  - [ ] apply_astrometry (we'll see how we go with this, AstroPy may want it different to this)
+  - [ ] fhd_struct_update_obs
+  - [ ] fhd_struct_init_jones
+- [ ] Logging and Checkpointing 
+  - [ ] Create a HDF5 Save (pyfhd_save) and Load (pyfhd_load) infrastructure for the project
+  - [ ] Add logging using the logging package in Python
+  - [ ] As a part of the logging, add the timing for each part of the PyFHD package.
+- [ ] Decide how to split the main function into pieces to make it modular (via argparse, or pipeline packages like Nextflow), allowing people to choose to run certain parts of the PyFHD project, rather than running the full package (**Joel & Nichole**)
