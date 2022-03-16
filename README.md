@@ -50,7 +50,7 @@ PyFHD is currently being created by Nichole Barry and Astronomy Data and Computi
   - [ ] apply_astrometry (we'll see how we go with this, AstroPy may want it different to this)
   - [ ] fhd_struct_update_obs
   - [ ] fhd_struct_init_jones
-- [ ] Logging and Checkpointing 
+- [ ] Logging and Checkpointing (**Joel**)
   - [ ] Create a HDF5 Save (pyfhd_save) and Load (pyfhd_load) infrastructure for the project
   - [ ] Add logging using the logging package in Python
   - [ ] As a part of the logging, add the timing for each part of the PyFHD package.
