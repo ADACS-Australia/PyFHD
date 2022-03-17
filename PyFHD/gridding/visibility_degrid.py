@@ -1,5 +1,6 @@
 import numpy as np
 from math import ceil
+import warnings
 from PyFHD.gridding.gridding_utils import baseline_grid_locations, interpolate_kernel, grid_beam_per_baseline
 from PyFHD.pyfhd_tools.pyfhd_utils import l_m_n, rebin, weight_invert, histogram, deriv_coefficients
 
@@ -44,6 +45,11 @@ def visibility_degrid(image_uv, vis_weights, obs, psf, params, polarization = 0,
         if memory_threshold < 1e6:
             memory_threshold = 1e8
     
+    # If both beam and interp_flag leave a warning, prioritise beam_per_baseline
+    if beam_per_baseline and interp_flag:
+        warnings.warn("Cannot have beam per baseline and interpolation at the same time, turning off interpolation")
+        interp_flag = False
+
     # For each unflagged baseline, get the minimum contributing pixel number for gridding 
     # and the 2D derivatives for bilinear interpolation
     baselines_dict = baseline_grid_locations(obs, psf, params, vis_weights, fill_model_visibilities = fill_model_visibilities, interp_flag = interp_flag)

@@ -29,10 +29,10 @@ PyFHD is currently being created by Nichole Barry and Astronomy Data and Computi
 
 # TODO
 
-- [ ] Reproduce the full_size_visibility_grid test with the group_arr fix (**Joel**)
+- [X] Reproduce the full_size_visibility_grid test with the group_arr fix (**Joel**)
 - [ ] Produce a test for visibility_grid that specifically depends on how group_arr is created (**Nichole**)
 - [ ] Produce a test for the model_ptr on visibility_grid (**Nichole**)
-- [ ] Reproduce the third test for visibility_degrid and add a warning for having beam_per_baseline and interp_flag on at the same time. (**Joel**)
+- [X] Reproduce the third test for visibility_degrid and add a warning for having beam_per_baseline and interp_flag on at the same time. (**Joel**)
 - [ ] Provide multiple examples for the input of fhd_main and fhd_setup (**Nichole**)
 - [ ] Create Tests for in_situ_sim_setup and beam_setup, I hope I got them all, but I might've missed one somewhere. Feel free to check the IDL functions yourself, whereever there is a function from the FHD package, it should have a test ideally. (**Nichole**)
   - [ ] vis_noise_simulation
