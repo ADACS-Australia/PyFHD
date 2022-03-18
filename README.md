@@ -55,3 +55,4 @@ PyFHD is currently being created by Nichole Barry and Astronomy Data and Computi
   - [ ] Add logging using the logging package in Python
   - [ ] As a part of the logging, add the timing for each part of the PyFHD package.
 - [ ] Decide how to split the main function into pieces to make it modular (via argparse, or pipeline packages like Nextflow), allowing people to choose to run certain parts of the PyFHD project, rather than running the full package (**Joel & Nichole**)
+- [ ] Documentation, Docstrings and examples for ReadTheDocs
