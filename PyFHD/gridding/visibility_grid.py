@@ -184,7 +184,7 @@ def visibility_grid(visibility, vis_weights, obs, status_str, psf, params,
             vv[conj_i] = -vv[conj_i]
             ww[conj_i] = -ww[conj_i]
         vis_arr_use[conj_i, :] = np.conj(vis_arr_use[conj_i, :])
-        if model:
+        if model is not None:
             model_use[conj_i, :] = np.conj(model_use[conj_i, :])
     
     # Return if all baselines have been flagged
@@ -208,7 +208,7 @@ def visibility_grid(visibility, vis_weights, obs, status_str, psf, params,
         spectral_A = np.zeros([elements, dimension], dtype = np.complex128)
         spectral_B = np.zeros([elements, dimension])
         spectral_D = np.zeros([elements, dimension])
-        if model:
+        if model is not None:
             spectral_model_A = np.zeros([elements, dimension], dtype = np.complex128)
     
     # In the IDL visibility_grid, map_fn is set up as a 2D array of null pointers
@@ -256,7 +256,7 @@ def visibility_grid(visibility, vis_weights, obs, status_str, psf, params,
 
             # Select the model/data visibility values of the set, each with a weight of 1
             rep_flag = False
-            if model:
+            if model is not None:
                 model_box = model_use[inds]
             vis_box = vis_arr_use.flat[inds]
             psf_weight = np.ones(vis_n)
@@ -305,9 +305,9 @@ def visibility_grid(visibility, vis_weights, obs, status_str, psf, params,
 
                 vis_box1 = vis_arr_use.flat[inds]
                 vis_box = vis_box1.flat[xyf_ui]
-                if model:
-                    model_box1 = model_use[inds]
-                    model_box = model_box1[xyf_ui]
+                if model is not None:
+                    model_box1 = model_use.flat[inds]
+                    model_box = model_box1.flat[xyf_ui]
                 
                 # For the baselines which map to the same pixels and use the same beam,
                 # add the underlying data/model pixels such that the gridding operation
@@ -320,16 +320,16 @@ def visibility_grid(visibility, vis_weights, obs, status_str, psf, params,
                 xyf_ui0 = xyf_ui0[repeat_i]
                 for rep_ii in range(repeat_i.size):
                     vis_box[repeat_i[rep_ii]] = np.sum(vis_box1[xyf_ui0[rep_ii]:xyf_ui[rep_ii] + 1])
-                    if model:
+                    if model is not None:
                         model_box[repeat_i[rep_ii]] = np.sum(model_box1[xyf_ui0[rep_ii]:xyf_ui[rep_ii] + 1])
                 vis_n = n_xyf_bin
             else:
                 # If there are not enough baselines which use the same beam kernel and discretized
                 # location to warrent reduction, then perform the gridding operation per baseline
                 rep_flag = False
-                if model:
-                    model_box = model_use[inds]
-                vis_box = vis_arr_use[inds]
+                if model is not None:
+                    model_box = model_use.flat[inds]
+                vis_box = vis_arr_use.flat[inds]
                 psf_weight = np.ones(vis_n)
                 bt_index = inds / n_freq_use
             
@@ -365,15 +365,15 @@ def visibility_grid(visibility, vis_weights, obs, status_str, psf, params,
             spectral_B[ymin_use : ymin_use + psf_dim, xmin_use : xmin_use + psf_dim].flat += term_B_box.real
             spectral_D[ymin_use : ymin_use + psf_dim, xmin_use : xmin_use + psf_dim].flat += term_D_box.real
             #del(term_A_box, term_B_box, term_D_box)
-            if model:
+            if model is not None:
                 term_Am_box = np.dot(np.transpose(box_matrix_dag), np.transpose((freq_i * model_box) / n_vis))
                 spectral_model_A[ymin_use : ymin_use + psf_dim, xmin_use : xmin_use + psf_dim] += term_Am_box
         
-        if model:
+        if model is not None:
             # If model visibilities are being gridded, calculate the product of the model vis and the beam kernel
             # for all vis which contribute to the same static uv-pixels, and add to the static uv-plane 
             box_arr = np.dot(np.transpose(box_matrix_dag), np.transpose(model_box / n_vis))
-            model_return[ymin_use : ymin_use + psf_dim, xmin_use : xmin_use + psf_dim]+= box_arr
+            model_return[ymin_use : ymin_use + psf_dim, xmin_use : xmin_use + psf_dim].flat += box_arr
         
         # Calculate the product of the data vis and the beam kernel
         # for all vis which contribute to the same static uv-pixels, and add to the static uv-plane
@@ -411,7 +411,7 @@ def visibility_grid(visibility, vis_weights, obs, status_str, psf, params,
     # Free Up Memory
     del(vis_arr_use, xmin, ymin, ri, inds, x_offset, y_offset, bin_i, bin_n)
 
-    if model:
+    if model is not None:
         del(model_use)
 
     if map_flag:
@@ -420,11 +420,11 @@ def visibility_grid(visibility, vis_weights, obs, status_str, psf, params,
     # Option to use spectral index information to scale the uv-plane 
     if grid_spectral:
         spectral_uv = (spectral_A - n_vis * spectral_B * image_uv) * weight_invert(spectral_D - spectral_B ** 2)
-        if model:
+        if model is not None:
             spectral_model_uv = (spectral_model_A - n_vis * spectral_B * model_return) * weight_invert(spectral_D - spectral_B ** 2)
         if not no_conjugate:
             spectral_uv = (spectral_uv + conjugate_mirror(spectral_uv)) / 2
-            if model:
+            if model is not None:
                 spectral_model_uv = (spectral_model_uv + conjugate_mirror(spectral_model_uv)) / 2
     
     # Option to apply a uniform weighted filter to all uv-planes
@@ -440,7 +440,7 @@ def visibility_grid(visibility, vis_weights, obs, status_str, psf, params,
             weights *= weight_invert(filter_use)
         if variance_flag:
             variance *= weight_invert(filter_use)
-        if model:
+        if model is not None:
             model_return *= weight_invert(filter_use)
     
     if not no_conjugate:
@@ -451,7 +451,7 @@ def visibility_grid(visibility, vis_weights, obs, status_str, psf, params,
             weights = (weights + conjugate_mirror(weights)) / 2
         if variance_flag:
             variance = (variance + conjugate_mirror(variance)) / 4
-        if model:
+        if model is not None:
             model_return = (model_return + conjugate_mirror(model_return)) / 2
         if uniform_flag:
             uniform_filter = (uniform_filter + conjugate_mirror(uniform_filter)) / 2
@@ -468,7 +468,7 @@ def visibility_grid(visibility, vis_weights, obs, status_str, psf, params,
     if grid_spectral:
         gridding_dict['spectral_uv'] = spectral_uv
 
-    if model:
+    if model is not None:
         gridding_dict['model_return'] = model_return
         if grid_spectral:
             gridding_dict['spectral_model_uv'] = spectral_model_uv

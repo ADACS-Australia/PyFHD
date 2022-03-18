@@ -332,6 +332,63 @@ def test_visibility_grid_five(data_dir):
     npt.assert_allclose(gridding_dict['uniform_filter'], outputs['uniform_filter'], atol = 1e-8)
     npt.assert_allclose(gridding_dict['obs']['nf_vis'][0], outputs['obs']['nf_vis'][0], atol = 1e-8)
 
+def test_visibility_grid_six(data_dir):
+    inputs = get_savs(data_dir,'input_6.sav')
+    visibility = inputs['visibility_ptr']
+    vis_weights = inputs['vis_weight_ptr']
+    obs = inputs['obs']
+    status_str = inputs['status_str']
+    psf = inputs['psf']
+    params = inputs['params']
+    weights_flag = inputs['weights']
+    variance_flag = False
+    polarization = inputs['polarization']
+    map_flag = inputs['mapfn_recalculate']
+    uniform_flag = inputs['uniform_filter']
+    grid_uniform = False
+    fi_use = None 
+    bi_use = None
+    no_conjugate = inputs['no_conjugate']
+    mask_mirror_indices = False
+    model = inputs['model_ptr']
+    grid_spectral = False
+    beam_per_baseline = False
+    uv_grid_phase_only = True
+
+    outputs = get_savs(data_dir, 'output_6.sav')
+
+    gridding_dict = visibility_grid(
+        visibility,
+        vis_weights,
+        obs, 
+        status_str,
+        psf, 
+        params,
+        weights_flag = weights_flag,
+        variance_flag = variance_flag,
+        polarization = polarization,
+        map_flag = map_flag,
+        uniform_flag = uniform_flag,
+        grid_uniform = grid_uniform,
+        fi_use = fi_use,
+        bi_use = bi_use,
+        no_conjugate = no_conjugate,
+        mask_mirror_indices = mask_mirror_indices,
+        model = model,
+        grid_spectral = grid_spectral,
+        beam_per_baseline = beam_per_baseline,
+        uv_grid_phase_only = uv_grid_phase_only,
+    )
+
+    npt.assert_allclose(gridding_dict['image_uv'], outputs['image_uv'], atol = 2e-7)
+    npt.assert_allclose(gridding_dict['weights'], outputs['weights'], atol = 1e-8)
+    npt.assert_allclose(gridding_dict['variance'], outputs['variance'], atol = 1e-8)
+    # Differences in baseline grids locations from precision errors in the offsets caused differences in the histogram bin_n
+    # The minor difference in bin_n affected the uniform filter.
+    npt.assert_allclose(gridding_dict['uniform_filter'], outputs['uniform_filter'], atol = 0.5)
+    npt.assert_allclose(gridding_dict['obs']['nf_vis'][0], outputs['obs']['nf_vis'][0], atol = 1e-8)
+    npt.assert_allclose(gridding_dict['model_return'], outputs['model_return'], atol = 1e-7)
+
 def test_visibility_grid_full(full_data_dir):
     inputs = get_savs(full_data_dir,'input_1.sav')
     visibility = inputs['visibility_ptr']
@@ -387,5 +444,7 @@ def test_visibility_grid_full(full_data_dir):
     npt.assert_allclose(gridding_dict['image_uv'], outputs['image_uv'], atol = 1e-8)
     npt.assert_allclose(gridding_dict['weights'], outputs['weights'], atol = 1e-8)
     npt.assert_allclose(gridding_dict['variance'], outputs['variance'], atol = 1e-8)
-    #npt.assert_allclose(gridding_dict['uniform_filter'], outputs['uniform_filter'], atol = 1e-8)
+    #npt.assert_allclose(gridding_dict['uniform_filter'], outputs['uniform_filter'], atol = 1e-8) 
+    # No uniform filter given with the test, does have errors though due to errors in bin_n
+    # As arrays get larger the bin_n value will become further apart than the IDL output due to larger precision errors.
     npt.assert_allclose(gridding_dict['obs']['nf_vis'][0], outputs['obs']['nf_vis'][0], atol = 1e-8)
