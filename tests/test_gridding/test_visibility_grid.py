@@ -39,6 +39,7 @@ def test_visibility_grid_one(data_dir):
 
     outputs = get_savs(data_dir, 'output_1.sav')
 
+    now = time.time()
     gridding_dict = visibility_grid(
         visibility,
         vis_weights,
@@ -61,6 +62,9 @@ def test_visibility_grid_one(data_dir):
         beam_per_baseline = beam_per_baseline,
         uv_grid_phase_only = uv_grid_phase_only,
     )
+    later = time.time()
+
+    print("This test took {} seconds to process with tests IDL took 0.938 seconds".format(later - now))
 
     npt.assert_allclose(gridding_dict['image_uv'], outputs['image_uv'], atol = 1e-8)
     npt.assert_allclose(gridding_dict['weights'], outputs['weights'], atol = 1e-8)
@@ -93,6 +97,7 @@ def test_visibility_grid_two(data_dir):
 
     outputs = get_savs(data_dir, 'output_2.sav')
 
+    now = time.time()
     gridding_dict = visibility_grid(
         visibility,
         vis_weights,
@@ -115,6 +120,9 @@ def test_visibility_grid_two(data_dir):
         beam_per_baseline = beam_per_baseline,
         uv_grid_phase_only = uv_grid_phase_only,
     )
+    later = time.time()
+
+    print("This test took {} seconds to process with tests IDL took 3.2399 seconds".format(later - now))
 
     npt.assert_allclose(gridding_dict['image_uv'], outputs['image_uv'], atol = 1e-8)
     npt.assert_allclose(gridding_dict['weights'], outputs['weights'], atol = 1e-8)
@@ -149,6 +157,7 @@ def test_visibility_grid_three(data_dir):
 
     outputs = get_savs(data_dir, 'output_3.sav')
 
+    now = time.time()
     gridding_dict = visibility_grid(
         visibility,
         vis_weights,
@@ -171,6 +180,9 @@ def test_visibility_grid_three(data_dir):
         beam_per_baseline = beam_per_baseline,
         uv_grid_phase_only = uv_grid_phase_only,
     )
+    later = time.time()
+
+    print("This test took {} seconds to process with tests IDL took 5.585 seconds".format(later - now))
 
     npt.assert_allclose(gridding_dict['image_uv'], outputs['image_uv'], atol = 1e-8)
     npt.assert_allclose(gridding_dict['weights'], outputs['weights'], atol = 1e-8)
@@ -249,6 +261,7 @@ def test_visibility_grid_four(data_dir):
 
     outputs = get_savs(data_dir, 'output_4.sav')
 
+    now = time.time()
     gridding_dict = visibility_grid(
         visibility,
         vis_weights,
@@ -271,6 +284,9 @@ def test_visibility_grid_four(data_dir):
         beam_per_baseline = beam_per_baseline,
         uv_grid_phase_only = uv_grid_phase_only,
     )
+    later = time.time()
+
+    print("This test took {} seconds to process with tests IDL took 0.50837 seconds".format(later - now))
 
     npt.assert_allclose(gridding_dict['image_uv'], outputs['image_uv'], atol = 1e-8)
     npt.assert_allclose(gridding_dict['weights'], outputs['weights'], atol = 1e-8)
@@ -303,6 +319,7 @@ def test_visibility_grid_five(data_dir):
 
     outputs = get_savs(data_dir, 'output_5.sav')
 
+    now = time.time()
     gridding_dict = visibility_grid(
         visibility,
         vis_weights,
@@ -325,6 +342,9 @@ def test_visibility_grid_five(data_dir):
         beam_per_baseline = beam_per_baseline,
         uv_grid_phase_only = uv_grid_phase_only,
     )
+    later = time.time()
+
+    print("This test took {} seconds to process with tests IDL took 0.4366 seconds".format(later - now))
 
     npt.assert_allclose(gridding_dict['image_uv'], outputs['image_uv'], atol = 1e-8)
     npt.assert_allclose(gridding_dict['weights'], outputs['weights'], atol = 1e-8)
@@ -357,6 +377,7 @@ def test_visibility_grid_six(data_dir):
 
     outputs = get_savs(data_dir, 'output_6.sav')
 
+    now = time.time()
     gridding_dict = visibility_grid(
         visibility,
         vis_weights,
@@ -379,6 +400,9 @@ def test_visibility_grid_six(data_dir):
         beam_per_baseline = beam_per_baseline,
         uv_grid_phase_only = uv_grid_phase_only,
     )
+    later = time.time()
+
+    print("This test took {} seconds to process with tests IDL took 3.775 seconds".format(later - now))
 
     npt.assert_allclose(gridding_dict['image_uv'], outputs['image_uv'], atol = 2e-7)
     npt.assert_allclose(gridding_dict['weights'], outputs['weights'], atol = 1e-8)
@@ -388,6 +412,66 @@ def test_visibility_grid_six(data_dir):
     npt.assert_allclose(gridding_dict['uniform_filter'], outputs['uniform_filter'], atol = 0.5)
     npt.assert_allclose(gridding_dict['obs']['nf_vis'][0], outputs['obs']['nf_vis'][0], atol = 1e-8)
     npt.assert_allclose(gridding_dict['model_return'], outputs['model_return'], atol = 1e-7)
+
+def test_visibility_grid_seven(data_dir):
+    inputs = get_savs(data_dir,'input_7.sav')
+    visibility = inputs['visibility_ptr']
+    vis_weights = inputs['vis_weight_ptr']
+    obs = inputs['obs']
+    status_str = inputs['status_str']
+    psf = inputs['psf']
+    params = inputs['params']
+    weights_flag = inputs['weights']
+    variance_flag = False
+    polarization = inputs['polarization']
+    map_flag = inputs['mapfn_recalculate']
+    uniform_flag = inputs['uniform_filter']
+    grid_uniform = False
+    fi_use = None 
+    bi_use = None
+    no_conjugate = inputs['no_conjugate']
+    mask_mirror_indices = False
+    model = inputs['model_ptr']
+    grid_spectral = False
+    beam_per_baseline = False
+    uv_grid_phase_only = True
+
+    outputs = get_savs(data_dir, 'output_7.sav')
+
+    now = time.time()
+    gridding_dict = visibility_grid(
+        visibility,
+        vis_weights,
+        obs, 
+        status_str,
+        psf, 
+        params,
+        weights_flag = weights_flag,
+        variance_flag = variance_flag,
+        polarization = polarization,
+        map_flag = map_flag,
+        uniform_flag = uniform_flag,
+        grid_uniform = grid_uniform,
+        fi_use = fi_use,
+        bi_use = bi_use,
+        no_conjugate = no_conjugate,
+        mask_mirror_indices = mask_mirror_indices,
+        model = model,
+        grid_spectral = grid_spectral,
+        beam_per_baseline = beam_per_baseline,
+        uv_grid_phase_only = uv_grid_phase_only,
+    )
+    later = time.time()
+
+    print("This test took {} seconds to process with tests IDL took 2.95 seconds".format(later - now))
+
+    npt.assert_allclose(gridding_dict['image_uv'], outputs['image_uv'], atol = 1.5e-07)
+    npt.assert_allclose(gridding_dict['weights'], outputs['weights'], atol = 1e-8)
+    npt.assert_allclose(gridding_dict['variance'], outputs['variance'], atol = 1e-8)
+    # Differences in baseline grids locations from precision errors in the offsets caused differences in the histogram bin_n
+    # The minor difference in bin_n affected the uniform filter.
+    npt.assert_allclose(gridding_dict['uniform_filter'], outputs['uniform_filter'], atol = 0.5)
+    npt.assert_allclose(gridding_dict['obs']['nf_vis'][0], outputs['obs']['nf_vis'][0], atol = 1e-8)
 
 def test_visibility_grid_full(full_data_dir):
     inputs = get_savs(full_data_dir,'input_1.sav')

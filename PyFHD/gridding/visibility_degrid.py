@@ -152,7 +152,7 @@ def visibility_degrid(image_uv, vis_weights, obs, psf, params, polarization = 0,
             if mem_iter > 1:
                 vis_n_full = vis_n
                 inds_full = inds
-                vis_n_per_iter = ceil(vis_n_full/mem_iter)
+                vis_n_per_iter = int(np.ceil(vis_n_full/mem_iter))
         else:
             mem_iter = 1
         # loop over chunks of visibilities to grid to conserve memory

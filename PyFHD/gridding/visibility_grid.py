@@ -135,10 +135,12 @@ def visibility_grid(visibility, vis_weights, obs, status_str, psf, params,
     psf_resolution = psf['resolution']
     nbaselines = obs['nbaselines'][0]
     n_samples = obs['n_time'][0]
-    # New group_arr code, needs to be checked
+    # New group_arr code that is consistent with the FHD version
     group_arr = np.squeeze(psf['id'][0][:, freq_bin_i, polarization])
-    group_arr = np.repeat(np.squeeze(psf['id'][0][:, freq_bin_i, polarization]), n_samples)
-    group_arr = group_arr.flatten()
+    # REBIN in IDL when expanding dimensions repeats 2D arrays after expanding
+    group_arr = np.expand_dims(rebin(group_arr, (nbaselines, n_f_use)), axis = 0)
+    group_arr = np.repeat(group_arr, n_samples, axis = 0) 
+    group_arr = np.reshape(group_arr, (n_samples*nbaselines ,n_f_use))
     beam_arr = psf['beam_ptr'][0]
     n_freq_use = frequency_array.size
     psf_dim2 = 2 * psf_dim
@@ -273,7 +275,7 @@ def visibility_grid(visibility, vis_weights, obs, status_str, psf, params,
 
             # Calculate a unique index for each kernel location and kernel type in order to reduce 
             # operations if there are repeats
-            group_id = group_arr[inds]
+            group_id = group_arr.flat[inds]
             group_max = np.max(group_id) + 1
             xyf_i = (x_off + y_off * psf_resolution + fbin * psf_resolution ** 2) * group_max + group_id
 

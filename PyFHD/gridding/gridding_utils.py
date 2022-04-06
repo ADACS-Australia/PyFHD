@@ -149,14 +149,14 @@ def baseline_grid_locations(obs, psf, params, vis_weights, bi_use = None, fi_use
             bi_use = np.where(flag_test > 0)[0]
         else:
             tile_use = np.arange(n_tile) + 1
-            bi_use, _ = array_match(b_info[0]['tile_a'][0], tile_use, array_2 = b_info[0]['tile_b'][0])
+            bi_use, _ = array_match(b_info[0]['tile_a'][0].astype(int), tile_use, array_2 = b_info[0]['tile_b'][0].astype(int))
     
     # Calculate indices of visibilities to grid during this call (i.e. specific freqs, time sets)
     # and initialize output arrays
     n_b_use = bi_use.size
     n_f_use = fi_use.size
     # matrix_multiply is not what it seems for 1D arrays, had to do this to replicate!
-    vis_inds_use = (np.outer(np.ones(n_b_use), fi_use) + np.outer(bi_use, np.ones(n_f_use)) * n_freq).astype(int)
+    vis_inds_use = (np.outer(np.ones(n_b_use), fi_use) + np.outer(bi_use, np.ones(n_f_use)) * n_freq).astype(np.int64)
     
     # Since the indices in vis_inds_use apply to a flattened array, flatten. Leave vis_inds_use as it to have the shape go back to the right shape.
     vis_weights = vis_weights.flatten()[vis_inds_use]
@@ -185,8 +185,8 @@ def baseline_grid_locations(obs, psf, params, vis_weights, bi_use = None, fi_use
     ycen = np.outer(ky_arr, frequency_array)
 
     # Pixel number offset per baseline for each uv-box subset
-    x_offset = np.fix(np.floor((xcen - np.floor(xcen)) * psf_resolution) % psf_resolution).astype(int)
-    y_offset = np.fix(np.floor((ycen - np.floor(ycen)) * psf_resolution) % psf_resolution).astype(int)
+    x_offset = np.fix(np.floor((xcen - np.floor(xcen)) * psf_resolution) % psf_resolution).astype(np.int64)
+    y_offset = np.fix(np.floor((ycen - np.floor(ycen)) * psf_resolution) % psf_resolution).astype(np.int64)
 
     if interp_flag:
         # Derivatives from pixel edge to baseline center for use in interpolation
@@ -198,8 +198,8 @@ def baseline_grid_locations(obs, psf, params, vis_weights, bi_use = None, fi_use
         baselines_dict['dx1dy1_arr'] = dx_arr * dy_arr
 
     # The minimum pixel in the uv-grid (bottom left of the kernel) that each baseline contributes to
-    xmin = (np.floor(xcen) + elements / 2 - (psf_dim / 2 - 1)).astype(int)
-    ymin = (np.floor(ycen) + dimension / 2 - (psf_dim / 2 - 1)).astype(int)
+    xmin = (np.floor(xcen) + elements / 2 - (psf_dim / 2 - 1)).astype(np.int64)
+    ymin = (np.floor(ycen) + dimension / 2 - (psf_dim / 2 - 1)).astype(np.int64)
 
     # Set the minimum pixel value of baselines which fall outside of the uv-grid tom -1 to exclude them
     range_test_x_i = np.where((xmin <= 0) | (xmin + psf_dim - 1 >= elements - 1))

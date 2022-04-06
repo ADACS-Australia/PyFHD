@@ -4,3 +4,4 @@ numba
 scipy
 astropy
 sphinx-argparse
+colorama
