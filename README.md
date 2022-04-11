@@ -30,10 +30,10 @@ PyFHD is currently being created by Nichole Barry and Astronomy Data and Computi
 # TODO
 
 - [X] Reproduce the full_size_visibility_grid test with the group_arr fix (**Joel**)
-- [ ] Produce a test for visibility_grid that specifically depends on how group_arr is created (**Nichole**)
+- [X] Produce a test for visibility_grid that specifically depends on how group_arr is created (**Nichole**)
 - [X] Produce a test for the model_ptr on visibility_grid (**Nichole**)
 - [X] Reproduce the third test for visibility_degrid and add a warning for having beam_per_baseline and interp_flag on at the same time. (**Joel**)
-- [ ] Provide multiple examples for the input of fhd_main and fhd_setup (**Nichole**)
+- [X] Provide multiple examples for the input of fhd_main and fhd_setup (**Nichole**)
 - [ ] Create Tests for in_situ_sim_setup and beam_setup, I hope I got them all, but I might've missed one somewhere. Feel free to check the IDL functions yourself, whereever there is a function from the FHD package, it should have a test ideally. (**Nichole**)
   - [ ] vis_noise_simulation
   - [ ] in_situ_sim_setup 
@@ -54,5 +54,5 @@ PyFHD is currently being created by Nichole Barry and Astronomy Data and Computi
   - [ ] Create a HDF5 Save (pyfhd_save) and Load (pyfhd_load) infrastructure for the project
   - [ ] Add logging using the logging package in Python
   - [ ] As a part of the logging, add the timing for each part of the PyFHD package.
-- [ ] Decide how to split the main function into pieces to make it modular (via argparse, or pipeline packages like Nextflow), allowing people to choose to run certain parts of the PyFHD project, rather than running the full package (**Joel & Nichole**)
+- [ ] Decide how to split the main function into pieces to make it modular (via argparse, or pipeline packages like Nextflow or Luigi), allowing people to choose to run certain parts of the PyFHD project, rather than running the full package (**Joel & Nichole**)
 - [ ] Documentation, Docstrings and examples for ReadTheDocs
