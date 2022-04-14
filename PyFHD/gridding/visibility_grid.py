@@ -85,6 +85,11 @@ def visibility_grid(visibility, vis_weights, obs, status_str, psf, params,
     # Getting a read-only error for some reason, setting as writeable
     n_vis_arr.flags.writeable = True
 
+    # If both beam and interp_flag leave a warning, prioritise beam_per_baseline
+    if beam_per_baseline and interp_flag:
+        warnings.warn("Cannot have beam per baseline and interpolation at the same time, turning off interpolation")
+        interp_flag = False
+
     # For each unflagged baseline, get the minimum contributing pixel number for gridding 
     # and the 2D derivatives for bilinear interpolation
     baselines_dict = baseline_grid_locations(
@@ -132,7 +137,7 @@ def visibility_grid(visibility, vis_weights, obs, status_str, psf, params,
     frequency_array = frequency_array[fi_use]
     complex_flag = psf['complex_flag']
     psf_dim = psf['dim'][0]
-    psf_resolution = psf['resolution']
+    psf_resolution = psf['resolution'][0]
     nbaselines = obs['nbaselines'][0]
     n_samples = obs['n_time'][0]
     # New group_arr code that is consistent with the FHD version
@@ -160,8 +165,8 @@ def visibility_grid(visibility, vis_weights, obs, status_str, psf, params,
         y = x.copy()
         psf_intermediate_res = np.min([np.ceil(np.sqrt(psf_resolution) / 2) * 2, psf_resolution])
         psf_image_dim = psf['image_info'][0]['psf_image_dim'][0]
-        image_bot = -(psf_dim / 2) * psf_intermediate_res + psf_image_dim / 2
-        image_top = (psf_dim * psf_resolution - 1) - (psf_dim / 2) * psf_intermediate_res + psf_image_dim / 2
+        image_bot = int(-(psf_dim / 2) * psf_intermediate_res + psf_image_dim / 2)
+        image_top = int((psf_dim * psf_resolution - 1) - (psf_dim / 2) * psf_intermediate_res + psf_image_dim / 2)
         l_mode, m_mode, n_tracked = l_m_n(obs, psf)
         if uv_grid_phase_only:
             n_tracked = np.zeros_like(n_tracked)
@@ -333,7 +338,10 @@ def visibility_grid(visibility, vis_weights, obs, status_str, psf, params,
                     model_box = model_use.flat[inds]
                 vis_box = vis_arr_use.flat[inds]
                 psf_weight = np.ones(vis_n)
-                bt_index = inds / n_freq_use
+                # IDL had integer / integer i.e. 2015 / 336 == 5, used flooring divider instead in python
+                # ALso do take note that each were very close always within 0.01 of their next number.
+                # e.g. 2015 / 336 = 5.99, should ceiling be be used instead?
+                bt_index = inds // n_freq_use
             
             box_matrix = np.zeros((vis_n, psf_dim3), dtype = arr_type)
             if beam_per_baseline:

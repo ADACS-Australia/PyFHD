@@ -271,7 +271,7 @@ def dirty_image_generate(dirty_image_uv, mask = None, baseline_threshold = 0, no
                          resize = None, width_smooth = None, degpix = None, not_real = False,
                          image_filter_fn = 'filter_uv_uniform', pad_uv_image = None, filter = None,
                          vis_count = None, weights = None, beam_ptr = None, obs = None, psf = None, params = None, 
-                         fi_use = None, bi_use = None):
+                         fi_use = None, bi_use = None, mask_mirror_indices = False):
     """[summary]
 
     Parameters
@@ -421,7 +421,8 @@ def dirty_image_generate(dirty_image_uv, mask = None, baseline_threshold = 0, no
 def grid_beam_per_baseline(psf, uu, vv, ww, l_mode, m_mode, n_tracked, frequency_array, x, y,
                            xmin_use, ymin_use, freq_i, bt_index, polarization, fbin, image_bot, 
                            image_top, psf_dim3, box_matrix, vis_n, beam_clip_floor = False, beam_int = None, 
-                           beam2_int = None, n_grp_use = None, degrid_flag = False):
+                           beam2_int = None, n_grp_use = None, degrid_flag = False, obs = None, params = None,
+                           weights = None, fi_use = None, bi_use = None, mask_mirror_indices = False):
     """
     TODO: Docstring
 
@@ -503,7 +504,13 @@ def grid_beam_per_baseline(psf, uu, vv, ww, l_mode, m_mode, n_tracked, frequency
             psf['image_info'][0]['image_power_beam_arr'][fbin[ii]][polarization] * \
             np.exp(2 * pi * (0 + 1j) * \
             (-w_n_tracked + deltau_l + deltav_m)),
-            not_real = True
+            not_real = True,
+            obs = obs,
+            params = params, 
+            weights = weights, 
+            fi_use = fi_use, 
+            bi_use = bi_use,
+            mask_mirror_indices = mask_mirror_indices
         )
         psf_base_superres = psf_base_superres[image_bot: image_top + 1, image_bot : image_top + 1]
 

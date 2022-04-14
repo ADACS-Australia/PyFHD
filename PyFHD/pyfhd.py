@@ -8,7 +8,7 @@ def pyfhd_parser():
     parser = configargparse.ArgumentParser(
         default_config_files = ["./pyfhd.yaml"], 
         prog = "PyFHD", 
-        description = "This is the Python Fast Holographic Deconvolution package, only file_path_vis is required to start your run, but you should need to modify these arguments below to get something useful.", 
+        description = "This is the Python Fast Holographic Deconvolution package, only the path is required to start your run, but you should need to modify these arguments below to get something useful.", 
         config_file_parser_class = configargparse.YAMLConfigFileParser,
         args_for_setting_config_path = ['-c', '--config'],
 

@@ -4,7 +4,7 @@ import PyFHD.gridding.gridding_utils as gridding_utils
 from PyFHD.io.pyfhd_save import save
 
 def filter_uv_uniform(image_uv, vis_count = None, obs = None, psf = None, params = None, weights = None, fi_use = None, bi_use = None, 
-                      mask_mirror_indices = None, name = "uniform", return_name_only = False):
+                      mask_mirror_indices = False, name = "uniform", return_name_only = False):
     """[summary]
 
     Parameters

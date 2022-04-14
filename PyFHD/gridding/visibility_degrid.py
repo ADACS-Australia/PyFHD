@@ -126,10 +126,10 @@ def visibility_degrid(image_uv, vis_weights, obs, psf, params, polarization = 0,
         arr_type = np.double
     
     if n_spectral:
-        prefactor = np.zeros(n_spectral)
+        prefactor = np.empty(n_spectral, dtype = object)
         for s_i in range(n_spectral):
             prefactor[s_i] = deriv_coefficients(s_i + 1, divide_factorial = True)
-        box_arr_ptr = np.zeros(n_spectral)
+        box_arr_ptr = np.empty(n_spectral, dtype = object)
 
     for bi in range(n_bin_use):
         vis_n = bin_n[bin_i[bi]]
