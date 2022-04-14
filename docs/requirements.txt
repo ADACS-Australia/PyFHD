@@ -5,3 +5,4 @@ scipy
 astropy
 sphinx-argparse
 colorama
+ConfigArgParse
