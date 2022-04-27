@@ -1,85 +1,95 @@
 # Default Arguments for PyFHD
-
+# ~ returns None in Python (i.e. NULL)
 uvfits-path : './uvfits'
-recalculate_all : false
+recalculate-all : false
 silent : false
 logging: true
-conserve_memory : false
-memory_threshold : 1e8
-n_avg : 2
-uvfits_version : 5
-uvfits_subversion : 1
+conserve-memory : false
+memory-threshold : 1e8
+n-avg : 2
+uvfits-version : 5
+uvfits-subversion : 1
 dimension : 2048
 FoV : 0
-# EoR Wrapper Defaults
-min_baseline : 1.
-pad_uv_image : 1.
-# ring_radius : 10. * pad_uv_image Add to the code
-beam_nfreq_avg : 16
-psf_resolution : 100
-beam_model_version : 2
-allow_sidelobe_cal_sources : 1
-allow_sidelobe_model_sources : 1
+min-baseline : 1.
 
 # Beam Setup
-beam_recalculate : true
-beam_clip_floor : true
-interpolate_kernel : 1
+recalculate-beam : true
+beam-clip-floor : true
+interpolate-kernel : 1
+dipole-mutual-coupling-factor : 1
+beam-nfreq-avg : 16
+psf-resolution : 100
+beam-model-version : 2
 
 # Calibration
-calibrate_visibilities : true
-cable_bandpass_fit : 1
-cal_bp_transfer : 0
-calibration_polyfit : 1
-cal_amp_degree_fit : 2
-cal_phase_degree_fit : 1
-cal_reflection_hyperresolve : 1
-cal_reflection_mode_theory : 150
-calibration_visibilities_subtract : false
-min_cal_baseline : 50.
+calibrate-visibilities : true
+cable-bandpass-fit : 1
+cal-bp-transfer : 0
+calibration-polyfit : 1
+allow-sidelobe-cal-sources : true
+cal-amp-degree-fit : 2
+cal-phase-degree-fit : 1
+cal-reflection-hyperresolve : 1
+cal-reflection-mode-theory : 150
+calibration-visibilities-subtract : false
+min-cal-baseline : 50.
+vis-baseline-hist : 1
+bandpass-calibrate : 1
+return-cal-visibilities : true
+calibration-flag-iterate : 0
+diffuse-calibrate : ~
+calibration-catalog-file-path  :  'GLEAM_v2_plus_rlb2019.sav'
+transfer-calibration : ~
+cal-stop : false
 
 # Flagging
-flag_visibilities : false
+flag-visibilities : false
+flag-calibration : false
+flag-freq-start : ~
+flag-freq-end : ~
+transfer-weights : ~
 
 # Gridding
-recalculate_grid : false
-mapfn_recalculate : false
-image_filter_fn : 'filter_uv_uniform'
-deconvolution_filter : 'filter_uv_uniform'
+recalculate-grid : false
+recalculate-mapfn : false
+image-filter : 'filter_uv_uniform'
+deconvolution-filter : 'filter_uv_uniform'
 
 # Deconvolution
 deconvolve : false
-max_deconvolution_components : 20000
-
-# Catalog
-calibration_catalog_file_path  :  ~
-model_catalog_file_path  :  filepath('GLEAM_v2_plus_rlb2019.sav',root=rootdir('FHD'),subdir='catalog_data')
-diffuse_calibrate : ~
-diffuse_model : ~
+max-deconvolution-components : 20000
+smooth-width : 32.
+dft-threshold : 1.
+return-decon-visibilities : false
 
 # Export
-output_path : './output'
-export_images : true
+output-path : './output'
+export-images : true
 cleanup : false
-save_visibilities : true
-snapshot_healpix_export : true
+save-visibilities : true
+snapshot-healpix-export : true
+pad-uv-image : 1.
+ring-radius-multi : 10.
 
-# These defaults should match those in FHD itself, so setting them here is redundant (?)
-split_ps_export : 1
-combine_healpix : 0
-vis_baseline_hist : 1
-bandpass_calibrate : 1
-model_visibilities : 0
-return_cal_visibilities : 1
-dipole_mutual_coupling_factor : 1
-calibration_flag_iterate  :  0
-smooth_width : 32.
-no_restrict_cal_sources : 1
-no_ps : 1
+# Model
+model-visibilities : false
+diffuse-model : ~
+model-catalog-file-path  :  'GLEAM_v2_plus_rlb2019.sav'
+transfer-model-uv : ~
+allow-sidelobe-model-sources : true
 
 # Simulation
+run-simulation : false
+in-situ-sim-input : ~
+eor-vis-filepath : ~
+enhance-eor : 1.
+sim-noise : ~
+tile-flag-list : ~
+remove-sim-flags : false
 
 # HEALPIX
-ps_kbinsize : 0.5
-ps_kspan : 600.
-restrict_hpx_inds : 1
+ps-kbinsize : 0.5
+ps-kspan : 600.
+restrict-hpx-inds : ~
+split-ps-export : 1
