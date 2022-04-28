@@ -7,8 +7,6 @@ logging: true
 conserve-memory : false
 memory-threshold : 1e8
 n-avg : 2
-uvfits-version : 5
-uvfits-subversion : 1
 dimension : 2048
 FoV : 0
 min-baseline : 1.
@@ -16,32 +14,33 @@ min-baseline : 1.
 # Beam Setup
 recalculate-beam : true
 beam-clip-floor : true
-interpolate-kernel : 1
-dipole-mutual-coupling-factor : 1
+interpolate-kernel : true
+dipole-mutual-coupling-factor : true
 beam-nfreq-avg : 16
 psf-resolution : 100
 beam-model-version : 2
 
 # Calibration
 calibrate-visibilities : true
-cable-bandpass-fit : 1
-cal-bp-transfer : 0
-calibration-polyfit : 1
+cable-bandpass-fit : true
+cal-bp-transfer : 'mwa_eor0_highband_season1_cable_bandpass.fits'
+calibration-polyfit : true
 allow-sidelobe-cal-sources : true
 cal-amp-degree-fit : 2
 cal-phase-degree-fit : 1
-cal-reflection-hyperresolve : 1
+cal-reflection-hyperresolve : true
 cal-reflection-mode-theory : 150
-calibration-visibilities-subtract : false
+cal-reflection-mode-delay : false
 min-cal-baseline : 50.
-vis-baseline-hist : 1
-bandpass-calibrate : 1
+vis-baseline-hist : true
+bandpass-calibrate : true
 return-cal-visibilities : true
 calibration-flag-iterate : 0
 diffuse-calibrate : ~
 calibration-catalog-file-path  :  'GLEAM_v2_plus_rlb2019.sav'
 transfer-calibration : ~
 cal-stop : false
+transfer-model-uv : ~
 
 # Flagging
 flag-visibilities : false
@@ -54,14 +53,14 @@ transfer-weights : ~
 recalculate-grid : false
 recalculate-mapfn : false
 image-filter : 'filter_uv_uniform'
-deconvolution-filter : 'filter_uv_uniform'
 
 # Deconvolution
 deconvolve : false
 max-deconvolution-components : 20000
-smooth-width : 32.
+smooth-width : 32
 dft-threshold : 1.
 return-decon-visibilities : false
+deconvolution-filter : 'filter_uv_uniform'
 
 # Export
 output-path : './output'
@@ -71,12 +70,12 @@ save-visibilities : true
 snapshot-healpix-export : true
 pad-uv-image : 1.
 ring-radius-multi : 10.
+description : ~
 
 # Model
 model-visibilities : false
 diffuse-model : ~
 model-catalog-file-path  :  'GLEAM_v2_plus_rlb2019.sav'
-transfer-model-uv : ~
 allow-sidelobe-model-sources : true
 
 # Simulation
@@ -92,4 +91,4 @@ remove-sim-flags : false
 ps-kbinsize : 0.5
 ps-kspan : 600.
 restrict-hpx-inds : ~
-split-ps-export : 1
+split-ps-export : true
