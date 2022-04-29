@@ -85,10 +85,7 @@ Visibility Degrid
 Input & Output
 ==============
 
-.. automodule:: PyFHD.io.pyfhd_save
-   :members:
-
-.. automodule:: PyFHD.io.pyfhd_restore
+.. automodule:: PyFHD.io.pyfhd_io
    :members:
 
 Tools & Utilities

@@ -91,3 +91,5 @@ def main():
         shutil.copy(options.config_file, Path(output_dir, log_name + '.yaml'))
     
     logger.info('Configuration copied to the output file, filename: {}'.format(Path(output_dir, log_name + '.yaml')))
+
+    #

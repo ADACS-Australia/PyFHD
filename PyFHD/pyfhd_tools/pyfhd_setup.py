@@ -29,7 +29,7 @@ def pyfhd_parser():
     parser.add_argument( '-u', '--uvfits-path', type = Path, help = "Directory for the uvfits files, by default it looks for a directory called uvfits in the working directory", default = "./uvfits/")
     parser.add_argument('-r', '--recalculate-all', default = False, action='store_true', help = 'Forces PyFHD to recalculate all values. This will ignore values set for recalculate-grid, recalculate-beam, recalculate-mapfn as it will set all of them to True')
     parser.add_argument('-s', '--silent', default = False, action = 'store_true', help = 'This PyFHD stops all output to the terminal unless there is an error or warning.')
-    parser.add_argument('-l', '--disable-log', default = False, action = 'store_true', help = 'Logging is enabled by default, set to False to disable it')
+    parser.add_argument('-l', '--disable-log', action = 'store_true', help = 'Logging is enabled by default, set to False to disable it')
     parser.add_argument('--dimension', type = int, default = 2048, help = 'The number of pixels in the UV plane along one axis.')
     parser.add_argument('--FoV', '--fov', type = float, default = 0, help = 'A proxy for the field of view in degrees. FoV is actually used to determine kbinsize, which will be set to !RaDeg/FoV.\nThis means that the pixel size at phase center times dimension is approximately equal to FoV, which is not equal to the actual field of view owing to larger pixel sizes away from phase center.\nIf set to 0, then kbinsize determines the UV resolution.')
     parser.add_argument('--deproject-w-term', type = float, default = None, help = 'Enables the function for simple_deproject_w_term and uses the parameter value for the direction value in the function')
@@ -89,6 +89,7 @@ def pyfhd_parser():
     deconv.add_argument('--return-decon-visibilities', default = False, action = 'store_true', help = 'When activated degrid and export the visibilities formed from the deconvolution model')
     deconv.add_argument('--deconvolution-filter', default = 'filter_uv_uniform', type = str, choices = ['filter_uv_uniform', 'filter_uv_hanning', 'filter_uv_natural', 'filter_uv_radial', 'filter_uv_tapered_uniform', 'filter_uv_optimal'], help = 'Filter applied to images from deconvolution.')
     deconv.add_argument('--smooth-width', default = 32, type = int, help = 'Integer equal to the size of the region to smooth when filtering out large-scale background fluctuations.')
+    deconv.add_argument('--filter-background', default = True, action = 'store_true', help = 'Filters out large-scale background fluctuations before deconvolving point sources.')
 
     # Export Group
     export.add_argument('-o','--output-path', type=Path, help = "Set the output path for the current run, note a directory will still be created inside the given path", default = "./output/")
@@ -138,13 +139,33 @@ def setup_parser(options: argparse.Namespace) :
     """
     # We will store all the errors in this list.
     errors = []
+    warnings = []
     error_format = Back.RED + 'ERROR:' + Back.RESET + Fore.RED + ' '
     error_end = Style.RESET_ALL
+    # TODO: uvfits_path exists and obs_id file exists
     # Force PyFHD to recalculate the beam, gridding and mapping functions
     if options.recalculate_all:
         options.recalculate_beam = True
         options.recalculate_grid = True
         options.recalculate_mapfn = True
+    # TODO: cable_bandpass_fit cable_length text dependency
+    # TODO: cal-bp-transfer check if file given exists
+    # TODO: cal_amp_degree_fit and cal_phase_degree_fit depend on calibration_polyfit being True
+    # TODO: cal_reflection_hyperresolve gets ignored when cal_reflection_mode_file is set
+    # TODO: cal_reflection_mode_theory and cal_reflection_mode_delay cannot be on at the same time, prioritise mode_theory
+    # TODO: cal_reflection_mode_file depends on a file
+    # TODO: diffuse_calibrate depends on a file
+    # TODO: calibration_catalog_file_path depends on a file
+    # TODO: transfer_calibration depends on a file
+    # TODO: transfer_model_uv depends on a file
+    # TODO: transfer-weights depends on a file
+    # TODO: smooth-width depends on filter_background
+    # TODO: pad_uv_image and ring_radius_multi multiply together to make ring_radius
+    # TODO: diffuse-model depends on a file
+    # TODO: model_catalog_file_path depends on a file
+    # TODO: allow_sidelobe_model_sources depends on model_visibilities
+    
+
     for error in errors:
         print(error)
     # If there are any errors exit the program.

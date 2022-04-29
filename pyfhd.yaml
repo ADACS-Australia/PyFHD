@@ -23,7 +23,7 @@ beam-model-version : 2
 # Calibration
 calibrate-visibilities : true
 cable-bandpass-fit : true
-cal-bp-transfer : 'mwa_eor0_highband_season1_cable_bandpass.fits'
+cal-bp-transfer : ~ #'mwa_eor0_highband_season1_cable_bandpass.fits'
 calibration-polyfit : true
 allow-sidelobe-cal-sources : true
 cal-amp-degree-fit : 2
@@ -31,13 +31,14 @@ cal-phase-degree-fit : 1
 cal-reflection-hyperresolve : true
 cal-reflection-mode-theory : 150
 cal-reflection-mode-delay : false
+cal-reflection-mode-file : ~
 min-cal-baseline : 50.
 vis-baseline-hist : true
 bandpass-calibrate : true
 return-cal-visibilities : true
 calibration-flag-iterate : 0
 diffuse-calibrate : ~
-calibration-catalog-file-path  :  'GLEAM_v2_plus_rlb2019.sav'
+calibration-catalog-file-path  :  ~ #'GLEAM_v2_plus_rlb2019.sav'
 transfer-calibration : ~
 cal-stop : false
 transfer-model-uv : ~
@@ -57,6 +58,7 @@ image-filter : 'filter_uv_uniform'
 # Deconvolution
 deconvolve : false
 max-deconvolution-components : 20000
+filter-background : true
 smooth-width : 32
 dft-threshold : 1.
 return-decon-visibilities : false
@@ -75,7 +77,7 @@ description : ~
 # Model
 model-visibilities : false
 diffuse-model : ~
-model-catalog-file-path  :  'GLEAM_v2_plus_rlb2019.sav'
+model-catalog-file-path  :  ~ #'GLEAM_v2_plus_rlb2019.sav'
 allow-sidelobe-model-sources : true
 
 # Simulation
