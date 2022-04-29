@@ -12,6 +12,8 @@ dependencies:
   - scipy
   - setuptools
   - sphinx
+  - colorama
   - pip:
     - sphinx-rtd-theme
     - sphinx-argparse
+    

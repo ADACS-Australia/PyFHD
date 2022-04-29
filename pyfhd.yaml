@@ -1,11 +1,11 @@
 # Default Arguments for PyFHD
 # ~ returns None in Python (i.e. NULL)
-uvfits-path : './uvfits'
+uvfits-path : './input'
 recalculate-all : false
 silent : false
-logging: true
+disable-log : false
 conserve-memory : false
-memory-threshold : 1e8
+memory-threshold : 100000000
 n-avg : 2
 dimension : 2048
 FoV : 0

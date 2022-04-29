@@ -2,6 +2,7 @@ import numpy as np
 from pathlib import Path
 import configargparse
 import argparse
+from colorama import Fore, Back, Style
 
 def pyfhd_parser():
     parser = configargparse.ArgumentParser(
@@ -28,7 +29,7 @@ def pyfhd_parser():
     parser.add_argument( '-u', '--uvfits-path', type = Path, help = "Directory for the uvfits files, by default it looks for a directory called uvfits in the working directory", default = "./uvfits/")
     parser.add_argument('-r', '--recalculate-all', default = False, action='store_true', help = 'Forces PyFHD to recalculate all values. This will ignore values set for recalculate-grid, recalculate-beam, recalculate-mapfn as it will set all of them to True')
     parser.add_argument('-s', '--silent', default = False, action = 'store_true', help = 'This PyFHD stops all output to the terminal unless there is an error or warning.')
-    parser.add_argument('-l', '--logging', default = True, action = 'store_true', help = 'Logging is enabled by default, set to False to disable it')
+    parser.add_argument('-l', '--disable-log', default = False, action = 'store_true', help = 'Logging is enabled by default, set to False to disable it')
     parser.add_argument('--dimension', type = int, default = 2048, help = 'The number of pixels in the UV plane along one axis.')
     parser.add_argument('--FoV', '--fov', type = float, default = 0, help = 'A proxy for the field of view in degrees. FoV is actually used to determine kbinsize, which will be set to !RaDeg/FoV.\nThis means that the pixel size at phase center times dimension is approximately equal to FoV, which is not equal to the actual field of view owing to larger pixel sizes away from phase center.\nIf set to 0, then kbinsize determines the UV resolution.')
     parser.add_argument('--deproject-w-term', type = float, default = None, help = 'Enables the function for simple_deproject_w_term and uses the parameter value for the direction value in the function')
@@ -96,12 +97,12 @@ def pyfhd_parser():
     export.add_argument('--cleanup', help = 'Deletes some intermediate data products that are easy to recalculate in order to save disk space', default = False, action='store_true')
     export.add_argument('--save-visibilities', default = True, action = 'store_true', help = 'Save the calibrated data visibilities, the model visibilities, and the visibility flags.')
     export.add_argument('--snapshot-healpix-export', default = True, action = 'store_true', help = 'Save model/dirty/residual/weights/variance cubes as healpix arrays, split into even and odd time samples, in preparation for epsilon.')
-    export.add_argument('--pad_uv_image', type = float, default = 1.0, help = "Pad the UV image by this factor with 0's along the outside so that output images are at a higher resolution.")
+    export.add_argument('--pad-uv-image', type = float, default = 1.0, help = "Pad the UV image by this factor with 0's along the outside so that output images are at a higher resolution.")
     export.add_argument('--ring-radius-multi', type = float, default = 10, help = 'Sets the multiplier for the size of the rings around sources in the restored images.\nRing Radius will equal pad-uv-image * ring-radius-multi.\nTo generate restored images without rings, set ring_radius = 0.')
 
     # Model Group
     model.add_argument('-m', '--model-visibilities', default = False, action = 'store_true', help = 'Make visibilities for the subtraction model separately from the model used in calibration.\nThis is useful if the user sets parameters to make the subtraction model different from the model used in calibration.\nIf not set, the model used for calibration is the same as the subtraction model.')
-    model.add_argument('--diffuse-model', type = Path, help = """File path to the diffuse model file.The file should contain the following:\nMODEL_ARR = A healpix map with the diffuse model. Diffuse model has units Jy/pixel unless keyword diffuse_units_kelvin is set.\n            The model can be an array of pixels, a pointer to an array of pixels, or an array of four pointers corresponding to I, Q, U, and V Stokes polarized maps.\n    NSIDE = The corresponding NSIDE parameter of the healpix map.\n HPX_INDS = The corresponding healpix indices of the model_arr.\nCOORD_SYS = (Optional) 'galactic' or 'celestial'. Specifies the coordinate system of the healpix map. GSM is in galactic coordinates, for instance. If missing, defaults to equatorial.""")
+    model.add_argument('--diffuse-model', type = Path, help = """File path to the diffuse model file.The file should contain the following: \nMODEL_ARR = A healpix map with the diffuse model. Diffuse model has units Jy/pixel unless keyword diffuse_units_kelvin is set.\n            The model can be an array of pixels, a pointer to an array of pixels, or an array of four pointers corresponding to I, Q, U, and V Stokes polarized maps.\n    NSIDE = The corresponding NSIDE parameter of the healpix map.\n HPX_INDS = The corresponding healpix indices of the model_arr.\nCOORD_SYS = (Optional) 'galactic' or 'celestial'. Specifies the coordinate system of the healpix map. GSM is in galactic coordinates, for instance. If missing, defaults to equatorial.""")
     model.add_argument('--model-catalog-file-path', type = Path, default = 'GLEAM_v2_plus_rlb2019.sav', help = 'A file containing a catalog of sources to be used to make model visibilities for subtraction.')
     model.add_argument('--allow-sidelobe-model-sources', default = True, action = 'store_true', help = 'Allows PyFHD to model sources in the sidelobes for subtraction.\nForces the beam_threshold to 0.01 in order to go down to 1%% of the beam to capture sidelobe sources during the generation of a model calibration source catalog for the particular observation.')
     
@@ -119,16 +120,33 @@ def pyfhd_parser():
     healpix.add_argument('--ps-kbinsize', type = float, default = 0.5, help = 'UV pixel size in wavelengths to grid for Healpix cube generation. Overrides ps_fov and the kpix in the obs structure if set.')
     healpix.add_argument('--ps-kspan', type = float, default = 600, help = 'UV plane dimension in wavelengths for Healpix cube generation.\nOverrides ps_dimension and ps_degpix if set.\nIf ps_kspan, ps_dimension, or ps_degpix are not set, the UV plane dimension is calculated from the FoV and the degpix from the obs structure.')
     healpix.add_argument('--restrict-hpx-inds', type = Path, default = None, help = "Only allow gridding of the output healpix cubes to include the healpix pixels specified in a file.\nThis is useful for restricting many observations to have consistent healpix pixels during integration, and saves on memory and walltime.")
-    healpix.add_argument('--split-ps-output', default = True, action = 'store_true', help = 'Split up the Healpix outputs into even and odd time samples.\nThis is essential to propogating errors in εppsilon.\nRequires more than one time sample.')
+    healpix.add_argument('--split-ps-export', default = True, action = 'store_true', help = 'Split up the Healpix outputs into even and odd time samples.\nThis is essential to propogating errors in εppsilon.\nRequires more than one time sample.')
 
     return parser
 
 def setup_parser(options: argparse.Namespace) :
-    """_summary_
+    """
+    Check for any incompatibilities among the options given for starting the PyFHD pipeline as some options
+    do conflict with each other or have dependencies on other options. This function should catch all of those
+    potential errors and exit the program with errors once these have been found before any output.
 
     Parameters
     ----------
     options : argparse.Namespace
-        _description_
+        The parsed argparse object.
+    
     """
-    print(options)
+    # We will store all the errors in this list.
+    errors = []
+    error_format = Back.RED + 'ERROR:' + Back.RESET + Fore.RED + ' '
+    error_end = Style.RESET_ALL
+    # Force PyFHD to recalculate the beam, gridding and mapping functions
+    if options.recalculate_all:
+        options.recalculate_beam = True
+        options.recalculate_grid = True
+        options.recalculate_mapfn = True
+    for error in errors:
+        print(error)
+    # If there are any errors exit the program.
+    if len(errors):
+        exit()

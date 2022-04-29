@@ -137,5 +137,9 @@ dmypy.json
 # Cython debug symbols
 cython_debug/
 
-# Data directories
-data/
+# PyFHD Directories
+output/**
+uvfits/**
+
+!output/README.md
+!uvfits/README.md

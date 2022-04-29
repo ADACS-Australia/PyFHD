@@ -29,7 +29,7 @@ Usage
 =====
 
 .. argparse::
-   :ref: PyFHD.pyfhd_tools.parser.pyfhd_parser
+   :ref: PyFHD.pyfhd_tools.pyfhd_setup.pyfhd_parser
    :prog: pyfhd
 
 
