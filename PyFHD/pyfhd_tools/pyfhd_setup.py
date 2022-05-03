@@ -1,10 +1,23 @@
+from black import err
 import numpy as np
 from pathlib import Path
 import configargparse
 import argparse
-from colorama import Fore, Back, Style
+import time
+import subprocess
+import logging
+import shutil
 
 def pyfhd_parser():
+    """
+    THe pyfhd_parser configures the argparse for PyFHD
+
+    Returns
+    -------
+    configargparse.ArgumentParser
+        The parser for PyFHD which contains the help strings for the terminal and Usage section of the docs.
+    """
+
     parser = configargparse.ArgumentParser(
         default_config_files = ["./pyfhd.yaml"], 
         prog = "PyFHD", 
@@ -26,10 +39,10 @@ def pyfhd_parser():
 
     # General Defaults
     parser.add_argument('obs_id', help="The Observation ID as per the MWA file naming standards. Assumes the fits files for this observation is in the uvfits-path. obs_id and uvfits replace file_path_vis from FHD")
-    parser.add_argument( '-u', '--uvfits-path', type = Path, help = "Directory for the uvfits files, by default it looks for a directory called uvfits in the working directory", default = "./uvfits/")
+    parser.add_argument( '-i', '--input-path', type = Path, help = "Directory for the uvfits files and other inputs, by default it looks for a directory called input in the working directory", default = "./input/")
     parser.add_argument('-r', '--recalculate-all', default = False, action='store_true', help = 'Forces PyFHD to recalculate all values. This will ignore values set for recalculate-grid, recalculate-beam, recalculate-mapfn as it will set all of them to True')
-    parser.add_argument('-s', '--silent', default = False, action = 'store_true', help = 'This PyFHD stops all output to the terminal unless there is an error or warning.')
-    parser.add_argument('-l', '--disable-log', action = 'store_true', help = 'Logging is enabled by default, set to False to disable it')
+    parser.add_argument('-s', '--silent', default = False, action = 'store_true', help = 'This PyFHD stops all output to the terminal except in the case of an error and/or exception')
+    parser.add_argument('-l', '--disable-log', action = 'store_true', help = 'Logging in a log file is enabled by default, set to False in the config or use this argument to disable the log file.')
     parser.add_argument('--dimension', type = int, default = 2048, help = 'The number of pixels in the UV plane along one axis.')
     parser.add_argument('--FoV', '--fov', type = float, default = 0, help = 'A proxy for the field of view in degrees. FoV is actually used to determine kbinsize, which will be set to !RaDeg/FoV.\nThis means that the pixel size at phase center times dimension is approximately equal to FoV, which is not equal to the actual field of view owing to larger pixel sizes away from phase center.\nIf set to 0, then kbinsize determines the UV resolution.')
     parser.add_argument('--deproject-w-term', type = float, default = None, help = 'Enables the function for simple_deproject_w_term and uses the parameter value for the direction value in the function')
@@ -37,6 +50,7 @@ def pyfhd_parser():
     parser.add_argument('--memory-threshold', type = int, default = 1e8, help = 'Set a memory threshold for each chunk in set in bytes. By default it is set at ~100MB')
     parser.add_argument('--n-avg', type = int, default = 2, help = 'Number of frequencies to average over to smooth the frequency band.')
     parser.add_argument('--min-baseline', type = float, default = 1.0, help = 'The minimum baseline length in wavelengths to include in the analysis')
+    parser.add_argument('--n-pol', type = int, default = 2, choices = [2, 4], help = 'Set number of polarizations to use (XX, YY versus XX, YY, XY, YX).')
 
     # Calibration Group
     calibration.add_argument('-cv', '--calibrate-visibilities', default = True, action = 'store_true', help = 'Turn on the calibration of the visibilities. If turned on, calibration of the dirty, modelling, and subtraction to make a residual occurs. Otherwise, none of these occur and an uncalibrated dirty cube is output.')
@@ -50,7 +64,7 @@ def pyfhd_parser():
     calibration.add_argument('--allow-sidelobe-cal-sources', default = True, action = 'store_true', help = 'Allows PyFHD to calibrate on sources in the sidelobes.\nForces the beam_threshold to 0.01 in order to go down to 1%% of the beam to capture sidelobe sources during the generation of a calibration source catalog for the particular observation.')
     calibration.add_argument('--cable-bandpass-fit', default = True, action = 'store_true', help = 'Average the calibration solutions across tiles within a cable grouping for the particular instrument.\nDependency: instrument_config/<instrument>_cable_length.txt')
     calibration.add_argument('--cal-bp-transfer', type = Path, default = 'mwa_eor0_highband_season1_cable_bandpass.fits', help = 'Use a saved bandpass for bandpass calibration. Read in the specified file with calfits format greatly preferred.')
-    calibration.add_argument('--calibration-polyfit', default = True, action = 'store_true', help = 'calculates a polynomial fit across the frequency band for the gain, and allows a cable reflection to be fit.\nThe orders of the polynomial fit are determined by cal_phase_degree_fit and cal_amp_degree_fit.\nIf unset, no polynomial fit or cable reflection fit are used.')
+    calibration.add_argument('--calibration-polyfit', default = True, action = 'store_true', help = 'Calculates a polynomial fit across the frequency band for the gain, and allows a cable reflection to be fit.\nThe orders of the polynomial fit are determined by cal_phase_degree_fit and cal_amp_degree_fit.\nIf unset, no polynomial fit or cable reflection fit are used.')
     calibration.add_argument('--cal-amp-degree-fit', default = 2, type = int, help = "The nth order of the polynomial fit over the whole band to create calibration solutions for the amplitude of the gain.\nSetting it to 0 gives a 0th order polynomial fit (one number for the whole band),\n1 gives a 1st order polynomial fit (linear fit),\n2 gives a 2nd order polynomial fit (quadratic),\nn gives nth order polynomial fit.\nRequires calibration_polyfit to be enabled.")
     calibration.add_argument('--cal-phase-degree-fit', default = 1, type = int, help = "The nth order of the polynomial fit over the whole band to create calibration solutions for the phase of the gain.\nSetting it to 0 gives a 0th order polynomial fit (one number for the whole band),\n1 gives a 1st order polynomial fit (linear fit),\n2 gives a 2nd order polynomial fit (quadratic),\nn gives nth order polynomial fit.\nRequires calibration_polyfit to be enabled.")
     calibration.add_argument('--cal-reflection-hyperresolve', default = True, action = 'store_true', help = 'Hyperresolve and fit residual gains using nominal reflection modes (calculated from cal_reflection_mode_delay or cal_reflection_mode_theory),\nproducing a finetuned mode fit, amplitude, and phase.\nWill be ignored if cal_reflection_mode_file is set because it is assumed that a file read-in contains mode/amp/phase to use.')
@@ -110,7 +124,7 @@ def pyfhd_parser():
     # Simultation Group
     sim.add_argument('-sim', '--run-simulation', default = False, action = 'store_true', help = 'Run an in situ simulation, where model visibilities are made and input as the dirty visibilities (see Barry et. al. 2016 for more information on use-cases).\nIn the case where in-situ-sim-input is not provided visibilities will be made within the current PyFHD run.')
     sim.add_argument('--in-situ-sim-input', type = Path, default = None, help = 'Inputs model visibilities from a previous run, which is the preferred method since that run is independently documented.')
-    sim.add_argument('--eor-vis-filepath', type = Path, default = None, help = 'A path to a file of EoR visibilities to include the EoR in the dirty input visibilities. in-situ-sim-input must be used in order to use this parameter.')
+    sim.add_argument('--eor-vis-filepath', type = Path, default = None, help = 'A path to a file of EoR visibilities to include the EoR in the dirty input visibilities. in-situ-sim-input must be used in order to use this parameter. Replaces eor_savefile from FHD')
     sim.add_argument('--enhance-eor', type = float, default = 1., help = 'Input a multiplicative factor to boost the signal of the EoR in the dirty input visibilities. in-situ-sim-input must be used in order to use this parameter.')
     sim.add_argument('--sim-noise', type = Path, default = None, help = 'Add a uncorrelated thermal noise to the input dirty visibilities from a file, or create them for the run. in-situ-sim-input must be used in order to use this parameter.')
     sim.add_argument('--tile-flag-list', type = list, help = 'A string array of tile names to manually flag tiles. Note that this is an array of tile names, not tile indices!')
@@ -125,49 +139,264 @@ def pyfhd_parser():
 
     return parser
 
-def setup_parser(options: argparse.Namespace) :
+def _check_file_exists(config : dict, key : str) -> int:
+    """
+    Helper function to check if the key is not None and if it isn't None, then if file exists given from the config.
+
+    Parameters
+    ----------
+    config : dict
+        Should be the pyfhd_config
+    key : str
+        The keyword in the config we are checking.
+
+    Returns
+    -------
+    int
+        Will return 0 if there is no error, 1 if there is.
+    """
+    if config[key]:
+        if not Path(config[key]).exists():
+            logging.error("{} has been enabled with a path that doesn't exist, check the path.".format(key))
+            return 1
+    return 0
+
+def pyfhd_setup(options: argparse.Namespace) -> tuple[dict, logging.RootLogger]:
     """
     Check for any incompatibilities among the options given for starting the PyFHD pipeline as some options
     do conflict with each other or have dependencies on other options. This function should catch all of those
-    potential errors and exit the program with errors once these have been found before any output.
+    potential errors and exit the program with errors once these have been found before any output. This function
+    should also replace fhd_setup
 
     Parameters
     ----------
     options : argparse.Namespace
         The parsed argparse object.
     
+    Returns
+    -------
+    pyfhd_config : dict
+        The configuration dictionary for PyFHD containing all the options.
+    logger : logging.RootLogger
+        The logger with the appropriate handlers added.
     """
-    # We will store all the errors in this list.
-    errors = []
-    warnings = []
-    error_format = Back.RED + 'ERROR:' + Back.RESET + Fore.RED + ' '
-    error_end = Style.RESET_ALL
-    # TODO: uvfits_path exists and obs_id file exists
-    # Force PyFHD to recalculate the beam, gridding and mapping functions
-    if options.recalculate_all:
-        options.recalculate_beam = True
-        options.recalculate_grid = True
-        options.recalculate_mapfn = True
-    # TODO: cable_bandpass_fit cable_length text dependency
-    # TODO: cal-bp-transfer check if file given exists
-    # TODO: cal_amp_degree_fit and cal_phase_degree_fit depend on calibration_polyfit being True
-    # TODO: cal_reflection_hyperresolve gets ignored when cal_reflection_mode_file is set
-    # TODO: cal_reflection_mode_theory and cal_reflection_mode_delay cannot be on at the same time, prioritise mode_theory
-    # TODO: cal_reflection_mode_file depends on a file
-    # TODO: diffuse_calibrate depends on a file
-    # TODO: calibration_catalog_file_path depends on a file
-    # TODO: transfer_calibration depends on a file
-    # TODO: transfer_model_uv depends on a file
-    # TODO: transfer-weights depends on a file
-    # TODO: smooth-width depends on filter_background
-    # TODO: pad_uv_image and ring_radius_multi multiply together to make ring_radius
-    # TODO: diffuse-model depends on a file
-    # TODO: model_catalog_file_path depends on a file
-    # TODO: allow_sidelobe_model_sources depends on model_visibilities
+    # Keep track of the errors and warnings.
+    errors = 0
+    warnings = 0
+    pyfhd_config = vars(options)
+    # Start the logger
+    logger = pyfhd_logger(pyfhd_config)
+    # Check input_path exists and obs_id uvfits and metafits files exist
+    if not pyfhd_config['input_path'].exists():
+        logger.error("{} doesn't exist, please check your input path".format(options.input_path))
+        errors += 1
+    obs_uvfits_path = Path(pyfhd_config['input_path'], pyfhd_config['obs_id'] + '.uvfits')
+    obs_metafits_path = Path(pyfhd_config['input_path'], pyfhd_config['obs_id'] + '.metafits')
+    if not obs_uvfits_path.exists():
+        logger.error("{} doesn't exist, please check your input path".format(obs_uvfits_path))
+        errors += 1
+    if not obs_metafits_path.exists():
+        logger.error("{} doesn't exist, please check your input path".format(obs_metafits_path))
+        errors += 1
     
+    # Force PyFHD to recalculate the beam, gridding and mapping functions
+    if pyfhd_config['recalculate_all']:
+        pyfhd_config['recalculate_beam'] = True
+        pyfhd_config['recalculate_grid'] = True
+        pyfhd_config['recalculate_mapfn'] = True
+    logger.info('Recalculate All options has been enabled, the beam, gridding and map function will be recalculated')
 
-    for error in errors:
-        print(error)
+    # Check if recalculate_mapfn has been enabled and recalculate_grids disabled, if so enable recaluclate_grid
+    if pyfhd_config['recalculate_mapfn'] and not pyfhd_config['recalculate_grid']:
+        pyfhd_config['recalculate_grid'] = True
+        logger.warning('The grid has to be recalculated in order for the mapping function to be recalculated. Grid recalculation has now been enabled.') 
+        warnings += 1
+
+    # If both mapping function and healpi export are on save the visibilities
+    if pyfhd_config['recalculate_mapfn'] and pyfhd_config['snapshot_healpix_export'] and not pyfhd_config['save_visibilities']:
+        pyfhd_config['save_visibilities'] = True
+        logger.warning("If the mapping function is being recalculated and we're exporting healpix we should also save the visibilities that created them.")
+        warnings += 1
+
+    # If cable_bandpass_fit has been enabled an instrument text file should also exist.
+    if pyfhd_config['cable_bandpass_fit']:
+        if not Path(pyfhd_config['input_path'], 'instrument_config', 'mwa_cable_length' + '.txt').exists():
+            logging.error('Cable bandpass fit has been enabled but the required text file is missing')
+            errors += 1
+    
+    # cal_bp_transfer when enabled should point to a file with a saved bandpass
+    errors += _check_file_exists(pyfhd_config, 'cal_bp_transfer')
+    
+    # If cal_amp_degree_fit or cal_phase_degree_fit have ben set but calibration_polyfit isn't warn the user
+    if (pyfhd_config['cal_amp_degree_fit'] or pyfhd_config['cal_phase_degree_fit'] or pyfhd_config['cal_reflection_mode_theory'] or pyfhd_config['cal_reflection_mode_delay']) \
+        and not pyfhd_config['calibration_polyfit']:
+        logger.warning('cal_amp_degree_fit and/or cal_amp_phase_fit have been set but calibration_polyfit has been disabled.')
+        warnings += 1
+    
+    # cal_reflection_hyperresolve gets ignored when cal_reflection_mode_file is set
+    if pyfhd_config['cal_reflection_hyperresolve'] and pyfhd_config['cal_reflection_mode_file']:
+        logging.warning("cal_reflection_hyperresolve and cal_reflection_mode_file have both been turned on, cal_reflection_mode_file will be prioritised.")
+        pyfhd_config['cal_reflection_hyperresolve'] = False
+        warnings += 1
+
+    # cal_reflection_mode_file depends on a file
+    errors += _check_file_exists(pyfhd_config, 'cal_reflection_mode_file')
+
+    # cal_reflection_mode_theory and cal_reflection_mode_delay cannot be on at the same time, prioritise mode_theory
+    if pyfhd_config['cal_reflection_mode_theory'] and pyfhd_config['cal_reflection_mode_delay']: 
+        logging.warning('Both cal_reflection_mode_theory and cal_reflection_mode_delay have been enabled, prioritising cal_reflection_mode_theory')
+        pyfhd_config['cal_reflection_mode_delay'] = False
+        warnings += 1
+    
+    # diffuse_calibrate depends on a file
+    errors += _check_file_exists(pyfhd_config, 'diffuse_calibrate')
+
+    # calibration_catalog_file_path depends on a file
+    errors += _check_file_exists(pyfhd_config, 'calibration_catalog_file_path')
+
+    # transfer_calibration depends on a file 
+    errors += _check_file_exists(pyfhd_config, 'transfer_calibration')
+
+    # transfer_model_uv depends on a file
+    errors += _check_file_exists(pyfhd_config, 'transfer_model_uv')
+
+    # transfer-weights depends on a file
+    errors += _check_file_exists(pyfhd_config, 'transfer_weights')
+
+    # TODO: smooth-width depends on filter_background (Warning)
+
+    # diffuse-model depends on a file (Error)
+    errors += _check_file_exists(pyfhd_config, 'diffuse_model')
+
+    # model_catalog_file_path depends on a file (Error)
+    errors += _check_file_exists(pyfhd_config, 'model_catalog_file_path')
+
+    # allow_sidelobe_model_sources depends on model_visibilities (Error)
+
+    # Entirety of Simulation Group depends on run-simulation (Error)
+
+    # in-situ-sim-input depends on a file (Error)
+    errors += _check_file_exists(pyfhd_config, 'in_situ_sim_input')
+
+    # eor_vis_filepath depends on a file (Error)
+    errors += _check_file_exists(pyfhd_config, 'eor_vis_filepath')
+
+    # enhance_eor depends on eor_vis_filepath when its not 1 (Error)
+    
+    # sim_noise depends on a file (Error)
+    errors += _check_file_exists(pyfhd_config, 'sim_noise')
+
+    # Restrict_hpx_inds depends on a file (Error)
+    errors += _check_file_exists(pyfhd_config, 'restrict_hpx_inds')
+    
+    pyfhd_config['ring_radius'] =  pyfhd_config['pad_uv_image'] * pyfhd_config['ring_radius_multi']
+
     # If there are any errors exit the program.
-    if len(errors):
+    if errors:
+        logger.error('{} errors detected, check the log above to see the errors, stopping PyFHD now'.format(errors))
+        # Close the handlers in the log
+        for handler in logger.handlers:
+            handler.close()
         exit()
+
+    return pyfhd_config, logger
+
+def pyfhd_logger(pyfhd_config: dict) -> logging.RootLogger:
+    '''
+    Creates the the logger for PyFHD. If silent is True in the pyfhd_config then
+    the StreamHandler won't be added to logger meaning there will be no terminal output
+    even if logger is called later. If diable_log is True then the FileHandler won't be added
+    to the logger preventing the creation fo the log file meaning subsequent calls to the logger
+    will not add to or create a log file.
+
+    Parameters
+    ----------
+    pyfhd_config : dict
+        The options from the argparse in a dictionary
+
+    Returns
+    -------
+    logger : logging.RootLogger
+        The logger with the appropriate handlers added.
+    '''
+    # Get the time, Git commit and setup the name of the output directory
+    run_time = time.localtime()
+    stdout_time = time.strftime("%c", run_time)
+    log_time = time.strftime("%H_%M_%S_%d_%m_%Y", run_time)
+    commit = subprocess.run(["git", "rev-parse", "HEAD"], stdout=subprocess.PIPE, text = True).stdout
+    if pyfhd_config['description'] is None:
+        log_name = "pyfhd_" + log_time
+    else:
+        log_name = "pyfhd_" + pyfhd_config['description'].replace(' ', '_').lower() + log_time
+    # Format the starting string for logging
+    start_string = """\
+    ________________________________________________________________________
+    |    ooooooooo.               oooooooooooo ooooo   ooooo oooooooooo.    |
+    |    8888   `Y88.             8888       8 8888    888   888     Y8b    |
+    |    888   .d88' oooo    ooo  888          888     888   888      888   |
+    |    888ooo88P'   `88.  .8'   888oooo8     888ooooo888   888      888   |
+    |    888           `88..8'    888          888     888   888      888   |
+    |    888            `888'     888          888     888   888     d88'   |
+    |    o888o            .8'     o888o        o888o   o888o o888bood8P'    |
+    |                 .o..P'                                                |
+    |                `Y8P'                                                  |
+    |_______________________________________________________________________|
+        Python Fast Holographic Deconvolution 
+
+        Translated from IDL to Python as a collaboration between Astronomy Data and Computing Services (ADACS) and the Epoch of Reionisation (EoR) Team.
+
+        Repository: https://github.com/ADACS-Australia/PyFHD
+
+        Documentation: https://pyfhd.readthedocs.io/en/latest/
+
+        Git Commit Hash: {}
+
+        PyFHD Run Started At: {}
+
+        Observation ID: {}
+        
+        Validating your input...""".format(commit.replace('\n',''), stdout_time, pyfhd_config['obs_id'])
+
+    # Setup logging
+    log_string = ""
+    for line in start_string.split('\n'):
+        log_string += line.lstrip().replace('_', ' ').replace('|    ', '').replace('|', '') +'\n'
+    # Start the PyFHD run
+    logger = logging.getLogger()
+    logger.setLevel(logging.DEBUG)
+    # Create the logging for the temrinal
+    if not pyfhd_config['silent']:
+        log_terminal = logging.StreamHandler()
+        log_terminal.setFormatter(logging.Formatter('%(message)s'))
+        logger.addHandler(log_terminal)
+
+    # Create the output directory
+    output_dir = Path(pyfhd_config['output_path'], log_name)
+    if Path.is_dir(output_dir):
+        raise OSError("You have a directory inside your specified output directory already named by this date and time...Probably not a time travel paradox right...?")
+    else:
+        Path.mkdir(output_dir)
+
+    # Create the logger for the file
+    if not pyfhd_config['disable_log']:
+        log_file = logging.FileHandler(Path(output_dir, log_name + '.log'))
+        log_file.setFormatter(logging.Formatter('%(message)s'))
+        logger.addHandler(log_file)
+    
+    # Show that start message in the terminal and/or log file, unless both are turned off.
+    logger.info(log_string)
+    if not pyfhd_config['silent']:
+        log_terminal.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s:\n\t%(message)s', datefmt = '%Y-%m-%d %H:%M:%S'))
+    if not pyfhd_config['disable_log']:
+        log_file.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s:\n\t%(message)s', datefmt = '%Y-%m-%d %H:%M:%S'))
+    logger.info("Log Created and Input Validated Starting Run Now")
+
+    # Copy the Configuration File if it exists to the output directory
+    if pyfhd_config['config_file'] is None:
+        shutil.copy('pyfhd.yaml', Path(output_dir, log_name + '.yaml'))
+    else:
+        shutil.copy(pyfhd_config['config_file'], Path(output_dir, log_name + '.yaml'))
+    
+    logger.info('Logging and configuration file created and copied to here: {}'.format(Path(output_dir).resolve()))
+
+    return logger

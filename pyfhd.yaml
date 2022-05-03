@@ -1,6 +1,6 @@
 # Default Arguments for PyFHD
 # ~ returns None in Python (i.e. NULL)
-uvfits-path : './input'
+input-path : './input'
 recalculate-all : false
 silent : false
 disable-log : false
@@ -10,6 +10,7 @@ n-avg : 2
 dimension : 2048
 FoV : 0
 min-baseline : 1.
+n-pol : 2
 
 # Beam Setup
 recalculate-beam : true
@@ -84,7 +85,7 @@ allow-sidelobe-model-sources : true
 run-simulation : false
 in-situ-sim-input : ~
 eor-vis-filepath : ~
-enhance-eor : 1.
+enhance-eor : 1
 sim-noise : ~
 tile-flag-list : ~
 remove-sim-flags : false

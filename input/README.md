@@ -6,6 +6,8 @@ Inside here should be the main input for a PyFHD run, the uvfits files which sho
 
 `1061316296.metafits`
 
+Of course you can set an alternate directory to search for the `uvfits` and `metafits` files.
+
 ## Other files that may be in here
 
 Depending on the options for the PyFHD run you have chosen there may be other files you will need, I'd advise putting them in here.

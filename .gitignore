@@ -139,7 +139,7 @@ cython_debug/
 
 # PyFHD Directories
 output/**
-uvfits/**
+input/**
 
 !output/README.md
-!uvfits/README.md
+!input/README.md
