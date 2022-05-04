@@ -2,6 +2,7 @@ import numpy as np
 import astropy 
 from pathlib import Path
 from PyFHD.pyfhd_tools.pyfhd_setup import pyfhd_parser, pyfhd_setup
+from PyFHD.data_setup.obs import create_obs
 
 def main():
     options = pyfhd_parser().parse_args()
