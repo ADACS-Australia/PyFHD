@@ -9,6 +9,9 @@ def main():
     # Validate options and Create the Logger
     pyfhd_config, logger = pyfhd_setup(options)
 
+    # Get obs
+    create_obs(pyfhd_config)
+
     # Close the handlers in the log
     for handler in logger.handlers:
         handler.close()
