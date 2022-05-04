@@ -23,8 +23,8 @@ beam-model-version : 2
 
 # Calibration
 calibrate-visibilities : true
-cable-bandpass-fit : true
-cal-bp-transfer : ~ #'mwa_eor0_highband_season1_cable_bandpass.fits'
+cable-bandpass-fit : true # Depends on instrument cable length text file
+cal-bp-transfer : ~ # 'mwa_eor0_highband_season1_cable_bandpass.fits' (FHD Default)
 calibration-polyfit : true
 allow-sidelobe-cal-sources : true
 cal-amp-degree-fit : 2
@@ -39,7 +39,7 @@ bandpass-calibrate : true
 return-cal-visibilities : true
 calibration-flag-iterate : 0
 diffuse-calibrate : ~
-calibration-catalog-file-path  :  ~ #'GLEAM_v2_plus_rlb2019.sav'
+calibration-catalog-file-path  :  ~ # 'GLEAM_v2_plus_rlb2019.sav' (FHD Default)
 transfer-calibration : ~
 cal-stop : false
 transfer-model-uv : ~
@@ -78,8 +78,8 @@ description : ~
 # Model
 model-visibilities : false
 diffuse-model : ~
-model-catalog-file-path  :  ~ #'GLEAM_v2_plus_rlb2019.sav'
-allow-sidelobe-model-sources : true
+model-catalog-file-path  :  ~ # 'GLEAM_v2_plus_rlb2019.sav' (FHD Default)
+allow-sidelobe-model-sources : false
 
 # Simulation
 run-simulation : false

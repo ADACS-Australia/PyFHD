@@ -56,14 +56,14 @@ def pyfhd_parser():
     calibration.add_argument('-cv', '--calibrate-visibilities', default = True, action = 'store_true', help = 'Turn on the calibration of the visibilities. If turned on, calibration of the dirty, modelling, and subtraction to make a residual occurs. Otherwise, none of these occur and an uncalibrated dirty cube is output.')
     calibration.add_argument('--diffuse-calibrate', type = Path, help = 'Path to a file containing a map/model of the diffuse in which to calibrate on.\nThe map/model undergoes a DFT for every pixel, and the contribution from every pixel is added to the model visibilities from which to calibrate on.\nIf no diffuse_model is specified, then this map/model is used for the subtraction model as well. See diffuse_model for information about the formatting of the file.')
     calibration.add_argument('--transfer-calibration', type = Path, help = 'The file path of a calibration to be read-in, if you give a directory PyFHD expects there to be a file called <obs_id>_cal.hdf5 using the same observation as you plan to process.')
-    calibration.add_argument('--calibration-catalog-file-path', type = Path, default = 'GLEAM_v2_plus_rlb2019.sav', help = 'The file path to the desired source catalog to be used for calibration')
+    calibration.add_argument('--calibration-catalog-file-path', type = Path, default = None, help = 'The file path to the desired source catalog to be used for calibration')
     calibration.add_argument('--return-cal-visibilities', default = True, action = 'store_true', help = "Saves the visibilities created for calibration for use in the model.\nIf model_visibilities is set to False, then the calibration model visibilities and the model visibilities will be the same if return_cal_visibilities is set.\nIf model_visibilities is set to True, then any new modelling (of more sources, diffuse, etc.) will take place and the visibilities created for the calibration model will be added.\nIf n_pol = 4 (full pol mode), return_cal_visibilites must be set because the visibilites are required for calculating the mixing angle between Q and U.")
     calibration.add_argument('--cal-stop', default = False, action = 'store_true', help = 'Stops the code right after calibration, and saves unflagged model visibilities along with the obs structure in a folder called cal_prerun in the PyFHD file structure.\nThis allows for post-processing calibration steps like multi-day averaging, but still has all of the needed information for minimal reprocessing to get to the calibration step.\nTo run a post-processing run, see keywords model_transfer and transfer_psf')
     calibration.add_argument('--transfer-model-uv', type = Path, default = None, help = "A path to save a model uv array.\nIf it's a file that doesnt exist then vis_calibrate will create one for this run, otherwise if the file exists PyFHD will read it in for this run.\nReplaces model_uv_transfer")
     calibration.add_argument('--min-cal-baseline', type = float, default = 50.0, help = 'The minimum baseline length in wavelengths to be used in calibration.')
     calibration.add_argument('--allow-sidelobe-cal-sources', default = True, action = 'store_true', help = 'Allows PyFHD to calibrate on sources in the sidelobes.\nForces the beam_threshold to 0.01 in order to go down to 1%% of the beam to capture sidelobe sources during the generation of a calibration source catalog for the particular observation.')
     calibration.add_argument('--cable-bandpass-fit', default = True, action = 'store_true', help = 'Average the calibration solutions across tiles within a cable grouping for the particular instrument.\nDependency: instrument_config/<instrument>_cable_length.txt')
-    calibration.add_argument('--cal-bp-transfer', type = Path, default = 'mwa_eor0_highband_season1_cable_bandpass.fits', help = 'Use a saved bandpass for bandpass calibration. Read in the specified file with calfits format greatly preferred.')
+    calibration.add_argument('--cal-bp-transfer', type = Path, default = None, help = 'Use a saved bandpass for bandpass calibration. Read in the specified file with calfits format greatly preferred.')
     calibration.add_argument('--calibration-polyfit', default = True, action = 'store_true', help = 'Calculates a polynomial fit across the frequency band for the gain, and allows a cable reflection to be fit.\nThe orders of the polynomial fit are determined by cal_phase_degree_fit and cal_amp_degree_fit.\nIf unset, no polynomial fit or cable reflection fit are used.')
     calibration.add_argument('--cal-amp-degree-fit', default = 2, type = int, help = "The nth order of the polynomial fit over the whole band to create calibration solutions for the amplitude of the gain.\nSetting it to 0 gives a 0th order polynomial fit (one number for the whole band),\n1 gives a 1st order polynomial fit (linear fit),\n2 gives a 2nd order polynomial fit (quadratic),\nn gives nth order polynomial fit.\nRequires calibration_polyfit to be enabled.")
     calibration.add_argument('--cal-phase-degree-fit', default = 1, type = int, help = "The nth order of the polynomial fit over the whole band to create calibration solutions for the phase of the gain.\nSetting it to 0 gives a 0th order polynomial fit (one number for the whole band),\n1 gives a 1st order polynomial fit (linear fit),\n2 gives a 2nd order polynomial fit (quadratic),\nn gives nth order polynomial fit.\nRequires calibration_polyfit to be enabled.")
@@ -118,7 +118,7 @@ def pyfhd_parser():
     # Model Group
     model.add_argument('-m', '--model-visibilities', default = False, action = 'store_true', help = 'Make visibilities for the subtraction model separately from the model used in calibration.\nThis is useful if the user sets parameters to make the subtraction model different from the model used in calibration.\nIf not set, the model used for calibration is the same as the subtraction model.')
     model.add_argument('--diffuse-model', type = Path, help = """File path to the diffuse model file.The file should contain the following: \nMODEL_ARR = A healpix map with the diffuse model. Diffuse model has units Jy/pixel unless keyword diffuse_units_kelvin is set.\n            The model can be an array of pixels, a pointer to an array of pixels, or an array of four pointers corresponding to I, Q, U, and V Stokes polarized maps.\n    NSIDE = The corresponding NSIDE parameter of the healpix map.\n HPX_INDS = The corresponding healpix indices of the model_arr.\nCOORD_SYS = (Optional) 'galactic' or 'celestial'. Specifies the coordinate system of the healpix map. GSM is in galactic coordinates, for instance. If missing, defaults to equatorial.""")
-    model.add_argument('--model-catalog-file-path', type = Path, default = 'GLEAM_v2_plus_rlb2019.sav', help = 'A file containing a catalog of sources to be used to make model visibilities for subtraction.')
+    model.add_argument('--model-catalog-file-path', type = Path, default = None, help = 'A file containing a catalog of sources to be used to make model visibilities for subtraction.')
     model.add_argument('--allow-sidelobe-model-sources', default = True, action = 'store_true', help = 'Allows PyFHD to model sources in the sidelobes for subtraction.\nForces the beam_threshold to 0.01 in order to go down to 1%% of the beam to capture sidelobe sources during the generation of a model calibration source catalog for the particular observation.')
     
     # Simultation Group
@@ -186,7 +186,7 @@ def pyfhd_setup(options: argparse.Namespace) -> tuple[dict, logging.RootLogger]:
     pyfhd_config = vars(options)
     # Start the logger
     logger = pyfhd_logger(pyfhd_config)
-    # Check input_path exists and obs_id uvfits and metafits files exist
+    # Check input_path exists and obs_id uvfits and metafits files exist (Error)
     if not pyfhd_config['input_path'].exists():
         logger.error("{} doesn't exist, please check your input path".format(options.input_path))
         errors += 1
@@ -206,65 +206,68 @@ def pyfhd_setup(options: argparse.Namespace) -> tuple[dict, logging.RootLogger]:
         pyfhd_config['recalculate_mapfn'] = True
     logger.info('Recalculate All options has been enabled, the beam, gridding and map function will be recalculated')
 
-    # Check if recalculate_mapfn has been enabled and recalculate_grids disabled, if so enable recaluclate_grid
+    # Check if recalculate_mapfn has been enabled and recalculate_grids disabled, if so enable recaluclate_grid (Warning)
     if pyfhd_config['recalculate_mapfn'] and not pyfhd_config['recalculate_grid']:
         pyfhd_config['recalculate_grid'] = True
         logger.warning('The grid has to be recalculated in order for the mapping function to be recalculated. Grid recalculation has now been enabled.') 
         warnings += 1
 
-    # If both mapping function and healpi export are on save the visibilities
+    # If both mapping function and healpi export are on save the visibilities (Warning)
     if pyfhd_config['recalculate_mapfn'] and pyfhd_config['snapshot_healpix_export'] and not pyfhd_config['save_visibilities']:
         pyfhd_config['save_visibilities'] = True
         logger.warning("If the mapping function is being recalculated and we're exporting healpix we should also save the visibilities that created them.")
         warnings += 1
 
-    # If cable_bandpass_fit has been enabled an instrument text file should also exist.
+    # If cable_bandpass_fit has been enabled an instrument text file should also exist. (Error)
     if pyfhd_config['cable_bandpass_fit']:
         if not Path(pyfhd_config['input_path'], 'instrument_config', 'mwa_cable_length' + '.txt').exists():
             logging.error('Cable bandpass fit has been enabled but the required text file is missing')
             errors += 1
     
-    # cal_bp_transfer when enabled should point to a file with a saved bandpass
+    # cal_bp_transfer when enabled should point to a file with a saved bandpass (Error)
     errors += _check_file_exists(pyfhd_config, 'cal_bp_transfer')
     
-    # If cal_amp_degree_fit or cal_phase_degree_fit have ben set but calibration_polyfit isn't warn the user
+    # If cal_amp_degree_fit or cal_phase_degree_fit have ben set but calibration_polyfit isn't warn the user (Warning)
     if (pyfhd_config['cal_amp_degree_fit'] or pyfhd_config['cal_phase_degree_fit'] or pyfhd_config['cal_reflection_mode_theory'] or pyfhd_config['cal_reflection_mode_delay']) \
         and not pyfhd_config['calibration_polyfit']:
         logger.warning('cal_amp_degree_fit and/or cal_amp_phase_fit have been set but calibration_polyfit has been disabled.')
         warnings += 1
     
-    # cal_reflection_hyperresolve gets ignored when cal_reflection_mode_file is set
+    # cal_reflection_hyperresolve gets ignored when cal_reflection_mode_file is set (Warning)
     if pyfhd_config['cal_reflection_hyperresolve'] and pyfhd_config['cal_reflection_mode_file']:
         logging.warning("cal_reflection_hyperresolve and cal_reflection_mode_file have both been turned on, cal_reflection_mode_file will be prioritised.")
         pyfhd_config['cal_reflection_hyperresolve'] = False
         warnings += 1
 
-    # cal_reflection_mode_file depends on a file
+    # cal_reflection_mode_file depends on a file (Error)
     errors += _check_file_exists(pyfhd_config, 'cal_reflection_mode_file')
 
-    # cal_reflection_mode_theory and cal_reflection_mode_delay cannot be on at the same time, prioritise mode_theory
+    # cal_reflection_mode_theory and cal_reflection_mode_delay cannot be on at the same time, prioritise mode_theory (Warning)
     if pyfhd_config['cal_reflection_mode_theory'] and pyfhd_config['cal_reflection_mode_delay']: 
         logging.warning('Both cal_reflection_mode_theory and cal_reflection_mode_delay have been enabled, prioritising cal_reflection_mode_theory')
         pyfhd_config['cal_reflection_mode_delay'] = False
         warnings += 1
     
-    # diffuse_calibrate depends on a file
+    # diffuse_calibrate depends on a file (Error)
     errors += _check_file_exists(pyfhd_config, 'diffuse_calibrate')
 
-    # calibration_catalog_file_path depends on a file
+    # calibration_catalog_file_path depends on a file (Error)
     errors += _check_file_exists(pyfhd_config, 'calibration_catalog_file_path')
 
-    # transfer_calibration depends on a file 
+    # transfer_calibration depends on a file (Error)
     errors += _check_file_exists(pyfhd_config, 'transfer_calibration')
 
-    # transfer_model_uv depends on a file
+    # transfer_model_uv depends on a file (Error)
     errors += _check_file_exists(pyfhd_config, 'transfer_model_uv')
 
-    # transfer-weights depends on a file
+    # transfer-weights depends on a file (Error)
     errors += _check_file_exists(pyfhd_config, 'transfer_weights')
 
-    # TODO: smooth-width depends on filter_background (Warning)
-
+    # smooth-width depends on filter_background (Warning)
+    if not pyfhd_config['filter_background'] and pyfhd_config['smooth_width']:
+        logger.warning('filter_background must be True for smooth_width to have any effect')
+        warnings += 1
+    
     # diffuse-model depends on a file (Error)
     errors += _check_file_exists(pyfhd_config, 'diffuse_model')
 
@@ -272,8 +275,17 @@ def pyfhd_setup(options: argparse.Namespace) -> tuple[dict, logging.RootLogger]:
     errors += _check_file_exists(pyfhd_config, 'model_catalog_file_path')
 
     # allow_sidelobe_model_sources depends on model_visibilities (Error)
+    if pyfhd_config['allow_sidelobe_model_sources'] and not pyfhd_config['model_visibilities']:
+        logger.error("allow_sidelobe_model_sources shouldn't be True when model_visibilities is not, check if you meant to turn on model_visibilities")
+        errors += 1
 
     # Entirety of Simulation Group depends on run-simulation (Error)
+    if not pyfhd_config['run_simulation'] and \
+        (pyfhd_config['in_situ_sim_input'] or \
+         pyfhd_config['eor_vis_filepath'] or \
+         pyfhd_config['sim_noise']):
+        logger.error("run_simulation should be True if you're planning on running any type of simulation and therefore using in_situ_sim_input, eor_vis_filepath or sim_noise shouldn't be used when run_simulation is False")
+        errors += 1
 
     # in-situ-sim-input depends on a file (Error)
     errors += _check_file_exists(pyfhd_config, 'in_situ_sim_input')
@@ -281,7 +293,10 @@ def pyfhd_setup(options: argparse.Namespace) -> tuple[dict, logging.RootLogger]:
     # eor_vis_filepath depends on a file (Error)
     errors += _check_file_exists(pyfhd_config, 'eor_vis_filepath')
 
-    # enhance_eor depends on eor_vis_filepath when its not 1 (Error)
+    # enhance_eor depends on eor_vis_filepath when its not 1
+    if pyfhd_config['enhance_eor'] > 1 and pyfhd_config['eor_vis_filepath']:
+        logger.error('enhance_eor is only used when importing general visibilities for a simulation, it should stay as 1 when eor_vis_filepath is not being used')
+        errors += 1
     
     # sim_noise depends on a file (Error)
     errors += _check_file_exists(pyfhd_config, 'sim_noise')
