@@ -1,4 +1,3 @@
-from black import err
 import numpy as np
 from pathlib import Path
 import configargparse
@@ -40,7 +39,7 @@ def pyfhd_parser():
     # General Defaults
     parser.add_argument('obs_id', help="The Observation ID as per the MWA file naming standards. Assumes the fits files for this observation is in the uvfits-path. obs_id and uvfits replace file_path_vis from FHD")
     parser.add_argument( '-i', '--input-path', type = Path, help = "Directory for the uvfits files and other inputs, by default it looks for a directory called input in the working directory", default = "./input/")
-    parser.add_argument('-r', '--recalculate-all', default = False, action='store_true', help = 'Forces PyFHD to recalculate all values. This will ignore values set for recalculate-grid, recalculate-beam, recalculate-mapfn as it will set all of them to True')
+    parser.add_argument('-r', '--recalculate-all', action='store_true', help = 'Forces PyFHD to recalculate all values. This will ignore values set for recalculate-grid, recalculate-beam, recalculate-mapfn as it will set all of them to True')
     parser.add_argument('-s', '--silent', default = False, action = 'store_true', help = 'This PyFHD stops all output to the terminal except in the case of an error and/or exception')
     parser.add_argument('-l', '--disable-log', action = 'store_true', help = 'Logging in a log file is enabled by default, set to False in the config or use this argument to disable the log file.')
     parser.add_argument('--dimension', type = int, default = 2048, help = 'The number of pixels in the UV plane along one axis.')
@@ -51,6 +50,9 @@ def pyfhd_parser():
     parser.add_argument('--n-avg', type = int, default = 2, help = 'Number of frequencies to average over to smooth the frequency band.')
     parser.add_argument('--min-baseline', type = float, default = 1.0, help = 'The minimum baseline length in wavelengths to include in the analysis')
     parser.add_argument('--n-pol', type = int, default = 2, choices = [2, 4], help = 'Set number of polarizations to use (XX, YY versus XX, YY, XY, YX).')
+    parser.add_argument('--lon', type = float, default = 116.67081524, help = 'Put in the longitude of the instrument, default is MWA')
+    parser.add_argument('--lat', type = float, default = -26.7033194, help = 'Put in the latitude of the instrument, default is MWA')
+    parser.add_argument('--alt', type = float, default = 377.827, help = 'Put in the altitude of the instrument, default is MWA')
 
     # Calibration Group
     calibration.add_argument('-cv', '--calibrate-visibilities', default = True, action = 'store_true', help = 'Turn on the calibration of the visibilities. If turned on, calibration of the dirty, modelling, and subtraction to make a residual occurs. Otherwise, none of these occur and an uncalibrated dirty cube is output.')
@@ -119,7 +121,7 @@ def pyfhd_parser():
     model.add_argument('-m', '--model-visibilities', default = False, action = 'store_true', help = 'Make visibilities for the subtraction model separately from the model used in calibration.\nThis is useful if the user sets parameters to make the subtraction model different from the model used in calibration.\nIf not set, the model used for calibration is the same as the subtraction model.')
     model.add_argument('--diffuse-model', type = Path, help = """File path to the diffuse model file.The file should contain the following: \nMODEL_ARR = A healpix map with the diffuse model. Diffuse model has units Jy/pixel unless keyword diffuse_units_kelvin is set.\n            The model can be an array of pixels, a pointer to an array of pixels, or an array of four pointers corresponding to I, Q, U, and V Stokes polarized maps.\n    NSIDE = The corresponding NSIDE parameter of the healpix map.\n HPX_INDS = The corresponding healpix indices of the model_arr.\nCOORD_SYS = (Optional) 'galactic' or 'celestial'. Specifies the coordinate system of the healpix map. GSM is in galactic coordinates, for instance. If missing, defaults to equatorial.""")
     model.add_argument('--model-catalog-file-path', type = Path, default = None, help = 'A file containing a catalog of sources to be used to make model visibilities for subtraction.')
-    model.add_argument('--allow-sidelobe-model-sources', default = True, action = 'store_true', help = 'Allows PyFHD to model sources in the sidelobes for subtraction.\nForces the beam_threshold to 0.01 in order to go down to 1%% of the beam to capture sidelobe sources during the generation of a model calibration source catalog for the particular observation.')
+    model.add_argument('--allow-sidelobe-model-sources', default = False, action = 'store_true', help = 'Allows PyFHD to model sources in the sidelobes for subtraction.\nForces the beam_threshold to 0.01 in order to go down to 1%% of the beam to capture sidelobe sources during the generation of a model calibration source catalog for the particular observation.')
     
     # Simultation Group
     sim.add_argument('-sim', '--run-simulation', default = False, action = 'store_true', help = 'Run an in situ simulation, where model visibilities are made and input as the dirty visibilities (see Barry et. al. 2016 for more information on use-cases).\nIn the case where in-situ-sim-input is not provided visibilities will be made within the current PyFHD run.')
@@ -314,6 +316,11 @@ def pyfhd_setup(options: argparse.Namespace) -> tuple[dict, logging.RootLogger]:
             handler.close()
         exit()
 
+    if warnings:
+        logger.warning('{} warnings detected, check the log above, these cause some weird behavior'.format(warnings))
+
+    logger.info('Input validated, starting PyFHD run now')
+
     return pyfhd_config, logger
 
 def pyfhd_logger(pyfhd_config: dict) -> logging.RootLogger:
@@ -404,7 +411,6 @@ def pyfhd_logger(pyfhd_config: dict) -> logging.RootLogger:
         log_terminal.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s:\n\t%(message)s', datefmt = '%Y-%m-%d %H:%M:%S'))
     if not pyfhd_config['disable_log']:
         log_file.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s:\n\t%(message)s', datefmt = '%Y-%m-%d %H:%M:%S'))
-    logger.info("Log Created and Input Validated Starting Run Now")
 
     # Copy the Configuration File if it exists to the output directory
     if pyfhd_config['config_file'] is None:

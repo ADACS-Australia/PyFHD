@@ -11,6 +11,9 @@ dimension : 2048
 FoV : 0
 min-baseline : 1.
 n-pol : 2
+lon : 116.67081524
+lat : -26.7033194
+alt : 377.827
 
 # Beam Setup
 recalculate-beam : true
