@@ -6,6 +6,7 @@ import time
 import subprocess
 import logging
 import shutil
+from typing import Tuple
 
 def pyfhd_parser():
     """
@@ -163,7 +164,7 @@ def _check_file_exists(config : dict, key : str) -> int:
             return 1
     return 0
 
-def pyfhd_setup(options: argparse.Namespace) -> tuple[dict, logging.RootLogger]:
+def pyfhd_setup(options : argparse.Namespace) -> Tuple[dict, logging.RootLogger]:
     """
     Check for any incompatibilities among the options given for starting the PyFHD pipeline as some options
     do conflict with each other or have dependencies on other options. This function should catch all of those
