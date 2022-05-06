@@ -1,7 +1,9 @@
 import numpy as np
 
 def calculate_adaptive_gain(gain_list, convergence_list, iter, base_gain, final_convergence_estimate = None):
-    """[summary]
+    """
+    TODO: Docstring
+    [summary]
 
     Parameters
     ----------

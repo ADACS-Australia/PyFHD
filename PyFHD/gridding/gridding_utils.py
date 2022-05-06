@@ -68,7 +68,9 @@ def conjugate_mirror(image):
 
 def baseline_grid_locations(obs, psf, params, vis_weights, bi_use = None, fi_use = None, 
                             fill_model_visibilities = False, interp_flag = False, mask_mirror_indices = False):
-    """[summary]
+    """
+    TODO: Docstring
+    [summary]
 
     Parameters
     ----------
@@ -272,7 +274,9 @@ def dirty_image_generate(dirty_image_uv, mask = None, baseline_threshold = 0, no
                          image_filter_fn = 'filter_uv_uniform', pad_uv_image = None, filter = None,
                          vis_count = None, weights = None, beam_ptr = None, obs = None, psf = None, params = None, 
                          fi_use = None, bi_use = None, mask_mirror_indices = False):
-    """[summary]
+    """
+    TODO: Docstring
+    [summary]
 
     Parameters
     ----------
@@ -576,7 +580,9 @@ def grid_beam_per_baseline(psf, uu, vv, ww, l_mode, m_mode, n_tracked, frequency
 
 def visibility_count(obs, psf, params, vis_weights, fi_use = None, bi_use = None, mask_mirror_indices = False,
                      file_path_fhd = None, no_conjugate = False, fill_model_visibilities = False):
-    """[summary]
+    """
+    TODO: Docstring
+    [summary]
 
     Parameters
     ----------
@@ -661,6 +667,7 @@ def visibility_count(obs, psf, params, vis_weights, fi_use = None, bi_use = None
 def holo_mapfn_convert(map_fn, psf_dim, dimension, elements = None, norm = 1, threshold = 0):
     """
     TODO: Description
+
     Parameters
     ----------
     map_fn: ndarray

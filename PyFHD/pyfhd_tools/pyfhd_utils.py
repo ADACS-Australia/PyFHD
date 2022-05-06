@@ -623,7 +623,7 @@ def array_match(array_1, value_match, array_2 = None) :
 def meshgrid(dimension, elements, axis = None, return_integer = False):
     """
     Generates a 2D array of X or Y values. Could be replaced by a another function 
-    
+
     Parameters
     ----------
     dimension: int
@@ -700,7 +700,6 @@ def idl_argunique(arr : np.ndarray) -> np.ndarray:
     In IDL the UNIQ function returns the indexes of the unique values within
     an array (that is assumed to be sorted beforehand). In NumPy they use the first
     unique index when using return index, where as in IDL they use the last index.
-        
 
     Parameters
     ----------

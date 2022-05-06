@@ -5,7 +5,8 @@ from pathlib import Path
 import logging
 
 def extract_header(pyfhd_config : dict, logger : logging.RootLogger) -> np.recarray:
-    """_summary_
+    """
+    _summary_
 
     Parameters
     ----------
@@ -13,12 +14,6 @@ def extract_header(pyfhd_config : dict, logger : logging.RootLogger) -> np.recar
         _description_
     logger : logging.RootLogger
         _description_
-    lon : float, optional
-        Given in degrees default is from (MWA, from Tingay et al. 2013), by default 116.67081524
-    lat : float, optional
-        Given in degrees default is from (MWA, from Tingay et al. 2013), by default -26.7033194
-    alt : float, optional
-        Altitude in metres default is from (MWA, from Tingay et al. 2013), by default 377.827
 
     Returns
     -------
@@ -119,7 +114,8 @@ def extract_header(pyfhd_config : dict, logger : logging.RootLogger) -> np.recar
     return pyfhd_header
 
 def create_params(pyfhd_header : np.recarray, pyfhd_config : dict, logger : logging.RootLogger) -> np.recarray:
-    """_summary_
+    """
+    _summary_
 
     Parameters
     ----------

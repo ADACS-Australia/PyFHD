@@ -8,9 +8,10 @@ def visibility_grid(visibility, vis_weights, obs, status_str, psf, params,
                     map_flag = False, uniform_flag = False, grid_uniform = False, fi_use = None, bi_use = None, 
                     no_conjugate = False, mask_mirror_indices = False, model = None, grid_spectral = False, 
                     beam_per_baseline = False, uv_grid_phase_only = True) :
-    """[summary]
+    """
+    [summary]
     TODO: docstring
-    
+
     Parameters
     ----------
     visibility : [type]

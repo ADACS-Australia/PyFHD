@@ -7,7 +7,9 @@ from PyFHD.pyfhd_tools.pyfhd_utils import l_m_n, rebin, weight_invert, histogram
 def visibility_degrid(image_uv, vis_weights, obs, psf, params, polarization = 0,
                       fill_model_visibilities = False, vis_input = None, spectral_model_uv_arr = None,
                       beam_per_baseline = False, uv_grid_phase_only = True, conserve_memory = False, memory_threshold = 1e8):
-    """[summary]
+    """
+    TODO: Docstring
+    [summary]
 
     Parameters
     ----------

@@ -33,8 +33,20 @@ Usage
    :prog: pyfhd
 
 
+PyFHD Setup
+===========
+
+.. automodule:: PyFHD.pyfhd_tools.pyfhd_setup
+   :members:
+
 Data Setup
 ==========
+
+.. automodule:: PyFHD.data_setup.params
+   :members:
+
+.. automodule:: PyFHD.data_setup.obs
+   :members:
 
 Beam Setup
 ==========

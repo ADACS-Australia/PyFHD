@@ -9,7 +9,7 @@ import shutil
 
 def pyfhd_parser():
     """
-    THe pyfhd_parser configures the argparse for PyFHD
+    The pyfhd_parser configures the argparse for PyFHD
 
     Returns
     -------

@@ -4,6 +4,7 @@ from PyFHD.data_setup.obs import create_obs
 from PyFHD.data_setup.params import extract_header, create_params
 
 def main():
+    
     pyfhd_start = time.time()
     options = pyfhd_parser().parse_args()
     

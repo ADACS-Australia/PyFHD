@@ -5,7 +5,9 @@ from PyFHD.pyfhd_tools.pyfhd_utils import weight_invert, histogram
 
 def vis_calibrate_subroutine(vis_ptr, vis_model_ptr, vis_weight_ptr, obs, cal, 
                              calibration_weights = False,  no_ref_tile = False):
-    """[summary]
+    """
+    TODO: Docstring
+    [summary]
 
     Parameters
     ----------
