@@ -42,7 +42,7 @@ PyFHD Setup
 Data Setup
 ==========
 
-.. automodule:: PyFHD.data_setup.params
+.. automodule:: PyFHD.data_setup.uvfits
    :members:
 
 .. automodule:: PyFHD.data_setup.obs
