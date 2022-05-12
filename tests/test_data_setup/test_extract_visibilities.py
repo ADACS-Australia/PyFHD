@@ -11,13 +11,19 @@ from PyFHD.pyfhd_tools.test_utils import get_savs
 def data_dir():
     return Path(env.get('PYFHD_TEST_PATH'), 'uvfits_read/')
 
-def test_1061316296(data_dir):
+@pytest.fixture
+def uvfits_dir():
+    return Path(env.get('PYFHD_TEST_PATH'), 'uvfits/')
+
+def test_1061316296(data_dir, uvfits_dir):
     dummy_log = logging.getLogger('dummy')
-    pyfhd_config = np.load(Path(data_dir, 'config.npy'), allow_pickle=True)
+    pyfhd_config = np.load(Path(data_dir, 'config.npy'), allow_pickle=True).item()
+    pyfhd_config['input_path'] = uvfits_dir
     pyfhd_header, fits_data = extract_header(pyfhd_config, dummy_log)
     vis_arr, vis_weights = extract_visibilities(pyfhd_header, fits_data, pyfhd_config, dummy_log)
 
     output = get_savs(data_dir,'output.sav')
 
-    npt.assert_allclose(vis_arr, output['vis_arr'], atol = 1e-8)
-    npt.assert_allclose(vis_weights, output['vis_weights'], atol = 1e-8)
+    for pol_i in range(pyfhd_config['n_pol']):
+        npt.assert_allclose(vis_arr[:, :, pol_i], output['vis_arr'][pol_i])
+        npt.assert_allclose(vis_weights[:, :, pol_i], output['vis_weights'][pol_i])

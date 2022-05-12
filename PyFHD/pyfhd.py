@@ -4,7 +4,7 @@ from logging import RootLogger
 import numpy as np
 from PyFHD.pyfhd_tools.pyfhd_setup import pyfhd_parser, pyfhd_setup
 from PyFHD.data_setup.obs import create_obs
-from PyFHD.data_setup.uvfits import extract_header, create_params, extract_visibilities
+from PyFHD.data_setup.uvfits import extract_header, create_params, extract_visibilities, create_layout
 
 def _print_time_diff(start : float, end : float, description : str, logger : RootLogger):
     """
@@ -35,20 +35,27 @@ def main():
 
     header_start = time.time()
     # Get the header
-    pyfhd_header, fits_data = extract_header(pyfhd_config, logger)
+    pyfhd_header, params_data, antenna_table = extract_header(pyfhd_config, logger)
     header_end = time.time()
     _print_time_diff(header_start, header_end, 'PyFHD Header Created', logger)
 
     params_start = time.time()
     # Get params
-    params = create_params(pyfhd_header, fits_data, logger)
+    params = create_params(pyfhd_header, params_data, logger)
     params_end = time.time()
-    _print_time_diff(params_start, params_end, 'PyFHD Params Created', logger)
+    _print_time_diff(params_start, params_end, 'Params Created', logger)
 
-    vis_arr, vis_weights = extract_visibilities(fits_data)
+    visibility_start = time.time()
+    vis_arr, vis_weights = extract_visibilities(pyfhd_header, params_data, pyfhd_config, logger)
+    visibility_end = time.time()
+    _print_time_diff(visibility_start, visibility_end, 'Visibilities Extracted', logger)
 
     # If you wish to reorder your visibilities, insert your function to do that here.
     # If you wish to average your fits data by time or frequency, insert your functions to do that here
+    layout_start = time.time()
+    layout = create_layout(antenna_table)
+    layout_end = time.time()
+    _print_time_diff(layout_start, layout_end, 'Layout Dictionary Extracted', logger)
 
     # Get obs
     # create_obs(pyfhd_header, params, pyfhd_config, logger)
