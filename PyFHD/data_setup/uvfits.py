@@ -104,7 +104,7 @@ def extract_header(pyfhd_config : dict, logger : logging.RootLogger) -> Tuple[di
     
     # Stop PyFHD if its not valid
     if not params_valid:
-        raise KeyError('One of these keys is missing from the FITS file: UU, VV, WW, BASELINE, DATE, check the log to see which one')
+        raise KeyError('One of these keys is missing from the UVFITS file: UU, VV, WW, BASELINE, DATE, check the log to see which one')
     
     # Get the Julian Date
     if param_list.count('DATE') > 1:
@@ -152,12 +152,12 @@ def create_params(pyfhd_header : dict, params_data : np.recarray, logger : loggi
     Raises
     ======
     KeyError
-        If the FITS data returned doesn't contain the variables then a KeyError will get thrown.
+        If the UVFITS data returned doesn't contain the variables then a KeyError will get thrown.
     
     See Also
     ========
     astropy.io.fits.getdata : https://docs.astropy.org/en/stable/io/fits/api/files.html#getdata
-    extract_header : Extracts the header from the FITS file and returns the header and data 
+    extract_header : Extracts the header from the UVFITS file and returns the header and data 
     """
     params = {}
     # Retrieve params values
@@ -198,7 +198,7 @@ def create_params(pyfhd_header : dict, params_data : np.recarray, logger : loggi
 
 def extract_visibilities(pyfhd_header : dict, params_data : np.recarray, pyfhd_config : dict, logger : logging.RootLogger) -> Tuple[np.ndarray, np.ndarray]:
     """
-    Extract the visibilities and their weights from the FITS data.
+    Extract the visibilities and their weights from the UVFITS data.
 
     Parameters
     ----------
@@ -221,7 +221,7 @@ def extract_visibilities(pyfhd_header : dict, params_data : np.recarray, pyfhd_c
     See Also
     ========
     astropy.io.fits.getdata : https://docs.astropy.org/en/stable/io/fits/api/files.html#getdata
-    extract_header : Extracts the header from the FITS file and returns the header and data 
+    extract_header : Extracts the header from the UVFITS file and returns the header and data 
     """
 
     data_array = np.squeeze(params_data['DATA'])
@@ -241,7 +241,33 @@ def extract_visibilities(pyfhd_header : dict, params_data : np.recarray, pyfhd_c
        
     return vis_arr, vis_weights
 
-def create_layout(antenna_table : BinTableHDU) -> dict:
+def _check_layout_valid(layout : dict, key : str, logger : logging.RootLogger, check_min_max = False):
+    """
+    Check if the key given is a valid part of the layout, if not give an error in the log.
+    The errors do not stop the run as it might only affect compatibility with other packages and
+    could be solved by editing or fixing the UVFITS file. 
+
+    Parameters
+    ----------
+    layout : dict
+        The current layout
+    key : str
+        The key we're interested in validating
+    logger : logging.RootLogger
+        The logger
+    check_min_max : bool, optional
+        When True check if the min is the same as max, if so changes the value so its only one number, by default False
+    """
+
+    if check_min_max:
+        if type(layout[key]) == np.ndarray and np.min(layout[key]) == np.max(layout[key]):
+            layout[key] = layout[key][0]
+    
+    if type(layout[key]) == np.ndarray and (layout[key].size != layout['n_antenna']):
+        logger.error(f"The layout[{key}] array set is not the same size of the number of antennas. Check the UVFITS file for errors.")
+    
+
+def create_layout(antenna_table : BinTableHDU, logger : logging.RootLogger) -> dict:
     """_summary_
 
     Parameters
@@ -256,26 +282,210 @@ def create_layout(antenna_table : BinTableHDU) -> dict:
 
     See Also
     ---------
-    extract_header : Opens the FITS file and extracts the header and data, including the antenna_table.
+    extract_header : Opens the UVFITS file and extracts the header and data, including the antenna_table.
     """
     antenna_data = antenna_table.data
     antenna_header = antenna_table.header
     layout = {}
+
     # Extract data from the header
+    # array_center
     try: 
         layout['array_center'] = [antenna_header['arrayx'], antenna_header['arrayy'], antenna_header['arrayz']]
     except KeyError:
         # if no center given, assume MWA center (Tingay et al. 2013, converted from lat/lon using pyuvdata)
+        logger.info("No center was given in the UVFITS file, assuming MWA is the array and using a default center for MWA")
         layout['array_center'] = [-2559454.07880307,  5095372.14368305, -2849057.18534633]
+    
+    # Coordinate_frame
     try:
         layout['coordinate_frame'] = antenna_header['frame']
     except KeyError:
+        logger.info("Coordinate Frame is missing from the UVFITS file, using IRTF")
         layout['coordinate_frame'] = 'IRTF'
-    layout['gst0'] = antenna_header['gstia0']
-    layout['earth_degpd'] = antenna_header['egpdy']
-    layout['refdate'] = antenna_header['rdate']
-    layout['time_system'] = antenna_header['timesys']
+    
+    # Greenwich Sidereal Time
+    try:
+        layout['gst0'] = antenna_header['gstia0']
+    except KeyError:
+        logger.warning("Greenwich sidereal time missing from UVFITS file gst0 will be -1")
+        layout['gst0'] = -1
 
-    print(layout)
+    # Earth's Rotation
+    try:
+        layout['earth_degpd'] = antenna_header['degpdy']
+    except KeyError:
+        logger.info("degpdy is missing from the UVFITS file, using 360.985 for Earth's rotation in degrees")
+        layout['earth_degpd'] = 360.985
+
+    # Reference Date
+    try:
+        layout['refdate'] = antenna_header['rdate']
+    except KeyError:
+        logger.warning("No refdate supplied in UVFITS file, set ref_date as -1")
+        layout['refdate'] = -1
+
+    # Time System
+    try:
+        layout['time_system'] = antenna_header['timesys'].strip()
+    except KeyError:
+        try:
+            layout['time_system'] = antenna_header['timsys'].strip()
+        except KeyError:
+            logger.warning("No Time System supplied in UVFITS file setting time system as UTC")
+            layout['time_system'] = 'UTC'
+    
+    # UT1UTC
+    try:
+        layout['dut1'] = antenna_header['ut1utc']
+    except KeyError:
+        logger.info("UT1UTC is mising from UVFITS, using 0")
+        layout['dut1'] = 0
+
+    # DATUTC
+    try:
+        layout['diff_utc'] = antenna_header['datutc']
+    except:
+        logger.info("No difference set between time_system and UTC, set to 0")
+        layout['diff_utc'] = 0
+    
+    # Number of leap seconds
+    try:
+        layout['nleap_sec'] = antenna_header['iautc']
+    except KeyError:
+        if layout['time_system'] == 'IAT':
+            logger.info("Time System is IAT and leap seconds is missing, using value from diff_utc(layout)/datutc(uvfits)")
+            layout['nleap_sec'] = layout['diff_utc']
+        else:
+            logger.warning("Number of Leap Seconds is missing and the time system isn't IAT so we can't know the leap seconds, setting as -1")
+    
+    # Polarization Type
+    try:
+        layout['pol_type'] = antenna_header['poltype']
+    except KeyError:
+        logger.info("Polarization Type not in UVFITS file, Linear approximation for linear feeds is being used")
+        layout['pol_type'] = 'X-Y LIN'
+
+    # Polarization Characteristics
+    try:
+        layout['n_pol_cal_params'] = antenna_header['nopcal']
+    except KeyError:
+        logger.info("Polarization Characteristics of the feed not given in UVFITS file, Set n_pol_cal_params to 0")
+        layout['n_pol_cal_params'] = 0
+    
+    # Number of antennas
+    try:
+        layout['n_antenna'] = antenna_header['naxis2']
+    except KeyError:
+        logger.info("Number of antennas missing from header, set 128 as per MWA")
+        layout['n_antenna'] = 128
+
+    # Extract data from the data table
+    # Antenna Names
+    try:
+        layout['antenna_names'] = antenna_data['anname']
+    except KeyError:
+        logger.warning("Antenna Names missing, replacing with a string of numbers")
+        layout['antenna_names'] = np.arange(layout['n_antenna']).astype(str)
+    
+    # Antenna Numbers
+    try:
+        layout['antenna_numbers'] = antenna_data['nosta']
+    except KeyError:
+        layout.warning("Antenna Numbers missing replacing with an array of numbers of range 1: n_antenna")
+        layout['antenna_numbers'] = np.arange(1, layout['n_antenna'])
+    
+    # Antenna Coordinates
+    try:
+        layout['antenna_coords'] = antenna_data['stabxyz']
+    except KeyError:
+        logger.warning("Antenna Coordinates missing, replacing with a zero array of shape n_antenna, 3")
+        layout['antenna_coords'] = np.zeros((layout['n_antenna'], 3))
+    
+    # Mount Type
+    try:
+        layout['mount_type'] = antenna_data['mntsta']
+    except KeyError:
+        logger.warning("No Mount Type set, mount_type has been set to 0")
+        layout['mount_type'] = 0
+
+    # Axis Offset
+    try:
+        layout['axis_offset'] = antenna_data['staxof']
+    except KeyError:
+        logger.warning('Axis Offset is not given, setting to 0')
+        layout['axis_offset'] = 0
+    
+    # Feed Polarization of feed A (Pol A)
+    try:
+        layout['pola'] = antenna_data['poltya']
+    except:
+        logger.warning('Pol A polarization not given setting to X')
+        layout['pola'] = 'X'
+    
+    # PolA Orientation
+    try:
+        layout['pola_orientation'] = antenna_data['polaa']
+    except KeyError:
+        logging.warning("PolA orientation not given setting to 0")
+        layout['pola_orientation'] = 0
+    
+    # PolA params
+    try:
+        layout['pola_cal_params'] = antenna_data['polcala']
+    except KeyError:
+        logger.warning("PolA params is missing from the UVFITS, set to array of zeros of length n_pol_cal_params or 0")
+        if layout['n_pol_cal_params'] > 1:
+            layout['pola_cal_params'] = np.zeros(layout['n_pol_cal_params'])
+        else:
+            layout['pola_cal_params'] = 0
+
+     # Feed Polarization of feed B (Pol B)
+    try:
+        layout['polb'] = antenna_data['poltyb']
+    except:
+        logger.warning('Pol B polarization not given setting to Y')
+        layout['polb'] = 'Y'
+    
+    # PolB Orientation
+    try:
+        layout['polb_orientation'] = antenna_data['polab']
+    except KeyError:
+        logging.warning("PolB orientation not given setting to 0")
+        layout['polb_orientation'] = 90
+    
+    # PolB params
+    try:
+        layout['polb_cal_params'] = antenna_data['polcalb']
+    except KeyError:
+        logger.warning("PolB params is missing from the UVFITS, set to array of zeros of length n_pol_cal_params or 0")
+        if layout['n_pol_cal_params'] > 1:
+            layout['polb_cal_params'] = np.zeros(layout['n_pol_cal_params'])
+        else:
+            layout['polb_cal_params'] = 0
+
+    # Diameters
+    try:
+        layout['diameters'] = antenna_data['diameter']
+    except KeyError:
+        logger.info('Diameters not in UVFITS file continuing.')
+    
+    # Beam Full Width Half Maximum
+    try:
+        layout['beam_fwhm'] = antenna_data['beamfwhm']
+    except KeyError:
+        logger.info("Beam Full Width Half maximum not present in UVFITS continuing.")
+
+    # Layout Validation
+    _check_layout_valid(layout, 'antenna_names', logger)
+    _check_layout_valid(layout, 'antenna_numbers', logger)
+    _check_layout_valid(layout, 'mount_type', logger, check_min_max = True)
+    _check_layout_valid(layout, 'axis_offset', logger, check_min_max = True)
+    _check_layout_valid(layout, 'pola', logger)
+    _check_layout_valid(layout, 'pola_orientation', logger, check_min_max = True)
+    _check_layout_valid(layout, 'polb', logger)
+    _check_layout_valid(layout, 'polb_orientation', logger, check_min_max = True)
+
+    return layout
 
     

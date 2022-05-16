@@ -53,9 +53,14 @@ def main():
     # If you wish to reorder your visibilities, insert your function to do that here.
     # If you wish to average your fits data by time or frequency, insert your functions to do that here
     layout_start = time.time()
-    layout = create_layout(antenna_table)
+    layout = create_layout(antenna_table, logger)
     layout_end = time.time()
     _print_time_diff(layout_start, layout_end, 'Layout Dictionary Extracted', logger)
+
+    # TODO: Save the layout here later
+
+    # if pyfhd_config['run_simulation']:
+    
 
     # Get obs
     # create_obs(pyfhd_header, params, pyfhd_config, logger)
