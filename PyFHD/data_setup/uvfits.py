@@ -54,7 +54,7 @@ def extract_header(pyfhd_config : dict, logger : logging.RootLogger) -> Tuple[di
     pyfhd_header['freq_res'] = params_header['cdelt4']
     pyfhd_header['date_obs'] = params_header['date-obs']
     freq_ref_i = params_header['crpix4'] - 1
-    pyfhd_header['freq_array'] = (np.arange(pyfhd_header['n_freq']) - freq_ref_i) * pyfhd_header['freq_res'] + pyfhd_header['freq_ref']
+    pyfhd_header['frequency_array'] = (np.arange(pyfhd_header['n_freq']) - freq_ref_i) * pyfhd_header['freq_res'] + pyfhd_header['freq_ref']
     pyfhd_header['obsra'] = params_header['obsra']
     pyfhd_header['obsdec'] = params_header['obsdec']
     # Put in locations of instrument

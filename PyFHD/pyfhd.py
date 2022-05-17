@@ -19,10 +19,10 @@ def _print_time_diff(start : float, end : float, description : str, logger : Roo
     """
     if end - start > 60:
         runtime = timedelta(seconds=end - start)
-        logger.info(f'{description} run time: {runtime}')
+        logger.info(f'{description} completed in: {runtime}')
     else:
         runtime = end - start
-        logger.info(f'{description} run time: {runtime} seconds')
+        logger.info(f'{description} completed in: {runtime} seconds')
     
 
 def main():
@@ -52,6 +52,7 @@ def main():
 
     # If you wish to reorder your visibilities, insert your function to do that here.
     # If you wish to average your fits data by time or frequency, insert your functions to do that here
+
     layout_start = time.time()
     layout = create_layout(antenna_table, logger)
     layout_end = time.time()
@@ -61,13 +62,15 @@ def main():
 
     # if pyfhd_config['run_simulation']:
     
-
     # Get obs
-    # create_obs(pyfhd_header, params, pyfhd_config, logger)
+    obs_start = time.time()
+    obs = create_obs(pyfhd_header, params, pyfhd_config, logger)
+    obs_end = time.time()
+    _print_time_diff(obs_start, obs_end, 'Obs Dictionary Created', logger)
 
     pyfhd_end = time.time()
     runtime = timedelta(seconds = pyfhd_end - pyfhd_start)
-    logger.info(f'PyFHD run time: {runtime}')
+    logger.info(f'PyFHD Run Completed, Total Runtime: {runtime}')
     # Close the handlers in the log
     for handler in logger.handlers:
         handler.close()

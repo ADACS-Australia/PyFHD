@@ -204,6 +204,15 @@ def histogram(data, bin_size = 1, num_bins = None, min = None, max = None):
     max : int, float, optional
         Set a maximum for the dataset, by default None
 
+    Returns
+    -------
+    hist : np.ndarray
+        The histogram
+    bins : np.ndarray
+        The bins used for the histogram
+    ri : np.ndarray
+        The reverse indices array
+
     See Also
     --------
     get_bins: Calculates the bins only

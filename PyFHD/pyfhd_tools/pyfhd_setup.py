@@ -43,6 +43,7 @@ def pyfhd_parser():
     parser.add_argument('-r', '--recalculate-all', action='store_true', help = 'Forces PyFHD to recalculate all values. This will ignore values set for recalculate-grid, recalculate-beam, recalculate-mapfn as it will set all of them to True')
     parser.add_argument('-s', '--silent', default = False, action = 'store_true', help = 'This PyFHD stops all output to the terminal except in the case of an error and/or exception')
     parser.add_argument('-l', '--disable-log', action = 'store_true', help = 'Logging in a log file is enabled by default, set to False in the config or use this argument to disable the log file.')
+    parser.add_argument('--instrument', type = str, default = 'mwa', choices = ['mwa'], help = 'Set the instrument used for the FHD run, currently only MWA is supported')
     parser.add_argument('--dimension', type = int, default = 2048, help = 'The number of pixels in the UV plane along one axis.')
     parser.add_argument('--FoV', '--fov', type = float, default = 0, help = 'A proxy for the field of view in degrees. FoV is actually used to determine kbinsize, which will be set to !RaDeg/FoV.\nThis means that the pixel size at phase center times dimension is approximately equal to FoV, which is not equal to the actual field of view owing to larger pixel sizes away from phase center.\nIf set to 0, then kbinsize determines the UV resolution.')
     parser.add_argument('--deproject-w-term', type = float, default = None, help = 'Enables the function for simple_deproject_w_term and uses the parameter value for the direction value in the function')
@@ -386,7 +387,7 @@ def pyfhd_logger(pyfhd_config: dict) -> logging.RootLogger:
         log_string += line.lstrip().replace('_', ' ').replace('|    ', '').replace('|', '') +'\n'
     # Start the PyFHD run
     logger = logging.getLogger()
-    logger.setLevel(logging.DEBUG)
+    logger.setLevel(logging.INFO)
     # Create the logging for the temrinal
     if not pyfhd_config['silent']:
         log_terminal = logging.StreamHandler()
