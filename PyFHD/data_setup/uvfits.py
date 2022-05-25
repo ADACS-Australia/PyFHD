@@ -130,7 +130,7 @@ def extract_header(pyfhd_config : dict, logger : logging.RootLogger) -> Tuple[di
 
     return pyfhd_header, params_data, antenna_table
 
-def create_params(pyfhd_header : dict, params_data : np.recarray, logger : logging.RootLogger, antenna_mod_index = None) -> dict:
+def create_params(pyfhd_header : dict, params_data : np.recarray, logger : logging.RootLogger) -> dict:
     """_summary_
 
     Parameters
@@ -141,8 +141,6 @@ def create_params(pyfhd_header : dict, params_data : np.recarray, logger : loggi
         The data from the fits file as taken from astropy.io.fits.getdata
     logger : logging.RootLogger
         The PyFHD logger
-    antenna_mod_index : int
-        TODO: Requires description, by default None
 
     Returns
     -------
@@ -177,15 +175,14 @@ def create_params(pyfhd_header : dict, params_data : np.recarray, logger : loggi
             params['antenna2'] = params_data['ANTENNA2']
         # Else calculate it from the baseline array
         else:
-            if antenna_mod_index is None:
-                # Calculate antenna_mod_index to check for bad fits
-                baseline_min = np.min(params['baseline_arr'])
-                exponent = np.log(np.min(baseline_min)) / np.log(2)
-                antenna_mod_index = 2 ** np.floor(exponent)
-                tile_B_test = np.min(baseline_min) % antenna_mod_index
-                if tile_B_test > 1:
-                    if baseline_min % 2 == 1:
-                        antenna_mod_index /= 2 ** np.floor(np.log(tile_B_test) / np.log(2))
+            # Calculate antenna_mod_index to check for bad fits
+            baseline_min = np.min(params['baseline_arr'])
+            exponent = np.log(np.min(baseline_min)) / np.log(2)
+            antenna_mod_index = 2 ** np.floor(exponent)
+            tile_B_test = np.min(baseline_min) % antenna_mod_index
+            if tile_B_test > 1:
+                if baseline_min % 2 == 1:
+                    antenna_mod_index /= 2 ** np.floor(np.log(tile_B_test) / np.log(2))
             # Tile numbers start from 1
             params['antenna1'] = np.floor(params['baseline_arr'] / antenna_mod_index)
             params['antenna2'] = np.fix(params['baseline_arr'] % antenna_mod_index)

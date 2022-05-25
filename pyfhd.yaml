@@ -9,7 +9,9 @@ instrument : 'mwa'
 memory-threshold : 100000000
 n-avg : 2
 dimension : 2048
-FoV : 0
+elements : 2048
+kbinsize : 0.5
+FoV : ~
 min-baseline : 1.
 n-pol : 2
 lon : 116.67081524
