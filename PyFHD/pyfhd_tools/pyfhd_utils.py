@@ -1,6 +1,11 @@
 import numpy as np
 from numba import njit
 from math import factorial
+from typing import Tuple
+from astropy.coordinates import SkyCoord, EarthLocation, AltAz, ICRS
+from astropy.time import Time
+from astropy import units as u
+from math import pi
 
 @njit(parallel = True)
 def get_bins(min, max, bin_size):
@@ -727,3 +732,93 @@ def idl_argunique(arr : np.ndarray) -> np.ndarray:
     array([0, 1, 3, 4, 6, 8])
     """
     return np.searchsorted(arr, np.unique(arr), side = 'right') - 1
+
+def altaz_2_radec(alt : float, az : float, lat : float, lon : float, height : float, time : float, time_format = 'jd') -> Tuple[float, float]:
+    """
+    Wrapper function for AstroPy's coordinate systems, 
+
+    Parameters
+    ----------
+    alt : float
+        The altitude in degrees
+    az : float
+        The azimuth in degrees
+    lat : float
+        The latitude of the location (default is MWA's latitude)
+    lon : float
+        The longitude of the location (default is MWA's longitude)
+    height : float
+        The altitude of the location in metres above sea level (default is MWA's altitude above sea level)
+    time : float
+        The time from the UVFITS file
+    time_format : str
+        The time format given, as per AstroPy's Time Object, by default jd (Julian)
+
+    Returns
+    -------
+    ra, dec : float, float
+        The corresponding Equatorial Coordinates from the given location and time with altitude and azimuth
+    """
+    loc = EarthLocation.from_geodetic(lon*u.deg, lat*u.deg, height = height*u.meter)
+    altaz = AltAz(alt = alt*u.deg, az = az*u.deg, location = loc, obstime = Time(time, format=time_format))
+    return altaz.transform_to(ICRS()).ra.deg, altaz.transform_to(ICRS()).dec.deg
+
+def angle_difference(ra1 : float, dec1 : float, ra2 : float, dec2 : float, degree = False, nearest = False) -> float:
+    """_summary_
+
+    Parameters
+    ----------
+    ra1 : float
+        Right Ascension of a coordinate 1 in radians or degrees
+    dec1 : float
+        Declination of a coordinate 1 in radians or degrees
+    ra2 : float
+        Right Ascension of a coordinate 2 in radians or degrees
+    dec2 : float
+        Declination of a coordinate 2 in radians or degrees
+    degree : bool, optional
+        If True, then we treate the coordinates given as degrees, by default False
+    nearest : bool, optional
+        Calculate implied angle instead, by default False
+
+    Returns
+    -------
+    relative_angle : float
+        The angle difference in degrees
+    """
+ 
+    if degree:
+        unit = u.deg
+    else:
+        unit = u.rad
+    coord1 = SkyCoord(ra = ra1*unit, dec = dec1*unit)
+    coord2 = SkyCoord(ra = ra2*unit, dec = dec2*unit)
+    # Use built in astropy separtion instead of calculating it
+    relative_angle = coord1.separation(coord2)
+    if nearest:
+        return max(relative_angle, 2 * pi - relative_angle)
+    else:
+        relative_angle
+
+def parallactic_angle(latitude : float, hour_angle : float, dec : float) -> float:
+    """
+    Calculates the parallactic angle given latitude (usually a declination), hour_angle and another declination
+
+    Parameters
+    ----------
+    latitude : float
+        An angle in degrees, usually a declination in this package
+    hour_angle : float
+        The hour angle in degrees
+    dec : float
+        A declination in degrees
+
+    Returns
+    -------
+    para_angle : float
+        The angle between the great circle through a celestial object and the zenith, and the hour circle of the object
+    """
+
+    y_term = np.sin(np.radians(hour_angle))
+    x_term = np.cos(np.radians(dec)) * np.tan(np.radians(latitude)) - np.sin(np.radians(dec)) * np.cos(np.radians(hour_angle))
+    para_angle = np.arctan(y_term, )

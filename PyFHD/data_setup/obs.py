@@ -1,7 +1,7 @@
 import numpy as np
 import logging
 from math import pi, log10
-from PyFHD.pyfhd_tools.pyfhd_utils import idl_argunique, histogram
+from PyFHD.pyfhd_tools.pyfhd_utils import idl_argunique, histogram, altaz_2_radec, angle_difference
 from pathlib import Path
 from astropy.io import fits
 from astropy.table import Table
@@ -164,6 +164,8 @@ def read_metafits(obs : dict, pyfhd_header : dict, params : dict, pyfhd_config :
     jdate = pyfhd_header['jd0'] + time[b0i]
     meta['obsx'] = obs['dimension'] / 2
     meta['obsy'] = obs['elements'] / 2
+    meta['JD0'] = np.min(jdate)
+    meta['epoch'] = Time(meta['JD0'], format='jd').to_value('decimalyear')
     meta_path = Path(pyfhd_config['input_path'], pyfhd_config['obs_id'] + '.metafits')
     if meta_path.is_file():
         metadata = fits.open(meta_path)
@@ -187,11 +189,74 @@ def read_metafits(obs : dict, pyfhd_header : dict, params : dict, pyfhd_config :
         meta['phasera'] = hdr['RAPHASE']
         meta['phasedec'] = hdr['DECPHASE']
         meta['time_res'] = hdr['INTTIME']
-        meta['JD0'] = np.min(jdate)
-
-        epoch = Time(meta['JD0'], format='jd').to_value('decimalyear')
         meta['delays'] = hdr['DELAYS'].split(',')
-
     else:
         logger.warning("METAFITS file has not been found, Calculating obs meta settings from the uvfits header instead")
+        # Simulate the flagging of tiles by taking where tiles don't exist
+        tile_A1 = params['antenna1']
+        tile_B1 = params['antenna2']
+        hist_A1, _, _ = histogram(tile_A1, min = 1, max = obs['n_tile'])
+        hist_B1, _, _ = histogram(tile_B1, min = 1, max = obs['n_tile'])
+        hist_AB = hist_A1 + hist_B1
+        meta['tile_names'] = np.arange(1, obs['n_tile'] + 1)
+        meta['tile_height'] = np.zeros(obs['n_tile'])
+        tile_use = np.where(hist_AB == 0)[0]
+        meta['tile_flag'] = np.zeros(obs['n_tile'], dtype = np.int8)
+        if tile_use.size > 0:
+            meta['tile_flag'][tile_use] = 1
+        if b0i.size > 1:
+            meta['time_res'] = (time[b0i[1]]-time[b0i[0]])*24.*3600.
+        else:
+            meta['time_res'] = 1
+        meta['obsra'] = pyfhd_header['obsra']
+        meta['obsdec'] = pyfhd_header['obsdec']
+        meta['phasera'] = pyfhd_header['obsra']
+        meta['phasedec'] = pyfhd_header['obsdec']
+        meta['delays'] = None
+    zenra, zendec = altaz_2_radec(90, 0, pyfhd_config['lat'], pyfhd_config['lon'], pyfhd_config['alt'], meta['JD0'])
+    meta['zenra'] = zenra
+    meta['zendec'] = zendec
+
+    # Project Slant Orthographic
+
     return meta
+
+def project_slant_orthographic(meta : dict, obs : dict, epoch = 2000) -> dict:
+    """
+    Create an astrometry data structure holding key astrometry information.
+
+    Parameters
+    ----------
+    meta : dict
+        The current metadata dictionary
+    obs : dict
+        The current obs dictionary
+    epoch : float
+        The equinox used for the dictionary structure
+
+    Returns
+    -------
+    astr : dict
+        An astrometry structure built from meta and obs
+    """
+
+    if abs(meta['phasera'] - meta['zenra']) > 90 :
+        lon_offset = meta['phasera']
+    else:
+        lon_offset = meta['phasera'] - meta['zenra']
+    lat_offset = -1 * (meta['zendec'] - meta['phasedec'])
+    zenith_ang = angle_difference(meta['phasera'], meta['phasedec'], meta['zenra'], meta['zendec'], degree = True)
+    hour_angle = lon_offset
+    parallactic_angle = None # TODO: parallactic_angle
+
+    xi = -1 * np.tan(np.radians(zenith_ang)) * np.sin(np.radians(parallactic_angle))
+    eta = np.tan(np.radians(zenith_ang)) * np.cos(np.radians(parallactic_angle))
+
+    projection_name = 'SIN'
+    ctype = ['RA---' + projection_name, 'DEC--' + projection_name]
+    delt = np.full(2, obs['degpix'])
+    cd = np.identity(2)
+
+    # TODO: MAKE_ASTR
+
+    # TODO: AD2XY

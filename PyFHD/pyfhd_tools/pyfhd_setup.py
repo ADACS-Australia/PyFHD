@@ -54,9 +54,6 @@ def pyfhd_parser():
     parser.add_argument('--n-avg', type = int, default = 2, help = 'Number of frequencies to average over to smooth the frequency band.')
     parser.add_argument('--min-baseline', type = float, default = 1.0, help = 'The minimum baseline length in wavelengths to include in the analysis')
     parser.add_argument('--n-pol', type = int, default = 2, choices = [0, 2, 4], help = 'Set number of polarizations to use (XX, YY versus XX, YY, XY, YX).')
-    parser.add_argument('--lon', type = float, default = 116.67081524, help = 'Put in the longitude of the instrument, default is MWA')
-    parser.add_argument('--lat', type = float, default = -26.7033194, help = 'Put in the latitude of the instrument, default is MWA')
-    parser.add_argument('--alt', type = float, default = 377.827, help = 'Put in the altitude of the instrument, default is MWA')
 
     # Calibration Group
     calibration.add_argument('-cv', '--calibrate-visibilities', default = True, action = 'store_true', help = 'Turn on the calibration of the visibilities. If turned on, calibration of the dirty, modelling, and subtraction to make a residual occurs. Otherwise, none of these occur and an uncalibrated dirty cube is output.')

@@ -33,6 +33,8 @@ def main():
     # Validate options and Create the Logger
     pyfhd_config, logger = pyfhd_setup(options)
 
+    np.save('/home/skywatcher/Nextcloud/Projects and Experiments/Curtin/ADACS/Modernization_of_FHD_Epoch_of_Reionization/data/FHD/uvfits_read/config.npy', pyfhd_config)
+
     header_start = time.time()
     # Get the header
     pyfhd_header, params_data, antenna_table = extract_header(pyfhd_config, logger)

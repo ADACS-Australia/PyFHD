@@ -5,6 +5,7 @@ from astropy.io.fits.hdu.table import BinTableHDU
 from pathlib import Path
 import logging
 from typing import Tuple
+from astropy.coordinates import EarthLocation
 
 def extract_header(pyfhd_config : dict, logger : logging.RootLogger) -> Tuple[dict, np.recarray]:
     """_summary_
@@ -57,10 +58,20 @@ def extract_header(pyfhd_config : dict, logger : logging.RootLogger) -> Tuple[di
     pyfhd_header['frequency_array'] = (np.arange(pyfhd_header['n_freq']) - freq_ref_i) * pyfhd_header['freq_res'] + pyfhd_header['freq_ref']
     pyfhd_header['obsra'] = params_header['obsra']
     pyfhd_header['obsdec'] = params_header['obsdec']
-    # Put in locations of instrument
-    pyfhd_header['lon'] = pyfhd_config['lon']
-    pyfhd_header['lat'] = pyfhd_config['lat']
-    pyfhd_header['alt'] = pyfhd_config['alt']
+    # Put in locations of instrument from FITS file or from Astropy site data
+    location = EarthLocation.of_site(pyfhd_config['instrument'])
+    try: 
+        pyfhd_header['lon'] = params_header['lon']
+    except KeyError:
+        pyfhd_header['lon'] = location.lon.deg
+    try: 
+        pyfhd_header['lat'] = params_header['lat']
+    except KeyError:
+        pyfhd_header['lat'] = location.lat.deg
+    try: 
+        pyfhd_header['alt'] = params_header['alt']
+    except KeyError:
+        pyfhd_header['alt'] = location.height.value
 
     # Setup params list and names
     param_list = []
