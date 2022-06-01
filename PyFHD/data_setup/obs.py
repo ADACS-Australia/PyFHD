@@ -1,7 +1,8 @@
 import numpy as np
 import logging
 from math import pi, log10
-from PyFHD.pyfhd_tools.pyfhd_utils import idl_argunique, histogram, altaz_2_radec, angle_difference
+from PyFHD.pyfhd_tools.pyfhd_utils import idl_argunique, histogram, angle_difference, parallactic_angle
+from PyFHD.pyfhd_tools.unit_conv import altaz_to_radec, radec_to_pixel, radec_to_altaz
 from pathlib import Path
 from astropy.io import fits
 from astropy.table import Table
@@ -124,6 +125,9 @@ def create_obs(pyfhd_header : dict, params : dict, pyfhd_config : dict, logger :
     else:
         obs['dimension'] = pyfhd_config['dimension']
         obs['elements'] = pyfhd_config['elements']
+    # Ensure both dimension and elements are ints to prevent issues down the pipeline
+    obs['dimension'] = int(obs['dimension'])
+    obs['elements'] = int(obs['elements'])
     obs['degpix'] = (180 / pi) / (pyfhd_config['kbinsize'] * pyfhd_config['dimension'])
 
     max_baseline_inds = np.where((np.abs(kx_arr) / obs['kbinsize'] < obs['dimension'] / 2) & (np.abs(ky_arr) / obs['kbinsize'] < obs['elements']/2))
@@ -134,6 +138,8 @@ def create_obs(pyfhd_header : dict, params : dict, pyfhd_config : dict, logger :
         obs['min_baseline'] = max(pyfhd_config['min_baseline'], np.min(kr_arr[np.nonzero(kr_arr)]))
 
     meta = read_metafits(obs, pyfhd_header, params, pyfhd_config, logger)
+
+    
     return obs
 
 def read_metafits(obs : dict, pyfhd_header : dict, params : dict, pyfhd_config : dict, logger : logging.RootLogger) -> dict:
@@ -161,10 +167,10 @@ def read_metafits(obs : dict, pyfhd_header : dict, params : dict, pyfhd_config :
     meta = {}
     time = params['time']
     b0i = idl_argunique(time)
-    jdate = pyfhd_header['jd0'] + time[b0i]
+    meta['jdate'] = time[b0i] # Time is already in julian. No need to add the bzero (or pzero) value
     meta['obsx'] = obs['dimension'] / 2
     meta['obsy'] = obs['elements'] / 2
-    meta['JD0'] = np.min(jdate)
+    meta['JD0'] = np.min(meta['jdate'])
     meta['epoch'] = Time(meta['JD0'], format='jd').to_value('decimalyear')
     meta_path = Path(pyfhd_config['input_path'], pyfhd_config['obs_id'] + '.metafits')
     if meta_path.is_file():
@@ -213,11 +219,14 @@ def read_metafits(obs : dict, pyfhd_header : dict, params : dict, pyfhd_config :
         meta['phasera'] = pyfhd_header['obsra']
         meta['phasedec'] = pyfhd_header['obsdec']
         meta['delays'] = None
-    zenra, zendec = altaz_2_radec(90, 0, pyfhd_config['lat'], pyfhd_config['lon'], pyfhd_config['alt'], meta['JD0'])
+    zenra, zendec = altaz_to_radec(90, 0, pyfhd_header['lat'], pyfhd_header['lon'], pyfhd_header['alt'], meta['JD0'])
     meta['zenra'] = zenra
     meta['zendec'] = zendec
 
     # Project Slant Orthographic
+    meta['astr'],  meta['zenx'], meta['zeny'] = project_slant_orthographic(meta, obs)
+
+    meta['obsalt'], meta['obsaz'] = radec_to_altaz(meta['obsra'], meta['obsdec'], pyfhd_header['lat'], pyfhd_header['lon'], pyfhd_header['alt'], meta['JD0'])
 
     return meta
 
@@ -241,22 +250,46 @@ def project_slant_orthographic(meta : dict, obs : dict, epoch = 2000) -> dict:
     """
 
     if abs(meta['phasera'] - meta['zenra']) > 90 :
-        lon_offset = meta['phasera']
+        lon_offset = meta['phasera'] - (360 if meta['phasera'] > meta['zenra'] else -360) - meta['zenra']
     else:
         lon_offset = meta['phasera'] - meta['zenra']
-    lat_offset = -1 * (meta['zendec'] - meta['phasedec'])
     zenith_ang = angle_difference(meta['phasera'], meta['phasedec'], meta['zenra'], meta['zendec'], degree = True)
-    hour_angle = lon_offset
-    parallactic_angle = None # TODO: parallactic_angle
+    parallactic_ang = parallactic_angle(meta['zendec'], lon_offset, meta['phasedec'])
 
-    xi = -1 * np.tan(np.radians(zenith_ang)) * np.sin(np.radians(parallactic_angle))
-    eta = np.tan(np.radians(zenith_ang)) * np.cos(np.radians(parallactic_angle))
+    xi = -1 * np.tan(np.radians(zenith_ang)) * np.sin(np.radians(parallactic_ang))
+    eta = np.tan(np.radians(zenith_ang)) * np.cos(np.radians(parallactic_ang))
 
+    # Replicate MAKE_ASTR return dictionary structure from astrolib
+    # We don't have to do it perfectly as it's only used for this function with the above as inputs
+    # This is essentially a WCS in a dictionary for use with other libraries other than Astropy
+    astr = {}
+    astr['naxis'] = np.array([obs['dimension'], obs['elements']])
+    astr['cd'] = np.identity(2)
+    astr['cdelt'] = np.full(2, obs['degpix'])
+    astr['crpix'] = np.array([meta['obsx'], meta['obsy']]) + 1
+    astr['crval'] = np.array([meta['phasera'], meta['phasedec']])
     projection_name = 'SIN'
-    ctype = ['RA---' + projection_name, 'DEC--' + projection_name]
-    delt = np.full(2, obs['degpix'])
-    cd = np.identity(2)
+    astr['ctype'] = ['RA---' + projection_name, 'DEC--' + projection_name]
+    astr['longpole'] = 180
+    astr['latpole'] = 0
+    astr['pv2'] = np.array([xi, eta])
+    # The PV1 array in Astrolib ASTR contains 5 projection parameters associated with longitude axis
+    # [xyoff, phi0, theta0, longpole, latpole]
+    # xyoff and phi0 are 0 as default
+    # The third number [i = 2] is determined by the fact we are using SIN zenithal projections
+    # The last are the longpole and latpole we set earlier
+    astr['pv1'] = np.array([0, 0, 90, 180, 0], dtype = np.float64)
+    astr['axes'] = np.array([1,2])
+    astr['reverse'] = 0 # Since Axes are always valid Celestial, we don't need to reverse them
+    astr['coord_sys'] = 'C' # Celestial Coordinate System in MAKE_ASTR
+    astr['projection'] = projection_name
+    astr['known'] = np.array([1]) # The projection name is guaranteed to be known
+    astr['radecsys'] = 'ICRS' # Using ICRS instead of FK5
+    astr['equinox'] = epoch
+    astr['date_obs'] = Time(meta['JD0'], format='jd').to_value('fits')
+    astr['mjd_obs'] = meta['JD0'] - 2400000.5
+    astr['x0y0'] = np.zeros(2, dtype = np.float64)
+    # Get the pixel coordinates of zenra and zendec
+    zenx, zeny = radec_to_pixel(meta['zenra'], meta['zendec'], astr)
 
-    # TODO: MAKE_ASTR
-
-    # TODO: AD2XY
+    return astr, zenx, zeny

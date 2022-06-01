@@ -733,38 +733,9 @@ def idl_argunique(arr : np.ndarray) -> np.ndarray:
     """
     return np.searchsorted(arr, np.unique(arr), side = 'right') - 1
 
-def altaz_2_radec(alt : float, az : float, lat : float, lon : float, height : float, time : float, time_format = 'jd') -> Tuple[float, float]:
-    """
-    Wrapper function for AstroPy's coordinate systems, 
-
-    Parameters
-    ----------
-    alt : float
-        The altitude in degrees
-    az : float
-        The azimuth in degrees
-    lat : float
-        The latitude of the location (default is MWA's latitude)
-    lon : float
-        The longitude of the location (default is MWA's longitude)
-    height : float
-        The altitude of the location in metres above sea level (default is MWA's altitude above sea level)
-    time : float
-        The time from the UVFITS file
-    time_format : str
-        The time format given, as per AstroPy's Time Object, by default jd (Julian)
-
-    Returns
-    -------
-    ra, dec : float, float
-        The corresponding Equatorial Coordinates from the given location and time with altitude and azimuth
-    """
-    loc = EarthLocation.from_geodetic(lon*u.deg, lat*u.deg, height = height*u.meter)
-    altaz = AltAz(alt = alt*u.deg, az = az*u.deg, location = loc, obstime = Time(time, format=time_format))
-    return altaz.transform_to(ICRS()).ra.deg, altaz.transform_to(ICRS()).dec.deg
-
 def angle_difference(ra1 : float, dec1 : float, ra2 : float, dec2 : float, degree = False, nearest = False) -> float:
-    """_summary_
+    """
+    Calculates the angle difference between two given celestial coordinates.
 
     Parameters
     ----------
@@ -798,7 +769,7 @@ def angle_difference(ra1 : float, dec1 : float, ra2 : float, dec2 : float, degre
     if nearest:
         return max(relative_angle, 2 * pi - relative_angle)
     else:
-        relative_angle
+        return relative_angle.value
 
 def parallactic_angle(latitude : float, hour_angle : float, dec : float) -> float:
     """
@@ -815,10 +786,10 @@ def parallactic_angle(latitude : float, hour_angle : float, dec : float) -> floa
 
     Returns
     -------
-    para_angle : float
+    parallactic_angle : float
         The angle between the great circle through a celestial object and the zenith, and the hour circle of the object
     """
 
     y_term = np.sin(np.radians(hour_angle))
     x_term = np.cos(np.radians(dec)) * np.tan(np.radians(latitude)) - np.sin(np.radians(dec)) * np.cos(np.radians(hour_angle))
-    para_angle = np.arctan(y_term, )
+    return np.degrees(np.arctan(y_term/ x_term))
