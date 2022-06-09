@@ -84,6 +84,7 @@ def pyfhd_parser():
     flag.add_argument('--flag-freq-start', default = None, type = float, help = 'Frequency in MHz to begin the observation. Flags frequencies less than it. Replaces freq_start from FHD')
     flag.add_argument('--flag-freq-end', default = None, type = float, help = 'Frequency in MHz to end the observation. Flags frequencies greater than it. Replaces freq_end from FHD')
     flag.add_argument('--transfer-weights', type = Path, default = None, help = 'Transfer weights information from another PyFHD run.')
+    flag.add_argument('--time-cut', type = list, default = None, help = 'Seconds to cut (rounded up to next time integration step) from the beginning of the observation. Can also specify a negative time to cut off the end of the observation. Specify a vector to cut at both the start and end.')
 
     # Beam Setup Group
     beam.add_argument('-b', '--recalculate-beam', default = True, action = 'store_true', help = "Forces PyFHD to redo the beam setup using PyFHD's beam setup.")
@@ -102,7 +103,7 @@ def pyfhd_parser():
     # Deconvolution Group
     deconv.add_argument('-d', '--deconvolve', default = False, action = 'store_true', help = 'Run Fast Holographic Deconvolution')
     deconv.add_argument('--max-deconvolution-components', type = int, default = 20000, help = 'The number of source components allowed to be found in fast holographic deconvolution.')
-    deconv.add_argument('--dft-threshold', default = 1.0, type = float, help = 'Set equal to 1 to use the DFT approximation. When set equal to 0 the true DFT is calculated for each source.\nIt can also be explicitly set to a value that determines the accuracy of the approximation.')
+    deconv.add_argument('--dft-threshold', default = False, action = 'store_true', help = 'Set to True to use the DFT approximation. When set equal to 0 the true DFT is calculated for each source.\nIt can also be explicitly set to a value that determines the accuracy of the approximation.')
     deconv.add_argument('--return-decon-visibilities', default = False, action = 'store_true', help = 'When activated degrid and export the visibilities formed from the deconvolution model')
     deconv.add_argument('--deconvolution-filter', default = 'filter_uv_uniform', type = str, choices = ['filter_uv_uniform', 'filter_uv_hanning', 'filter_uv_natural', 'filter_uv_radial', 'filter_uv_tapered_uniform', 'filter_uv_optimal'], help = 'Filter applied to images from deconvolution.')
     deconv.add_argument('--smooth-width', default = 32, type = int, help = 'Integer equal to the size of the region to smooth when filtering out large-scale background fluctuations.')

@@ -34,10 +34,14 @@ def create_obs(pyfhd_header : dict, params : dict, pyfhd_config : dict, logger :
     obs = {}
     baseline_info = {}
 
+    # Save the data from the header
     obs['n_pol'] = pyfhd_header['n_pol']
     obs['n_tile'] = pyfhd_header['n_tile']
     obs['n_freq'] = pyfhd_header['n_freq']
+    obs['n_freq_flag'] = 0
     obs['instrument'] = pyfhd_config['instrument']
+    obs['obsname'] = pyfhd_config['obs_id']
+    # Deal with the times
     time = params['time']
     b0i = idl_argunique(time)
     obs['n_time'] = b0i.size
@@ -51,10 +55,11 @@ def create_obs(pyfhd_header : dict, params : dict, pyfhd_config : dict, logger :
     baseline_info['bin_offset'] = np.zeros(obs['n_time'], dtype = np.int64)
     if obs['n_time'] > 1:
         baseline_info['bin_offset'][1:] = np.cumsum(bin_width[: obs['n_time'] - 1])
-    obs['n_baselines'] = bin_width[0]
+    # Deal with the number of visibilities
+    obs['nbaselines'] = bin_width[0]
     obs['n_vis'] = time.size * obs['n_freq']
     obs['n_vis_raw'] = obs['n_vis_in'] = obs['n_vis']
-    obs['n_vis_arr'] = np.zeros(obs['n_freq'], dtype = np.int64)
+    obs['nf_vis'] = np.zeros(obs['n_freq'], dtype = np.int64)
 
     obs['freq_res'] = pyfhd_header['freq_res']
     baseline_info['freq'] = pyfhd_header['frequency_array']
@@ -63,6 +68,7 @@ def create_obs(pyfhd_header : dict, params : dict, pyfhd_config : dict, logger :
     else:
         obs['beam_nfreq_avg'] = 1
     freq_bin = obs['beam_nfreq_avg'] * obs['freq_res']
+    # Let's get the freq_center and the bins we want to use
     freq_hist, _, freq_ri = histogram(baseline_info['freq'], bin_size = freq_bin)
     freq_bin_i = np.zeros(obs['n_freq'])
     for bin in range(freq_hist.size):
@@ -75,7 +81,6 @@ def create_obs(pyfhd_header : dict, params : dict, pyfhd_config : dict, logger :
     if np.max(params['antenna1']) > 0 and (np.max(params['antenna2']) > 0):
         baseline_info['tile_A'] = params['antenna1']
         baseline_info['tile_B'] = params['antenna2']
-        obs['n_tile'] = max(np.max(baseline_info['tile_A']), np.max(baseline_info['tile_B']))
         antenna_flag = False
     if antenna_flag:
         # 256 tile upper limit is hard-coded in CASA format
@@ -95,8 +100,7 @@ def create_obs(pyfhd_header : dict, params : dict, pyfhd_config : dict, logger :
         params['antenna1'] = baseline_info['tile_A']
         params['antenna2'] = baseline_info['tile_B']
     
-    baseline_info['freq_use'] = obs['n_freq'] + 1
-    baseline_info['tile_use'] = obs['n_tile'] + 1
+    baseline_info['freq_use'] = np.ones(obs['n_freq'], dtype = np.int64)
 
     # Calculate kx and ky for each baseline at high precision to get most accurate observation information
     kx_arr = np.outer(baseline_info['freq'] ,params['uu'])
@@ -106,15 +110,15 @@ def create_obs(pyfhd_header : dict, params : dict, pyfhd_config : dict, logger :
 
     # Determine the imaging parameters to use
     if pyfhd_config['FoV'] is not None:
-        obs['kbinsize'] =  (180 / pi) / pyfhd_config['FoV']
+        obs['kpix'] =  (180 / pi) / pyfhd_config['FoV']
     if pyfhd_config['kbinsize'] is None:
-        obs['kbinsize'] = 0.5
+        obs['kpix'] = 0.5
     else:
-        obs['kbinsize'] = pyfhd_config['kbinsize']
+        obs['kpix'] = pyfhd_config['kbinsize']
         
     # Determine observation resolution/extent parameters given number of pixels in x direction (dimension)
     if pyfhd_config['dimension'] is None and pyfhd_config['elements'] is None:
-       obs['dimension'] = 2 ** int((log10((2 * max_baseline) / pyfhd_config['kbinsize']) / log10(2)))
+       obs['dimension'] = 2 ** int((log10((2 * max_baseline) / pyfhd_config['kpix']) / log10(2)))
        obs['elements'] = obs['dimension']
     elif pyfhd_config['dimension'] is not None and pyfhd_config['elements'] is None:
         obs['dimension'] = pyfhd_config['dimension']
@@ -128,9 +132,10 @@ def create_obs(pyfhd_header : dict, params : dict, pyfhd_config : dict, logger :
     # Ensure both dimension and elements are ints to prevent issues down the pipeline
     obs['dimension'] = int(obs['dimension'])
     obs['elements'] = int(obs['elements'])
-    obs['degpix'] = (180 / pi) / (pyfhd_config['kbinsize'] * pyfhd_config['dimension'])
+    obs['degpix'] = (180 / pi) / (obs['kpix'] * pyfhd_config['dimension'])
 
-    max_baseline_inds = np.where((np.abs(kx_arr) / obs['kbinsize'] < obs['dimension'] / 2) & (np.abs(ky_arr) / obs['kbinsize'] < obs['elements']/2))
+    # Set the max and min baseline
+    max_baseline_inds = np.where((np.abs(kx_arr) / obs['kpix'] < obs['dimension'] / 2) & (np.abs(ky_arr) / obs['kpix'] < obs['elements']/2))
     obs['max_baseline'] = np.max(np.abs(kx_arr[max_baseline_inds]))
     if pyfhd_config['min_baseline'] is None:
         obs['min_baseline'] = np.min(kr_arr[np.nonzero(kr_arr)])
@@ -139,11 +144,68 @@ def create_obs(pyfhd_header : dict, params : dict, pyfhd_config : dict, logger :
 
     meta = read_metafits(obs, pyfhd_header, params, pyfhd_config, logger)
 
+    # TODO: antenna indices rewrite PR goes here
+
+    baseline_info['time_use'] = np.ones(obs['n_tile'], dtype = np.int8)
+    # time cut is specified in seconds to cut (rounded up to next time integration point).
+    # Specify negative time_cut to cut time off the end. Specify a vector to cut at both the start and end
+    if pyfhd_config['time_cut'] is not None:
+        time_cut = pyfhd_config['time_cut']
+        for ti in time_cut:
+            if time_cut[ti] < 0:
+                ti_start = min(obs['n_time'] - max(np.ceil(np.abs(time_cut[ti]) / meta['time_res']), 0), obs['n_time'] - 1)
+                ti_end = obs['n_time'] - 1
+            else:
+                ti_start = 0
+                ti_end = min(np.ceil(np.abs(time_cut[ti])) / meta['time_res'] - 1, obs['n_time'] - 1)
+            if ti_end >= ti_start:
+                baseline_info['time_use'][ti_start:ti_end + 1] = 0
+    obs['n_time_flag'] = obs['n_time'] - np.sum(baseline_info['time_use'])
+
+    # Where metadata has tiles flagged, ensure they don't get used in obs.
+    baseline_info['tile_use'] = 1 - meta['tile_flag']
+    obs['n_tile_flag'] = np.count_nonzero(baseline_info['tile_use'])
+    
+    # Set the last of obs values
+    if pyfhd_config['dft_threshold']:
+        obs['dft_threshold'] = 1 / (2 * pi)**2 * obs['dimension']
+    else:
+        obs['dft_threshold'] = 0
+    obs['degrid_spectral_terms'] = 0
+    obs['grid_spectral_terms'] = 0
+    obs['alpha'] = -0.8
+    obs['pol_names'] = ['XX','YY','XY','YX','I','Q','U','V']
+    obs['residual'] = 0
+    
+
+    # Setup healpix structure for obs
+    healpix = {}
+    healpix['nside'] = 0
+    healpix['n_pix'] = 0
+    # May be none!
+    healpix['ind_list'] = pyfhd_config['restrict_hpx_inds']
+    healpix['n_zero'] = -1
+    obs['healpix'] = healpix
+
+    # Save the baseline_info into obs
+    baseline_info['Jdate'] = meta['jdate']
+    baseline_info['tile_names'] = meta['tile_names']
+    baseline_info['tile_height'] = meta['tile_height']
+    baseline_info['tile_flag'] = meta['tile_flag']
+    obs['baseline_info'] = baseline_info
+
+    # Save the last of the metadata into obs
+    for key in meta.keys():
+        if key not in baseline_info.keys():
+            obs[key] = meta[key]
     
     return obs
 
 def read_metafits(obs : dict, pyfhd_header : dict, params : dict, pyfhd_config : dict, logger : logging.RootLogger) -> dict:
-    """_summary_
+    """
+    Reads the metafits file provided inside the same input directory as the UVFITS file.
+    It will process the data found in the METAFITS file and then returns a meta dictionary.
+    Which will eventually end up inside the obs dictionary.
 
     Parameters
     ----------
@@ -219,20 +281,36 @@ def read_metafits(obs : dict, pyfhd_header : dict, params : dict, pyfhd_config :
         meta['phasera'] = pyfhd_header['obsra']
         meta['phasedec'] = pyfhd_header['obsdec']
         meta['delays'] = None
+    
+    # Get the Zenith RA and DEC from the location and time
     zenra, zendec = altaz_to_radec(90, 0, pyfhd_header['lat'], pyfhd_header['lon'], pyfhd_header['alt'], meta['JD0'])
     meta['zenra'] = zenra
     meta['zendec'] = zendec
 
     # Project Slant Orthographic
+    # astr is basically a WCS data structure. 
+    # zenx and zeny are the Zenith pixel coordinates
     meta['astr'],  meta['zenx'], meta['zeny'] = project_slant_orthographic(meta, obs)
 
+    # Get the alt and azimuth of the observation
     meta['obsalt'], meta['obsaz'] = radec_to_altaz(meta['obsra'], meta['obsdec'], pyfhd_header['lat'], pyfhd_header['lon'], pyfhd_header['alt'], meta['JD0'])
+
+    # Save the raw header and data into the meta dictionary
+    # Save the header as a Python dictionary
+    meta['meta_hdr'] = {}
+    for key in hdr.keys():
+        meta['meta_hdr'][key] = hdr[key]
+    # The astropy FITS_rec class is based off a numpy record array so saving as is should be fine
+    # If so desired a tolist() function to turn the data into list of lists, but you lose the column names
+    meta['meta_data'] = data
 
     return meta
 
 def project_slant_orthographic(meta : dict, obs : dict, epoch = 2000) -> dict:
     """
     Create an astrometry data structure holding key astrometry information.
+    It's essentially a WCS data structure, done as a Python dictionary allowing greater compatibility 
+    with other packages.
 
     Parameters
     ----------

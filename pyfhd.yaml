@@ -53,6 +53,7 @@ flag-calibration : false
 flag-freq-start : ~
 flag-freq-end : ~
 transfer-weights : ~
+time-cut: ~
 
 # Gridding
 recalculate-grid : false
@@ -64,7 +65,7 @@ deconvolve : false
 max-deconvolution-components : 20000
 filter-background : true
 smooth-width : 32
-dft-threshold : 1.
+dft-threshold : true
 return-decon-visibilities : false
 deconvolution-filter : 'filter_uv_uniform'
 

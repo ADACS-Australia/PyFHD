@@ -17,13 +17,14 @@ def _print_time_diff(start : float, end : float, description : str, logger : Roo
     end : float
         End time in seconds since epoch
     """
-    if end - start > 60:
+    runtime = end - start
+    if runtime > 60:
         runtime = timedelta(seconds=end - start)
         logger.info(f'{description} completed in: {runtime}')
+    elif runtime < 1:
+        logger.info(f'{description} completed in: {round(runtime * 1000,5)} milliseconds')
     else:
-        runtime = end - start
-        logger.info(f'{description} completed in: {runtime} seconds')
-    
+        logger.info(f'{description} completed in: {round(runtime,5)} seconds')
 
 def main():
 
@@ -70,9 +71,11 @@ def main():
     obs_end = time.time()
     _print_time_diff(obs_start, obs_end, 'Obs Dictionary Created', logger)
 
+
+
     pyfhd_end = time.time()
     runtime = timedelta(seconds = pyfhd_end - pyfhd_start)
-    logger.info(f'PyFHD Run Completed, Total Runtime: {runtime}')
+    logger.info(f'PyFHD Run Completed, Total Runtime (Days:Hours:Minutes:Seconds.Millseconds): {runtime}')
     # Close the handlers in the log
     for handler in logger.handlers:
         handler.close()
