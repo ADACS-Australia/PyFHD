@@ -24,6 +24,7 @@ dipole-mutual-coupling-factor : true
 beam-nfreq-avg : 16
 psf-resolution : 100
 beam-model-version : 2
+beam-offset-time : 56
 
 # Calibration
 calibrate-visibilities : true

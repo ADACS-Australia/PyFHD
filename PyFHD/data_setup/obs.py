@@ -56,7 +56,7 @@ def create_obs(pyfhd_header : dict, params : dict, pyfhd_config : dict, logger :
     if obs['n_time'] > 1:
         baseline_info['bin_offset'][1:] = np.cumsum(bin_width[: obs['n_time'] - 1])
     # Deal with the number of visibilities
-    obs['nbaselines'] = bin_width[0]
+    obs['nbaselines'] = int(bin_width[0])
     obs['n_vis'] = time.size * obs['n_freq']
     obs['n_vis_raw'] = obs['n_vis_in'] = obs['n_vis']
     obs['nf_vis'] = np.zeros(obs['n_freq'], dtype = np.int64)
@@ -232,8 +232,8 @@ def read_metafits(obs : dict, pyfhd_header : dict, params : dict, pyfhd_config :
     meta['jdate'] = time[b0i] # Time is already in julian. No need to add the bzero (or pzero) value
     meta['obsx'] = obs['dimension'] / 2
     meta['obsy'] = obs['elements'] / 2
-    meta['JD0'] = np.min(meta['jdate'])
-    meta['epoch'] = Time(meta['JD0'], format='jd').to_value('decimalyear')
+    meta['jd0'] = np.min(meta['jdate'])
+    meta['epoch'] = Time(meta['jd0'], format='jd').to_value('decimalyear')
     meta_path = Path(pyfhd_config['input_path'], pyfhd_config['obs_id'] + '.metafits')
     if meta_path.is_file():
         metadata = fits.open(meta_path)
@@ -283,7 +283,7 @@ def read_metafits(obs : dict, pyfhd_header : dict, params : dict, pyfhd_config :
         meta['delays'] = None
     
     # Get the Zenith RA and DEC from the location and time
-    zenra, zendec = altaz_to_radec(90, 0, pyfhd_header['lat'], pyfhd_header['lon'], pyfhd_header['alt'], meta['JD0'])
+    zenra, zendec = altaz_to_radec(90, 0, pyfhd_header['lat'], pyfhd_header['lon'], pyfhd_header['alt'], meta['jd0'])
     meta['zenra'] = zenra
     meta['zendec'] = zendec
 
@@ -293,7 +293,7 @@ def read_metafits(obs : dict, pyfhd_header : dict, params : dict, pyfhd_config :
     meta['astr'],  meta['zenx'], meta['zeny'] = project_slant_orthographic(meta, obs)
 
     # Get the alt and azimuth of the observation
-    meta['obsalt'], meta['obsaz'] = radec_to_altaz(meta['obsra'], meta['obsdec'], pyfhd_header['lat'], pyfhd_header['lon'], pyfhd_header['alt'], meta['JD0'])
+    meta['obsalt'], meta['obsaz'] = radec_to_altaz(meta['obsra'], meta['obsdec'], pyfhd_header['lat'], pyfhd_header['lon'], pyfhd_header['alt'], meta['jd0'])
 
     # Save the raw header and data into the meta dictionary
     # Save the header as a Python dictionary
@@ -364,8 +364,8 @@ def project_slant_orthographic(meta : dict, obs : dict, epoch = 2000) -> dict:
     astr['known'] = np.array([1]) # The projection name is guaranteed to be known
     astr['radecsys'] = 'ICRS' # Using ICRS instead of FK5
     astr['equinox'] = epoch
-    astr['date_obs'] = Time(meta['JD0'], format='jd').to_value('fits')
-    astr['mjd_obs'] = meta['JD0'] - 2400000.5
+    astr['date_obs'] = Time(meta['jd0'], format='jd').to_value('fits')
+    astr['mjd_obs'] = meta['jd0'] - 2400000.5
     astr['x0y0'] = np.zeros(2, dtype = np.float64)
     # Get the pixel coordinates of zenra and zendec
     zenx, zeny = radec_to_pixel(meta['zenra'], meta['zendec'], astr)

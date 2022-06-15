@@ -94,6 +94,7 @@ def pyfhd_parser():
     beam.add_argument('--beam-clip-floor', default = True, action = 'store_true', help = 'Set to subtract the minimum non-zero value of the beam model from all pixels.')
     beam.add_argument('--interpolate-kernel', default = True, action = 'store_true', help = "Use interpolation of the gridding kernel while gridding and degridding, rather than selecting the closest super-resolution kernel.")
     beam.add_argument('--dipole-mutual-coupling-factor', default = True, action = 'store_true', help = 'Allows a modification to the beam as a result of mutual coupling between dipoles calculated in mwa_dipole_mutual_coupling (See Sutinjo 2015 for more details).')
+    beam.add_argument('--beam-offset-time', type = float, default = 56, help = "Calculate the beam at a specific time within the observation. 0 seconds indicates the start of the observation, and the # of seconds in an observation indicates the end of the observation.")
 
     # Gridding Group
     gridding.add_argument('-g', '--recalculate-grid', default = False, action ='store_true', help = 'Forces PyFHD to recalculate the gridding function. Replaces grid_recalculate from FHD')
@@ -220,6 +221,11 @@ def pyfhd_setup(options : argparse.Namespace) -> Tuple[dict, logging.RootLogger]
     if pyfhd_config['recalculate_mapfn'] and pyfhd_config['snapshot_healpix_export'] and not pyfhd_config['save_visibilities']:
         pyfhd_config['save_visibilities'] = True
         logger.warning("If the mapping function is being recalculated and we're exporting healpix we should also save the visibilities that created them.")
+        warnings += 1
+
+    if pyfhd_config['beam_offset_time'] < 0:
+        pyfhd_config['beam_offset_time'] = 0
+        logger.warning("You set the offset time to less than 0, it was reset to 0.")
         warnings += 1
 
     # If cable_bandpass_fit has been enabled an instrument text file should also exist. (Error)

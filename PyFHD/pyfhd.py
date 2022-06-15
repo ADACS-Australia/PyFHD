@@ -6,7 +6,7 @@ from PyFHD.pyfhd_tools.pyfhd_setup import pyfhd_parser, pyfhd_setup
 from PyFHD.data_setup.obs import create_obs
 from PyFHD.data_setup.uvfits import extract_header, create_params, extract_visibilities, create_layout
 from PyFHD.pyfhd_tools.pyfhd_utils import simple_deproject_w_term
-from PyFHD.beam_setup.setup import beam_setup
+from PyFHD.beam_setup.beam import create_psf
 
 def _print_time_diff(start : float, end : float, description : str, logger : RootLogger):
     """
@@ -35,8 +35,6 @@ def main():
     
     # Validate options and Create the Logger
     pyfhd_config, logger = pyfhd_setup(options)
-
-    np.save('/home/skywatcher/Nextcloud/Projects and Experiments/Curtin/ADACS/Modernization_of_FHD_Epoch_of_Reionization/data/FHD/uvfits_read/config.npy', pyfhd_config)
 
     header_start = time.time()
     # Get the header
@@ -82,13 +80,15 @@ def main():
     
     # Beam Setup
     beam_start = time.time()
-    psf = beam_setup()
+    psf, antenna = create_psf(pyfhd_config, obs)
     beam_end = time.time()
     _print_time_diff(beam_start, beam_end, 'Beam Setup', logger)
 
+    np.save('../notebooks/pyfhd_config.npy', pyfhd_config, allow_pickle=True)
+
     pyfhd_end = time.time()
     runtime = timedelta(seconds = pyfhd_end - pyfhd_start)
-    logger.info(f'PyFHD Run Completed, Total Runtime (Days:Hours:Minutes:Seconds.Millseconds): {runtime}')
+    logger.info(f'PyFHD Run Completed\nTotal Runtime (Days:Hours:Minutes:Seconds.Millseconds): {runtime}')
     # Close the handlers in the log
     for handler in logger.handlers:
         handler.close()
