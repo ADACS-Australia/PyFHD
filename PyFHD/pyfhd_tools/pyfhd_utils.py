@@ -6,6 +6,7 @@ from astropy.coordinates import SkyCoord, EarthLocation, AltAz, ICRS
 from astropy.time import Time
 from astropy import units as u
 from math import pi
+from logging import RootLogger
 
 @njit(parallel = True)
 def get_bins(min, max, bin_size):
@@ -793,3 +794,37 @@ def parallactic_angle(latitude : float, hour_angle : float, dec : float) -> floa
     y_term = np.sin(np.radians(hour_angle))
     x_term = np.cos(np.radians(dec)) * np.tan(np.radians(latitude)) - np.sin(np.radians(dec)) * np.cos(np.radians(hour_angle))
     return np.degrees(np.arctan(y_term/ x_term))
+
+def simple_deproject_w_term(obs : dict, params : dict, vis_arr : np.ndarray, direction : float, logger : RootLogger) -> np.ndarray:
+    """
+    Applies a w-term deprojection to the visibility array
+
+    Parameters
+    ----------
+    obs : dict
+        The observation data structure
+    params : dict
+        The data from the UVFITS file
+    vis_arr : np.ndarray
+        The visibility array
+    direction : float
+        The direction we apply to the phase
+
+    Returns
+    -------
+    vis_arr : np.ndarray
+        The visibility array with the deprojection applied
+    """
+
+    icomp = 1j
+    zcen = np.outer(params['ww'], obs['baseline_info']['freq'])
+    sign = 1 if direction > 0 else -1
+    phase = np.exp(direction * icomp * zcen)
+    vis_arr[: obs['n_pol'], :, :] *= np.tile(phase, (obs['n_pol'],1))
+
+    sign_str = ' +1' if sign > 0 else ' -1'
+    logger.info(f"Applying simple w-term deprojection:{sign_str}")
+
+    return vis_arr
+
+

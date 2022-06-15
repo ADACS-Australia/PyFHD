@@ -5,6 +5,8 @@ import numpy as np
 from PyFHD.pyfhd_tools.pyfhd_setup import pyfhd_parser, pyfhd_setup
 from PyFHD.data_setup.obs import create_obs
 from PyFHD.data_setup.uvfits import extract_header, create_params, extract_visibilities, create_layout
+from PyFHD.pyfhd_tools.pyfhd_utils import simple_deproject_w_term
+from PyFHD.beam_setup.setup import beam_setup
 
 def _print_time_diff(start : float, end : float, description : str, logger : RootLogger):
     """
@@ -64,6 +66,7 @@ def main():
     # TODO: Save the layout here later
 
     # if pyfhd_config['run_simulation']:
+        # TODO: in_situ_sim_input()
     
     # Get obs
     obs_start = time.time()
@@ -71,7 +74,17 @@ def main():
     obs_end = time.time()
     _print_time_diff(obs_start, obs_end, 'Obs Dictionary Created', logger)
 
-
+    if pyfhd_config['deproject_w_term'] is not None:
+        w_term_start = time.time()
+        vis_arr = simple_deproject_w_term(obs, params, vis_arr, pyfhd_config['deproject_w_term'], logger)
+        w_term_end = time.time()
+        _print_time_diff(w_term_start, w_term_end, 'Simple W-Term Deprojection Applied', logger)
+    
+    # Beam Setup
+    beam_start = time.time()
+    psf = beam_setup()
+    beam_end = time.time()
+    _print_time_diff(beam_start, beam_end, 'Beam Setup', logger)
 
     pyfhd_end = time.time()
     runtime = timedelta(seconds = pyfhd_end - pyfhd_start)

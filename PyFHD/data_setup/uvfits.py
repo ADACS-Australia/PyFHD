@@ -237,7 +237,7 @@ def extract_visibilities(pyfhd_header : dict, params_data : np.recarray, pyfhd_c
     if pyfhd_config['n_pol'] == 0:
         n_pol = pyfhd_header['n_pol']
     else:
-        n_pol = min(pyfhd_config['n_pol'], pyfhd_header['n_pol'])
+        n_pol = pyfhd_config['n_pol']
     
     if data_array.ndim > 4:
         logger.error("No current support for PyFHD to support spectral dimensions yet")
@@ -246,8 +246,8 @@ def extract_visibilities(pyfhd_header : dict, params_data : np.recarray, pyfhd_c
         polarizations = np.arange(n_pol)
         vis_arr = data_array[:, : , polarizations, pyfhd_header['real_index']] + data_array[:, : , polarizations, pyfhd_header['imaginary_index']] * (1j)
         vis_weights = data_array[:, : , polarizations, pyfhd_header['weights_index']]
-       
-    return vis_arr, vis_weights
+    # Redo the shape so its the format per polarization, per frequency per baseline.
+    return vis_arr.transpose(), vis_weights.transpose()
 
 def _check_layout_valid(layout : dict, key : str, logger : logging.RootLogger, check_min_max = False):
     """
