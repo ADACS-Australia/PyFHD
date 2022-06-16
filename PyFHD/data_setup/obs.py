@@ -74,7 +74,7 @@ def create_obs(pyfhd_header : dict, params : dict, pyfhd_config : dict, logger :
     for bin in range(freq_hist.size):
         if freq_ri[bin] < freq_ri[bin + 1]:
             freq_bin_i[freq_ri[freq_ri[bin] : freq_ri[bin + 1]]] = bin
-    baseline_info['fbin_i'] = freq_bin_i
+    baseline_info['fbin_i'] = freq_bin_i.astype(np.int64)
     obs['freq_center'] = np.median(baseline_info['freq'])
     
     antenna_flag = True

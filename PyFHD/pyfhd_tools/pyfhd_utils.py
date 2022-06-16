@@ -8,14 +8,14 @@ from astropy import units as u
 from math import pi
 from logging import RootLogger
 
-@njit(parallel = True)
+@njit
 def get_bins(min, max, bin_size):
     """
     Calculates the bins for the histogram and reverse indices based on a 
     minimum and maximum value, plus a given bin size. It mirrors IDL's way of
     calculating the bin edges. In IDL bins seem to be right hand side of the bin open
     like IDL, even at the end. However, in comparison to NumPy, the last bin is always
-    the maximum value. This does utilize numba anbd parallelization to make it faster.
+    the maximum value. This does utilize numba and parallelization to make it faster.
 
     Parameters
     ----------
@@ -24,7 +24,7 @@ def get_bins(min, max, bin_size):
     max : int, float
         The maximum chosen for the histogram
     bin_size : int, float
-        The bin size chosen for the histogram. This histogram alwways uses bins
+        The bin size chosen for the histogram. This histogram always uses bins
         of equal widths.
 
     Returns
@@ -190,7 +190,7 @@ def get_ri(data, bins, hist, min, max):
     ri = ri[:ri.size - counter]
     return ri
 
-def histogram(data, bin_size = 1, num_bins = None, min = None, max = None):
+def histogram(data : np.ndarray, bin_size = 1, num_bins = None, min = None, max = None):
     """
     The histogram function combines the use of the get_bins, get_hist and get_ri
     functions into one function. For the descriptions and docs of those functions
@@ -230,7 +230,10 @@ def histogram(data, bin_size = 1, num_bins = None, min = None, max = None):
     if min is None:
         min = np.min(data)
     # If the maximum has not been set, set it
+    # Check if the max argument was used, set to True, if we set max here by data turn it off.
+    max_arg = True
     if max is None:
+        max_arg = False 
         max = np.max(data)
     # If the number of bins has been set use that
     if num_bins is not None:
@@ -238,7 +241,8 @@ def histogram(data, bin_size = 1, num_bins = None, min = None, max = None):
     # IDL uses the bin_size as equal throughout min to max
     bins = get_bins(min, max, bin_size)
     # However, if we set a max, we must adjust the last bin to max according to IDL specifications
-    if bins[-1] > max or num_bins is not None:
+    # And we only do this in the case max was by an argument
+    if (bins[-1] > max and max_arg) or num_bins is not None:
         bins = bins[:-1]
     # Flatten the data
     data_flat = data.flatten()

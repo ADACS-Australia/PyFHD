@@ -2,6 +2,8 @@ import numpy as np
 from typing import Tuple
 from astropy.constants import c
 import logging
+from scipy.interpolate import interp1d
+from PyFHD.beam_setup.beam_utils import mwa_beam_setup_init
 
 def create_psf(pyfhd_config : dict, obs : dict) -> Tuple[dict, dict]:
 
@@ -31,7 +33,6 @@ def create_antenna(pyfhd_config : dict, obs : dict) -> dict:
         _description_
     """
 
-    antenna = {}
     # Setup the constants and variables
     n_tiles = obs['n_tile']
     n_freq = obs['n_freq']
@@ -63,7 +64,41 @@ def create_antenna(pyfhd_config : dict, obs : dict) -> dict:
     if pyfhd_config['psf_resolution'] is None:
         psf_resolution = 16
     
+    freq_center = np.zeros(nfreq_bin)
+    interp_func = interp1d(freq_bin_i, frequency_array)
+    for fi in range(nfreq_bin):
+        fi_i = np.where(freq_bin_i == fi)[0]
+        if fi_i.size == 0:
+            freq_center[fi] = interp_func(fi)
+        else:
+            freq_center[fi] = np.median(frequency_array[fi_i])
     
+    # Create basic antenna dictionary
+    antenna = {
+        'n_pol' : n_ant_pol,
+        'antenna_type' : pyfhd_config['instrument'],
+        'names' : ant_names,
+        'beam_model_version' : pyfhd_config['beam_model_version'],
+        'freq' : freq_center,
+        'nfreq_bin' : nfreq_bin,
+        'n_ant_elements' : 0,
+        # Anything that was pointer arrays in IDL will be None until assigned in Python 
+        'jones' : None,
+        'coupling' : None,
+        'gain' : None,
+        'coords' : None,
+        'delays' : None,
+        'size_meters' : 0,
+        'height' : 0,
+        'response' : None,
+        'group_id' : np.full(n_ant_pol, -1, dtype = np.int64),
+        'pix_window' : None,
+        'pix_use' : None,
+        'psf_image_dim' : 0,
+        'psf_scale' : 0
+    }
 
+    # We are building PyFHD with only MWA in mind at the moment
+    antenna = mwa_beam_setup_init(pyfhd_config, obs, antenna)
 
     return antenna
