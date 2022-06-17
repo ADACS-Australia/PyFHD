@@ -141,5 +141,7 @@ cython_debug/
 output/**
 input/**
 
+# Include these specifically
 !output/README.md
 !input/README.md
+!input/instrument_config/
