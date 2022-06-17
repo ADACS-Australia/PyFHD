@@ -47,6 +47,17 @@ def mwa_beam_setup_init(pyfhd_config : dict, obs : dict, antenna : dict) -> dict
     antenna['coords'][2, :] = np.zeros(16, dtype = np.float64)
 
     if delay_settings is None:
-        D_d - xc_arr * np.sin(())
+        D_d = xc_arr * np.sin(np.radians(90 - obs['obsalt'])) * np.sin(np.radians(obs['obsaz'])) + yc_arr * np.sin(np.radians(90 - obs['obsalt'])) * np.cos(np.radians(obs['obsaz']))
+        D_d /= c.value * base_delay_unit
+    antenna['delays'] *= base_delay_unit
+
+    if pyfhd_config['dipole_mutual_coupling_factor']:
+        antenna['coupling'] = mwa_dipole_mutual_coupling(antenna['freq'])
 
     return antenna
+
+def mwa_dipole_mutual_coupling(freq_arr : np.ndarray) -> np.ndarray:
+
+
+    zmat = np.zeros(10)
+    return zmat
