@@ -1,0 +1,11 @@
+astropy
+configargparse
+numba
+numpy
+pytest
+scipy
+setuptools
+sphinx
+colorama
+sphinx-rtd-theme
+sphinx-argparse
