@@ -22,5 +22,6 @@ setup(
     ],
     entry_points = {
         'console_scripts' : ['pyfhd = PyFHD.pyfhd:main'],
-    }
+    },
+    package_data={'PyFHD': ['templates/*.yaml']}
 )

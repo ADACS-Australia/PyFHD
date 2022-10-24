@@ -190,7 +190,8 @@ def pyfhd_setup(options : argparse.Namespace) -> Tuple[dict, logging.RootLogger]
     warnings = 0
     pyfhd_config = vars(options)
     # Start the logger
-    logger = pyfhd_logger(pyfhd_config)
+    logger, output_dir = pyfhd_logger(pyfhd_config)
+    pyfhd_config['version'] = str(output_dir).split('/')[-1]
     # Check input_path exists and obs_id uvfits and metafits files exist (Error)
     if not pyfhd_config['input_path'].exists():
         logger.error("{} doesn't exist, please check your input path".format(options.input_path))
@@ -331,7 +332,7 @@ def pyfhd_setup(options : argparse.Namespace) -> Tuple[dict, logging.RootLogger]
 
     return pyfhd_config, logger
 
-def pyfhd_logger(pyfhd_config: dict) -> logging.RootLogger:
+def pyfhd_logger(pyfhd_config: dict) -> Tuple[logging.RootLogger, str]:
     '''
     Creates the the logger for PyFHD. If silent is True in the pyfhd_config then
     the StreamHandler won't be added to logger meaning there will be no terminal output
@@ -348,6 +349,8 @@ def pyfhd_logger(pyfhd_config: dict) -> logging.RootLogger:
     -------
     logger : logging.RootLogger
         The logger with the appropriate handlers added.
+    output_dir : str
+        Where the log and FHD outputs are being written to
     '''
     # Get the time, Git commit and setup the name of the output directory
     run_time = time.localtime()
@@ -428,4 +431,4 @@ def pyfhd_logger(pyfhd_config: dict) -> logging.RootLogger:
     
     logger.info('Logging and configuration file created and copied to here: {}'.format(Path(output_dir).resolve()))
 
-    return logger
+    return logger, output_dir

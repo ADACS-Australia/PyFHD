@@ -1,0 +1,103 @@
+# Default Arguments for PyFHD
+# ~ returns None in Python (i.e. NULL)
+input-path : './input'
+recalculate-all : false
+silent : false
+disable-log : false
+conserve-memory : false
+instrument : 'mwa'
+memory-threshold : 100000000
+n-avg : 2
+dimension : 2048
+elements : 2048
+kbinsize : 0.5
+FoV : ~
+min-baseline : 1.
+n-pol : 2
+deproject-w-term : ~
+
+# Beam Setup
+recalculate-beam : true
+beam-clip-floor : true
+interpolate-kernel : true
+dipole-mutual-coupling-factor : true
+beam-nfreq-avg : 16
+psf-resolution : 100
+beam-model-version : 2
+beam-offset-time : 56
+
+# Calibration
+calibrate-visibilities : true
+cable-bandpass-fit : true # Depends on instrument cable length text file
+cal-bp-transfer : ~ # 'mwa_eor0_highband_season1_cable_bandpass.fits' (FHD Default)
+calibration-polyfit : true
+allow-sidelobe-cal-sources : true
+cal-amp-degree-fit : 2
+cal-phase-degree-fit : 1
+cal-reflection-hyperresolve : true
+cal-reflection-mode-theory : 150
+cal-reflection-mode-delay : false
+cal-reflection-mode-file : ~
+min-cal-baseline : 50.
+vis-baseline-hist : true
+bandpass-calibrate : true
+return-cal-visibilities : true
+calibration-flag-iterate : 0
+diffuse-calibrate : ~
+calibration-catalog-file-path  :  ~ # 'GLEAM_v2_plus_rlb2019.sav' (FHD Default)
+transfer-calibration : ~
+cal-stop : false
+transfer-model-uv : ~
+
+# Flagging
+flag-visibilities : false
+flag-calibration : false
+flag-freq-start : ~
+flag-freq-end : ~
+transfer-weights : ~
+time-cut: ~
+
+# Gridding
+recalculate-grid : false
+recalculate-mapfn : false
+image-filter : 'filter_uv_uniform'
+
+# Deconvolution
+deconvolve : false
+max-deconvolution-components : 20000
+filter-background : true
+smooth-width : 32
+dft-threshold : true
+return-decon-visibilities : false
+deconvolution-filter : 'filter_uv_uniform'
+
+# Export
+output-path : './output'
+export-images : true
+cleanup : false
+save-visibilities : true
+snapshot-healpix-export : true
+pad-uv-image : 1.
+ring-radius-multi : 10.
+description : ~
+
+# Model
+model-visibilities : false
+diffuse-model : ~
+model-catalog-file-path  :  ~ # 'GLEAM_v2_plus_rlb2019.sav' (FHD Default)
+allow-sidelobe-model-sources : false
+
+# Simulation
+run-simulation : false
+in-situ-sim-input : ~
+eor-vis-filepath : ~
+enhance-eor : 1
+sim-noise : ~
+tile-flag-list : ~
+remove-sim-flags : false
+
+# HEALPIX
+ps-kbinsize : 0.5
+ps-kspan : 600.
+restrict-hpx-inds : ~
+split-ps-export : true
