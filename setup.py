@@ -11,7 +11,8 @@ setup(
                 'PyFHD.calibration',
                 'PyFHD.data_setup',
                 'PyFHD.gridding',
-                'PyFHD.pyfhd_tools'],
+                'PyFHD.pyfhd_tools',
+                'PyFHD.use_idl_fhd'],
     description = 'Python Fast Holograhic Deconvolution: A Python package that does efficient image deconvolution for general radio astronomy, fast-mode Epoch of Reionization analysis, and simulation.',
     long_description = open("README.md").read(),
     long_description_content_type = 'text/markdown',
@@ -23,5 +24,5 @@ setup(
     entry_points = {
         'console_scripts' : ['pyfhd = PyFHD.pyfhd:main'],
     },
-    package_data={'PyFHD': ['templates/*.yaml']}
+    package_data={'PyFHD': ['templates/*']}
 )

@@ -7,6 +7,8 @@ import subprocess
 import logging
 import shutil
 from typing import Tuple
+import importlib_resources
+import os
 
 def pyfhd_parser():
     """
@@ -100,6 +102,8 @@ def pyfhd_parser():
     gridding.add_argument('-g', '--recalculate-grid', default = False, action ='store_true', help = 'Forces PyFHD to recalculate the gridding function. Replaces grid_recalculate from FHD')
     gridding.add_argument('-map', '--recalculate-mapfn', default = False, action = 'store_true', help = 'Forces PyFHD to recalculate the mapping function. Replaces mapfn_recalculate from FHD')
     gridding.add_argument('--image-filter', default = 'filter_uv_uniform', type = str, choices = ['filter_uv_uniform', 'filter_uv_hanning', 'filter_uv_natural', 'filter_uv_radial', 'filter_uv_tapered_uniform', 'filter_uv_optimal'], help = 'Weighting filter to be applyed to resulting snapshot images and fits files. Replaces image_filter_fn from FHD')
+    gridding.add_argument('--grid-psf-file', default = None, type = str,
+    help = 'Path to an FHD "psf" object in an .npz file, as converted from a .sav file. This should contain a gridding kernel matching the pointing of the observation being processed, e.g. for a +1 pointing, --grid-psf-file=/path/to/gauss_beam_pointing1.npz')
 
     # Deconvolution Group
     deconv.add_argument('-d', '--deconvolve', default = False, action = 'store_true', help = 'Run Fast Holographic Deconvolution')
@@ -210,7 +214,7 @@ def pyfhd_setup(options : argparse.Namespace) -> Tuple[dict, logging.RootLogger]
         pyfhd_config['recalculate_beam'] = True
         pyfhd_config['recalculate_grid'] = True
         pyfhd_config['recalculate_mapfn'] = True
-    logger.info('Recalculate All options has been enabled, the beam, gridding and map function will be recalculated')
+        logger.info('Recalculate All option has been enabled, the beam, gridding and map function will be recalculated')
 
     # Check if recalculate_mapfn has been enabled and recalculate_grids disabled, if so enable recaluclate_grid (Warning)
     if pyfhd_config['recalculate_mapfn'] and not pyfhd_config['recalculate_grid']:
@@ -317,6 +321,9 @@ def pyfhd_setup(options : argparse.Namespace) -> Tuple[dict, logging.RootLogger]
     
     pyfhd_config['ring_radius'] =  pyfhd_config['pad_uv_image'] * pyfhd_config['ring_radius_multi']
 
+    if pyfhd_config['grid_psf_file'] != None:
+        errors += _check_file_exists(pyfhd_config, 'grid_psf_file')
+
     # If there are any errors exit the program.
     if errors:
         logger.error('{} errors detected, check the log above to see the errors, stopping PyFHD now'.format(errors))
@@ -360,7 +367,7 @@ def pyfhd_logger(pyfhd_config: dict) -> Tuple[logging.RootLogger, str]:
     if pyfhd_config['description'] is None:
         log_name = "pyfhd_" + log_time
     else:
-        log_name = "pyfhd_" + pyfhd_config['description'].replace(' ', '_').lower() + log_time
+        log_name = "pyfhd_" + pyfhd_config['description'].replace(' ', '_').lower() + '_' + log_time
     # Format the starting string for logging
     start_string = """\
     ________________________________________________________________________
@@ -403,11 +410,26 @@ def pyfhd_logger(pyfhd_config: dict) -> Tuple[logging.RootLogger, str]:
         log_terminal.setFormatter(logging.Formatter('%(message)s'))
         logger.addHandler(log_terminal)
 
-    # Create the output directory
-    output_dir = Path(pyfhd_config['output_path'], log_name)
-    if Path.is_dir(output_dir):
-        raise OSError("You have a directory inside your specified output directory already named by this date and time...Probably not a time travel paradox right...?")
+    # Check the output_path exists, and create if not
+
+    if not os.path.isdir(pyfhd_config['output_path']):
+        print(f"Output path specified by `--output-path={pyfhd_config['output_path']}` does not exist. Attempting to create now." )
+        output_dir = Path(pyfhd_config['output_path'])
+        Path.mkdir(output_dir)
+        print(f"Successfully created directory: {pyfhd_config['output_path']}")
+
+    # Create the output directory path. If the user has selected a description,
+    # don't use the time in the name - that gets used for the log
+    if pyfhd_config['description'] is None:
+        dir_name = "pyfhd_" + log_time
     else:
+        dir_name = "pyfhd_" + pyfhd_config['description'].replace(' ', '_').lower()
+
+    output_dir = Path(pyfhd_config['output_path'], dir_name)
+    if Path.is_dir(output_dir):
+        output_dir_exists = True
+    else:
+        output_dir_exists = False
         Path.mkdir(output_dir)
 
     # Create the logger for the file
@@ -425,9 +447,14 @@ def pyfhd_logger(pyfhd_config: dict) -> Tuple[logging.RootLogger, str]:
 
     # Copy the Configuration File if it exists to the output directory
     if pyfhd_config['config_file'] is None:
-        shutil.copy('pyfhd.yaml', Path(output_dir, log_name + '.yaml'))
+        pyfhd_yaml = importlib_resources.files('PyFHD.templates').joinpath('pyfhd.yaml')
+        shutil.copy(pyfhd_yaml, Path(output_dir, log_name + '.yaml'))
     else:
         shutil.copy(pyfhd_config['config_file'], Path(output_dir, log_name + '.yaml'))
+
+    ##Stick a warning in the log if running in an already existing dir
+    if output_dir_exists:
+        logger.warning(f"The output dir {output_dir} already exists, so any existing outputs might be overridden depending on settings.")
     
     logger.info('Logging and configuration file created and copied to here: {}'.format(Path(output_dir).resolve()))
 

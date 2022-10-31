@@ -7,5 +7,6 @@ scipy
 setuptools
 sphinx
 colorama
+importlib_resources
 sphinx-rtd-theme
 sphinx-argparse

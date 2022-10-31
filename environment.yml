@@ -13,6 +13,8 @@ dependencies:
   - setuptools
   - sphinx
   - colorama
+  - importlib_resources
+  - pip
   - pip:
     - sphinx-rtd-theme
     - sphinx-argparse
