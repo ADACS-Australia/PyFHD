@@ -9,6 +9,7 @@ import logging
 from scipy.io import readsav
 import numpy as np
 import time
+import h5py
 
 def convert_sav_to_dict(sav_path : str, logger : logging.RootLogger):
     """
@@ -113,11 +114,11 @@ def convert_IDL_calibration_outputs(tag : str, idl_output_dir : str,
                            allow_pickle=True)
         vis_YY_dict = np.load(f"{idl_output_dir}/vis_data/{tag}_vis_YY_dict.npz",
                            allow_pickle=True)
-        vis_model_XX_dict = np.load(f"{vis_dir}/{tag}_vis_model_XX_dict.npz",
+        vis_model_XX_dict = np.load(f"{idl_output_dir}/vis_data/{tag}_vis_model_XX_dict.npz",
                            allow_pickle=True)
-        vis_model_YY_dict = np.load(f"{vis_dir}/{tag}_vis_model_YY_dict.npz",
+        vis_model_YY_dict = np.load(f"{idl_output_dir}/vis_data/{tag}_vis_model_YY_dict.npz",
                            allow_pickle=True)
-        vis_flags_dict = np.load(f"{vis_dir}/{tag}_vis_flags_dict.npz",
+        vis_flags_dict = np.load(f"{idl_output_dir}/vis_data/{tag}_vis_flags_dict.npz",
                            allow_pickle=True)
     else:
         logger.info("Converting IDL FHD calibration .sav files now ")
@@ -160,7 +161,8 @@ def convert_IDL_calibration_outputs(tag : str, idl_output_dir : str,
 
 
 def run_gridding_on_IDL_outputs(pyfhd_config : dict, idl_output_dir : str,
-                                logger : logging.RootLogger):
+                                logger : logging.RootLogger,
+                                ps_kspan=0):
     """Assuming that `run_IDL_calibration_only` has been run to create IDL
     FHD outputs, read in those outputs, and grid them, according to the
     paramaters defined in `pyfhd_config`.
@@ -174,6 +176,11 @@ def run_gridding_on_IDL_outputs(pyfhd_config : dict, idl_output_dir : str,
         Parent directory in which all IDL FHD outputs reside
     logger : logging.RootLogger
         The logger to output info and errors to
+    ps_kspan : int
+        This is the maximum pixel to grid out to, e.g. if you set ps_kspan=200,
+        you will grid up to 200 pixels from the centre of the grid. This sets
+        obs.dimension = 2*ps_kspan and obs.elements = 2*ks_span. Defaults to
+        using what is in the current `obs`.
     """
 
     before = time.time()
@@ -192,6 +199,11 @@ def run_gridding_on_IDL_outputs(pyfhd_config : dict, idl_output_dir : str,
     obs = idl_cal_dict['obs_dict']['obs']
     status_str = "OH NO"
     
+    if ps_kspan:
+        obs.dimension = 2*ps_kspan
+        obs.elements = 2*ps_kspan
+        logger.info(f"Resetting obs.dimension and obs.elements to {2*ps_kspan}.")
+        
     params = idl_cal_dict['params_dict']['params']
     
     variables_dict = idl_cal_dict['variables_dict']
@@ -200,11 +212,6 @@ def run_gridding_on_IDL_outputs(pyfhd_config : dict, idl_output_dir : str,
     preserve_visibilities = variables_dict['preserve_visibilities']
     model_return = variables_dict['model_return']
 
-    # weights_flag = True
-    # variance_flag = True
-    # model_return = True
-    # preserve_visibilities = True
-    
     bi_use_even = variables_dict['bi_use'][0]
     bi_use_odd = variables_dict['bi_use'][1]
     vis_weights = idl_cal_dict['vis_flags_dict']['vis_weights']
@@ -217,7 +224,7 @@ def run_gridding_on_IDL_outputs(pyfhd_config : dict, idl_output_dir : str,
 
     ##Load up the gridding psf object, and report how long it takes
     before = time.time()
-    psf_dict = np.load(pyfhd_config['grid_psf_file'], allow_pickle=True)
+    psf_dict = np.load(pyfhd_config['grid_psf_file_npz'], allow_pickle=True)
     psf = psf_dict['psf']
     after = time.time()
     logger.info(f"Loading the gridding psf object took {after - before:.1f} seconds.\n\tNow launching python gridding loop")
@@ -245,29 +252,44 @@ def run_gridding_on_IDL_outputs(pyfhd_config : dict, idl_output_dir : str,
     run_command(f'mkdir -p {gridding_dir}')
 
     before = time.time()
+    
+    dimension = pyfhd_config['dimension']
 
     for pol_ind, pol_label in enumerate(pol_names):
         for bi_use, bi_use_label in zip(bi_uses, bi_use_labels):
-            for freq_ind in range(nf):
-
-                save_name = f"{gridding_dir}/{pyfhd_config['obs_id']}_{pol_label}_{bi_use_label}_freqind{freq_ind:03d}.npz"
-
-                ##Which frequencies to use in this subset of gridding
-                fi_use = np.where((freq_bin_i2 == freq_ind) & (freq_use > 0))[0]
+            
+            save_name = f"{gridding_dir}/{pyfhd_config['obs_id']}_gridded_uv_cube_{bi_use_label}_{pol_label}_sep-internal.h5"
                 
-                these_visis = visibilities[pol_ind]
-                these_model = models[pol_ind]
-                
-                gridding_dict = visibility_grid.visibility_grid(visibilities[pol_ind],
-                        vis_weights[pol_ind],
-                        obs, status_str, psf, params,
-                        weights_flag = weights_flag,
-                        variance_flag = variance_flag,
-                        polarization = pol_ind,
-                        fi_use = fi_use, bi_use = bi_use,
-                        model = models[pol_ind])
+            with h5py.File(save_name, 'w') as hf:
+            
+                for freq_ind in range(nf):
 
-                np.savez(save_name, **gridding_dict)
+                    print(f"gridding {pol_label}_{bi_use_label}_freqind{freq_ind:03d}")
+
+                    ##Which frequencies to use in this subset of gridding
+                    fi_use = np.where((freq_bin_i2 == freq_ind) & (freq_use > 0))[0]
+                    
+                    these_visis = visibilities[pol_ind]
+                    these_model = models[pol_ind]
+                    
+                    gridding_dict = visibility_grid.visibility_grid(visibilities[pol_ind],
+                            vis_weights[pol_ind],
+                            obs, status_str, psf, params,
+                            weights_flag = weights_flag,
+                            variance_flag = variance_flag,
+                            polarization = pol_ind,
+                            fi_use = fi_use, bi_use = bi_use,
+                            model = models[pol_ind])
+
+                    name = f"{pol_label}_{bi_use_label}_freqind{freq_ind:03d}"
+                    
+                    hf.create_dataset(f'dirty_uv_{name}', data=gridding_dict['image_uv'])
+                    hf.create_dataset(f'weights_holo_{name}', data=gridding_dict['weights'])
+                    hf.create_dataset(f'variance_holo_{name}', data=gridding_dict['variance'])
+                    hf.create_dataset(f'model_return_{name}', data=gridding_dict['model_return'])
+                    hf.create_dataset(f'n_vis_{name}', data=gridding_dict['n_vis'])
+                
+                hf.close()
 
     after = time.time()
             

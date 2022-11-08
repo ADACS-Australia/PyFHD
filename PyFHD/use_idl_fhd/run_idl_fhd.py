@@ -221,3 +221,143 @@ def run_IDL_calibration_only(pyfhd_config : dict,
     logger.info(f"Running IDL FHD calibration took {(after - before) / 60.0:.1f} minutes")
 
     return idl_output_dir
+
+
+def write_run_FHD_healpix_imaging_pro(input_dict : dict,
+                                      output_dir : str):
+    """
+    Write the top level run_fhd_healpix_imaging.pro file into the appropriate
+    `output_dir`, using arguments found in the dict `input_dict`.
+
+    Parameters
+    ----------
+    pyfhd_config : dict
+        The options from argparse in a dictionary, that have been verified using
+        `PyFHD.pyfhd_tools.pyfhd_setup.pyfhd_setup`.
+    output_dir: str
+        Where to save run_fhd_calibration_only.pro
+
+    """
+
+    with open(f"{output_dir}/run_fhd_healpix_imaging.pro", 'w') as outfile:
+        outfile.write("pro run_fhd_healpix_imaging\n")
+        outfile.write("\n")
+        ##First of all, explicitly set some keywords that are used by the
+        ##`fhd_path_setup` function below. Have to do this first, as the
+        ##keywords set by `fhd_path_setup` need to be bundled into the `extra`
+        ##structure  
+        outfile.write("    ; Keywords\n")
+        vis_file_list = f"{input_dict['input_path']/input_dict['obs_id']}.uvfits"
+        outfile.write(f'    vis_file_list="{vis_file_list}"\n')
+        outfile.write(f"    output_directory='{input_dict['output_path']}/{input_dict['version']}'\n")
+        outfile.write(f"    version='{input_dict['version']}'\n")
+        outfile.write("\n")
+
+        ##This sets up a bunch of paths so IDL-FHD knows where to output thigns            
+        outfile.write("    ; Directory setup\n")
+        outfile.write("    fhd_file_list=fhd_path_setup(vis_file_list,version=version,output_directory=output_directory)\n")
+        outfile.write("    healpix_path=fhd_path_setup(output_dir=output_directory,subdir='Healpix',output_filename='Combined_obs',version=version)\n")
+        outfile.write("\n")
+        
+        ##Add in a path to where the gridded hdf5 files should live so IDL
+        ##can find them
+        outfile.write("    ; Path to where the python-gridded hdf5 files live\n")
+        
+        outfile.write(f"    python_grid_path='{input_dict['output_path']}/{input_dict['version']}/gridding_outputs/'\n\n")
+        
+        ##Add in some extra healpix-ps related keywords
+        
+        outfile.write("    ; Add in some extra healpix-ps related keywords\n")
+        outfile.write("    model_flag=1\n")
+        outfile.write("    restrict_hpx_inds='EoR0_high_healpix_inds_3x.idlsave'\n")
+        outfile.write(f"    grid_psf_file='{input_dict['grid_psf_file_sav']}'\n")
+        # outfile.write(f"    grid_psf_file='{input_dict['grid_psf_file_sav']}'\n")
+
+        # outfile.write("    ps_kspan=200.\n\n")
+        
+        ##This reads in all the other keywords that have been written to
+        ##pyfhd_config.pro, and bundles them into a structure `extra` along
+        ##with any other keywords already set
+        outfile.write("    ; Set global defaults and bundle all the variables into a structure.\n")
+        outfile.write("    ; Any keywords set on the command line or in the top-level wrapper will supercede these defaults\n")
+        outfile.write("    pyfhd_config,extra\n")
+        outfile.write("\n")
+
+        ##print out all the variables so we can check them later
+        outfile.write("\n")
+        outfile.write("    ; print all the keywords that are now set\n")
+        outfile.write('    print,""\n')
+        outfile.write('    print,"Keywords set in wrapper:"\n')
+        outfile.write("    print,structure_to_text(extra)\n")
+        outfile.write("\n")
+
+        ##This finally actually calls FHD
+        outfile.write('    print,""\n')
+        outfile.write("    ; this runs FHD proper\n")
+        outfile.write("    general_healpix_imaging,_Extra=extra\n")
+        outfile.write("end\n")
+
+
+def run_IDL_convert_gridding_to_healpix_images(pyfhd_config : dict,
+                                              logger : logging.RootLogger):
+    """Assuming that `run_gridding_on_IDL_outputs` has been run to create gridding visibility hdf5 files, run IDL code to make image slices,
+    and project them into healpix.
+
+    Parameters
+    ----------
+    pyfhd_config : dict
+        The options from argparse in a dictionary, that have been verified using
+        `PyFHD.pyfhd_tools.pyfhd_setup.pyfhd_setup`.
+    logger : logging.RootLogger
+        The logger to output info and errors to
+    """
+    
+    
+    output_dir = f"{pyfhd_config['output_path']}/{pyfhd_config['version']}"
+
+    logger.info("Writing IDL .pro files to run IDL FHD calibration only")
+
+    ##Convert the lovely arguments into pyfhd_config.pro to feed into IDL 
+    convert_argdict_to_pro(pyfhd_config, output_dir)
+    
+    ##Write the top level controlling script to run IDL code
+    write_run_FHD_healpix_imaging_pro(pyfhd_config, output_dir)
+    
+    ##Copy some template .pro code into the directory where we will run
+        ##IDL; these are called by run_fhd_calibration_only.pro
+    files_needed = ["fhd_healpix_imaging.pro",
+                    "general_healpix_imaging.pro",
+                    "healpix_snapshot_cube_generate_read_python.pro",
+                    "vis_model_freq_split_read_python.pro"]
+    
+    for file in files_needed:
+        file_path = importlib_resources.files('PyFHD.templates').joinpath(file)
+        shutil.copy(file_path, output_dir)
+
+    ##Move into the output directory so IDL can see all the .pro files
+    os.chdir(output_dir)
+
+    ##Let the user know how IDL was launched, might help with bug
+    ##hunting later on
+
+    idl_command = "idl -IDL_DEVICE ps -e run_fhd_healpix_imaging"
+
+    logger.info(f"Launching IDL on the command line via the command:\n\t$ {idl_command}")
+
+    before = time.time()
+
+    ##Launch the IDL code and cross your fingers
+    idl_lines = run_command(idl_command)
+    
+    # idl_lines = "nothin"
+
+    ##Stick some tabs on front out idl lines so they sit nice in the log
+    idl_lines = "\t" + idl_lines.replace("\n", "\n\t")
+
+    logger.info('Here is everything IDL FHD printed:\n' + idl_lines)
+
+    idl_output_dir = f"{pyfhd_config['output_path']}/{pyfhd_config['version']}/fhd_{pyfhd_config['version']}"
+
+    after = time.time()
+
+    logger.info(f"Running IDL FHD imaging/healpix projection took {(after - before) / 60.0:.1f} minutes")

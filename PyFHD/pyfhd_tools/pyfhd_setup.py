@@ -9,6 +9,7 @@ import shutil
 from typing import Tuple
 import importlib_resources
 import os
+from PyFHD.pyfhd_tools.git_helper import retrieve_gitdict
 
 def pyfhd_parser():
     """
@@ -38,6 +39,7 @@ def pyfhd_parser():
     model = parser.add_argument_group('Model', 'Tune the modelling in PyFHD')
     sim = parser.add_argument_group('Simulation', 'Turn On Simulation and Tune the simulation')
     healpix = parser.add_argument_group('HEALPIX', 'Adjust the HEALPIX output')
+    # pyIDL = parser.add_argument_group('HEALPIX', 'Adjust the HEALPIX output')
 
     # General Defaults
     parser.add_argument('obs_id', help="The Observation ID as per the MWA file naming standards. Assumes the fits files for this observation is in the uvfits-path. obs_id and uvfits replace file_path_vis from FHD")
@@ -102,8 +104,8 @@ def pyfhd_parser():
     gridding.add_argument('-g', '--recalculate-grid', default = False, action ='store_true', help = 'Forces PyFHD to recalculate the gridding function. Replaces grid_recalculate from FHD')
     gridding.add_argument('-map', '--recalculate-mapfn', default = False, action = 'store_true', help = 'Forces PyFHD to recalculate the mapping function. Replaces mapfn_recalculate from FHD')
     gridding.add_argument('--image-filter', default = 'filter_uv_uniform', type = str, choices = ['filter_uv_uniform', 'filter_uv_hanning', 'filter_uv_natural', 'filter_uv_radial', 'filter_uv_tapered_uniform', 'filter_uv_optimal'], help = 'Weighting filter to be applyed to resulting snapshot images and fits files. Replaces image_filter_fn from FHD')
-    gridding.add_argument('--grid-psf-file', default = None, type = str,
-    help = 'Path to an FHD "psf" object in an .npz file, as converted from a .sav file. This should contain a gridding kernel matching the pointing of the observation being processed, e.g. for a +1 pointing, --grid-psf-file=/path/to/gauss_beam_pointing1.npz')
+    gridding.add_argument('--grid-psf-file', nargs='*', 
+    help = 'Path(s) to an FHD "psf" object. If running python gridding, this should be n .npz file, as converted from a .sav file. This should contain a gridding kernel matching the pointing of the observation being processed, e.g. for a +1 pointing, --grid-psf-file=/path/to/gauss_beam_pointing1.npz. If only/also running imaging/healpix projection in IDL, a path to the original .sav file should also be included, e.g. --grid-psf-file /path/to/gauss_beam_pointing1.npz /path/to/gauss_beam_pointing1.sav')
 
     # Deconvolution Group
     deconv.add_argument('-d', '--deconvolve', default = False, action = 'store_true', help = 'Run Fast Holographic Deconvolution')
@@ -142,7 +144,7 @@ def pyfhd_parser():
 
     # HEALPIX Group
     healpix.add_argument('--ps-kbinsize', type = float, default = 0.5, help = 'UV pixel size in wavelengths to grid for Healpix cube generation. Overrides ps_fov and the kpix in the obs structure if set.')
-    healpix.add_argument('--ps-kspan', type = float, default = 600, help = 'UV plane dimension in wavelengths for Healpix cube generation.\nOverrides ps_dimension and ps_degpix if set.\nIf ps_kspan, ps_dimension, or ps_degpix are not set, the UV plane dimension is calculated from the FoV and the degpix from the obs structure.')
+    healpix.add_argument('--ps-kspan', type = float, default = 0, help = 'UV plane dimension in wavelengths for Healpix cube generation.\nOverrides ps_dimension and ps_degpix if set.\nIf ps_kspan, ps_dimension, or ps_degpix are not set, the UV plane dimension is calculated from the FoV and the degpix from the obs structure.')
     healpix.add_argument('--restrict-hpx-inds', type = Path, default = None, help = "Only allow gridding of the output healpix cubes to include the healpix pixels specified in a file.\nThis is useful for restricting many observations to have consistent healpix pixels during integration, and saves on memory and walltime.")
     healpix.add_argument('--split-ps-export', default = True, action = 'store_true', help = 'Split up the Healpix outputs into even and odd time samples.\nThis is essential to propogating errors in εppsilon.\nRequires more than one time sample.')
 
@@ -234,10 +236,11 @@ def pyfhd_setup(options : argparse.Namespace) -> Tuple[dict, logging.RootLogger]
         warnings += 1
 
     # If cable_bandpass_fit has been enabled an instrument text file should also exist. (Error)
-    if pyfhd_config['cable_bandpass_fit']:
-        if not Path(pyfhd_config['input_path'], 'instrument_config', 'mwa_cable_length' + '.txt').exists():
-            logging.error('Cable bandpass fit has been enabled but the required text file is missing')
-            errors += 1
+    ##TODO get this as a template file during pip install
+    # if pyfhd_config['cable_bandpass_fit']:
+    #     if not Path(pyfhd_config['input_path'], 'instrument_config', 'mwa_cable_length' + '.txt').exists():
+    #         logging.error('Cable bandpass fit has been enabled but the required text file is missing')
+    #         errors += 1
     
     # cal_bp_transfer when enabled should point to a file with a saved bandpass (Error)
     errors += _check_file_exists(pyfhd_config, 'cal_bp_transfer')
@@ -321,9 +324,31 @@ def pyfhd_setup(options : argparse.Namespace) -> Tuple[dict, logging.RootLogger]
     
     pyfhd_config['ring_radius'] =  pyfhd_config['pad_uv_image'] * pyfhd_config['ring_radius_multi']
 
-    if pyfhd_config['grid_psf_file'] != None:
-        errors += _check_file_exists(pyfhd_config, 'grid_psf_file')
+    ##TODO need better checks on other arguments as to whether we require
+    ##the .sav, .npz, or both files here
+    for psf_file in pyfhd_config['grid_psf_file']:
+        if psf_file[-4:] == '.sav':
+            pyfhd_config['grid_psf_file_sav'] = psf_file
+            errors += _check_file_exists(pyfhd_config, 'grid_psf_file_sav')
+        elif psf_file[-4:] == '.npz':
+            pyfhd_config['grid_psf_file_npz'] = psf_file
+            errors += _check_file_exists(pyfhd_config, 'grid_psf_file_npz')
+        else:
+            logger.error(f'--grid-psf-file must either be a numpy save file (.npz) or IDL binary (.sav) file. You entered {psf_file}.')
+            errors += 1
 
+    ##TODO see lines 41-43 of fhd_core/HEALPix/healpix_snapshot_cube_generate.pro
+    ##for other options in setting the dimesion/elements parameters
+    ##If ks_span is included, resize the dimension and elements as the user
+    ##is specifying how large the 2D gridding array should be
+    if pyfhd_config['ps_kspan']:
+        dimension_use = int(pyfhd_config['ps_kspan']/pyfhd_config['kbinsize'])
+        pyfhd_config['dimension'] = dimension_use
+        pyfhd_config['elements'] = dimension_use
+
+    ##--------------------------------------------------------------------------
+    ##Checks are finished, report any errors or warings
+    ##--------------------------------------------------------------------------
     # If there are any errors exit the program.
     if errors:
         logger.error('{} errors detected, check the log above to see the errors, stopping PyFHD now'.format(errors))
@@ -363,7 +388,17 @@ def pyfhd_logger(pyfhd_config: dict) -> Tuple[logging.RootLogger, str]:
     run_time = time.localtime()
     stdout_time = time.strftime("%c", run_time)
     log_time = time.strftime("%H_%M_%S_%d_%m_%Y", run_time)
-    commit = subprocess.run(["git", "rev-parse", "HEAD"], stdout=subprocess.PIPE, text = True).stdout
+
+    ##Try and get git_information from the pip install method
+    git_dict = retrieve_gitdict()
+    if git_dict:
+        commit = git_dict['describe']
+    ##If that doesn't exist, try directly find the information (we might be
+    # running from within the git repo)
+    else:
+        commit = subprocess.run(["git", "rev-parse", "HEAD"], stdout=subprocess.PIPE, text = True).stdout
+        commit.replace('\n','')
+
     if pyfhd_config['description'] is None:
         log_name = "pyfhd_" + log_time
     else:
@@ -395,7 +430,7 @@ def pyfhd_logger(pyfhd_config: dict) -> Tuple[logging.RootLogger, str]:
 
         Observation ID: {}
         
-        Validating your input...""".format(commit.replace('\n',''), stdout_time, pyfhd_config['obs_id'])
+        Validating your input...""".format(commit, stdout_time, pyfhd_config['obs_id'])
 
     # Setup logging
     log_string = ""

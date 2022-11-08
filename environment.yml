@@ -14,6 +14,7 @@ dependencies:
   - sphinx
   - colorama
   - importlib_resources
+  - h5py
   - pip
   - pip:
     - sphinx-rtd-theme

@@ -477,6 +477,7 @@ def visibility_grid(visibility, vis_weights, obs, status_str, psf, params,
         'variance' : variance,
         'uniform_filter' : uniform_filter,
         'obs' : obs,
+        'n_vis' : n_vis,
     }
 
     if grid_spectral:
