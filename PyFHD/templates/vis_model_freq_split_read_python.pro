@@ -114,20 +114,24 @@ FUNCTION vis_model_freq_split_read_python,obs,status_str,psf,params,vis_weights,
 
     file_id = H5F_OPEN(h5_filepath)
 
+    ; An containing how many visibilities were gridded per frequency group
+    dataset_nf_vis = H5D_OPEN(file_id, 'nf_vis')
+    nf_vis = H5D_READ(dataset_nf_vis)
+
     FOR fi=0L,nf-1 DO BEGIN
 
-      fi_use=where((freq_bin_i2 EQ fi) AND (freq_use GT 0),nf_use)
       variance_holo=1 ;initialize
       weights_holo=1 ;initialize
+
+      ; see whether any data exists in the freq pairs
+      fi_use=where((freq_bin_i2 EQ fi) AND (freq_use GT 0),nf_use)
       IF nf_use EQ 0 THEN BEGIN
          n_vis=0
       ENDIF ELSE BEGIN
-        ; dirty_UV=visibility_grid(vis_ptr,vis_weights_use[pol_i],obs_out,0,psf_out,params,timing=t_grid0,fi_use=fi_use,bi_use=bi_use,$
-        ;     polarization=pol_i,weights=weights_holo,variance=variance_holo,silent=1,mapfn_recalculate=0,$
-        ;     model_ptr=model_ptr,n_vis=n_vis,/preserve_visibilities,model_return=model_return, _Extra=extra)
 
-        ;LOAD IN THE PYTHON CALCULATED VERSIONS
-
+      ; How many visibilities were in this frequency slice
+      ; n_vis = nf_vis[fi]
+      
         ; Name for frequency slice in the various datasets
         sub = "_" + pol_name[pol_i] + "_" + uvf_name + '_freqind' + STRING(fi, FORMAT='(I3.3)')
 
@@ -144,6 +148,7 @@ FUNCTION vis_model_freq_split_read_python,obs,status_str,psf,params,vis_weights,
         variance_holo = H5D_READ(dataset_variance_holo)
         model_return_struct = H5D_READ(dataset_model_return)
         n_vis = H5D_READ(dataset_n_vis)
+        print, "n_vis", n_vis
 
         ; convert into a complex array
         dirty_uv = dirty_uv_struct.r + Complex(0,1)*dirty_uv_struct.i
@@ -151,6 +156,7 @@ FUNCTION vis_model_freq_split_read_python,obs,status_str,psf,params,vis_weights,
         model_return = model_return_struct.r + Complex(0,1)*model_return_struct.i
       ENDELSE
 
+      ; If there are no visibilities, shove in zeros (I think)?
       IF n_vis EQ 0 THEN BEGIN
         *dirty_arr[pol_i,fi]=init_arr
         *weights_arr[pol_i,fi]=init_arr
@@ -205,11 +211,25 @@ FUNCTION vis_model_freq_split_read_python,obs,status_str,psf,params,vis_weights,
     ENDFOR
     IF ~Keyword_Set(preserve_visibilities) THEN ptr_free,vis_ptr,model_ptr
   ENDFOR
+
+  obs_out.n_vis=n_vis_use
+  obs_out.nf_vis = nf_vis
+
+  ; obs.n_vis=n_vis_use
+  ; obs.nf_vis = nf_vis
+
+  IF ~Arg_present(obs_out) THEN BEGIN
+      obs.n_vis=n_vis_use
+      obs.nf_vis = nf_vis
+
+  ENDIF
+
+  ; release the nf_vis dataset
+  H5D_CLOSE, dataset_nf_vis
   
   ; release the hdf5 main file
   H5F_CLOSE, file_id
 
-  obs_out.n_vis=n_vis_use
   IF ~Arg_present(obs_out) THEN  obs.n_vis=n_vis_use
   
   if keyword_set(save_uvf) then save, filename = uvf_filepath, dirty_uv_arr, weights_uv_arr, variance_uv_arr, model_uv_arr, obs_out, /compress

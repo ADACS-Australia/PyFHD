@@ -239,8 +239,8 @@ def write_run_FHD_healpix_imaging_pro(input_dict : dict,
 
     """
 
-    with open(f"{output_dir}/run_fhd_healpix_imaging.pro", 'w') as outfile:
-        outfile.write("pro run_fhd_healpix_imaging\n")
+    with open(f"{output_dir}/run_fhd_healpix_imaging_{input_dict['obs_id']}.pro", 'w') as outfile:
+        outfile.write(f"pro run_fhd_healpix_imaging_{input_dict['obs_id']}\n")
         outfile.write("\n")
         ##First of all, explicitly set some keywords that are used by the
         ##`fhd_path_setup` function below. Have to do this first, as the
@@ -248,6 +248,7 @@ def write_run_FHD_healpix_imaging_pro(input_dict : dict,
         ##structure  
         outfile.write("    ; Keywords\n")
         vis_file_list = f"{input_dict['input_path']/input_dict['obs_id']}.uvfits"
+        outfile.write(f"    obs_id='{input_dict['obs_id']}'\n")
         outfile.write(f'    vis_file_list="{vis_file_list}"\n')
         outfile.write(f"    output_directory='{input_dict['output_path']}/{input_dict['version']}'\n")
         outfile.write(f"    version='{input_dict['version']}'\n")
@@ -340,7 +341,7 @@ def run_IDL_convert_gridding_to_healpix_images(pyfhd_config : dict,
     ##Let the user know how IDL was launched, might help with bug
     ##hunting later on
 
-    idl_command = "idl -IDL_DEVICE ps -e run_fhd_healpix_imaging"
+    idl_command = f"idl -IDL_DEVICE ps -e run_fhd_healpix_imaging_{pyfhd_config['obs_id']}"
 
     logger.info(f"Launching IDL on the command line via the command:\n\t$ {idl_command}")
 

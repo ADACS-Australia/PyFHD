@@ -39,7 +39,7 @@ def pyfhd_parser():
     model = parser.add_argument_group('Model', 'Tune the modelling in PyFHD')
     sim = parser.add_argument_group('Simulation', 'Turn On Simulation and Tune the simulation')
     healpix = parser.add_argument_group('HEALPIX', 'Adjust the HEALPIX output')
-    # pyIDL = parser.add_argument_group('HEALPIX', 'Adjust the HEALPIX output')
+    pyIDL = parser.add_argument_group('PyIDL', 'Keywords for running hybrid python and IDL pipeline. As the conversion from IDL into python progresses, these options should shrink and eventually disappear. Using ANY of these options sidesteps the regular python-only pipeline to run sections on the hybrid pipeline')
 
     # General Defaults
     parser.add_argument('obs_id', help="The Observation ID as per the MWA file naming standards. Assumes the fits files for this observation is in the uvfits-path. obs_id and uvfits replace file_path_vis from FHD")
@@ -60,7 +60,8 @@ def pyfhd_parser():
     parser.add_argument('--n-pol', type = int, default = 2, choices = [0, 2, 4], help = 'Set number of polarizations to use (XX, YY versus XX, YY, XY, YX).')
 
     # Calibration Group
-    calibration.add_argument('-cv', '--calibrate-visibilities', default = True, action = 'store_true', help = 'Turn on the calibration of the visibilities. If turned on, calibration of the dirty, modelling, and subtraction to make a residual occurs. Otherwise, none of these occur and an uncalibrated dirty cube is output.')
+    calibration.add_argument('-cv', '--calibrate-visibilities', default = True, type=bool,
+    help = 'Turn on the calibration of the visibilities. If turned on, calibration of the dirty, modelling, and subtraction to make a residual occurs. Otherwise, none of these occur and an uncalibrated dirty cube is output.')
     calibration.add_argument('--diffuse-calibrate', type = Path, help = 'Path to a file containing a map/model of the diffuse in which to calibrate on.\nThe map/model undergoes a DFT for every pixel, and the contribution from every pixel is added to the model visibilities from which to calibrate on.\nIf no diffuse_model is specified, then this map/model is used for the subtraction model as well. See diffuse_model for information about the formatting of the file.')
     calibration.add_argument('--transfer-calibration', type = Path, help = 'The file path of a calibration to be read-in, if you give a directory PyFHD expects there to be a file called <obs_id>_cal.hdf5 using the same observation as you plan to process.')
     calibration.add_argument('--calibration-catalog-file-path', type = Path, default = None, help = 'The file path to the desired source catalog to be used for calibration')
@@ -147,6 +148,16 @@ def pyfhd_parser():
     healpix.add_argument('--ps-kspan', type = float, default = 0, help = 'UV plane dimension in wavelengths for Healpix cube generation.\nOverrides ps_dimension and ps_degpix if set.\nIf ps_kspan, ps_dimension, or ps_degpix are not set, the UV plane dimension is calculated from the FoV and the degpix from the obs structure.')
     healpix.add_argument('--restrict-hpx-inds', type = Path, default = None, help = "Only allow gridding of the output healpix cubes to include the healpix pixels specified in a file.\nThis is useful for restricting many observations to have consistent healpix pixels during integration, and saves on memory and walltime.")
     healpix.add_argument('--split-ps-export', default = True, action = 'store_true', help = 'Split up the Healpix outputs into even and odd time samples.\nThis is essential to propogating errors in εppsilon.\nRequires more than one time sample.')
+
+    ##Temporary options to run IDL or use IDL outputs.
+    pyIDL.add_argument('--IDL_calibrate', default=False, action="store_true",
+        help="Add to run the calibration stage, using IDL under the hood")
+    pyIDL.add_argument('--grid_IDL_outputs', default=False, action="store_true",
+        help="Add to run the python gridding code on calibrated IDL outputs")
+    pyIDL.add_argument('--IDL_healpix_gridded_outputs', default=False, action="store_true",
+        help="Add to image gridded python outputs into a healpix projection, using IDL code")
+    pyIDL.add_argument('--idl_output_dir', default=False, 
+        help="If running on IDL outputs stored in a directory other than where the outputs of this run will be written, supply the path to the parent directory.")
 
     return parser
 

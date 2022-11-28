@@ -161,8 +161,7 @@ def convert_IDL_calibration_outputs(tag : str, idl_output_dir : str,
 
 
 def run_gridding_on_IDL_outputs(pyfhd_config : dict, idl_output_dir : str,
-                                logger : logging.RootLogger,
-                                ps_kspan=0):
+                                logger : logging.RootLogger):
     """Assuming that `run_IDL_calibration_only` has been run to create IDL
     FHD outputs, read in those outputs, and grid them, according to the
     paramaters defined in `pyfhd_config`.
@@ -176,11 +175,6 @@ def run_gridding_on_IDL_outputs(pyfhd_config : dict, idl_output_dir : str,
         Parent directory in which all IDL FHD outputs reside
     logger : logging.RootLogger
         The logger to output info and errors to
-    ps_kspan : int
-        This is the maximum pixel to grid out to, e.g. if you set ps_kspan=200,
-        you will grid up to 200 pixels from the centre of the grid. This sets
-        obs.dimension = 2*ps_kspan and obs.elements = 2*ks_span. Defaults to
-        using what is in the current `obs`.
     """
 
     before = time.time()
@@ -199,18 +193,18 @@ def run_gridding_on_IDL_outputs(pyfhd_config : dict, idl_output_dir : str,
     obs = idl_cal_dict['obs_dict']['obs']
     status_str = "OH NO"
     
-    if ps_kspan:
-        obs.dimension = 2*ps_kspan
-        obs.elements = 2*ps_kspan
-        logger.info(f"Resetting obs.dimension and obs.elements to {2*ps_kspan}.")
+    if pyfhd_config['ps_kspan']:
+        obs.dimension = int(2*pyfhd_config['ps_kspan'])
+        obs.elements = int(2*pyfhd_config['ps_kspan'])
+        logger.info(f"Resetting obs.dimension and obs.elements to {int(2*pyfhd_config['ps_kspan'])}.")
         
     params = idl_cal_dict['params_dict']['params']
     
     variables_dict = idl_cal_dict['variables_dict']
     weights_flag = variables_dict['weights_flag']
     variance_flag = variables_dict['variance_flag']
-    preserve_visibilities = variables_dict['preserve_visibilities']
-    model_return = variables_dict['model_return']
+    # preserve_visibilities = variables_dict['preserve_visibilities']
+    # model_return = variables_dict['model_return']
 
     bi_use_even = variables_dict['bi_use'][0]
     bi_use_odd = variables_dict['bi_use'][1]
@@ -253,8 +247,6 @@ def run_gridding_on_IDL_outputs(pyfhd_config : dict, idl_output_dir : str,
 
     before = time.time()
     
-    dimension = pyfhd_config['dimension']
-
     for pol_ind, pol_label in enumerate(pol_names):
         for bi_use, bi_use_label in zip(bi_uses, bi_use_labels):
             
@@ -283,11 +275,21 @@ def run_gridding_on_IDL_outputs(pyfhd_config : dict, idl_output_dir : str,
 
                     name = f"{pol_label}_{bi_use_label}_freqind{freq_ind:03d}"
                     
-                    hf.create_dataset(f'dirty_uv_{name}', data=gridding_dict['image_uv'])
-                    hf.create_dataset(f'weights_holo_{name}', data=gridding_dict['weights'])
-                    hf.create_dataset(f'variance_holo_{name}', data=gridding_dict['variance'])
-                    hf.create_dataset(f'model_return_{name}', data=gridding_dict['model_return'])
-                    hf.create_dataset(f'n_vis_{name}', data=gridding_dict['n_vis'])
+                    hf.create_dataset(f'dirty_uv_{name}',
+                                      data=gridding_dict['image_uv'])
+                    hf.create_dataset(f'weights_holo_{name}',
+                                      data=gridding_dict['weights'])
+                    hf.create_dataset(f'variance_holo_{name}',
+                                      data=gridding_dict['variance'])
+                    hf.create_dataset(f'model_return_{name}',
+                                      data=gridding_dict['model_return'])
+                    ##This one is n_vis = np.sum(bin_n)
+                    hf.create_dataset(f'n_vis_{name}',
+                                    data=gridding_dict['n_vis'])
+
+                ##This one is the number of visibilities per frequency
+                hf.create_dataset(f'nf_vis',
+                                    data=gridding_dict['obs']['nf_vis'][0])
                 
                 hf.close()
 
