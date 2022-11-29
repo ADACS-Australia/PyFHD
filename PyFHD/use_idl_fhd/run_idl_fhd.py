@@ -11,18 +11,22 @@ import numpy as np
 import time
 
 
-def run_command(cmd : str):
+def run_command(cmd : str, dry_run=False):
     """
-    Runs the command string `cmd` using `subprocess.run`. Returns any text
-    output to stdout
+    Runs the command string `cmd` using `subprocess.run`. Returns any text output to stdout
 
     Parameters
     ----------
     cmd : str
          The command to run on the command line
+    dry_run : bool
+         If True, don't actually run the command. Defaults to False (so defaults to running the command)
     """
 
-    stdout = subprocess.run(cmd.split(), stdout=subprocess.PIPE,
+    if dry_run:
+        stdout = "This was a dry run, not launching IDL code\n"
+    else:
+        stdout = subprocess.run(cmd.split(), stdout=subprocess.PIPE,
                             text = True).stdout
 
     return stdout
@@ -122,6 +126,12 @@ def write_run_FHD_calibration_pro(input_dict : dict,
         outfile.write("    fhd_file_list=fhd_path_setup(vis_file_list,version=version,output_directory=output_directory)\n")
         outfile.write("    healpix_path=fhd_path_setup(output_dir=output_directory,subdir='Healpix',output_filename='Combined_obs',version=version)\n")
         outfile.write("\n")
+
+        ##If we are conserving memory, pass that on to FHD
+        if input_dict['conserve_memory']:
+            outfile.write("; user has asked to conserve memory\n")
+            outfile.write(f"    conserve_memory={input_dict['memory_threshold']}\n\n")
+
         
         ##This reads in all the other keywords that have been written to
         ##pyfhd_config.pro, and bundles them into a structure `extra` along
@@ -207,7 +217,7 @@ def run_IDL_calibration_only(pyfhd_config : dict,
     before = time.time()
 
     ##Launch the IDL code and cross your fingers
-    idl_lines = run_command(idl_command)
+    idl_lines = run_command(idl_command, pyfhd_config['IDL_dry_run'])
 
     ##Stick some tabs on front out idl lines so they sit nice in the log
     idl_lines = "\t" + idl_lines.replace("\n", "\n\t")
@@ -348,10 +358,8 @@ def run_IDL_convert_gridding_to_healpix_images(pyfhd_config : dict,
     before = time.time()
 
     ##Launch the IDL code and cross your fingers
-    idl_lines = run_command(idl_command)
+    idl_lines = run_command(idl_command, pyfhd_config['IDL_dry_run'])
     
-    # idl_lines = "nothin"
-
     ##Stick some tabs on front out idl lines so they sit nice in the log
     idl_lines = "\t" + idl_lines.replace("\n", "\n\t")
 

@@ -105,7 +105,7 @@ def pyfhd_parser():
     gridding.add_argument('-g', '--recalculate-grid', default = False, action ='store_true', help = 'Forces PyFHD to recalculate the gridding function. Replaces grid_recalculate from FHD')
     gridding.add_argument('-map', '--recalculate-mapfn', default = False, action = 'store_true', help = 'Forces PyFHD to recalculate the mapping function. Replaces mapfn_recalculate from FHD')
     gridding.add_argument('--image-filter', default = 'filter_uv_uniform', type = str, choices = ['filter_uv_uniform', 'filter_uv_hanning', 'filter_uv_natural', 'filter_uv_radial', 'filter_uv_tapered_uniform', 'filter_uv_optimal'], help = 'Weighting filter to be applyed to resulting snapshot images and fits files. Replaces image_filter_fn from FHD')
-    gridding.add_argument('--grid-psf-file', nargs='*', 
+    gridding.add_argument('--grid-psf-file', nargs='*', default=[],
     help = 'Path(s) to an FHD "psf" object. If running python gridding, this should be n .npz file, as converted from a .sav file. This should contain a gridding kernel matching the pointing of the observation being processed, e.g. for a +1 pointing, --grid-psf-file=/path/to/gauss_beam_pointing1.npz. If only/also running imaging/healpix projection in IDL, a path to the original .sav file should also be included, e.g. --grid-psf-file /path/to/gauss_beam_pointing1.npz /path/to/gauss_beam_pointing1.sav')
 
     # Deconvolution Group
@@ -158,6 +158,8 @@ def pyfhd_parser():
         help="Add to image gridded python outputs into a healpix projection, using IDL code")
     pyIDL.add_argument('--idl_output_dir', default=False, 
         help="If running on IDL outputs stored in a directory other than where the outputs of this run will be written, supply the path to the parent directory.")
+    pyIDL.add_argument('--IDL_dry_run', default=False, action='store_true',
+        help="Run all data checks and write .pro files, but don't actually run the IDL code. Good for checking the .pro files.")
 
     return parser
 
