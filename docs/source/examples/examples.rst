@@ -43,8 +43,66 @@ The ``Healpix``, ``metadata``, and ``vis_data`` subdirs are generated (amongst o
 
 Once ``PyFHD`` is fully Pythonic, this file structure faffing about will be handled internally to the code. Please bear with us for now.
 
-Running calibration (uses IDL)
+Running basic calibration (uses IDL)
 -------------------------------------------
+Full Pythonic calibration has not been implemented yet. In the interim, you can run limited calibration through ``PyFHD`` by using it as a wrapper to call ``FHD``. An extremely basic example is shown here:
+
+.. code-block:: bash
+
+    pyfhd \
+        1088281328 \
+        --input-path=/path/to/data/ \
+        --output-path=/place/for/outputs/ \
+        --description=cal_real_data \
+        --calibration-catalog-file-path=/fred/oz048/jline/ADACS/test_PyFHD/point_source_zenith/skymodel_zenith_1088716176.sav \
+        --conserve-memory --memory-threshold=1000000000 \
+        --IDL_calibrate
+
+For this command to work, the following two inputs must exist:
+
+.. code-block:: bash
+
+  /path/to/data/1088281328.uvfits # the input visibility data
+  /path/to/data/1088281328.metafits # the input metafits file
+
+These paths are inferred from the observation number (1088281328) and ``--input-path`` argument. By including the ``--IDL_calibrate`` option, ``PyFHD`` will simply write out a ```.pro`` file (a format that can be fed directly into ``FHD``). ``PyFHD`` will fall back and use any default values as described by ``pyfhd --help``. Beyond those, we set the following arguments explicitly:
+
+.. list-table::
+   :widths: 25 25
+   :header-rows: 1
+
+   * - Argument
+     - Meaning
+   * - -\-calibration-catalog-file-path
+     - Explicitly point to the sky model catalogue that we want to use
+   * - -\-conserve-memory
+     - Tells FHD that we want to limit large arrays to conserve memory
+   * - -\-memory-threshold
+     - Sets the memory threshold to 1GB
+
+
+Using the ``--output-path`` and ``--description`` arguments sets the topmost output directory to ``/place/for/outputs/pyfhd_cal_real_data``. Upon successful running of this command, the output directory structure should look like this:
+
+.. code-block:: bash
+
+    /place/for/outputs/
+    └── pyfhd_cal_real_data
+      ├── fhd_calibration_only.pro        # used to run FHD
+      ├── general_calibration_only.pro    # used to run FHD
+      ├── pyfhd_config.pro                # used to run FHD
+      ├── run_fhd_calibration_only.pro    # topmost file used to run FHD
+      ├── pyfhd_cal_real_data_17_00_37_29_11_2022.log   # log with date and time of run
+      ├── pyfhd_cal_real_data_17_00_37_29_11_2022.yaml  # yaml containing the defaults used in PyFHD
+      └── fhd_pyfhd_cal_real_data         # location for FHD outputs
+        ├── 1088281328_variables.sav      # extra set of variables saved by PyFHD so python gridding can be run on these FHD outputs
+        ├── beams                         # FHD outputs
+        calibration                       # FHD outputs
+        ├── Healpix                       # FHD outputs
+        ├── metadata                      # FHD outputs
+        ├── output_data                   # FHD outputs
+        ├── output_images                 # FHD outputs
+        └── vis_data                      # FHD outputs
+    vis_data
 
 Gridding IDL calibration outputs
 -------------------------------------------
@@ -70,7 +128,6 @@ In this example, calibration should already have been run using ``FHD``. We will
    pyfhd \
        '1088281328' \
        --input-path /path/to/data/ \
-       --calibrate-visibilities=False \
        --output-path /current/working/directory/ \
        --description my_first_run \
        --grid-psf-file /path/to/beams/gauss_beam_pointing-2.npz \
@@ -107,8 +164,6 @@ Other than specifying file paths, the other necessary arguments have the followi
 
    * - Argument
      - Meaning
-   * - -\-calibrate-visibilities=False
-     - Default is to run calibration, so switch it off
    * - -\-grid-psf-file
      - A converted ``FHD`` ``psf`` object to use as a gridding kernel
    * - -\-ps-kspan=200
@@ -139,7 +194,6 @@ Assuming we have run ``PyFHD`` to grid some visibilities (as detailed in `Griddi
    pyfhd \
        '1088281328' \
        --input-path /path/to/data/ \
-       --calibrate-visibilities=False \
        --output-path /current/working/directory/ \
        --description my_first_run \
        --grid-psf-file /path/to/beams/gauss_beams_pointing-2.sav \
@@ -169,7 +223,6 @@ It is straight forward to run the gridding and imaging/healpix projection (detai
    pyfhd \
        '1088281328' \
        --input-path /path/to/data/ \
-       --calibrate-visibilities=False \
        --output-path /current/working/directory/ \
        --description my_first_run \
        --grid-psf-file /path/to/beams/gauss_beam_pointing-2.npz \
