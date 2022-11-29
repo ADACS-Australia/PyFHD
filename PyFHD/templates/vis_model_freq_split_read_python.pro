@@ -109,7 +109,7 @@ FUNCTION vis_model_freq_split_read_python,obs,status_str,psf,params,vis_weights,
     n_vis_use=0.
 
     ;make names to load in python hdf5 files
-    h5_filepath = python_grid_path + obs.obsname + "_" + "gridded_uv_cube_" + uvf_name + "_" + pol_name[pol_i] + "_sep-internal.h5"
+    h5_filepath = python_grid_path + obs.obsname + "_" + "gridded_uv_cube_" + uvf_name + "_" + pol_name[pol_i] + ".h5"
     print, "Now loading gridding data from ", h5_filepath
 
     file_id = H5F_OPEN(h5_filepath)

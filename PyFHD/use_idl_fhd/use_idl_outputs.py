@@ -250,7 +250,7 @@ def run_gridding_on_IDL_outputs(pyfhd_config : dict, idl_output_dir : str,
     for pol_ind, pol_label in enumerate(pol_names):
         for bi_use, bi_use_label in zip(bi_uses, bi_use_labels):
             
-            save_name = f"{gridding_dir}/{pyfhd_config['obs_id']}_gridded_uv_cube_{bi_use_label}_{pol_label}_sep-internal.h5"
+            save_name = f"{gridding_dir}/{pyfhd_config['obs_id']}_gridded_uv_cube_{bi_use_label}_{pol_label}.h5"
                 
             with h5py.File(save_name, 'w') as hf:
             
