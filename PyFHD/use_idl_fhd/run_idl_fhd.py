@@ -29,12 +29,12 @@ def run_command(cmd : str):
 
 def convert_argdict_to_pro(input_dict: str, output_dir: str):
     """
-    Given a dictionary of PyFHD parsed arguements, convert them into an IDL
+    Given a dictionary of PyFHD parsed arguments, convert them into an IDL
     file `pyfhd_config.pro`. Edits any names as necessary to run correctly,
     including:
-      - IDL will not allow '-' in variable names, so replace with '_'
-      - Booleans are converted into integers
-      - None is replaced with !NULL
+    - IDL will not allow '-' in variable names, so replace with '_'
+    - Booleans are converted into integers
+    - None is replaced with !NULL
 
     Parameters
     ----------
