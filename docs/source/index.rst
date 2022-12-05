@@ -32,3 +32,8 @@ Contents
    documentation/documentation
    examples/examples
    
+Browse
+-----------------
+
+* :ref:`genindex`
+* :ref:`modindex`

@@ -1,11 +1,8 @@
-Documentation
-+++++++++++++++
-
-.. * :ref:`genindex`
-.. * :ref:`modindex`
+API Documentation
+++++++++++++++++++
 
 Usage
-=====
+=======
 
 .. argparse::
    :ref: PyFHD.pyfhd_tools.pyfhd_setup.pyfhd_parser

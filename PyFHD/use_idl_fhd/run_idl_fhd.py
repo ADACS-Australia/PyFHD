@@ -31,7 +31,7 @@ def run_command(cmd : str, dry_run=False):
 
     return stdout
 
-def convert_argdict_to_pro(input_dict: str, output_dir: str):
+def convert_argdict_to_pro(pyfhd_config: str, output_dir: str):
     """
     Given a dictionary of PyFHD parsed arguments, convert them into an IDL
     file `pyfhd_config.pro`. Edits any names as necessary to run correctly,
@@ -42,7 +42,7 @@ def convert_argdict_to_pro(input_dict: str, output_dir: str):
 
     Parameters
     ----------
-    input_dict : dict
+    pyfhd_config : dict
         The options from the argparse in a dictionary
     output_dir: str
         Where to save the .pro file
@@ -53,7 +53,7 @@ def convert_argdict_to_pro(input_dict: str, output_dir: str):
     ##(le sigh)
     ##.keys() freaks out if the keys change during looping, so make a copy into
     ##a list
-    old_keys = list(input_dict.keys())
+    old_keys = list(pyfhd_config.keys())
 
     ##New dict to hold the IDL style args
     idl_dict = {}
@@ -64,7 +64,7 @@ def convert_argdict_to_pro(input_dict: str, output_dir: str):
         else:
             new_key = old_key
 
-        idl_dict[new_key] = input_dict[old_key]
+        idl_dict[new_key] = pyfhd_config[old_key]
 
     ##For all the arguments, loop through and write to text file
     with open(f"{output_dir}/pyfhd_config.pro", 'w') as pro_file:
@@ -73,7 +73,7 @@ def convert_argdict_to_pro(input_dict: str, output_dir: str):
         ##Convert the yaml-python types into IDL compatible variables
         for key, value in idl_dict.items():
             if key == "output_path":
-                pro_file.write(f"  output_directory='{value}/{idl_dict['version']}'\n")
+                pro_file.write(f"  output_directory='{value}/{idl_dict['top_level_dir']}'\n")
             elif type(value) == str:
                 pro_file.write(f"  {key}='{value}'\n")
             elif type(value) == bool:
@@ -91,11 +91,11 @@ def convert_argdict_to_pro(input_dict: str, output_dir: str):
         pro_file.write("  extra=var_bundle(level=1) ; next gather all variables set in this file, removing any duplicates.\n")
         pro_file.write("END\n")
        
-def write_run_FHD_calibration_pro(input_dict : dict,
+def write_run_FHD_calibration_pro(pyfhd_config : dict,
                                   output_dir : str):
     """
     Write the top level run_fhd_calibration_only.pro file into the appropriate
-    `output_dir`, using arguments found in the dict `input_dict`.
+    `output_dir`, using arguments found in the dict `pyfhd_config`.
 
     Parameters
     ----------
@@ -115,10 +115,10 @@ def write_run_FHD_calibration_pro(input_dict : dict,
         ##keywords set by `fhd_path_setup` need to be bundled into the `extra`
         ##structure  
         outfile.write("    ; Keywords\n")
-        vis_file_list = f"{input_dict['input_path']/input_dict['obs_id']}.uvfits"
+        vis_file_list = f"{pyfhd_config['input_path']/pyfhd_config['obs_id']}.uvfits"
         outfile.write(f'    vis_file_list="{vis_file_list}"\n')
-        outfile.write(f"    output_directory='{input_dict['output_path']}/{input_dict['version']}'\n")
-        outfile.write(f"    version='{input_dict['version']}'\n")
+        outfile.write(f"    output_directory='{pyfhd_config['output_path']}/{pyfhd_config['top_level_dir']}'\n")
+        outfile.write(f"    version='{pyfhd_config['top_level_dir']}'\n")
         outfile.write("\n")
 
         ##This sets up a bunch of paths so IDL-FHD knows where to output thigns            
@@ -128,9 +128,9 @@ def write_run_FHD_calibration_pro(input_dict : dict,
         outfile.write("\n")
 
         ##If we are conserving memory, pass that on to FHD
-        if input_dict['conserve_memory']:
+        if pyfhd_config['conserve_memory']:
             outfile.write("; user has asked to conserve memory\n")
-            outfile.write(f"    conserve_memory={input_dict['memory_threshold']}\n\n")
+            outfile.write(f"    conserve_memory={pyfhd_config['memory_threshold']}\n\n")
 
         
         ##This reads in all the other keywords that have been written to
@@ -185,7 +185,7 @@ def run_IDL_calibration_only(pyfhd_config : dict,
 
     """
 
-    output_dir = f"{pyfhd_config['output_path']}/{pyfhd_config['version']}"
+    output_dir = f"{pyfhd_config['output_path']}/{pyfhd_config['top_level_dir']}"
 
     logger.info("Writing IDL .pro files to run IDL FHD calibration only")
 
@@ -224,7 +224,7 @@ def run_IDL_calibration_only(pyfhd_config : dict,
 
     logger.info('Here is everything IDL FHD printed:\n' + idl_lines)
 
-    idl_output_dir = f"{pyfhd_config['output_path']}/{pyfhd_config['version']}/fhd_{pyfhd_config['version']}"
+    idl_output_dir = f"{pyfhd_config['output_path']}/{pyfhd_config['top_level_dir']}/fhd_{pyfhd_config['top_level_dir']}"
 
     after = time.time()
 
@@ -233,11 +233,11 @@ def run_IDL_calibration_only(pyfhd_config : dict,
     return idl_output_dir
 
 
-def write_run_FHD_healpix_imaging_pro(input_dict : dict,
+def write_run_FHD_healpix_imaging_pro(pyfhd_config : dict,
                                       output_dir : str):
     """
     Write the top level run_fhd_healpix_imaging.pro file into the appropriate
-    `output_dir`, using arguments found in the dict `input_dict`.
+    `output_dir`, using arguments found in the dict `pyfhd_config`.
 
     Parameters
     ----------
@@ -249,19 +249,19 @@ def write_run_FHD_healpix_imaging_pro(input_dict : dict,
 
     """
 
-    with open(f"{output_dir}/run_fhd_healpix_imaging_{input_dict['obs_id']}.pro", 'w') as outfile:
-        outfile.write(f"pro run_fhd_healpix_imaging_{input_dict['obs_id']}\n")
+    with open(f"{output_dir}/run_fhd_healpix_imaging_{pyfhd_config['obs_id']}.pro", 'w') as outfile:
+        outfile.write(f"pro run_fhd_healpix_imaging_{pyfhd_config['obs_id']}\n")
         outfile.write("\n")
         ##First of all, explicitly set some keywords that are used by the
         ##`fhd_path_setup` function below. Have to do this first, as the
         ##keywords set by `fhd_path_setup` need to be bundled into the `extra`
         ##structure  
         outfile.write("    ; Keywords\n")
-        vis_file_list = f"{input_dict['input_path']/input_dict['obs_id']}.uvfits"
-        outfile.write(f"    obs_id='{input_dict['obs_id']}'\n")
+        vis_file_list = f"{pyfhd_config['input_path']/pyfhd_config['obs_id']}.uvfits"
+        outfile.write(f"    obs_id='{pyfhd_config['obs_id']}'\n")
         outfile.write(f'    vis_file_list="{vis_file_list}"\n')
-        outfile.write(f"    output_directory='{input_dict['output_path']}/{input_dict['version']}'\n")
-        outfile.write(f"    version='{input_dict['version']}'\n")
+        outfile.write(f"    output_directory='{pyfhd_config['output_path']}/{pyfhd_config['top_level_dir']}'\n")
+        outfile.write(f"    version='{pyfhd_config['top_level_dir']}'\n")
         outfile.write("\n")
 
         ##This sets up a bunch of paths so IDL-FHD knows where to output thigns            
@@ -274,15 +274,15 @@ def write_run_FHD_healpix_imaging_pro(input_dict : dict,
         ##can find them
         outfile.write("    ; Path to where the python-gridded hdf5 files live\n")
         
-        outfile.write(f"    python_grid_path='{input_dict['output_path']}/{input_dict['version']}/gridding_outputs/'\n\n")
+        outfile.write(f"    python_grid_path='{pyfhd_config['output_path']}/{pyfhd_config['top_level_dir']}/gridding_outputs/'\n\n")
         
         ##Add in some extra healpix-ps related keywords
         
         outfile.write("    ; Add in some extra healpix-ps related keywords\n")
         outfile.write("    model_flag=1\n")
         outfile.write("    restrict_hpx_inds='EoR0_high_healpix_inds_3x.idlsave'\n")
-        outfile.write(f"    grid_psf_file='{input_dict['grid_psf_file_sav']}'\n")
-        # outfile.write(f"    grid_psf_file='{input_dict['grid_psf_file_sav']}'\n")
+        outfile.write(f"    grid_psf_file='{pyfhd_config['grid_psf_file_sav']}'\n")
+        # outfile.write(f"    grid_psf_file='{pyfhd_config['grid_psf_file_sav']}'\n")
 
         # outfile.write("    ps_kspan=200.\n\n")
         
@@ -324,7 +324,7 @@ def run_IDL_convert_gridding_to_healpix_images(pyfhd_config : dict,
     """
     
     
-    output_dir = f"{pyfhd_config['output_path']}/{pyfhd_config['version']}"
+    output_dir = f"{pyfhd_config['output_path']}/{pyfhd_config['top_level_dir']}"
 
     logger.info("Writing IDL .pro files to run IDL FHD calibration only")
 
@@ -365,7 +365,7 @@ def run_IDL_convert_gridding_to_healpix_images(pyfhd_config : dict,
 
     logger.info('Here is everything IDL FHD printed:\n' + idl_lines)
 
-    idl_output_dir = f"{pyfhd_config['output_path']}/{pyfhd_config['version']}/fhd_{pyfhd_config['version']}"
+    idl_output_dir = f"{pyfhd_config['output_path']}/{pyfhd_config['top_level_dir']}/fhd_{pyfhd_config['top_level_dir']}"
 
     after = time.time()
 

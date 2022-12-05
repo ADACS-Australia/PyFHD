@@ -106,16 +106,16 @@ def main():
     ##main_loop_python_only function, and run the required hybrid options
     if options.IDL_calibrate or options.grid_IDL_outputs or options.IDL_healpix_gridded_outputs:
 
-        idl_output_dir = False
+        idl_output_dir = None
 
         if options.IDL_calibrate:
             idl_output_dir = run_IDL_calibration_only(pyfhd_config, logger)
 
         if options.grid_IDL_outputs:
-            if options.idl_output_dir:
-                idl_output_dir
+            if options.idl_output_dir != None:
+                pass
             else:
-                idl_output_dir = f"{pyfhd_config['output_path']}/{pyfhd_config['version']}/fhd_{pyfhd_config['version']}"
+                idl_output_dir = f"{pyfhd_config['output_path']}/{pyfhd_config['top_level_dir']}/fhd_{pyfhd_config['top_level_dir']}"
 
             run_gridding_on_IDL_outputs(pyfhd_config, idl_output_dir, logger)
 

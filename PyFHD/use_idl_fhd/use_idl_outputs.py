@@ -240,7 +240,7 @@ def run_gridding_on_IDL_outputs(pyfhd_config : dict, idl_output_dir : str,
     bi_use_labels = ['even', 'odd']
     bi_uses = [bi_use_even, bi_use_odd]
 
-    gridding_dir = f"{pyfhd_config['output_path']}/{pyfhd_config['version']}/gridding_outputs"
+    gridding_dir = f"{pyfhd_config['output_path']}/{pyfhd_config['top_level_dir']}/gridding_outputs"
 
     ## Make somewhere to store the outputs
     run_command(f'mkdir -p {gridding_dir}')

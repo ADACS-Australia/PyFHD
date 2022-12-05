@@ -54,9 +54,11 @@ Full Pythonic calibration has not been implemented yet. In the interim, you can 
         --input-path=/path/to/data/ \
         --output-path=/place/for/outputs/ \
         --description=cal_real_data \
-        --calibration-catalog-file-path=/fred/oz048/jline/ADACS/test_PyFHD/point_source_zenith/skymodel_zenith_1088716176.sav \
+        --calibration-catalog-file-path=/path/to/sky_model/GLEAM_v2_plus_rlb2019.sav \
         --conserve-memory --memory-threshold=1000000000 \
         --IDL_calibrate
+
+.. note:: This command took 235 minutes using 1 core of a Intel Gold 6140 processor and < 15GB RAM on the OzStar cluster
 
 For this command to work, the following two inputs must exist:
 
@@ -96,13 +98,32 @@ Using the ``--output-path`` and ``--description`` arguments sets the topmost out
       └── fhd_pyfhd_cal_real_data         # location for FHD outputs
         ├── 1088281328_variables.sav      # extra set of variables saved by PyFHD so python gridding can be run on these FHD outputs
         ├── beams                         # FHD outputs
-        calibration                       # FHD outputs
+        ├── calibration                   # FHD outputs
         ├── Healpix                       # FHD outputs
         ├── metadata                      # FHD outputs
         ├── output_data                   # FHD outputs
         ├── output_images                 # FHD outputs
         └── vis_data                      # FHD outputs
-    vis_data
+
+If you look in the ``/place/for/outputs/pyfhd_cal_real_data/fhd_pyfhd_cal_real_data/output_images`` you will find plots including the calibration amplitude and phases:
+
+.. image:: 1088281328_cal_amp.png
+  :width: 600px
+
+.. image:: 1088281328_cal_phase.png
+  :width: 600px
+
+We have solutions! Turns out this is a difficult observation to calibrate and so using these default settings only does an OK job. Check out the next example on running a more advanced calibration.
+
+
+Running advanced calibration (uses IDL)
+-------------------------------------------
+TODO get an ``--IDL_keywords_file`` argument going and run a better calibration for this 
+
+I think what has to be done is a:
+
+   - prerun cal (with a WODEN model??)
+   - transfer cal
 
 Gridding IDL calibration outputs
 -------------------------------------------
