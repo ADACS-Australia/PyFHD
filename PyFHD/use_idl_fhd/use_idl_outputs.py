@@ -60,7 +60,7 @@ def convert_sav_to_dict(sav_path : str, logger : logging.RootLogger):
             handler.close()
         exit()
 
-def convert_IDL_calibration_outputs(tag : str, idl_output_dir : str,
+def convert_IDL_calibration_outputs(tag : str, IDL_output_dir : str,
                                     logger : logging.RootLogger,
                                     save_npz = False, read_npz = False):
     """Convert IDL FHD .sav files output after calibration into dictionaries,
@@ -84,7 +84,7 @@ def convert_IDL_calibration_outputs(tag : str, idl_output_dir : str,
         This is usually the observation id, as it's a string inferrerd by FHD
         from the name of the .uvfits file, e.g. if the input data was
         1088716176.uvfits, tag = 1088716176.
-    idl_output_dir : str
+    IDL_output_dir : str
         Parent directory in which all IDL FHD outputs reside
     logger : logging.RootLogger
         The logger to output info and errors to
@@ -104,21 +104,21 @@ def convert_IDL_calibration_outputs(tag : str, idl_output_dir : str,
     if read_npz:
         logger.info("Reading previously converted IDL FHD calibration .npz files now ")
 
-        obs_dict = np.load(f"{idl_output_dir}/metadata/{tag}_obs_dict.npz",
+        obs_dict = np.load(f"{IDL_output_dir}/metadata/{tag}_obs_dict.npz",
                            allow_pickle=True)
-        params_dict = np.load(f"{idl_output_dir}/metadata/{tag}_params_dict.npz",
+        params_dict = np.load(f"{IDL_output_dir}/metadata/{tag}_params_dict.npz",
                            allow_pickle=True)
-        variables_dict = np.load(f"{idl_output_dir}/{tag}_variables_dict.npz",
+        variables_dict = np.load(f"{IDL_output_dir}/{tag}_variables_dict.npz",
                            allow_pickle=True)
-        vis_XX_dict = np.load(f"{idl_output_dir}/vis_data/{tag}_vis_XX_dict.npz",
+        vis_XX_dict = np.load(f"{IDL_output_dir}/vis_data/{tag}_vis_XX_dict.npz",
                            allow_pickle=True)
-        vis_YY_dict = np.load(f"{idl_output_dir}/vis_data/{tag}_vis_YY_dict.npz",
+        vis_YY_dict = np.load(f"{IDL_output_dir}/vis_data/{tag}_vis_YY_dict.npz",
                            allow_pickle=True)
-        vis_model_XX_dict = np.load(f"{idl_output_dir}/vis_data/{tag}_vis_model_XX_dict.npz",
+        vis_model_XX_dict = np.load(f"{IDL_output_dir}/vis_data/{tag}_vis_model_XX_dict.npz",
                            allow_pickle=True)
-        vis_model_YY_dict = np.load(f"{idl_output_dir}/vis_data/{tag}_vis_model_YY_dict.npz",
+        vis_model_YY_dict = np.load(f"{IDL_output_dir}/vis_data/{tag}_vis_model_YY_dict.npz",
                            allow_pickle=True)
-        vis_flags_dict = np.load(f"{idl_output_dir}/vis_data/{tag}_vis_flags_dict.npz",
+        vis_flags_dict = np.load(f"{IDL_output_dir}/vis_data/{tag}_vis_flags_dict.npz",
                            allow_pickle=True)
     else:
         logger.info("Converting IDL FHD calibration .sav files now ")
@@ -126,30 +126,30 @@ def convert_IDL_calibration_outputs(tag : str, idl_output_dir : str,
         run_command('mkdir -p tmp_pyfhd')
 
         ##Observational parameters and variables
-        obs_dict = convert_sav_to_dict(f"{idl_output_dir}/metadata/{tag}_obs.sav", logger)
-        params_dict = convert_sav_to_dict(f"{idl_output_dir}/metadata/{tag}_params.sav", logger)
-        variables_dict = convert_sav_to_dict(f"{idl_output_dir}/{tag}_variables.sav", logger)
+        obs_dict = convert_sav_to_dict(f"{IDL_output_dir}/metadata/{tag}_obs.sav", logger)
+        params_dict = convert_sav_to_dict(f"{IDL_output_dir}/metadata/{tag}_params.sav", logger)
+        variables_dict = convert_sav_to_dict(f"{IDL_output_dir}/{tag}_variables.sav", logger)
 
         ##Visibility data
-        vis_XX_dict = convert_sav_to_dict(f"{idl_output_dir}/vis_data/{tag}_vis_XX.sav", logger)
-        vis_YY_dict = convert_sav_to_dict(f"{idl_output_dir}/vis_data/{tag}_vis_YY.sav", logger)
-        vis_model_XX_dict = convert_sav_to_dict(f"{idl_output_dir}/vis_data/{tag}_vis_model_XX.sav", logger)
-        vis_model_YY_dict = convert_sav_to_dict(f"{idl_output_dir}/vis_data/{tag}_vis_model_YY.sav", logger)
-        vis_flags_dict = convert_sav_to_dict(f"{idl_output_dir}/vis_data/{tag}_flags.sav", logger)
+        vis_XX_dict = convert_sav_to_dict(f"{IDL_output_dir}/vis_data/{tag}_vis_XX.sav", logger)
+        vis_YY_dict = convert_sav_to_dict(f"{IDL_output_dir}/vis_data/{tag}_vis_YY.sav", logger)
+        vis_model_XX_dict = convert_sav_to_dict(f"{IDL_output_dir}/vis_data/{tag}_vis_model_XX.sav", logger)
+        vis_model_YY_dict = convert_sav_to_dict(f"{IDL_output_dir}/vis_data/{tag}_vis_model_YY.sav", logger)
+        vis_flags_dict = convert_sav_to_dict(f"{IDL_output_dir}/vis_data/{tag}_flags.sav", logger)
 
         ##Remove the temporary folder holding the decompressed .sav files
         run_command('rm -r tmp_pyfhd')
 
         if save_npz:
 
-            np.savez(f"{idl_output_dir}/metadata/{tag}_obs_dict.npz", **obs_dict)
-            np.savez(f"{idl_output_dir}/metadata/{tag}_params_dict.npz", **params_dict)
-            np.savez(f"{idl_output_dir}/{tag}_variables_dict.npz", **variables_dict)
-            np.savez(f"{idl_output_dir}/vis_data/{tag}_vis_XX_dict.npz", **vis_XX_dict)
-            np.savez(f"{idl_output_dir}/vis_data/{tag}_vis_YY_dict.npz", **vis_YY_dict)
-            np.savez(f"{idl_output_dir}/vis_data/{tag}_vis_model_XX_dict.npz", **vis_model_XX_dict)
-            np.savez(f"{idl_output_dir}/vis_data/{tag}_vis_model_YY_dict.npz", **vis_model_YY_dict)
-            np.savez(f"{idl_output_dir}/vis_data/{tag}_vis_flags_dict.npz", **vis_flags_dict)
+            np.savez(f"{IDL_output_dir}/metadata/{tag}_obs_dict.npz", **obs_dict)
+            np.savez(f"{IDL_output_dir}/metadata/{tag}_params_dict.npz", **params_dict)
+            np.savez(f"{IDL_output_dir}/{tag}_variables_dict.npz", **variables_dict)
+            np.savez(f"{IDL_output_dir}/vis_data/{tag}_vis_XX_dict.npz", **vis_XX_dict)
+            np.savez(f"{IDL_output_dir}/vis_data/{tag}_vis_YY_dict.npz", **vis_YY_dict)
+            np.savez(f"{IDL_output_dir}/vis_data/{tag}_vis_model_XX_dict.npz", **vis_model_XX_dict)
+            np.savez(f"{IDL_output_dir}/vis_data/{tag}_vis_model_YY_dict.npz", **vis_model_YY_dict)
+            np.savez(f"{IDL_output_dir}/vis_data/{tag}_vis_flags_dict.npz", **vis_flags_dict)
 
     keys = ['obs_dict', 'params_dict', 'variables_dict', 'vis_XX_dict', 'vis_YY_dict', 'vis_model_XX_dict', 'vis_model_YY_dict', 'vis_flags_dict']
 
@@ -160,7 +160,7 @@ def convert_IDL_calibration_outputs(tag : str, idl_output_dir : str,
     return idl_cal_dict
 
 
-def run_gridding_on_IDL_outputs(pyfhd_config : dict, idl_output_dir : str,
+def run_gridding_on_IDL_outputs(pyfhd_config : dict, IDL_output_dir : str,
                                 logger : logging.RootLogger):
     """Assuming that `run_IDL_calibration_only` has been run to create IDL
     FHD outputs, read in those outputs, and grid them, according to the
@@ -171,7 +171,7 @@ def run_gridding_on_IDL_outputs(pyfhd_config : dict, idl_output_dir : str,
     pyfhd_config : dict
         The options from argparse in a dictionary, that have been verified using
         `PyFHD.pyfhd_tools.pyfhd_setup.pyfhd_setup`.
-    idl_output_dir : str
+    IDL_output_dir : str
         Parent directory in which all IDL FHD outputs reside
     logger : logging.RootLogger
         The logger to output info and errors to
@@ -181,7 +181,7 @@ def run_gridding_on_IDL_outputs(pyfhd_config : dict, idl_output_dir : str,
 
     ##Convert/load in the IDL FHD outputs
     idl_cal_dict = convert_IDL_calibration_outputs(pyfhd_config['obs_id'],
-                                                   idl_output_dir, logger)
+                                                   IDL_output_dir, logger)
 
     ##Grab specific arrays/rec arrays from idl_cal_dict needed to run gridding
     visibility_XX = idl_cal_dict['vis_XX_dict']['vis_ptr']

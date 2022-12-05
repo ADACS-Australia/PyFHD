@@ -1,14 +1,11 @@
 import subprocess
 import pathlib
 import os
-# from PyFHD.pyfhd_tools.pyfhd_setup import pyfhd_parser, pyfhd_setup
-# from PyFHD.gridding import visibility_grid
 import importlib_resources
 import shutil
 import logging
-from scipy.io import readsav
-import numpy as np
 import time
+import io
 
 
 def run_command(cmd : str, dry_run=False):
@@ -90,7 +87,33 @@ def convert_argdict_to_pro(pyfhd_config: str, output_dir: str):
         pro_file.write("\n  extra=var_bundle(level=0) ; first gather all variables set in the top-level wrapper\n")
         pro_file.write("  extra=var_bundle(level=1) ; next gather all variables set in this file, removing any duplicates.\n")
         pro_file.write("END\n")
-       
+
+def _write_user_IDL_variable_lines(pyfhd_config : dict, outfile : io.TextIOWrapper):
+    """If the user has set the --IDL_variables_file argument, read the contents
+    of that file and write to `outfile`
+
+    Parameters
+    ----------
+    pyfhd_config : dict
+        The options from argparse in a dictionary, that have been verified using
+        `PyFHD.pyfhd_tools.pyfhd_setup.pyfhd_setup`.
+    outfile : io.TextIOWrapper
+        An opened text file wrapper for lines to be written into
+
+    """
+    if pyfhd_config['IDL_variables_file']:
+
+        outfile.write(f"    ; user defined IDL variables input via file {pyfhd_config['IDL_variables_file']}\n")
+
+        with open(pyfhd_config['IDL_variables_file'], 'r') as input:
+            lines = input.read().split('\n')
+            ##Put an indent on the front of everything, fits into the .pro
+            ##file clearly that way
+            for line in lines:
+                outfile.write('    ' + line + '\n')
+
+        outfile.write('\n')
+
 def write_run_FHD_calibration_pro(pyfhd_config : dict,
                                   output_dir : str):
     """
@@ -115,6 +138,8 @@ def write_run_FHD_calibration_pro(pyfhd_config : dict,
         ##keywords set by `fhd_path_setup` need to be bundled into the `extra`
         ##structure  
         outfile.write("    ; Keywords\n")
+        outfile.write(f"    obs_id={pyfhd_config['obs_id']}\n")
+        
         vis_file_list = f"{pyfhd_config['input_path']/pyfhd_config['obs_id']}.uvfits"
         outfile.write(f'    vis_file_list="{vis_file_list}"\n')
         outfile.write(f"    output_directory='{pyfhd_config['output_path']}/{pyfhd_config['top_level_dir']}'\n")
@@ -129,10 +154,14 @@ def write_run_FHD_calibration_pro(pyfhd_config : dict,
 
         ##If we are conserving memory, pass that on to FHD
         if pyfhd_config['conserve_memory']:
-            outfile.write("; user has asked to conserve memory\n")
+            outfile.write("    ; user has asked to conserve memory\n")
             outfile.write(f"    conserve_memory={pyfhd_config['memory_threshold']}\n\n")
 
-        
+        ##If the user has passed the `--IDL_variables_file` arg, this will write
+        ##out the contents to the master file with the same indent level
+        _write_user_IDL_variable_lines(pyfhd_config, outfile)
+
+
         ##This reads in all the other keywords that have been written to
         ##pyfhd_config.pro, and bundles them into a structure `extra` along
         ##with any other keywords already set
@@ -178,7 +207,7 @@ def run_IDL_calibration_only(pyfhd_config : dict,
 
     Returns
     -------
-    idl_output_dir : str
+    IDL_output_dir : str
         Where the IDL outputs will be stored; this is made to be a subdir of
         `output_dir` so everything gets shoved in one location. IDL will prepend
         `fhd` onto the front the subdir.
@@ -224,13 +253,13 @@ def run_IDL_calibration_only(pyfhd_config : dict,
 
     logger.info('Here is everything IDL FHD printed:\n' + idl_lines)
 
-    idl_output_dir = f"{pyfhd_config['output_path']}/{pyfhd_config['top_level_dir']}/fhd_{pyfhd_config['top_level_dir']}"
+    IDL_output_dir = f"{pyfhd_config['output_path']}/{pyfhd_config['top_level_dir']}/fhd_{pyfhd_config['top_level_dir']}"
 
     after = time.time()
 
     logger.info(f"Running IDL FHD calibration took {(after - before) / 60.0:.1f} minutes")
 
-    return idl_output_dir
+    return IDL_output_dir
 
 
 def write_run_FHD_healpix_imaging_pro(pyfhd_config : dict,
@@ -282,9 +311,10 @@ def write_run_FHD_healpix_imaging_pro(pyfhd_config : dict,
         outfile.write("    model_flag=1\n")
         outfile.write("    restrict_hpx_inds='EoR0_high_healpix_inds_3x.idlsave'\n")
         outfile.write(f"    grid_psf_file='{pyfhd_config['grid_psf_file_sav']}'\n")
-        # outfile.write(f"    grid_psf_file='{pyfhd_config['grid_psf_file_sav']}'\n")
-
-        # outfile.write("    ps_kspan=200.\n\n")
+        
+        ##If the user has passed the `--IDL_variables_file` arg, this will write
+        ##out the contents to the master file with the same indent level
+        _write_user_IDL_variable_lines(pyfhd_config, outfile)
         
         ##This reads in all the other keywords that have been written to
         ##pyfhd_config.pro, and bundles them into a structure `extra` along
@@ -365,7 +395,7 @@ def run_IDL_convert_gridding_to_healpix_images(pyfhd_config : dict,
 
     logger.info('Here is everything IDL FHD printed:\n' + idl_lines)
 
-    idl_output_dir = f"{pyfhd_config['output_path']}/{pyfhd_config['top_level_dir']}/fhd_{pyfhd_config['top_level_dir']}"
+    IDL_output_dir = f"{pyfhd_config['output_path']}/{pyfhd_config['top_level_dir']}/fhd_{pyfhd_config['top_level_dir']}"
 
     after = time.time()
 

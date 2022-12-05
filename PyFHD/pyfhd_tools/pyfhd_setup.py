@@ -156,10 +156,12 @@ def pyfhd_parser():
         help="Add to run the python gridding code on calibrated IDL outputs")
     pyIDL.add_argument('--IDL_healpix_gridded_outputs', default=False, action="store_true",
         help="Add to image gridded python outputs into a healpix projection, using IDL code")
-    pyIDL.add_argument('--idl_output_dir', default=None, 
+    pyIDL.add_argument('--IDL_output_dir', default=None, 
         help="If running on IDL outputs stored in a directory other than where the outputs of this run will be written, supply the path to the parent directory.")
     pyIDL.add_argument('--IDL_dry_run', default=False, action='store_true',
         help="Run all data checks and write .pro files, but don't actually run the IDL code. Good for checking the .pro files.")
+    pyIDL.add_argument('--IDL_variables_file', default=None,
+        help="Path to a file containing variables to feed directly into `FHD`. Each line should be as would appear in a `.pro` file used to run `FHD`. These lines will be written verbatim into the top-level `.pro` file used to call `FHD`. This means they will supercede duplicate keywords that might be defaults within `PyFHD`.")
 
     ##Secret things we want to use internally but don't want the user to see
     ##This is needed because we use nargs='*' for the `--grid_psf_file`
@@ -172,7 +174,9 @@ def pyfhd_parser():
 
 def _check_file_exists(config : dict, key : str) -> int:
     """
-    Helper function to check if the key is not None and if it isn't None, then if file exists given from the config.
+    Helper function to check if the key is not None and if it isn't None, then if file exists given from the config. If it does exist, replace the relative path
+    with the absolute path, so when we write out paths to a config file they are
+    transferable.
 
     Parameters
     ----------
@@ -187,9 +191,13 @@ def _check_file_exists(config : dict, key : str) -> int:
         Will return 0 if there is no error, 1 if there is.
     """
     if config[key]:
+        ##If it doesn't exist, add error message
         if not Path(config[key]).exists():
             logging.error("{} has been enabled with a path that doesn't exist, check the path.".format(key))
             return 1
+        ##If it does exist, replace with the absolute path
+        else:
+            config[key] = Path(os.path.abspath(config[key]))
     return 0
 
 def _write_collated_yaml_config(pyfhd_config: dict, output_dir : str):
@@ -400,8 +408,6 @@ def pyfhd_setup(options : argparse.Namespace) -> Tuple[dict, logging.RootLogger]
     ##TODO need better checks on other arguments as to whether we require
     ##the .sav, .npz, or both files here
     for psf_file in pyfhd_config['grid_psf_file']:
-        print("THIS SHIZ HERE", psf_file)
-
         if psf_file[-4:] == '.sav':
             pyfhd_config['grid_psf_file_sav'] = psf_file
             errors += _check_file_exists(pyfhd_config, 'grid_psf_file_sav')
@@ -411,6 +417,10 @@ def pyfhd_setup(options : argparse.Namespace) -> Tuple[dict, logging.RootLogger]
         else:
             logger.error(f'--grid_psf_file must either be a numpy save file (.npz) or IDL binary (.sav) file. You entered {psf_file}.')
             errors += 1
+
+    # if 
+    # Restrict_hpx_inds depends on a file (Error)
+    errors += _check_file_exists(pyfhd_config, 'IDL_variables_file')
 
     ##TODO see lines 41-43 of fhd_core/HEALPix/healpix_snapshot_cube_generate.pro
     ##for other options in setting the dimesion/elements parameters
