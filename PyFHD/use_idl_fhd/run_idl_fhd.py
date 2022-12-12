@@ -69,7 +69,12 @@ def convert_argdict_to_pro(pyfhd_config: str, output_dir: str):
 
         ##Convert the yaml-python types into IDL compatible variables
         for key, value in idl_dict.items():
-            if key == "output_path":
+
+            ##some keywords shouldn't be passed to FHD, so skip them
+            if key in ['top_level_dir', 'log_name', 'commit', 'config_file']:
+                pass
+
+            elif key == "output_path":
                 pro_file.write(f"  output_directory='{value}/{idl_dict['top_level_dir']}'\n")
             elif type(value) == str:
                 pro_file.write(f"  {key}='{value}'\n")
@@ -138,7 +143,7 @@ def write_run_FHD_calibration_pro(pyfhd_config : dict,
         ##keywords set by `fhd_path_setup` need to be bundled into the `extra`
         ##structure  
         outfile.write("    ; Keywords\n")
-        outfile.write(f"    obs_id={pyfhd_config['obs_id']}\n")
+        outfile.write(f"    obs_id='{pyfhd_config['obs_id']}'\n")
         
         vis_file_list = f"{pyfhd_config['input_path']/pyfhd_config['obs_id']}.uvfits"
         outfile.write(f'    vis_file_list="{vis_file_list}"\n')

@@ -221,6 +221,13 @@ IF data_flag LE 0 THEN BEGIN
     preserve_visibilities = 1
 
     save, bi_use, weights_flag, variance_flag, model_return, preserve_visibilities, filename=file_path_fhd + '_variables.sav'
+
+    basename=file_basename(file_path_fhd)
+    dirpath=file_dirname(file_path_fhd)
+    image_path=filepath(basename,root=dirpath,sub='output_images')
+
+    ;cal_auto=cal_auto,cal_res=cal_res,
+    plot_cals,cal,obs,file_path_base=image_path,_Extra=extra
     
     ; ;Grid the visibilities TODO this is what does gridding - the grid_recalculate
     ; IF Keyword_Set(grid_recalculate) THEN BEGIN
