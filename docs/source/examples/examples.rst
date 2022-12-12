@@ -197,7 +197,10 @@ Gridding IDL calibration outputs
       sav_dict = readsav('gauss_beam_pointing-2.sav', python_dict=True)
       np.savez('gauss_beam_pointing-2.npz', **sav_dict)
 
-   Be aware this can take hours. TODO work out a way to share the converted kernels.
+   Be aware this can take hours.
+
+.. todo::
+  Work out a way to share the converted ``.sav`` kernels
    
 
 In this example, calibration should already have been run using ``FHD``. We will then take the calibrated visibilities/model and grid them into two groups: even and odd time steps. This is the first step towards creating a power spectrum (:math:`\varepsilon`\ *ppsilon* uses the difference between the even and odd to estimate the noise).
