@@ -45,6 +45,12 @@ Once ``PyFHD`` is fully Pythonic, this file structure faffing about will be hand
 
 Running basic calibration (uses IDL)
 -------------------------------------------
+
+.. todo::
+   
+   Replace this example with an observation that is easy to calibrate, and ensure it's publicly available data. Perhaps include instructions on how to download the data as well so ANYONE can run this command. Then, we can make this basic calibration the first part of the advanced calibration, showing how two levels of calibration is sometimes needed.
+
+
 Full Pythonic calibration has not been implemented yet. In the interim, you can run limited calibration through ``PyFHD`` by using it as a wrapper to call ``FHD``. An extremely basic example is shown here:
 
 .. code-block:: bash
@@ -118,12 +124,64 @@ We have solutions! Turns out this is a difficult observation to calibrate and so
 
 Running advanced calibration (uses IDL)
 -------------------------------------------
-TODO get an ``--IDL_keywords_file`` argument going and run a better calibration for this 
+.. note:: This mode of running is intended for power users of ``FHD`` who already know what they want to run, but want to take advantage of ``PyFHD`` already.
 
-I think what has to be done is a:
+If you have a set of ``FHD`` ``IDL`` keywords to control calibration, you can simply add them into a text file (as they would appear in ``IDL``) and supply that text file as the argument to ``--IDL_keywords_file``. ``PyFHD`` will then copy these lines and add them into the ``.pro`` templates used to run ``FHD``.
 
-   - prerun cal (with a WODEN model??)
-   - transfer cal
+An example command looks like:
+
+.. code-block:: bash
+
+  time pyfhd \
+    '1088281328' \
+    --input_path=/fred/oz048/MWA/data/2014/van_vleck_corrected/coarse_corr_no_ao/ \
+    --output_path=/fred/oz048/jline/ADACS/test_PyFHD/calibrate_real_data/ \
+    --description=cal_real_data_advanced \
+    --conserve_memory --memory_threshold=1000000000 \
+    --IDL_calibrate \
+    --IDL_variables_file fhd_variables.pro
+
+where ``fhd_variables.pro`` looks like:
+
+.. code-block:: idl
+
+    pointing='-2'
+    calibrate_visibilities=1
+    return_cal_visibilities=1
+    ;save_uvf=1
+    noao_coarse=1
+    model_visibilities=1
+    model_transfer='/fred/oz048/MWA/CODE/FHD/fhd_nb_data_gd_woden_calstop/woden_models/combined/'
+    conserve_memory=1e9
+    recalculate_all=1
+    mapfn_recalculate=0
+    beam_nfreq_avg=1
+    ps_kspan=200.
+    transfer_psf='/fred/oz048/MWA/CODE/FHD/fhd_nb_data_pointing_beam/beams/gauss_beam_pointing'+pointing+'.sav'
+    transfer_weights='/fred/oz048/MWA/CODE/FHD/fhd_nb_data_gd_woden_redo_redo/vis_data/'+obs_id+'_flags.sav'
+    export_images=1
+    force_data=1
+    grid_recalculate=0
+    transfer_calibration='/fred/oz048/MWA/CODE/FHD/fhd_nb_data_gd_woden_calstop/cal_transfer/'+obs_id+'_cal.sav'
+    restrict_hpx_inds='EoR0_high_healpix_inds_3x.idlsave'
+    interpolate_kernel=1
+    psf_dim=30
+    ;54 on 1e6 mask with -2, 62 on 1e7 with -2
+    beam_gaussian_decomp=1
+    psf_image_resolution=10.
+    psf_resolution=50.
+    ;54*250=13500 pixel side and 300sec fit, 54*50=2700 pixel side and 280sec fit
+    beam_mask_threshold=1e6
+    save_beam_metadata_only=1
+    beam_clip_floor=0
+
+This advanced calibration is transferring an initial set of calibration solutions (using ``transfer_calibration``) and running calibration again using an existing sky model (using ``model_transfer``). Amongst other things, it's also using a different primary beam model via the keyword ``transfer_psf``, and a different set of flags via ``transfer_weights``. This calibration results in tighter amplitude and flatter phase solutions:
+
+.. image:: 1088281328_cal_amp_advanced.png
+  :width: 600px
+
+.. image:: 1088281328_cal_phase_advanced.png
+  :width: 600px
 
 Gridding IDL calibration outputs
 -------------------------------------------
