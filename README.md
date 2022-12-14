@@ -20,13 +20,16 @@ Then just pip install the repo:
 
 ```$ pip install -r requirements.txt .```
 
+For full installation notes, including dependencies on FHD, check out the [ReadTheDocs installation page](https://pyfhd.readthedocs.io/en/latest/installation/installation.html).
+
 > Note: Once PyFHD is feature-complete, we aim to make this both a `conda` install and a `pip` install.
 
 ## Useful Documentation Resources
  - [PyFHD documentation](https://pyfhd.readthedocs.io/en/latest/)
- - [FHD repository](https://github.com/EoRImaging/FHD)
- - [FHD examples](https://github.com/EoRImaging/FHD/blob/master/examples.md)
- - [FHD pipeline scripts](https://github.com/EoRImaging/pipeline_scripts)
+ - [MWA ASVO](https://asvo.mwatelescope.org/) - service to obtain MWA data
+ - [FHD repository](https://github.com/EoRImaging/FHD) - the original IDL code
+ - [FHD examples](https://github.com/EoRImaging/FHD/blob/master/examples.md) - examples on how to use the original IDL code
+ - [FHD pipeline scripts](https://github.com/EoRImaging/pipeline_scripts) - pipeline scripts using the original IDL code
 
 ## Community Guidelines
 We are an open-source community that interacts and discusses issues via GitHub. We encourage collaborative development. New users are encouraged to submit issues and pull requests and to create branches for new development and exploration. Comments and suggestions are welcome.

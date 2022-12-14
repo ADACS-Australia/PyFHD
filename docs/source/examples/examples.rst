@@ -1,3 +1,6 @@
+.. _MWA ASVO: https://asvo.mwatelescope.org/
+.. _Birli: https://github.com/MWATelescope/Birli
+
 Examples
 ===========
 
@@ -43,37 +46,53 @@ The ``Healpix``, ``metadata``, and ``vis_data`` subdirs are generated (amongst o
 
 Once ``PyFHD`` is fully Pythonic, this file structure faffing about will be handled internally to the code. Please bear with us for now.
 
+Downloading Data
+---------------------
+Data can be obtained via the `MWA ASVO`_ service (head to the webpage to get an account setup). There are multiple ways to download data (please refer to the `MWA ASVO`_ to learn more); here we will use the Web Dashboard as an example. 
+
+``PyFHD`` uses a UVFITS file as input. The raw data out of the MWA telescope comes in a bespoke format, so we must convert the data into a UVFITS file. On the `MWA ASVO`_, login with your credentials, then head to 'My Jobs' in the top right corner, and click "New Data Job". Select the 'Visibility Conversion Job' tab as shown below:
+
+.. image:: data_job_form.png
+  :width: 800px
+
+In this download we are using an observation with Observation ID (which is the GPS time) 1091128160. We choose to use `Birli`_ as the 'Preprocessor', and swap the 'Output' format to UVFITS. Click Submit to launch the job.
+
+We also need a metafits tile, which we can access via the 'Visibility Download Job' tab. Input the Obs ID, and be sure to click the 'PPD, Metafits, and Flags' option like below (otherwise you download the raw data as well, which we don't need):
+
+.. image:: meta_job_form.png
+  :width: 800px
+
+You can check the status of your download by clicking 'My Jobs' in the top left. Once they are ready to download, you'll see something like:
+
+.. image:: jobs_ready.png
+  :width: 800px
+
 Running basic calibration (uses IDL)
 -------------------------------------------
-
-.. todo::
-   
-   Replace this example with an observation that is easy to calibrate, and ensure it's publicly available data. Perhaps include instructions on how to download the data as well so ANYONE can run this command. Then, we can make this basic calibration the first part of the advanced calibration, showing how two levels of calibration is sometimes needed.
-
 
 Full Pythonic calibration has not been implemented yet. In the interim, you can run limited calibration through ``PyFHD`` by using it as a wrapper to call ``FHD``. An extremely basic example is shown here:
 
 .. code-block:: bash
 
     pyfhd \
-        1088281328 \
-        --input-path=/path/to/data/ \
-        --output-path=/place/for/outputs/ \
-        --description=cal_real_data \
-        --calibration-catalog-file-path=/path/to/sky_model/GLEAM_v2_plus_rlb2019.sav \
-        --conserve-memory --memory-threshold=1000000000 \
+        1091128160 \
+        --input_path=data \
+        --output_path=/place/for/outputs/ \
+        --description=cal_data \
+        --calibration_catalog_file_path=/path/to/sky_model/GLEAM_v2_plus_rlb2019.sav \
+        --conserve_memory --memory_threshold=1000000000 \
         --IDL_calibrate
 
-.. note:: This command took 235 minutes using 1 core of a Intel Gold 6140 processor and < 15GB RAM on the OzStar cluster
+.. note:: This command took 260 minutes using 1 core of a Intel Gold 6140 processor and < 25GB RAM on the OzStar cluster
 
 For this command to work, the following two inputs must exist:
 
 .. code-block:: bash
 
-  /path/to/data/1088281328.uvfits # the input visibility data
-  /path/to/data/1088281328.metafits # the input metafits file
+  ./data/1091128160.uvfits # the input visibility data
+  ./data/1091128160.metafits # the input metafits file
 
-These paths are inferred from the observation number (1088281328) and ``--input-path`` argument. By including the ``--IDL_calibrate`` option, ``PyFHD`` will simply write out a ```.pro`` file (a format that can be fed directly into ``FHD``). ``PyFHD`` will fall back and use any default values as described by ``pyfhd --help``. Beyond those, we set the following arguments explicitly:
+These paths are inferred from the observation number (1091128160) and ``--input-path`` argument. By including the ``--IDL_calibrate`` option, ``PyFHD`` will simply write out a ``.pro`` file (a format that can be fed directly into ``FHD``). ``PyFHD`` will fall back and use any default values as described by ``pyfhd --help``. Beyond those, we set the following arguments explicitly:
 
 .. list-table::
    :widths: 25 25
@@ -89,20 +108,20 @@ These paths are inferred from the observation number (1088281328) and ``--input-
      - Sets the memory threshold to 1GB
 
 
-Using the ``--output-path`` and ``--description`` arguments sets the topmost output directory to ``/place/for/outputs/pyfhd_cal_real_data``. Upon successful running of this command, the output directory structure should look like this:
+Using the ``--output-path`` and ``--description`` arguments sets the topmost output directory to ``/place/for/outputs/pyfhd_cal_data``. Upon successful running of this command, the output directory structure should look like this:
 
 .. code-block:: bash
 
     /place/for/outputs/
-    └── pyfhd_cal_real_data
+    └── pyfhd_cal_data
       ├── fhd_calibration_only.pro        # used to run FHD
       ├── general_calibration_only.pro    # used to run FHD
       ├── pyfhd_config.pro                # used to run FHD
       ├── run_fhd_calibration_only.pro    # topmost file used to run FHD
-      ├── pyfhd_cal_real_data_17_00_37_29_11_2022.log   # log with date and time of run
-      ├── pyfhd_cal_real_data_17_00_37_29_11_2022.yaml  # yaml containing the defaults used in PyFHD
-      └── fhd_pyfhd_cal_real_data         # location for FHD outputs
-        ├── 1088281328_variables.sav      # extra set of variables saved by PyFHD so python gridding can be run on these FHD outputs
+      ├── pyfhd_cal_data_2022_12_12_17_19_58.log   # log with date and time (YY-MM-DD-hh-mm-ss) of run
+      ├── pyfhd_cal_data_2022_12_12_17_19_58.yaml  # yaml containing all keywords used
+      └── fhd_pyfhd_cal_data              # location for FHD outputs
+        ├── 1091128160_variables.sav      # extra set of variables saved by PyFHD so python gridding can be run on these FHD outputs
         ├── beams                         # FHD outputs
         ├── calibration                   # FHD outputs
         ├── Healpix                       # FHD outputs
@@ -111,7 +130,39 @@ Using the ``--output-path`` and ``--description`` arguments sets the topmost out
         ├── output_images                 # FHD outputs
         └── vis_data                      # FHD outputs
 
-If you look in the ``/place/for/outputs/pyfhd_cal_real_data/fhd_pyfhd_cal_real_data/output_images`` you will find plots including the calibration amplitude and phases:
+If you look in the ``/place/for/outputs/pyfhd_cal_data/fhd_pyfhd_cal_data/output_images`` you will find plots including the calibration amplitude and phases:
+
+.. image:: 1091128160_cal_amp.png
+  :width: 600px
+
+.. image:: 1091128160_cal_phase.png
+  :width: 600px
+
+We have solutions!
+
+
+Running advanced calibration (uses IDL)
+-------------------------------------------
+.. todo::
+   
+   Check what this calibration is actually doing, and whether it is actually updating the solutions in the second part. The add motivation as to why we have to run in this manner
+
+.. note:: This mode of running is intended for power users of ``FHD`` who already know what they want to run, but want to take advantage of ``PyFHD`` already.
+
+Sometimes it makes sense to get an initial set of calibration solutions using one sky model, and then update them using a different sky model. First, run an initial calibration with default arguments:
+
+.. code-block:: bash
+
+    pyfhd \
+        1088281328 \
+        --input_path=data \
+        --output_path=/place/for/outputs/ \
+        --description=cal_data \
+        --calibration_catalog_file_path=/path/to/sky_model/GLEAM_v2_plus_rlb2019.sav \
+        --conserve_memory --memory_threshold=1000000000 \
+        --IDL_calibrate
+
+This results in calibration solutions that look somewhat ratty:
 
 .. image:: 1088281328_cal_amp.png
   :width: 600px
@@ -119,16 +170,7 @@ If you look in the ``/place/for/outputs/pyfhd_cal_real_data/fhd_pyfhd_cal_real_d
 .. image:: 1088281328_cal_phase.png
   :width: 600px
 
-We have solutions! Turns out this is a difficult observation to calibrate and so using these default settings only does an OK job. Check out the next example on running a more advanced calibration.
-
-
-Running advanced calibration (uses IDL)
--------------------------------------------
-.. note:: This mode of running is intended for power users of ``FHD`` who already know what they want to run, but want to take advantage of ``PyFHD`` already.
-
-If you have a set of ``FHD`` ``IDL`` keywords to control calibration, you can simply add them into a text file (as they would appear in ``IDL``) and supply that text file as the argument to ``--IDL_keywords_file``. ``PyFHD`` will then copy these lines and add them into the ``.pro`` templates used to run ``FHD``.
-
-An example command looks like:
+If you have a set of ``FHD`` ``IDL`` keywords to control calibration, you can simply add them into a text file (as they would appear in ``IDL``) and supply that text file as the argument to ``--IDL_keywords_file``. ``PyFHD`` will then copy these lines and add them into the ``.pro`` templates used to run ``FHD``. Here we'll update the calibration using a different sky model:
 
 .. code-block:: bash
 
@@ -136,7 +178,7 @@ An example command looks like:
     '1088281328' \
     --input_path=/fred/oz048/MWA/data/2014/van_vleck_corrected/coarse_corr_no_ao/ \
     --output_path=/fred/oz048/jline/ADACS/test_PyFHD/calibrate_real_data/ \
-    --description=cal_real_data_advanced \
+    --description=cal_data_advanced \
     --conserve_memory --memory_threshold=1000000000 \
     --IDL_calibrate \
     --IDL_variables_file fhd_variables.pro
@@ -175,7 +217,7 @@ where ``fhd_variables.pro`` looks like:
     save_beam_metadata_only=1
     beam_clip_floor=0
 
-This advanced calibration is transferring an initial set of calibration solutions (using ``transfer_calibration``) and running calibration again using an existing sky model (using ``model_transfer``). Amongst other things, it's also using a different primary beam model via the keyword ``transfer_psf``, and a different set of flags via ``transfer_weights``. This calibration results in tighter amplitude and flatter phase solutions:
+This advanced calibration is transferring an initial set of calibration solutions (using ``transfer_calibration``) and running calibration again using an existing sky model (using ``model_transfer``). Amongst other things, it's also using a different primary beam model via the keyword ``transfer_psf``, and a pervious set of flags via ``transfer_weights``. This calibration results in tighter amplitude and flatter phase solutions:
 
 .. image:: 1088281328_cal_amp_advanced.png
   :width: 600px
