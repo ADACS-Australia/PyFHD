@@ -1,0 +1,13 @@
+astropy
+configargparse
+numba
+numpy
+pytest
+scipy
+setuptools
+sphinx
+colorama
+importlib_resources
+h5py
+sphinx-rtd-theme
+sphinx-argparse

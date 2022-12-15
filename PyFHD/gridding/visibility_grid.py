@@ -265,7 +265,7 @@ def visibility_grid(visibility, vis_weights, obs, status_str, psf, params,
             # Select the model/data visibility values of the set, each with a weight of 1
             rep_flag = False
             if model is not None:
-                model_box = model_use[inds]
+                model_box = model_use.flat[inds]
             vis_box = vis_arr_use.flat[inds]
             psf_weight = np.ones(vis_n)
 
@@ -383,6 +383,9 @@ def visibility_grid(visibility, vis_weights, obs, status_str, psf, params,
         if model is not None:
             # If model visibilities are being gridded, calculate the product of the model vis and the beam kernel
             # for all vis which contribute to the same static uv-pixels, and add to the static uv-plane 
+
+            # Ensure model_box is flat, sometimes odd shapes can come in from metadata
+            model_box = model_box.flatten()
             box_arr = np.dot(np.transpose(box_matrix_dag), np.transpose(model_box / n_vis))
             model_return[ymin_use : ymin_use + psf_dim, xmin_use : xmin_use + psf_dim].flat += box_arr
         
@@ -474,6 +477,7 @@ def visibility_grid(visibility, vis_weights, obs, status_str, psf, params,
         'variance' : variance,
         'uniform_filter' : uniform_filter,
         'obs' : obs,
+        'n_vis' : n_vis,
     }
 
     if grid_spectral:

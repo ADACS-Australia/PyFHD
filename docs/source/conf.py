@@ -12,10 +12,8 @@
 #
 import os
 import sys
-#sys.path.insert(0, os.path.abspath('.'))
-#sys.path.insert(0, os.path.abspath('..'))
-sys.path.append(os.path.abspath('../..'))
-
+# sys.path.append(os.path.abspath('../..'))
+sys.path.insert(0, os.path.abspath('../..'))
 
 # -- Project information -----------------------------------------------------
 
@@ -37,8 +35,12 @@ extensions = [
               'sphinx.ext.mathjax',
               'sphinx.ext.viewcode',
               'sphinx.ext.napoleon',
+              'sphinx.ext.todo',
               'sphinxarg.ext',
              ]
+
+# Display todos by setting to True
+todo_include_todos = True
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']

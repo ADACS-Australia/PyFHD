@@ -7,6 +7,9 @@ from PyFHD.data_setup.obs import create_obs
 from PyFHD.data_setup.uvfits import extract_header, create_params, extract_visibilities, create_layout
 from PyFHD.pyfhd_tools.pyfhd_utils import simple_deproject_w_term
 from PyFHD.beam_setup.beam import create_psf
+from PyFHD.use_idl_fhd.run_idl_fhd import run_IDL_calibration_only, run_IDL_convert_gridding_to_healpix_images
+from PyFHD.use_idl_fhd.use_idl_outputs import run_gridding_on_IDL_outputs
+import logging
 
 def _print_time_diff(start : float, end : float, description : str, logger : RootLogger):
     """
@@ -28,13 +31,18 @@ def _print_time_diff(start : float, end : float, description : str, logger : Roo
     else:
         logger.info(f'{description} completed in: {round(runtime,5)} seconds')
 
-def main():
+def main_python_only(pyfhd_config : dict, logger : logging.RootLogger):
+    """One day, this python only loop will just be main. For now, only try and
+    run it if none of the IDL options are asked for.
 
-    pyfhd_start = time.time()
-    options = pyfhd_parser().parse_args()
-    
-    # Validate options and Create the Logger
-    pyfhd_config, logger = pyfhd_setup(options)
+    Parameters
+    ----------
+    pyfhd_config : dict
+        _The options from argparse in a dictionary, that have been verified using
+        `PyFHD.pyfhd_tools.pyfhd_setup.pyfhd_setup`.
+    logger : logging.RootLogger
+        _The logger to output info and errors to
+    """
 
     header_start = time.time()
     # Get the header
@@ -84,7 +92,39 @@ def main():
     beam_end = time.time()
     _print_time_diff(beam_start, beam_end, 'Beam Setup', logger)
 
-    np.save('../notebooks/pyfhd_config.npy', pyfhd_config, allow_pickle=True)
+    # np.save('../notebooks/pyfhd_config.npy', pyfhd_config, allow_pickle=True)
+
+def main():
+
+    pyfhd_start = time.time()
+    options = pyfhd_parser().parse_args()
+    
+    # Validate options and Create the Logger
+    pyfhd_config, logger = pyfhd_setup(options)
+
+    ##If any of the hybrid options have been asked for, circumnavigate the
+    ##main_loop_python_only function, and run the required hybrid options
+    if options.IDL_calibrate or options.grid_IDL_outputs or options.IDL_healpix_gridded_outputs:
+
+        idl_output_dir = None
+
+        if options.IDL_calibrate:
+            idl_output_dir = run_IDL_calibration_only(pyfhd_config, logger)
+
+        if options.grid_IDL_outputs:
+            if options.idl_output_dir != None:
+                pass
+            else:
+                idl_output_dir = f"{pyfhd_config['output_path']}/{pyfhd_config['top_level_dir']}/fhd_{pyfhd_config['top_level_dir']}"
+
+            run_gridding_on_IDL_outputs(pyfhd_config, idl_output_dir, logger)
+
+        if options.IDL_healpix_gridded_outputs:
+            run_IDL_convert_gridding_to_healpix_images(pyfhd_config, logger)
+
+    else:
+        main_python_only(pyfhd_config, logger)
+
 
     pyfhd_end = time.time()
     runtime = timedelta(seconds = pyfhd_end - pyfhd_start)
@@ -92,3 +132,5 @@ def main():
     # Close the handlers in the log
     for handler in logger.handlers:
         handler.close()
+
+    
