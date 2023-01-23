@@ -112,7 +112,7 @@ def main():
             idl_output_dir = run_IDL_calibration_only(pyfhd_config, logger)
 
         if options.grid_IDL_outputs:
-            if options.idl_output_dir != None:
+            if idl_output_dir != None:
                 pass
             else:
                 idl_output_dir = f"{pyfhd_config['output_path']}/{pyfhd_config['top_level_dir']}/fhd_{pyfhd_config['top_level_dir']}"
