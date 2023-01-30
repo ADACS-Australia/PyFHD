@@ -11,7 +11,8 @@ import numpy as np
 import time
 import h5py
 
-def convert_sav_to_dict(sav_path : str, logger : logging.RootLogger):
+def convert_sav_to_dict(sav_path : str, logger : logging.RootLogger,
+                        tmp_dir = "temp_pyfhd"):
     """
     Given a path to an IDL style .sav file, load into a python dictionary
     using scipy.io.readsav.
@@ -30,6 +31,9 @@ def convert_sav_to_dict(sav_path : str, logger : logging.RootLogger):
         Filepath for an IDL .sav file
     logger : logging.RootLogger
         The logger to output any error messages to
+    tmp_dir : str
+        Dir to place temporary files, creates the directory if doesn't exist.
+        Default: "tmp_pyfhd".
 
     Returns
     --------
@@ -42,10 +46,10 @@ def convert_sav_to_dict(sav_path : str, logger : logging.RootLogger):
         # logger.info(f"{sav_path} found, converting now.")
 
         ##Ensure the tmp dir exists, create if not
-        run_command('mkdir -p tmp_pyfhd')
+        os.makedirs(tmp_dir, exist_ok=True)
 
         ##Strip off any leading path to leave just the file name
-        temp_name = f"tmp_pyfhd/{sav_path.split('/')[-1]}"
+        temp_name = f"{tmp_dir}/{sav_path.split('/')[-1]}"
 
         ##Load into a dictionary, decompressed and saving a temporary file if need
         ##be
@@ -60,7 +64,7 @@ def convert_sav_to_dict(sav_path : str, logger : logging.RootLogger):
             handler.close()
         exit()
 
-def convert_IDL_calibration_outputs(tag : str, IDL_output_dir : str,
+def convert_IDL_calibration_outputs(pyfhd_config : dict, IDL_output_dir : str,
                                     logger : logging.RootLogger,
                                     save_npz = False, read_npz = False):
     """Convert IDL FHD .sav files output after calibration into dictionaries,
@@ -80,10 +84,9 @@ def convert_IDL_calibration_outputs(tag : str, IDL_output_dir : str,
 
     Parameters
     ----------
-    tag : str
-        This is usually the observation id, as it's a string inferrerd by FHD
-        from the name of the .uvfits file, e.g. if the input data was
-        1088716176.uvfits, tag = 1088716176.
+    pyfhd_config : dict
+        The options from argparse in a dictionary, that have been verified using
+        `PyFHD.pyfhd_tools.pyfhd_setup.pyfhd_setup`.
     IDL_output_dir : str
         Parent directory in which all IDL FHD outputs reside
     logger : logging.RootLogger
@@ -99,7 +102,8 @@ def convert_IDL_calibration_outputs(tag : str, IDL_output_dir : str,
         A dictionary contain various converted IDL outputs (each in the form
         of it's own dictionary)
     """
-    
+
+    tag = pyfhd_config['obs_id']
 
     if read_npz:
         logger.info("Reading previously converted IDL FHD calibration .npz files now ")
@@ -123,22 +127,38 @@ def convert_IDL_calibration_outputs(tag : str, IDL_output_dir : str,
     else:
         logger.info("Converting IDL FHD calibration .sav files now ")
 
-        run_command('mkdir -p tmp_pyfhd')
+        ##Where to save intermediate data products
+        tmp_dir = f"{pyfhd_config['output_path']}/{pyfhd_config['top_level_dir']}/tmp_pyfhd_{pyfhd_config['log_time']}"
+
+        logger.info(f"Writing intermediate data products to {tmp_dir}")
 
         ##Observational parameters and variables
-        obs_dict = convert_sav_to_dict(f"{IDL_output_dir}/metadata/{tag}_obs.sav", logger)
-        params_dict = convert_sav_to_dict(f"{IDL_output_dir}/metadata/{tag}_params.sav", logger)
-        variables_dict = convert_sav_to_dict(f"{IDL_output_dir}/{tag}_variables.sav", logger)
+        obs_dict = convert_sav_to_dict(f"{IDL_output_dir}/metadata/{tag}_obs.sav",
+                                               logger, tmp_dir=tmp_dir)
+        params_dict = convert_sav_to_dict(f"{IDL_output_dir}/metadata/{tag}_params.sav",
+                                               logger, tmp_dir=tmp_dir)
+        variables_dict = convert_sav_to_dict(f"{IDL_output_dir}/{tag}_variables.sav",
+                                               logger, tmp_dir=tmp_dir)
 
         ##Visibility data
-        vis_XX_dict = convert_sav_to_dict(f"{IDL_output_dir}/vis_data/{tag}_vis_XX.sav", logger)
-        vis_YY_dict = convert_sav_to_dict(f"{IDL_output_dir}/vis_data/{tag}_vis_YY.sav", logger)
-        vis_model_XX_dict = convert_sav_to_dict(f"{IDL_output_dir}/vis_data/{tag}_vis_model_XX.sav", logger)
-        vis_model_YY_dict = convert_sav_to_dict(f"{IDL_output_dir}/vis_data/{tag}_vis_model_YY.sav", logger)
-        vis_flags_dict = convert_sav_to_dict(f"{IDL_output_dir}/vis_data/{tag}_flags.sav", logger)
+        vis_XX_dict = convert_sav_to_dict(f"{IDL_output_dir}/vis_data/{tag}_vis_XX.sav",
+                                               logger, tmp_dir=tmp_dir)
+        vis_YY_dict = convert_sav_to_dict(f"{IDL_output_dir}/vis_data/{tag}_vis_YY.sav",
+                                               logger, tmp_dir=tmp_dir)
+        vis_model_XX_dict = convert_sav_to_dict(f"{IDL_output_dir}/vis_data/{tag}_vis_model_XX.sav",
+                                               logger, tmp_dir=tmp_dir)
+        vis_model_YY_dict = convert_sav_to_dict(f"{IDL_output_dir}/vis_data/{tag}_vis_model_YY.sav",
+                                               logger, tmp_dir=tmp_dir)
+        vis_flags_dict = convert_sav_to_dict(f"{IDL_output_dir}/vis_data/{tag}_flags.sav",
+                                               logger, tmp_dir=tmp_dir)
 
-        ##Remove the temporary folder holding the decompressed .sav files
-        run_command('rm -r tmp_pyfhd')
+        ##Remove the temporary folder holding the decompressed .sav files.
+        ##If for some reason the directory has already been deleted, ignore
+        ##deletion errors
+        try:
+            shutil.rmtree(tmp_dir)
+        except FileNotFoundError:
+            pass
 
         if save_npz:
 
@@ -180,8 +200,8 @@ def run_gridding_on_IDL_outputs(pyfhd_config : dict, IDL_output_dir : str,
     before = time.time()
 
     ##Convert/load in the IDL FHD outputs
-    idl_cal_dict = convert_IDL_calibration_outputs(pyfhd_config['obs_id'],
-                                                   IDL_output_dir, logger)
+    idl_cal_dict = convert_IDL_calibration_outputs(pyfhd_config, IDL_output_dir,
+                                                   logger)
 
     ##Grab specific arrays/rec arrays from idl_cal_dict needed to run gridding
     visibility_XX = idl_cal_dict['vis_XX_dict']['vis_ptr']
@@ -243,7 +263,7 @@ def run_gridding_on_IDL_outputs(pyfhd_config : dict, IDL_output_dir : str,
     gridding_dir = f"{pyfhd_config['output_path']}/{pyfhd_config['top_level_dir']}/gridding_outputs"
 
     ## Make somewhere to store the outputs
-    run_command(f'mkdir -p {gridding_dir}')
+    os.makedirs(gridding_dir, exist_ok=True)
 
     before = time.time()
     

@@ -228,7 +228,7 @@ def _write_collated_yaml_config(pyfhd_config: dict, output_dir : str):
         for key in pyfhd_config.keys():
             ## These either a direct argument or are variables set internally to
             ## each run,so should not appear in the yaml
-            if key in ['top_level_dir', 'log_name', 'commit', 'obs_id', 'config_file', 'grid_psf_file_sav', 'grid_psf_file_npz']:
+            if key in ['top_level_dir', 'log_name', 'log_time', 'commit', 'obs_id', 'config_file', 'grid_psf_file_sav', 'grid_psf_file_npz']:
                 pass
             else:
                 if pyfhd_config[key] == None:
@@ -501,6 +501,7 @@ def pyfhd_logger(pyfhd_config: dict) -> Tuple[logging.RootLogger, str]:
         log_name = "pyfhd_" + pyfhd_config['description'].replace(' ', '_').lower() + '_' + log_time
     pyfhd_config['commit'] = commit
     pyfhd_config['log_name'] = log_name
+    pyfhd_config['log_time'] = log_time
     # Format the starting string for logging
     start_string = """\
     ________________________________________________________________________
