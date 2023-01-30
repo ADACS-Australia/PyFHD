@@ -6,6 +6,8 @@ from pathlib import Path
 import logging
 from typing import Tuple
 from astropy.coordinates import EarthLocation
+import astropy
+
 
 def extract_header(pyfhd_config : dict, logger : logging.RootLogger) -> Tuple[dict, np.recarray]:
     """_summary_
@@ -53,13 +55,22 @@ def extract_header(pyfhd_config : dict, logger : logging.RootLogger) -> Tuple[di
     pyfhd_header['n_freq'] = params_header['naxis4']
     pyfhd_header['freq_ref'] = params_header['crval4']
     pyfhd_header['freq_res'] = params_header['cdelt4']
-    pyfhd_header['date_obs'] = params_header['date-obs']
+    try:
+        pyfhd_header['date_obs'] = params_header['date-obs']
+    except KeyError:
+        pyfhd_header['date_obs'] = params_header['dateobs']
     freq_ref_i = params_header['crpix4'] - 1
     pyfhd_header['frequency_array'] = (np.arange(pyfhd_header['n_freq']) - freq_ref_i) * pyfhd_header['freq_res'] + pyfhd_header['freq_ref']
     pyfhd_header['obsra'] = params_header['obsra']
     pyfhd_header['obsdec'] = params_header['obsdec']
     # Put in locations of instrument from FITS file or from Astropy site data
-    location = EarthLocation.of_site(pyfhd_config['instrument'])
+    try:
+        location = EarthLocation.of_site(pyfhd_config['instrument'])
+    except astropy.coordinates.errors.UnknownSiteException:
+        ##TODO fix this MWA location thing, have some kind of built in
+        ##locations in the repo?
+        logger.info(f"Failed to load in the {pyfhd_config['instrument']} instrument location from astropy. If lon/lat/alt are not in the UVFITS things will fail.")
+        
     try: 
         pyfhd_header['lon'] = params_header['lon']
     except KeyError:
@@ -72,6 +83,8 @@ def extract_header(pyfhd_config : dict, logger : logging.RootLogger) -> Tuple[di
         pyfhd_header['alt'] = params_header['alt']
     except KeyError:
         pyfhd_header['alt'] = location.height.value
+
+    logger.info(f"Setting {pyfhd_config['instrument']} instrument location to: lon {pyfhd_header['lon']:.2f}, lat {pyfhd_header['lat']:.2f}, alt {pyfhd_header['alt']:.2f}")
 
     # Setup params list and names
     param_list = []

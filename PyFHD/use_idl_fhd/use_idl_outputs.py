@@ -21,7 +21,7 @@ def convert_sav_to_dict(sav_path : str, logger : logging.RootLogger):
     the tempfile module to find a location, but this usually finds a bad
     location with little storage when called on a super cluster. So explicitly
     make our own temp dir `tmp_pyfhd` where the code is being called. It is
-    assumed many files are to be convert, so `tmp_pyfhd` should be deleted
+    assumed many files are to be converted, so `tmp_pyfhd` should be deleted
     after all calls.
 
     Parameters

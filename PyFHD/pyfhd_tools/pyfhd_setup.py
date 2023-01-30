@@ -82,6 +82,9 @@ def pyfhd_parser():
     calibration.add_argument('--vis_baseline_hist', default = True, action = 'store_true', help = 'Calculates the vis_baseline_hist dictionary containing the visibility resolution ratio average and standard deviation')
     calibration.add_argument('--bandpass_calibrate', default = True, action = 'store_true', help = 'Calculates a bandpass.\nThis is an average of tiles by frequency by polarization (default), beamformer-to-LNA cable types by frequency by polarization (see cable_bandpass_fit),\nor over the whole season by pointing by by cable type by frequency by polarization via a read-in file (see saved_run_bp).\nIf unset, no by-frequency bandpass is used')
     calibration.add_argument('--calibration_flag_iterate', default = 0, type = int, help = 'Number of times to repeat calibration in order to better identify and flag bad antennas so as to exclude them from the final result.')
+    calibration.add_argument('--import_model_uvfits', default = False, help = 'Use an existing `uvfits` file (typically a simulation) as model visibilities. The phase centre of model data must match the "RA" and "DEC" values in the metafits file (NOT the "RAPHASE" and "DECPHASE").')
+    calibration.add_argument('--no_rephase', default = True, action='store_true',
+    help = 'For now, PyFHD can ONLY run in --no_rephase=1 mode, so this option is locked to always be True.')
 
     # Flagging Group
     flag.add_argument('-fv', '--flag_visibilities', default = False, action = 'store_true', help = 'Flag visibilities based on calculations in vis_flag')
@@ -104,7 +107,7 @@ def pyfhd_parser():
     # Gridding Group
     gridding.add_argument('-g', '--recalculate_grid', default = False, action ='store_true', help = 'Forces PyFHD to recalculate the gridding function. Replaces grid_recalculate from FHD')
     gridding.add_argument('-map', '--recalculate_mapfn', default = False, action = 'store_true', help = 'Forces PyFHD to recalculate the mapping function. Replaces mapfn_recalculate from FHD')
-    gridding.add_argument('--image_filter', default = 'filter_uv_uniform', type = str, choices = ['filter_uv_uniform', 'filter_uv_hanning', 'filter_uv_natural', 'filter_uv_radial', 'filter_uv_tapered_uniform', 'filter_uv_optimal'], help = 'Weighting filter to be applyed to resulting snapshot images and fits files. Replaces image_filter_fn from FHD')
+    gridding.add_argument('--image_filter', default = 'filter_uv_uniform', type = str, choices = ['filter_uv_uniform', 'filter_uv_hanning', 'filter_uv_natural', 'filter_uv_radial', 'filter_uv_tapered_uniform', 'filter_uv_optimal'], help = 'Weighting filter to be applied to resulting snapshot images and fits files. Replaces image_filter_fn from FHD')
     gridding.add_argument('--grid_psf_file', nargs='*', default=[],
     help = 'Path(s) to an FHD "psf" object. If running python gridding, this should be n .npz file, as converted from a .sav file. This should contain a gridding kernel matching the pointing of the observation being processed, e.g. for a +1 pointing, --grid-psf-file=/path/to/gauss_beam_pointing1.npz. If only/also running imaging/healpix projection in IDL, a path to the original .sav file should also be included, e.g. --grid-psf-file /path/to/gauss_beam_pointing1.npz /path/to/gauss_beam_pointing1.sav')
 
@@ -377,6 +380,11 @@ def pyfhd_setup(options : argparse.Namespace) -> Tuple[dict, logging.RootLogger]
     if pyfhd_config['allow_sidelobe_model_sources'] and not pyfhd_config['model_visibilities']:
         logger.error("allow_sidelobe_model_sources shouldn't be True when model_visibilities is not, check if you meant to turn on model_visibilities")
         errors += 1
+        
+    ## if importing model visiblities from a uvfits file, check that file 
+    ## exists
+    if pyfhd_config['import_model_uvfits']:
+        errors += _check_file_exists(pyfhd_config, 'import_model_uvfits')
 
     # Entirety of Simulation Group depends on run-simulation (Error)
     if not pyfhd_config['run_simulation'] and \
@@ -448,8 +456,6 @@ def pyfhd_setup(options : argparse.Namespace) -> Tuple[dict, logging.RootLogger]
     logger.info('Input validated, starting PyFHD run now')
 
     _write_collated_yaml_config(pyfhd_config, output_dir)
-
-    # shutil.copy(pyfhd_config['config_file'], Path(output_dir, pyfhd_config['log_name'] + '.yaml'))
 
     return pyfhd_config, logger
 
