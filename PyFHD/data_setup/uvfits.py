@@ -7,6 +7,7 @@ import logging
 from typing import Tuple
 from astropy.coordinates import EarthLocation
 import astropy
+from astropy import units as u
 
 
 def extract_header(pyfhd_config : dict, logger : logging.RootLogger, data_uvfits = True) -> Tuple[dict, np.recarray]:
@@ -94,7 +95,10 @@ def extract_header(pyfhd_config : dict, logger : logging.RootLogger, data_uvfits
         ##TODO fix this MWA location thing, have some kind of built in
         ##locations in the repo?
         logger.info(f"Failed to load in the {pyfhd_config['instrument']} instrument location from astropy. If lon/lat/alt are not in the UVFITS things will fail.")
-        
+
+        location = EarthLocation(lat=-26.7033194*u.deg, lon=116.67081524*u.deg,
+                                 height=377.8299999991432)
+
     try: 
         pyfhd_header['lon'] = params_header['lon']
     except KeyError:

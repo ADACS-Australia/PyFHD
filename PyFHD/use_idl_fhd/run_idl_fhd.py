@@ -8,7 +8,7 @@ import time
 import io
 from PyFHD.data_setup.obs import create_obs
 from PyFHD.data_setup.uvfits import extract_header, create_params
-from PyFHD.source_modeling.vis_model_transfer import import_vis_model_from_uvfits, convert_vis_model_arr_to_sav
+from PyFHD.source_modeling.vis_model_transfer import import_vis_model_from_uvfits, convert_vis_model_arr_to_sav, flag_model_visibilities
 
 
 def run_command(cmd : str, dry_run=False):
@@ -234,10 +234,22 @@ def run_IDL_calibration_only(pyfhd_config : dict,
         pyfhd_header, params_data, _ = extract_header(pyfhd_config, logger)
         params = create_params(pyfhd_header, params_data, logger)
         obs = create_obs(pyfhd_header, params, pyfhd_config, logger)
-        
-        vis_model_arr = import_vis_model_from_uvfits(pyfhd_config, obs,
-                                                     logger)
 
+        if pyfhd_config['n_pol'] == 0:
+            n_pol = pyfhd_header['n_pol']
+        else:
+            n_pol = pyfhd_config['n_pol']
+
+        obs['n_pol'] = n_pol
+        
+        vis_model_arr, params_model = import_vis_model_from_uvfits(pyfhd_config,
+                                                                   obs, logger)
+
+        ##Need to flag the model depending on what tiles have been flagged
+        ##in the data
+        vis_model_arr, pyfhd_config = flag_model_visibilities(vis_model_arr, params,
+                                      params_model, obs, pyfhd_config, logger)
+        
         ##To feed into FHD, have to convert it to an IDL .sav file, so setup
         ##an output directory and save to that
         model_vis_dir = f"{output_dir}/model_vis"

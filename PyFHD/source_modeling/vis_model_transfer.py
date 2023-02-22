@@ -232,10 +232,27 @@ def flag_model_visibilities(vis_model_arr : np.ndarray,
     ##from the metafits
 
     flag_indexes = []
-    ##Loop over all possible antenna (tile) names, and if they're not in the
-    ##list of antennas in this data set, append to flag_indexes
-    for ant_ind, ant_name in enumerate(obs['baseline_info']['tile_names']):
-        if ant_name not in flaginfo_data.ant_names: flag_indexes.append(ant_ind + 1)
+
+
+    ##if the data just have tile indexes, the maximum should be the number
+    ##of tiles - use that to work out if we have Birli of pyuvdata input
+
+    ##we should have a pyuvdata input in this case as a tile name is greater
+    ##than the number of tiles
+    if np.max(flaginfo_data.ant_names) > len(obs['baseline_info']['tile_names']):
+
+        ##Loop over all possible antenna (tile) names, and if they're not in the
+        ##list of antennas in this data set, append to flag_indexes
+        for ant_ind, ant_name in enumerate(obs['baseline_info']['tile_names']):
+            if ant_name not in flaginfo_data.ant_names: flag_indexes.append(ant_ind + 1)
+
+    ##tiles are named by their index (1 indexed as per uvfits standard)
+    else:
+        for ant_name in range(1, len(obs['baseline_info']['tile_names'])+1):
+            if ant_name not in flaginfo_data.ant_names: flag_indexes.append(ant_name)
+
+    if len(flag_indexes) > 0:
+        logger.info(f"Found flagged tiles {flag_indexes} in the data, flagging from the model")
 
     ##This gives us true/false if the visibilities should be included
     ##for a single time step based on antenna1 and antenna2
