@@ -231,9 +231,7 @@ def histogram(data : np.ndarray, bin_size = 1, num_bins = None, min = None, max 
         min = np.min(data)
     # If the maximum has not been set, set it
     # Check if the max argument was used, set to True, if we set max here by data turn it off.
-    max_arg = True
     if max is None:
-        max_arg = False 
         max = np.max(data)
     # If the number of bins has been set use that
     if num_bins is not None:
@@ -242,7 +240,7 @@ def histogram(data : np.ndarray, bin_size = 1, num_bins = None, min = None, max 
     bins = get_bins(min, max, bin_size)
     # However, if we set a max, we must adjust the last bin to max according to IDL specifications
     # And we only do this in the case max was by an argument
-    if (bins[-1] > max and max_arg) or num_bins is not None:
+    if (bins[-1] > max) or num_bins is not None:
         bins = bins[:-1]
     # Flatten the data
     data_flat = data.flatten()

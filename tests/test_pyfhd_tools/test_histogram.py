@@ -14,7 +14,7 @@ def data_dir():
 def full_data_dir():
     return Path(env.get('PYFHD_TEST_PATH'), 'full_size_histogram')
 
-def test_idl_example(data_dir) :
+def test_idl_example(data_dir: Path) :
     """
     This test is based on the example from the IDL documentation.
     This ensures we get the same behaviour as an example everybody can see.
@@ -27,7 +27,7 @@ def test_idl_example(data_dir) :
     assert np.array_equal(hist, expected_hist)
     assert np.array_equal(indices, expected_indices)
 
-def test_one_hundred_nums(data_dir):
+def test_one_hundred_nums(data_dir: Path):
     """
     This is a basic test of an array with numbers 0 to 99 in increasing
     order.
@@ -37,11 +37,12 @@ def test_one_hundred_nums(data_dir):
     data, expected_hist, expected_indices = get_data(data_dir, 'hundred_ints.npy', 'hundred_ints_hist_bin50.npy', 'hundred_ints_inds_bin50.npy')
     # Now that we're using numba it doesn't support every type, set it to more standard NumPy or Python types
     data = data.astype(int)
+    print(data)
     hist, _, indices = histogram(data, bin_size = 50)
     assert np.array_equal(hist, expected_hist)
     assert np.array_equal(indices, expected_indices)
 
-def test_one_hundred_ten_bins(data_dir):
+def test_one_hundred_ten_bins(data_dir: Path):
      # Read the histogram file
     data, expected_hist, expected_indices = get_data(data_dir, 'hundred_ints.npy', 'hundred_ints_hist_nbin10.npy', 'hundred_ints_inds_nbin10.npy')
     # Now that we're using numba it doesn't support every type, set it to more standard NumPy or Python types
@@ -51,7 +52,7 @@ def test_one_hundred_ten_bins(data_dir):
     assert np.array_equal(hist, expected_hist)
     assert np.array_equal(indices, expected_indices)
 
-def test_min(data_dir):
+def test_min(data_dir: Path):
     # Read the histogram file
     data, expected_hist, expected_indices = get_data(data_dir, 'hundred_ints.npy', 'hundred_ints_hist_min10.npy', 'hundred_ints_inds_min10.npy')
     # Now that we're using numba it doesn't support every type, set it to more standard NumPy or Python types
@@ -60,7 +61,7 @@ def test_min(data_dir):
     assert np.array_equal(hist, expected_hist)
     assert np.array_equal(indices, expected_indices)
 
-def test_max(data_dir):
+def test_max(data_dir: Path):
     # Read the histogram file
     data, expected_hist, expected_indices = get_data(data_dir, 'hundred_ints.npy', 'hundred_ints_hist_max50.npy', 'hundred_ints_inds_max50.npy')
     # Now that we're using numba it doesn't support every type, set it to more standard NumPy or Python types
@@ -69,7 +70,7 @@ def test_max(data_dir):
     assert np.array_equal(hist, expected_hist)
     assert np.array_equal(indices, expected_indices)
 
-def test_min_max(data_dir):
+def test_min_max(data_dir: Path):
     # Read the histogram file
     data, expected_hist, expected_indices = get_data(data_dir, 'hundred_ints.npy', 'hundred_ints_hist_min10_max55.npy', 'hundred_ints_inds_min10_max55.npy')
     # Now that we're using numba it doesn't support every type, set it to more standard NumPy or Python types
@@ -78,7 +79,7 @@ def test_min_max(data_dir):
     assert np.array_equal(hist, expected_hist)
     assert np.array_equal(indices, expected_indices)
 
-def test_one_max(data_dir):
+def test_one_max(data_dir: Path):
     # Read the histogram file
     data, expected_hist, expected_indices = get_data(data_dir, 'hundred_ints.npy', 'hundred_ints_hist_binsize1_max55.npy', 'hundred_ints_inds_binsize1_max55.npy')
     # Now that we're using numba it doesn't support every type, set it to more standard NumPy or Python types
@@ -87,7 +88,7 @@ def test_one_max(data_dir):
     assert np.array_equal(hist, expected_hist)
     assert np.array_equal(indices, expected_indices)
 
-def test_normals(data_dir):
+def test_normals(data_dir: Path):
     # Read the histogram file
     data, expected_hist, expected_indices = get_data(data_dir, 'normals.npy', 'normals_hist.npy', 'normals_inds.npy')
     # Now that we're using numba it doesn't support every type, set it to more standard NumPy or Python types
@@ -96,7 +97,7 @@ def test_normals(data_dir):
     assert np.array_equal(hist, expected_hist)
     assert np.array_equal(indices, expected_indices)
 
-def test_normals_binsize(data_dir):
+def test_normals_binsize(data_dir: Path):
     # Read the histogram file
     data, expected_hist, expected_indices = get_data(data_dir, 'normals.npy', 'normals_hist_binsize025.npy', 'normals_inds_binsize025.npy')
     # Now that we're using numba it doesn't support every type, set it to more standard NumPy or Python types
@@ -105,7 +106,7 @@ def test_normals_binsize(data_dir):
     assert np.array_equal(hist, expected_hist)
     assert np.array_equal(indices, expected_indices)
 
-def test_normals_min_max(data_dir):
+def test_normals_min_max(data_dir: Path):
     # Read the histogram file
     data, expected_hist, expected_indices = get_data(data_dir, 'normals.npy', 'normals_hist_min_max.npy', 'normals_inds_binsize_min_max.npy')
     # Now that we're using numba it doesn't support every type, set it to more standard NumPy or Python types
@@ -114,7 +115,7 @@ def test_normals_min_max(data_dir):
     assert np.array_equal(hist, expected_hist)
     assert np.array_equal(indices, expected_indices)
 
-def test_normals_times_10(data_dir):
+def test_normals_times_10(data_dir: Path):
     # Read the histogram file
     data, expected_hist, expected_indices = get_data(data_dir, 'normals.npy', 'normals_hist_times10.npy', 'normals_inds_times10.npy')
     data = data * 10
@@ -124,7 +125,7 @@ def test_normals_times_10(data_dir):
     assert np.array_equal(hist, expected_hist)
     assert np.array_equal(indices, expected_indices)
 
-def test_billion(data_dir):
+def test_billion(data_dir: Path):
     # Read the histogram file
     data, expected_hist, expected_indices = get_data(data_dir, 'one_billion.npy', 'one_billion_hist.npy', 'one_billion_inds.npy')
     # Now that we're using numba it doesn't support every type, set it to more standard NumPy or Python types
@@ -133,7 +134,7 @@ def test_billion(data_dir):
     assert np.array_equal(hist, expected_hist)
     assert np.array_equal(indices, expected_indices)
 
-def test_billion_floats(data_dir):
+def test_billion_floats(data_dir: Path):
     # Read the histogram file
     data, expected_hist, expected_indices = get_data(data_dir, 'one_billion_floats.npy', 'one_billion_floats_hist.npy', 'one_billion_floats_inds.npy')
     # Now that we're using numba it doesn't support every type, set it to more standard NumPy or Python types
@@ -142,7 +143,7 @@ def test_billion_floats(data_dir):
     assert np.array_equal(hist, expected_hist)
     assert np.array_equal(indices, expected_indices)
 
-def test_full_size(full_data_dir):
+def test_full_size(full_data_dir: Path):
     # Read the histogram file
     data, binsize, min, expected_hist, expected_indices = get_data_items(
         full_data_dir,
