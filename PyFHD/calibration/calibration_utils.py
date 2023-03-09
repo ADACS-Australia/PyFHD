@@ -1,5 +1,11 @@
 import numpy as np
 
+def vis_extract_autocorr():
+    pass
+
+def vis_cal_auto_init():
+    pass
+
 def calculate_adaptive_gain(gain_list, convergence_list, iter, base_gain, final_convergence_estimate = None):
     """
     TODO: Docstring

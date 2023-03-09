@@ -6,7 +6,7 @@ from PyFHD.pyfhd_tools.pyfhd_setup import pyfhd_parser, pyfhd_setup
 from PyFHD.data_setup.obs import create_obs
 from PyFHD.data_setup.uvfits import extract_header, create_params, extract_visibilities, create_layout
 from PyFHD.pyfhd_tools.pyfhd_utils import simple_deproject_w_term
-from PyFHD.beam_setup.beam import create_psf
+from PyFHD.calibration.calibrate import calibrate
 from PyFHD.use_idl_fhd.run_idl_fhd import run_IDL_calibration_only, run_IDL_convert_gridding_to_healpix_images
 from PyFHD.use_idl_fhd.use_idl_outputs import run_gridding_on_IDL_outputs
 import logging
@@ -85,12 +85,10 @@ def main_python_only(pyfhd_config : dict, logger : logging.RootLogger):
         vis_arr = simple_deproject_w_term(obs, params, vis_arr, pyfhd_config['deproject_w_term'], logger)
         w_term_end = time.time()
         _print_time_diff(w_term_start, w_term_end, 'Simple W-Term Deprojection Applied', logger)
-    
-    # Beam Setup
-    beam_start = time.time()
-    psf, antenna = create_psf(pyfhd_config, obs)
-    beam_end = time.time()
-    _print_time_diff(beam_start, beam_end, 'Beam Setup', logger)
+
+    # Skipped initializing the cal structure as it mostly just copies values from the obs, params, config and the skymodel from FHD
+    # However, there may be a resulting cal structure for logging and output purposes depending on calibration translation.
+    vis_arr, vis_model_arr, cal = calibrate(obs, params, vis_arr, vis_weights, pyfhd_config)
 
     # np.save('../notebooks/pyfhd_config.npy', pyfhd_config, allow_pickle=True)
 
