@@ -16,12 +16,7 @@ def calibrate(obs: dict, params: dict, vis_arr: np.array, vis_weights: np.array,
     # Auto Initialize in FHD is set to 1, and is always true
     cal["gain"] = vis_cal_auto_init(obs, vis_arr, vis_model_arr)
     # Calculate auto-correlation visibilities 
-    vis_auto_model = vis_extract_autocorr(obs, vis_model_arr, auto_tile_i = auto_tile_i)
-
-    # Setup tile_A_i and tile_B_i
-    tile_A_i = obs['baseline_info']['tile_A'] - 1
-    tile_B_i = obs["baseline_info"]["tile_B"] - 1
-    tile_A_i = tile_A_i[0:obs["nbaselines"]]
+    vis_auto_model, auto_tile_i = vis_extract_autocorr(obs, vis_model_arr, auto_tile_i = auto_tile_i)
 
     # Do the calibration with vis_calibrate_subroutine 
     # TODO: vis_calibrate_subroutine outputs cal structure in FHD, likely will need to change here, or for the cal dictionary to be passed in and edited
