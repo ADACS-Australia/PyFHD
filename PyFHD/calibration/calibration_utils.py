@@ -1,6 +1,6 @@
 import numpy as np
 from typing import Tuple
-from PyFHD.pyfhd_tools.pyfhd_utils import extract_subarray
+from PyFHD.pyfhd_tools.pyfhd_utils import extract_subarray, resistant_mean
 
 
 def vis_extract_autocorr(obs: dict, vis_arr: np.array, time_average = True, auto_tile_i = None) -> Tuple[np.array, np.array]:
@@ -52,8 +52,39 @@ def vis_extract_autocorr(obs: dict, vis_arr: np.array, time_average = True, auto
         # Return auto_corr as 0 and auto_tile_i as an empty array
         return np.zeros(1), np.zeros(0)
 
-def vis_cal_auto_init():
-    pass
+def vis_cal_auto_init(obs : dict, vis_arr: np.array, vis_model_arr: np.array, vis_auto: np.array, vis_auto_model: np.array, auto_tile_i: np.array) -> np.array:
+    """
+    TODO: Docstring
+
+    Parameters
+    ----------
+    obs : dict
+        _description_
+    vis_arr : np.array
+        _description_
+    vis_model_arr : np.array
+        _description_
+    vis_auto : np.array
+        _description_
+    vis_auto_model : np.array
+        _description_
+    auto_tile_i : np.array
+        _description_
+
+    Returns
+    -------
+    np.array
+        _description_
+    """
+    n_pol = min(obs["n_pol"], 2)
+    auto_scale = np.zeros(n_pol)
+    freq_i_use = np.where(obs["baseline_info"]["freq_use"])
+    for pol_i in range(n_pol):
+        res_mean_data = resistant_mean(vis_arr[pol_i, :, freq_i_use], 2)
+        res_mean_model = resistant_mean(vis_model_arr[pol_i, :, freq_i_use], 2)
+        auto_scale[pol_i] = np.sqrt(res_mean_data / res_mean_model)
+    auto_gain = np.zeros(n_pol)
+    return auto_gain
 
 def vis_calibration_flag():
     pass
