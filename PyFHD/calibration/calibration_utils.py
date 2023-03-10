@@ -6,6 +6,27 @@ def vis_extract_autocorr():
 def vis_cal_auto_init():
     pass
 
+def vis_calibration_flag():
+    pass
+
+def vis_cal_bandpass():
+    pass
+
+def vis_cal_polyfit():
+    pass
+
+def vis_cal_combine(): 
+    pass
+
+def vis_cal_auto_fit():
+    pass
+
+def vis_cal_subtract():
+    pass
+
+def vis_calibration_apply():
+    pass
+
 def calculate_adaptive_gain(gain_list, convergence_list, iter, base_gain, final_convergence_estimate = None):
     """
     TODO: Docstring
