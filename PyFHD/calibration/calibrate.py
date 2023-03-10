@@ -2,6 +2,7 @@ import numpy as np
 from typing import Tuple
 from PyFHD.calibration.calibration_utils import vis_extract_autocorr, vis_cal_auto_init, vis_calibration_flag, vis_cal_bandpass, vis_cal_polyfit, vis_cal_combine, vis_cal_auto_fit, vis_cal_subtract, vis_calibration_apply
 from PyFHD.calibration.vis_calibrate_subroutine import vis_calibrate_subroutine
+from PyFHD.pyfhd_tools.pyfhd_utils import extract_subarray, resistant_mean
 
 def calibrate(obs: dict, params: dict, vis_arr: np.array, vis_weights: np.array, pyfhd_config: dict) -> Tuple[np.array, np.array, dict] :
     # Initialize cal dict
@@ -59,7 +60,23 @@ def calibrate(obs: dict, params: dict, vis_arr: np.array, vis_weights: np.array,
         freq_use_i = np.where(obs["baseline_info"]["freq_use"])[0]
         if (tile_use_i.size == 0 or freq_use_i.size == 0):
             continue
-        
+        gain_ref = extract_subarray(cal["gain"][pol_i], freq_use_i, tile_use_i)
+        gain_res = extract_subarray(cal_res["gain"][pol_i], freq_use_i, tile_use_i)
+        cal_gain_avg[pol_i] = np.mean(np.abs(gain_ref))
+        cal_res_avg[pol_i] = np.mean(np.abs(gain_res))
+        res_mean = resistant_mean(np.abs(gain_res), 2)
+        cal_res_restrict[pol_i] = res_mean
+        cal_res_stddev[pol_i] = np.std(np.abs(gain_res))
+    
+    if ("mean_gain" in cal):
+        cal["mean_gain"] = cal_gain_avg
+    if ("mean_gain_residual" in cal):
+        cal["mean_gain_residual"] = cal_res_avg
+    if ("mean_gain_restrict" in cal):
+        cal["mean_gain_restrict"] = cal_res_restrict
+    if ("stddev_gain_residual" in cal):
+        cal["stddev_gain_residual"] = cal_res_stddev
+
 
     # Return the calibrated visibility array
     return vis_arr, vis_model_arr, cal
