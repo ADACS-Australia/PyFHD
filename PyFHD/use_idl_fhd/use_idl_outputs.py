@@ -316,3 +316,10 @@ def run_gridding_on_IDL_outputs(pyfhd_config : dict, IDL_output_dir : str,
     after = time.time()
             
     logger.info(f"Gridding/saving outputs took {(after - before) / 60.0:.1f} minutes")
+
+    ##We're going to need the `obs` IDL sav file used for the data that's
+    ##been gridded later on in taking these gridded outputs and converting
+    ##into FHD healpix images. Otherwise the flags created during calibration
+    ##are not preserved
+    shutil.copy(f"{IDL_output_dir}/metadata/{pyfhd_config['obs_id']}_obs.sav",
+                gridding_dir)

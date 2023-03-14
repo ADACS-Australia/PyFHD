@@ -498,7 +498,7 @@ def pyfhd_logger(pyfhd_config: dict) -> Tuple[logging.RootLogger, str]:
     if pyfhd_config['description'] is None:
         log_name = "pyfhd_" + log_time
     else:
-        log_name = "pyfhd_" + pyfhd_config['description'].replace(' ', '_').lower() + '_' + log_time
+        log_name = "pyfhd_" + pyfhd_config['description'].replace(' ', '_') + '_' + log_time
     pyfhd_config['commit'] = commit
     pyfhd_config['log_name'] = log_name
     pyfhd_config['log_time'] = log_time
@@ -557,7 +557,7 @@ def pyfhd_logger(pyfhd_config: dict) -> Tuple[logging.RootLogger, str]:
     if pyfhd_config['description'] is None:
         dir_name = "pyfhd_" + log_time
     else:
-        dir_name = "pyfhd_" + pyfhd_config['description'].replace(' ', '_').lower()
+        dir_name = "pyfhd_" + pyfhd_config['description'].replace(' ', '_')
 
     output_dir = Path(pyfhd_config['output_path'], dir_name)
     if Path.is_dir(output_dir):

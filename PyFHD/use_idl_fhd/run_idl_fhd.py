@@ -403,7 +403,7 @@ def run_IDL_convert_gridding_to_healpix_images(pyfhd_config : dict,
     
     output_dir = f"{pyfhd_config['output_path']}/{pyfhd_config['top_level_dir']}"
 
-    logger.info("Writing IDL .pro files to run IDL FHD calibration only")
+    logger.info("Writing IDL .pro files to image PyFHD gridded outputs")
 
     ##Convert the lovely arguments into pyfhd_config.pro to feed into IDL 
     convert_argdict_to_pro(pyfhd_config, output_dir)
