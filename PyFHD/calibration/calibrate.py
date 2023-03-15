@@ -7,6 +7,8 @@ from PyFHD.pyfhd_tools.pyfhd_utils import extract_subarray, resistant_mean
 def calibrate(obs: dict, params: dict, vis_arr: np.array, vis_weights: np.array, pyfhd_config: dict) -> Tuple[np.array, np.array, dict] :
     # Initialize cal dict
     cal = {}
+    # Calculate this here as it's used throughout the calibration process
+    cal["n_pol"] = min(obs["n_pol"], 2)
     
     # TODO: Get the vis_model_arr from sources, This will be the code from the branch model_transfer, add a placeholder for now
     vis_model_arr = np.array([])
@@ -16,7 +18,7 @@ def calibrate(obs: dict, params: dict, vis_arr: np.array, vis_weights: np.array,
     # Calculate auto-correlation visibilities 
     vis_auto_model, auto_tile_i = vis_extract_autocorr(obs, vis_model_arr, auto_tile_i = auto_tile_i)
     # Auto Initialize in FHD is set to 1, and is always true
-    cal["gain"] = vis_cal_auto_init(obs, vis_arr, vis_model_arr, vis_auto, vis_auto_model, auto_tile_i)
+    cal["gain"] = vis_cal_auto_init(obs, cal, vis_arr, vis_model_arr, vis_auto, vis_auto_model, auto_tile_i)
     
 
     # Do the calibration with vis_calibrate_subroutine 

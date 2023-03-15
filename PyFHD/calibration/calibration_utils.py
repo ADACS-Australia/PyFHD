@@ -1,6 +1,6 @@
 import numpy as np
 from typing import Tuple
-from PyFHD.pyfhd_tools.pyfhd_utils import extract_subarray, resistant_mean
+from PyFHD.pyfhd_tools.pyfhd_utils import extract_subarray, resistant_mean, weight_invert
 
 
 def vis_extract_autocorr(obs: dict, vis_arr: np.array, time_average = True, auto_tile_i = None) -> Tuple[np.array, np.array]:
@@ -52,13 +52,15 @@ def vis_extract_autocorr(obs: dict, vis_arr: np.array, time_average = True, auto
         # Return auto_corr as 0 and auto_tile_i as an empty array
         return np.zeros(1), np.zeros(0)
 
-def vis_cal_auto_init(obs : dict, vis_arr: np.array, vis_model_arr: np.array, vis_auto: np.array, vis_auto_model: np.array, auto_tile_i: np.array) -> np.array:
+def vis_cal_auto_init(obs : dict, cal : dict, vis_arr: np.array, vis_model_arr: np.array, vis_auto: np.array, vis_auto_model: np.array, auto_tile_i: np.array) -> np.array:
     """
     TODO: Docstring
 
     Parameters
     ----------
     obs : dict
+        _description_
+    cal : dict
         _description_
     vis_arr : np.array
         _description_
@@ -73,21 +75,62 @@ def vis_cal_auto_init(obs : dict, vis_arr: np.array, vis_model_arr: np.array, vi
 
     Returns
     -------
-    np.array
+    auto_gain : np.array
         _description_
     """
-    n_pol = min(obs["n_pol"], 2)
-    auto_scale = np.zeros(n_pol)
+    # TODO: This should be a list, or ideally an numpy array with a known shape, change this line to reflect this
+    auto_scale = np.zeros(cal["n_pol"])
     freq_i_use = np.where(obs["baseline_info"]["freq_use"])
-    for pol_i in range(n_pol):
+    for pol_i in range(cal["n_pol"]):
         res_mean_data = resistant_mean(vis_arr[pol_i, :, freq_i_use], 2)
         res_mean_model = resistant_mean(vis_model_arr[pol_i, :, freq_i_use], 2)
         auto_scale[pol_i] = np.sqrt(res_mean_data / res_mean_model)
-    auto_gain = np.zeros(n_pol)
+    # TODO: This should be a list, or ideally an numpy array with a known shape, change this line to reflect this
+    auto_gain = np.zeros(cal["n_pol"], dtype=np.complex128)
+    for pol_i in range(cal["n_pol"]):
+        gain_arr = np.zeros([obs["n_tile"], obs["n_freq"]], dtype=np.complex128)
+        for freq_i in range(obs["n_freq"]):
+            for tile_i in range(auto_tile_i.size):
+                # TODO: Check size of gain_single in FHD and compare against what's here
+                gain_arr[auto_tile_i[tile_i], freq_i] = np.sqrt(vis_auto[pol_i, tile_i, freq_i] * weight_invert(vis_model_arr[pol_i, tile_i, freq_i]))
+        gain_arr *= auto_scale[pol_i] * weight_invert(np.mean(gain_arr))
+        gain_arr[np.isnan(gain_arr)] = 1
+        gain_arr[np.where(gain_arr) <= 0] = 1
+        auto_gain[pol_i] = gain_arr
     return auto_gain
 
-def vis_calibration_flag():
-    pass
+def vis_calibration_flag(obs: dict, cal: dict) -> dict:
+    """_summary_
+
+    Parameters
+    ----------
+    obs : dict
+        _description_
+    cal : dict
+        _description_
+
+    Returns
+    -------
+    obs: dict
+        _description_
+    """
+    amp_sigma_threshold = 5
+    amp_threshold = 2
+    phase_sigma_threshold = 5
+    for pol_i in range(cal["n_pol"]):
+        tile_use_i0 = np.where(obs["baseline_info"]["tile_use"])
+        freq_use_i0 = np.where(obs["baseline_info"]["freq_use"])
+        # TODO: adjust depending on size given by vis_cal_auto_init
+        gain = cal["gain"][pol_i]
+        phase = np.arctan2(gain.imag, gain.real)
+        amp = np.abs(gain)
+
+        # first flag based on overall amplitude
+        # extract_subarray is not being used as it was FHD's way of taking the fact that
+        # IDL's indexing can be weird and won't allow to index the resut
+        # TODO: May need to adjust the indexing to match IDL as tile_use_i0 and freq_use_i0 use np.where on gain, which will be multidimensional as well
+        amp_sub = amp[tile_use_i0[0],:][: , freq_use_i0[0]]
+
 
 def vis_cal_bandpass():
     pass

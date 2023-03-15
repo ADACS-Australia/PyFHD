@@ -829,8 +829,6 @@ def simple_deproject_w_term(obs : dict, params : dict, vis_arr : np.ndarray, dir
 
     return vis_arr
 
-def extract_subarray():
-    pass
 
 def resistant_mean():
     pass
