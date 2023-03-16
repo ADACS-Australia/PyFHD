@@ -1,10 +1,11 @@
 import numpy as np
 from typing import Tuple
+from logging import RootLogger
 from PyFHD.calibration.calibration_utils import vis_extract_autocorr, vis_cal_auto_init, vis_calibration_flag, vis_cal_bandpass, vis_cal_polyfit, vis_cal_combine, vis_cal_auto_fit, vis_cal_subtract, vis_calibration_apply
 from PyFHD.calibration.vis_calibrate_subroutine import vis_calibrate_subroutine
 from PyFHD.pyfhd_tools.pyfhd_utils import extract_subarray, resistant_mean
 
-def calibrate(obs: dict, params: dict, vis_arr: np.array, vis_weights: np.array, pyfhd_config: dict) -> Tuple[np.array, np.array, dict] :
+def calibrate(obs: dict, params: dict, vis_arr: np.array, vis_weights: np.array, pyfhd_config: dict, logger: RootLogger) -> Tuple[np.array, np.array, dict] :
     # Initialize cal dict
     cal = {}
     # Calculate this here as it's used throughout the calibration process
@@ -24,7 +25,7 @@ def calibrate(obs: dict, params: dict, vis_arr: np.array, vis_weights: np.array,
     # Do the calibration with vis_calibrate_subroutine 
     # TODO: vis_calibrate_subroutine outputs cal structure in FHD, likely will need to change here, or for the cal dictionary to be passed in and edited
     cal = vis_calibrate_subroutine(vis_arr, vis_model_arr, vis_weights, obs, cal)
-    obs = vis_calibration_flag(obs, cal)
+    obs = vis_calibration_flag(obs, cal, logger)
     cal_base = cal.copy()
 
     # Perform bandpass (amp + phase per fine freq) and polynomial fitting (low order amp + phase fit plus cable reflection fit)

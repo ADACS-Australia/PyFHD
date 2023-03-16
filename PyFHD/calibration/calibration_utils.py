@@ -1,5 +1,6 @@
 import numpy as np
 from typing import Tuple
+from logging import RootLogger
 from PyFHD.pyfhd_tools.pyfhd_utils import extract_subarray, resistant_mean, weight_invert
 
 
@@ -99,7 +100,7 @@ def vis_cal_auto_init(obs : dict, cal : dict, vis_arr: np.array, vis_model_arr: 
         auto_gain[pol_i] = gain_arr
     return auto_gain
 
-def vis_calibration_flag(obs: dict, cal: dict) -> dict:
+def vis_calibration_flag(obs: dict, cal: dict, logger: RootLogger) -> dict:
     """_summary_
 
     Parameters
@@ -130,7 +131,29 @@ def vis_calibration_flag(obs: dict, cal: dict) -> dict:
         # IDL's indexing can be weird and won't allow to index the resut
         # TODO: May need to adjust the indexing to match IDL as tile_use_i0 and freq_use_i0 use np.where on gain, which will be multidimensional as well
         amp_sub = amp[tile_use_i0[0],:][: , freq_use_i0[0]]
-
+        # TODO: IDL MEDIAN dimension is 2, should be 0 here, but check
+        gain_freq_test = np.median(amp_sub, axis=0)
+        gain_freq_fom = np.std(amp_sub[:, 0: freq_use_i0[0].size])
+        amp_sub2 = amp_sub[tile_use_i0[0], :]
+        # Calculate the y values from a polynomial fit and keep the standard deviation of the error in gain_tile_fom
+        amp_sub2_fit = np.polynomial.polynomial.polyval(freq_use_i0[0],np.polynomial.Polynomial.fit(freq_use_i0[0], amp_sub2, deg=2).convert().coef)
+        gain_tile_fom = np.std(amp_sub2 - amp_sub2_fit)
+        gain_tile_avg = np.median(amp_sub2)
+        gain_freq_fom[np.isnan(gain_freq_fom)] = 0
+        gain_tile_fom[np.isnan(gain_tile_fom)] = 0
+        freq_cut_i = np.where(gain_freq_fom == 0)
+        freq_uncut_i = np.nonzero(gain_freq_fom)
+        if (freq_cut_i[0].size > 0):
+            obs["baseline_info"]["freq_use"][freq_use_i0][0][freq_cut_i] = 0
+        tile_cut_i = np.where(gain_tile_fom == 0)
+        tile_uncut_i = np.nonzero(gain_tile_fom)
+        if (tile_cut_i[0].size > 0):
+            obs["baseline_info"]["tile_use"][tile_use_i0][0][tile_cut_i] = 0
+        if (freq_uncut_i[0].size > 0 or tile_uncut_i[0].size):
+            # TODO: Check message is correct
+            logger.error("The frequency and tile flagging inside claibration found some values not detected in previous flagging or calibration")
+        
+        
 
 def vis_cal_bandpass():
     pass

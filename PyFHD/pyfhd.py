@@ -88,7 +88,7 @@ def main_python_only(pyfhd_config : dict, logger : logging.RootLogger):
 
     # Skipped initializing the cal structure as it mostly just copies values from the obs, params, config and the skymodel from FHD
     # However, there may be a resulting cal structure for logging and output purposes depending on calibration translation.
-    vis_arr, vis_model_arr, cal = calibrate(obs, params, vis_arr, vis_weights, pyfhd_config)
+    vis_arr, vis_model_arr, cal = calibrate(obs, params, vis_arr, vis_weights, pyfhd_config, logger)
 
     # np.save('../notebooks/pyfhd_config.npy', pyfhd_config, allow_pickle=True)
 
