@@ -1,7 +1,7 @@
 import numpy as np
 from typing import Tuple
 from logging import RootLogger
-from PyFHD.pyfhd_tools.pyfhd_utils import extract_subarray, resistant_mean, weight_invert
+from PyFHD.pyfhd_tools.pyfhd_utils import resistant_mean, weight_invert
 
 
 def vis_extract_autocorr(obs: dict, vis_arr: np.array, time_average = True, auto_tile_i = None) -> Tuple[np.array, np.array]:
