@@ -29,7 +29,7 @@ beam-offset-time : 56
 # Calibration
 calibrate-visibilities : true
 cable-bandpass-fit : true # Depends on instrument cable length text file
-cal-bp-transfer : ~ # 'mwa_eor0_highband_season1_cable_bandpass.fits' (FHD Default)
+cal-bp-transfer : 'mwa_eor0_highband_season1_cable_bandpass.fits' # (FHD Default)
 calibration-polyfit : true
 allow-sidelobe-cal-sources : true
 cal-amp-degree-fit : 2

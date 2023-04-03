@@ -2,6 +2,9 @@ import numpy as np
 from typing import Tuple
 from logging import RootLogger
 from PyFHD.pyfhd_tools.pyfhd_utils import resistant_mean, weight_invert
+from copy import deepcopy
+from astropy.io import fits
+from pathlib import Path
 
 
 def vis_extract_autocorr(obs: dict, vis_arr: np.array, time_average = True, auto_tile_i = None) -> Tuple[np.array, np.array]:
@@ -40,8 +43,10 @@ def vis_extract_autocorr(obs: dict, vis_arr: np.array, time_average = True, auto
                     baseline_i = np.where(auto_tile_i == auto_tile_i_single[tile_i])
                     baseline_i = baseline_i[time_inds]
                     if (time_inds[0].size > 1): 
+                        # TODO: Replace extract_subarray
                         auto_single[tile_i, :] = np.sum(extract_subarray(auto_vals, np.arange(obs["n_freq"]), baseline_i)) / time_inds[0].size
                     else:
+                        # TODO: Replace extract_subarray
                         auto_single[tile_i, :] = extract_subarray(auto_vals, np.arange(obs["n_freq"]), baseline_i)
                 auto_vals = auto_single
             # TODO: Get size of auto_vals or do a python list of numpy arrays
@@ -100,7 +105,7 @@ def vis_cal_auto_init(obs : dict, cal : dict, vis_arr: np.array, vis_model_arr: 
         auto_gain[pol_i] = gain_arr
     return auto_gain
 
-def vis_calibration_flag(obs: dict, cal: dict, pyfhd_config: dict, logger: RootLogger) -> dict:
+def vis_calibration_flag(obs: dict, cal: dict, params: dict, pyfhd_config: dict, logger: RootLogger) -> dict:
     """
     TODO: Docstring
 
@@ -136,8 +141,6 @@ def vis_calibration_flag(obs: dict, cal: dict, pyfhd_config: dict, logger: RootL
         # IDL's indexing can be weird and won't allow to index the resut
         # TODO: May need to adjust the indexing to match IDL as tile_use_i and freq_use_i use np.where on gain, which will be multidimensional as well
         amp_sub = amp[tile_use_i[0],:][: , freq_use_i[0]]
-        # TODO: IDL MEDIAN dimension is 2, should be 0 here, but check
-        gain_freq_test = np.median(amp_sub, axis=0)
         gain_freq_fom = np.std(amp_sub[:, 0: freq_use_i[0].size])
         amp_sub2 = amp_sub[tile_use_i[0], :]
         # Calculate the y values from a polynomial fit and keep the standard deviation of the error in gain_tile_fom
@@ -216,10 +219,45 @@ def vis_calibration_flag(obs: dict, cal: dict, pyfhd_config: dict, logger: RootL
     # Return the obs with an updated baseline_info on the use of tiles and frequency
     return obs
 
+def transfer_bandpass(obs: dict, params: dict, cal: dict, pyfhd_config: dict, logger: RootLogger) -> Tuple(dict, dict):
+    # TODO: Get bandpass from fits file
+    cal_bandpass = {}
+    try:  
+        calfits = fits.open(Path(pyfhd_config['input_path'], pyfhd_config["cal_bp_transfer"]))
+        calfits[0].header
+    except FileNotFoundError as e:
+        logger.error(f"{pyfhd_config['cal_bp_transfer']} file wasn't found, skipping calibration bandpass transfer")
+        return {}, {}
+    cal_remainder = deepcopy(cal)
+    cal_remainder["gain"][0 : cal["n_pol"]] = cal["gain"][0 : cal["n_pol"]] / cal_bandpass["gain"][0 : cal["n_pol"]]
+    return cal_bandpass, cal_remainder
 
 
-def vis_cal_bandpass():
-    pass
+
+def vis_cal_bandpass(obs: dict, cal: dict, params: dict, pyfhd_config: dict, logger: RootLogger) -> Tuple(dict, dict):
+    freq_use = np.nonzero(obs["baseline_info"]["freq_use"])[0]
+    tile_use = np.nonzero(obs["baseline_info"]["tile_use"])[0]
+    nf_use = freq_use.size
+    nt_use = tile_use.size
+    n_pol = cal["gain"].size
+
+    # Initialize cal_bandpass and cal_remainder and transfer them in, if a file has been set (fits only supported right now)
+    cal_bandpass = {}
+    cal_remainder = {}
+    if (pyfhd_config["cal_bp_transfer"] is not None):
+        # TODO: Finish transfer_bandpass (code will be in calfits_read)
+        cal_bandpass, cal_remainder = transfer_bandpass(obs, params, cal, pyfhd_config, logger)
+        if (len(cal_bandpass.keys()) != 0 and len(cal_remainder.keys()) != 0):
+            logger.info(f"Calibration Bandpass FITS file {pyfhd_config['cal_bp_transfer']} transferred in for cal_bandpass and cal_remainder")
+            return cal_bandpass, cal_remainder
+
+     # These replace gain_arr_ptr_2 & 3 from FHD with better names
+    cal_bandpass_gain = np.empty(n_pol)
+    cal_remainder_gain = np.empty(n_pol)
+
+    if (pyfhd_config["cable_bandpass_fit"]):
+        pass
+
 
 def vis_cal_polyfit():
     pass

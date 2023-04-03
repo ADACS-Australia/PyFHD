@@ -30,7 +30,7 @@ def calibrate(obs: dict, params: dict, vis_arr: np.array, vis_weights: np.array,
 
     # Perform bandpass (amp + phase per fine freq) and polynomial fitting (low order amp + phase fit plus cable reflection fit)
     if (pyfhd_config["bandpass-calibrate"]):
-        cal_bandpass, cal_remainder = vis_cal_bandpass(cal, obs, params)
+        cal_bandpass, cal_remainder = vis_cal_bandpass(obs, cal, params, pyfhd_config, logger)
 
         if (pyfhd_config["calibration-polyfit"]):
             cal_polyfit = vis_cal_polyfit(cal_remainder, obs)
