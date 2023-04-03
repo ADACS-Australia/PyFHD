@@ -5,6 +5,7 @@ from PyFHD.pyfhd_tools.pyfhd_utils import resistant_mean, weight_invert
 from copy import deepcopy
 from astropy.io import fits
 from pathlib import Path
+from PyFHD.pyfhd_tools.pyfhd_utils import idl_argunique
 
 
 def vis_extract_autocorr(obs: dict, vis_arr: np.array, time_average = True, auto_tile_i = None) -> Tuple[np.array, np.array]:
@@ -219,12 +220,11 @@ def vis_calibration_flag(obs: dict, cal: dict, params: dict, pyfhd_config: dict,
     # Return the obs with an updated baseline_info on the use of tiles and frequency
     return obs
 
-def transfer_bandpass(obs: dict, params: dict, cal: dict, pyfhd_config: dict, logger: RootLogger) -> Tuple(dict, dict):
-    # TODO: Get bandpass from fits file
+def transfer_bandpass(obs: dict, params: dict, cal: dict, pyfhd_config: dict, logger: RootLogger) -> Tuple[dict, dict]:
+    # TODO: Get bandpass from fits file and process the data_array
     cal_bandpass = {}
     try:  
         calfits = fits.open(Path(pyfhd_config['input_path'], pyfhd_config["cal_bp_transfer"]))
-        calfits[0].header
     except FileNotFoundError as e:
         logger.error(f"{pyfhd_config['cal_bp_transfer']} file wasn't found, skipping calibration bandpass transfer")
         return {}, {}
@@ -234,12 +234,14 @@ def transfer_bandpass(obs: dict, params: dict, cal: dict, pyfhd_config: dict, lo
 
 
 
-def vis_cal_bandpass(obs: dict, cal: dict, params: dict, pyfhd_config: dict, logger: RootLogger) -> Tuple(dict, dict):
+def vis_cal_bandpass(obs: dict, cal: dict, params: dict, pyfhd_config: dict, logger: RootLogger) -> Tuple[dict, dict]:
     freq_use = np.nonzero(obs["baseline_info"]["freq_use"])[0]
     tile_use = np.nonzero(obs["baseline_info"]["tile_use"])[0]
     nf_use = freq_use.size
     nt_use = tile_use.size
     n_pol = cal["gain"].size
+    # Set a flag for global bandpass, will turn true if too many tiles are flagged
+    global_bandpass = False
 
     # Initialize cal_bandpass and cal_remainder and transfer them in, if a file has been set (fits only supported right now)
     cal_bandpass = {}
@@ -256,8 +258,30 @@ def vis_cal_bandpass(obs: dict, cal: dict, params: dict, pyfhd_config: dict, log
     cal_remainder_gain = np.empty(n_pol)
 
     if (pyfhd_config["cable_bandpass_fit"]):
-        pass
+        # Using preexisting file to extract information about which tiles have which cable length
+        cable_len = np.loadtxt(Path(pyfhd_config["input"], pyfhd_config["cable-reflection-coefficients"]), skiprows=1)[:, 2].flatten()
+        # Taking tile information and cross-matching it with the nonflagged tiles array, resulting in nonflagged tile arrays grouped by cable length
+        cable_length_ref = np.unique(cable_len)
+        tile_use_arr = [] * cable_length_ref.size
+        for cable_i in range(cable_length_ref.size):
+            tile_use_arr[cable_i] = np.where((obs["baseline_info"]["tile_use"]) & (cable_len == cable_length_ref[cable_i]))
+            if (tile_use_arr[0].size == 0):
+                logger.warning("Too Many flagged tiles to implement bandpass cable averaging, using global bandpass.")
+                global_bandpass = True
+        # n_freq x 13 array. columns are frequency, 90m xx, 90m yy, 150m xx, 150m yy, 230m xx, 230m yy, 320m xx, 320m yy, 400m xx, 400m yy, 524m xx, 524m yy
+        bandpass_arr = np.zeros(obs["n_freq"], cal["n_pol"] * cable_length_ref.size + 1)
+        bandpass_arr[: 0] = cal["freq"]
+        bandpass_col_count = 0
+        for cable_i in range(cable_length_ref.size):
+            # This is an option to calibrate over all tiles to find the 'global' bandpass. It will be looped over by the number
+            # of cable lengths, and will redo the same calculation everytime. It is inefficient, but effective.
+            if global_bandpass:
+                tile_use_cable = tile_use
+            else:
+                tile_use_cable = tile_use_arr[cable_i]
 
+            for pol_i in range(cal["n_pol"]):
+                
 
 def vis_cal_polyfit():
     pass

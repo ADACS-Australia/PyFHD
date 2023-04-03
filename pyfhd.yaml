@@ -29,6 +29,7 @@ beam-offset-time : 56
 # Calibration
 calibrate-visibilities : true
 cable-bandpass-fit : true # Depends on instrument cable length text file
+cable-reflection-coefficients: 'mwa_cable_reflection_coefficients.txt' # Comes from FHD
 cal-bp-transfer : 'mwa_eor0_highband_season1_cable_bandpass.fits' # (FHD Default)
 calibration-polyfit : true
 allow-sidelobe-cal-sources : true
