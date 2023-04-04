@@ -7,6 +7,7 @@ from astropy.time import Time
 from astropy import units as u
 from math import pi
 from logging import RootLogger
+from scipy.stats import median_abs_deviation
 
 @njit
 def get_bins(min, max, bin_size):
@@ -829,6 +830,18 @@ def simple_deproject_w_term(obs : dict, params : dict, vis_arr : np.ndarray, dir
 
     return vis_arr
 
-def resistant_mean(array : np.ndarray, stddevs : int) -> Union[int, float, complex, np.number]:
-    stddev = np.std(array)
+def resistant_mean(array : np.ndarray, stddevs : int, scale=0.6745) -> Union[int, float, complex, np.number]:
+    # Calculate median of the array
+    median = np.median(array)
+    # Get the absolute deviation (residuals)
+    abs_dev = np.abs(array - median)
+    # Calculate Median Absolute Deviation
+    mad = np.median(abs_dev)
+    #  Use MAD and the number of deviations 
+    threshold = stddevs * mad
+    # Subset the array by the deviations and residuals
+    subarray = array[np.where(abs_dev <= threshold)]
+    # Get the mean of the subset array which contains no outliers
+    return np.mean(subarray)
+
 
