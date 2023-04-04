@@ -1,7 +1,7 @@
 import numpy as np
 from numba import njit
 from math import factorial
-from typing import Tuple
+from typing import Tuple, Union
 from astropy.coordinates import SkyCoord, EarthLocation, AltAz, ICRS
 from astropy.time import Time
 from astropy import units as u
@@ -829,6 +829,6 @@ def simple_deproject_w_term(obs : dict, params : dict, vis_arr : np.ndarray, dir
 
     return vis_arr
 
+def resistant_mean(array : np.ndarray, stddevs : int) -> Union[int, float, complex, np.number]:
+    stddev = np.std(array)
 
-def resistant_mean():
-    pass

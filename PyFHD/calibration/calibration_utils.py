@@ -232,8 +232,6 @@ def transfer_bandpass(obs: dict, params: dict, cal: dict, pyfhd_config: dict, lo
     cal_remainder["gain"][0 : cal["n_pol"]] = cal["gain"][0 : cal["n_pol"]] / cal_bandpass["gain"][0 : cal["n_pol"]]
     return cal_bandpass, cal_remainder
 
-
-
 def vis_cal_bandpass(obs: dict, cal: dict, params: dict, pyfhd_config: dict, logger: RootLogger) -> Tuple[dict, dict]:
     freq_use = np.nonzero(obs["baseline_info"]["freq_use"])[0]
     tile_use = np.nonzero(obs["baseline_info"]["tile_use"])[0]
@@ -247,7 +245,7 @@ def vis_cal_bandpass(obs: dict, cal: dict, params: dict, pyfhd_config: dict, log
     cal_bandpass = {}
     cal_remainder = {}
     if (pyfhd_config["cal_bp_transfer"] is not None):
-        # TODO: Finish transfer_bandpass (code will be in calfits_read)
+        # TODO: Finish transfer_bandpass (code to translate          will be in calfits_read.pro)
         cal_bandpass, cal_remainder = transfer_bandpass(obs, params, cal, pyfhd_config, logger)
         if (len(cal_bandpass.keys()) != 0 and len(cal_remainder.keys()) != 0):
             logger.info(f"Calibration Bandpass FITS file {pyfhd_config['cal_bp_transfer']} transferred in for cal_bandpass and cal_remainder")
@@ -281,7 +279,28 @@ def vis_cal_bandpass(obs: dict, cal: dict, params: dict, pyfhd_config: dict, log
                 tile_use_cable = tile_use_arr[cable_i]
 
             for pol_i in range(cal["n_pol"]):
-                
+                gain = cal["gain"][pol_i]
+                # gain2 is a temporary variable used in place of the gain array for an added layer of safety
+                if (cable_i == 0 and pol_i == 0):
+                    gain2 = np.zeros((gain.shape[0], gain[1], cal["n_pol"]), dtype = np.complex128)
+                # Only use gains from unflagged tiles and frequencies, and calculate the amplitude and phase
+                gain_use = cal["gain"][tile_use_cable,:][: , freq_use]
+                amp = np.abs(gain_use)
+                phase = np.arctan2(gain_use.imag, gain_use.real)
+                # amp2 is a temporary variable used in place of the amp array for an added layer of safety
+                amp2 = np.zeros(tile_use_cable.size, freq_use.size)
+                # This is the normalization loop for each tile. If the mean of gain amplitudes over all frequencies is nonzero, then divide
+                # the gain amplitudes by that number, otherwise make the gain amplitudes zero.
+                for tile_i in range(tile_use_cable.size):
+                    res_mean = resistant_mean(amp[tile_i, :], 2)
+                    if res_mean != 0:
+                        amp2[tile_i, :] = amp[tile_i, :] / res_mean
+                    else:
+                        amp2[tile_i, :] = 0
+                # This finds the normalized gain amplitude mean per frequency over all tiles, which is the final bandpass per cable group.
+                bandpass_single = np.zeros(freq_use.size)
+                for f_i in range(freq_use.size):
+                    res_mean = resistant_mean(amp2[:, f_i], 2)
 
 def vis_cal_polyfit():
     pass
