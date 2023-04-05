@@ -830,17 +830,58 @@ def simple_deproject_w_term(obs : dict, params : dict, vis_arr : np.ndarray, dir
 
     return vis_arr
 
-def resistant_mean(array : np.ndarray, stddevs : int, scale=0.6745) -> Union[int, float, complex, np.number]:
-    # Calculate median of the array
-    median = np.median(array)
+def resistant_mean(array : np.ndarray, deviations : int, mad_scale = 0.67449999999999999, sigma_coeff = np.array([0.020142000000000000, -0.23583999999999999 , 0.90722999999999998 , -0.15404999999999999])) -> Union[int, float, complex, np.number]:
+    """
+    The resistant_mean function translate the IDLAstro function resistant_mean[1]_ from IDL to Python using NumPy.
+    The values mad_scale and sigma_coeff are also retrieved from the same IDLAstro function when running in Double 
+    Precision Mode.
+
+    The resistant_mean gets the mean of an array which has had a median absolute deviation threshold applied to the
+    absolute deviations of the array to exclude outliers.
+
+    Parameters
+    ----------
+    array : np.ndarray
+        A 1 dimensional array of values, multidimensional arrays should be flattened before use
+    deviations : int
+        The number of median absolute deviations from the median we want use to exclude outliers
+    mad_scale : float, optional
+        The scale factor for the median absolute deviation, by default 0.67449999999999999
+    sigma_coeff : np.ndarray(dtype = np.float64), optional
+        The coefficients applied to the polynomial equation to the standard deviation of the points excluded by the outliers for additional exclusion, by default np.array([0.020142000000000000, -0.23583999999999999 , 0.90722999999999998 , -0.15404999999999999])
+
+    Returns
+    -------
+    resistant_mean : Number
+        The mean of the array with outliers excluded using median absolute deviation
+
+    References
+    ----------
+    .. [1] IDLAstro, RESISTANT_Mean, https://idlastro.gsfc.nasa.gov/ftp/pro/robust/resistant_mean.pro
+    """
+    # Calculate median of the real part of the array
+    median = np.median(array.real)
     # Get the absolute deviation (residuals)
     abs_dev = np.abs(array - median)
     # Calculate Median Absolute Deviation
-    mad = np.median(abs_dev)
+    # I could have used scipy's median_abs_deviation to get this, but by doing this manually I can guarantee the same behaviour as IDL
+    mad = np.median(abs_dev) / mad_scale
     #  Use MAD and the number of deviations 
-    threshold = stddevs * mad
+    mad_threshold = deviations * mad
     # Subset the array by the deviations and residuals
-    subarray = array[np.where(abs_dev <= threshold)]
+    no_outliers = array[np.where(abs_dev <= mad_threshold)]
+    # If the deviations is less than 4.5, change the sigma (standard deviation of the subarray) by using a polyval with set sigma coefficient
+    # This compensates Sigma for truncation
+    # Calculate the standard deviation of the rela and imag separately
+    sigma = np.std(no_outliers.real) + np.std(no_outliers.imag) * 1j
+    # Set the deviationsX to 1.0 if it's less than 1
+    deviationsX = max(deviations, 1.0)
+    if deviationsX <= 4.5:
+        sigma = sigma / np.polyval(sigma_coeff, deviationsX)
+    sigma_threshold = sigma * deviations
+    # Use the sigma threshold to again remove outliers from the array
+    # Also take the absolute value of sigma_threshold to get the same behaviour as LE in IDL
+    subarray = array[np.where(abs_dev <= np.abs(sigma_threshold))]
     # Get the mean of the subset array which contains no outliers
     return np.mean(subarray)
 
