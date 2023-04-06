@@ -839,6 +839,8 @@ def resistant_mean(array : np.ndarray, deviations : int, mad_scale = 0.674499999
     The resistant_mean gets the mean of an array which has had a median absolute deviation threshold applied to the
     absolute deviations of the array to exclude outliers.
 
+    If resistant_mean needs to be optimized, it can be vectorized easily enough
+
     Parameters
     ----------
     array : np.ndarray
