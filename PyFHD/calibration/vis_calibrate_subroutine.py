@@ -267,17 +267,21 @@ def vis_calibrate_subroutine(vis_ptr, vis_model_ptr, vis_weight_ptr, obs, cal,
                                 convergence[tile_use, fi] = conv_test[i - 1, fii]
                                 conv_iter_arr[tile_use, fi] = i - 1
                             break
-                    else:
-                        # Halt if the strict convergence is worse than most of the recent iterations
-                        divergence_test_1 = convergence_strict >= np.median(conv_test[i - divergence_history - 1 : i - 1, fii])
-                        # Also halt if the convergence gets significantly worse in one iteration
-                        divergence_test_2 = convergence_strict >= np.min(conv_test[0: i - 1, fii]) * divergence_factor
-                        if divergence_test_1 or divergence_test_2:
-                            # If both measures of convergence are getting worse, we need to stop.
-                            print("Calibration diverged at iteration: {}\nfor pol_i: {}\nfreq_i:\
-                                 {}\nConvergence was: {}\nthreshold was: {}".format(i, pol_i, fi, conv_test[i - 1, fii], conv_thresh))
-                            divergence_flag = True
-                            break
+                        else:
+                            # Halt if the strict convergence is worse than most of the recent iterations
+                            divergence_test_1 = convergence_strict >= np.median(conv_test[i - divergence_history : i, fii])
+                            # Also halt if the convergence gets significantly worse in one iteration
+                            divergence_test_2 = convergence_strict >= np.min(conv_test[0:i, fii]) * divergence_factor
+                            ## possible bug fix; should we really test for divergence when only
+                            ## fitting the phase? Fix below doesn't use the phase-only portion
+                            ## of fitting when checking for divergence
+                            # divergence_test_2 = convergence_strict >= np.min(conv_test[int(phase_fit_iter): i, fii]) * divergence_factor
+                            if divergence_test_1 or divergence_test_2:
+                                # If both measures of convergence are getting worse, we need to stop.
+                                print("Calibration diverged at iteration: {}\nfor pol_i: {}\nfreq_i:\
+                                    {}\nConvergence was: {}\nthreshold was: {}".format(i, pol_i, fi, conv_test[i - 1, fii], conv_thresh))
+                                divergence_flag = True
+                                break
             if divergence_flag:
                 # If the solution diverged, back up one iteration and use the previous solution
                 gain_curr = gain_old
@@ -304,6 +308,6 @@ def vis_calibrate_subroutine(vis_ptr, vis_model_ptr, vis_weight_ptr, obs, cal,
         cal_return['n_converged'][0][pol_i] = n_converged
         cal_return['conv_iter'][0][pol_i] = conv_iter_arr
 
-    n_vis_cal = np.size(np.nonzero(weight))
+    n_vis_cal = np.size(np.nonzero(weight)[0])
     cal_return['n_vis_cal'] = n_vis_cal
     return cal_return
