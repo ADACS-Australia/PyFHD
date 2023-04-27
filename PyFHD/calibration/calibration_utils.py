@@ -364,8 +364,79 @@ def vis_cal_bandpass(obs: dict, cal: dict, params: dict, pyfhd_config: dict, log
     cal_remainder["gain"] = cal_remainder_gain
     return cal_bandpass, cal_remainder
 
-def vis_cal_polyfit():
-    pass
+def vis_cal_polyfit(obs: dict, cal: dict, pyfhd_config: dict, logger: RootLogger) -> dict:
+    if (pyfhd_config['cal_reflection_mode_theory'] or 
+        pyfhd_config['cal_reflection_mode_file'] or 
+        pyfhd_config['cal_reflection_mode_delay'] or
+        pyfhd_config['cal_reflection_hyperresolve']
+    ):
+        if (pyfhd_config['cal_reflection_mode_theory'] and abs(pyfhd_config['cal_reflection_mode_theory']) > 1):
+            cal_mode_fit = pyfhd_config['cal_reflection_mode_theory']
+        else:
+            cal_mode_fit = 1
+    freq_use = np.where(obs['baseline_info']['freq_use'])
+    tile_use = np.where(obs['baseline_info']['tile_use'])
+
+    # If the amp_degree or phase_degree weren't used, then apply the defaults
+    if (not pyfhd_config['cal_amp_degree_fit']):
+        pyfhd_config['cal_amp_degree_fit'] = 2
+    if (not pyfhd_config['cal_phase_degree_fit']):
+        pyfhd_config['cal_phase_degree_fit'] = 1
+
+    # If you wish to find any steps that are outliers beyond 5sigma, and remove them add that code here.
+    # The cal_step_fit option isn't in the eor_defaults_wrapper or defined in the FHD dictionary.
+
+    # Polynomial fitting over the frequency band
+    gain_residual = np.empty((obs['n_tile'], cal['n_pol']))
+    # create amp_params with the shape of (n_pol, n_tile, amp_degree + 1)
+    cal['amp_params'] = np.empty((cal['n_pol'], obs['n_tile'], pyfhd_config["cal_amp_degree_fit"] + 1))
+    cal['phase_params'] = np.empty((cal['n_pol'], obs['n_tile'], pyfhd_config["cal_phase_degree_fit"] + 1))
+    for pol_i in range(cal['n_pol']):
+        gain_arr = cal['gain'][pol_i]
+        gain_amp = np.abs(gain_arr)
+        gain_phase = np.arctan2(gain_arr.imag, gain_arr.real)
+        for tile_i in range(obs['n_tile']):
+            gain = np.squeeze(gain_amp[tile_i, freq_use])
+            # Fit for amplitude
+            fit_params = np.polynomial.Polynomial.fit(freq_use, gain, deg = pyfhd_config["cal_amp_degree_fit"]).convert().coef
+            cal['amp_params'][pol_i, tile_i, :] = fit_params
+            gain_fit = np.zeros(obs['n_freq'])
+            for di in range(pyfhd_config['cal_amp_degree_fit']):
+                gain_fit += fit_params[di, :, :] * np.arange(obs['n_freq'])**di
+            # If you wish to fit pre and post digital gain jump separately for highband MWA data, do that here
+            # TODO: Check size of this line, maybe something is off?
+            gain_residual[tile_i, pol_i] = np.squeeze(gain_amp[tile_i, :] - gain_fit)
+
+            # Fit for phase
+            # TODO: Check the shape of gain_phase
+            phase_use = np.unwrap(np.squeeze(gain_phase[tile_i, freq_use]))
+            phase_params = np.polynomial.Polynomial.fit(freq_use, phase_use, pyfhd_config['cal_phase_degree_fit']).convert().coef
+            cal["phase_params"][pol_i, tile_i, :] = phase_params
+            phase_fit = np.zeros(obs['n_freq'])
+            for di in range(pyfhd_config['cal_phase_degree_fit']):
+                # TODO: Check shape
+                phase_fit += phase_params[di] * np.arange(obs['n_freq'])**di
+            gain_arr[tile_i, :] = gain_fit * np.exp(1j * phase_fit)
+        # TODO: Check shape of gain
+        cal['gain'][pol_i] = gain_arr
+
+    # Cable Reflection Fitting
+    if (cal_mode_fit):
+        logic_test = 1 if pyfhd_config['cal_reflection_mode_file'] else 0 +  1 if pyfhd_config['cal_reflection_mode_delay'] else 0 + 1 if pyfhd_config['cal_reflection_mode_theory'] else 0
+        if (logic_test > 1):
+            logger.warning('More than one nominal mode-fitting procedure specified for calibration reflection fits. Using cal_reflection_mode_theory')
+            pyfhd_config['cal_reflection_mode_file'] = None
+            pyfhd_config['cal_reflection_mode_delay'] = False
+            pyfhd_config['cal_reflection_mode_theory'] = True
+        elif (logic_test == 0):
+            logger.warning('No nominal mode-fitting procedure was specified for calibration reflection fits. Using cal_reflection_mode_delay')
+            pyfhd_config['cal_reflection_mode_file'] = None
+            pyfhd_config['cal_reflection_mode_delay'] = True
+            pyfhd_config['cal_reflection_mode_theory'] = False
+
+        
+
+
 
 def vis_cal_combine(): 
     pass
