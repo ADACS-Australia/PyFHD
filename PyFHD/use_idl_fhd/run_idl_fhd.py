@@ -6,6 +6,9 @@ import shutil
 import logging
 import time
 import io
+from PyFHD.data_setup.obs import create_obs
+from PyFHD.data_setup.uvfits import extract_header, create_params
+from PyFHD.source_modeling.vis_model_transfer import import_vis_model_from_uvfits, convert_vis_model_arr_to_sav, flag_model_visibilities
 
 
 def run_command(cmd : str, dry_run=False):
@@ -76,6 +79,8 @@ def convert_argdict_to_pro(pyfhd_config: str, output_dir: str):
 
             elif key == "output_path":
                 pro_file.write(f"  output_directory='{value}/{idl_dict['top_level_dir']}'\n")
+            elif key == 'import_model_uvfits':
+                pro_file.write(f"  model_transfer='{idl_dict['output_path']}/{idl_dict['top_level_dir']}/model_vis'\n")
             elif type(value) == str:
                 pro_file.write(f"  {key}='{value}'\n")
             elif type(value) == bool:
@@ -220,12 +225,49 @@ def run_IDL_calibration_only(pyfhd_config : dict,
     """
 
     output_dir = f"{pyfhd_config['output_path']}/{pyfhd_config['top_level_dir']}"
+    
+    ##If reading model visibilities from a uvfits file, grab the visis
+    if pyfhd_config['import_model_uvfits']:
+        
+        ##Need the `obs` struct to be initialised to use `extract_visibilities`,
+        ##which is used by import_vis_model_from_uvfits to grab the 
+        pyfhd_header, params_data, _ = extract_header(pyfhd_config, logger)
+        params = create_params(pyfhd_header, params_data, logger)
+        obs = create_obs(pyfhd_header, params, pyfhd_config, logger)
+
+        if pyfhd_config['n_pol'] == 0:
+            n_pol = pyfhd_header['n_pol']
+        else:
+            n_pol = pyfhd_config['n_pol']
+
+        obs['n_pol'] = n_pol
+        
+        vis_model_arr, params_model = import_vis_model_from_uvfits(pyfhd_config,
+                                                                   obs, logger)
+
+        ##Need to flag the model depending on what tiles have been flagged
+        ##in the data
+        vis_model_arr, pyfhd_config = flag_model_visibilities(vis_model_arr, params,
+                                      params_model, obs, pyfhd_config, logger)
+        
+        ##To feed into FHD, have to convert it to an IDL .sav file, so setup
+        ##an output directory and save to that
+        model_vis_dir = f"{output_dir}/model_vis"
+        os.makedirs(model_vis_dir, exist_ok=True)
+
+        if pyfhd_config['n_pol'] == 0:
+            n_pol = pyfhd_header['n_pol']
+        else:
+            n_pol = pyfhd_config['n_pol']
+
+        convert_vis_model_arr_to_sav(vis_model_arr, pyfhd_config,
+                                     logger, model_vis_dir, n_pol)
 
     logger.info("Writing IDL .pro files to run IDL FHD calibration only")
 
     ##Convert the lovely arguments into pyfhd_config.pro to feed into IDL 
     convert_argdict_to_pro(pyfhd_config, output_dir)
-
+    
     ##Write run_fhd_calibration_only.pro which we can call via command line
     ##This reads in all the arguments set in pyfhd_config.pro
     write_run_FHD_calibration_pro(pyfhd_config, output_dir)
@@ -361,7 +403,7 @@ def run_IDL_convert_gridding_to_healpix_images(pyfhd_config : dict,
     
     output_dir = f"{pyfhd_config['output_path']}/{pyfhd_config['top_level_dir']}"
 
-    logger.info("Writing IDL .pro files to run IDL FHD calibration only")
+    logger.info("Writing IDL .pro files to image PyFHD gridded outputs")
 
     ##Convert the lovely arguments into pyfhd_config.pro to feed into IDL 
     convert_argdict_to_pro(pyfhd_config, output_dir)

@@ -22,7 +22,7 @@ def convert_sav_to_dict(sav_path : str, logger : logging.RootLogger,
     the tempfile module to find a location, but this usually finds a bad
     location with little storage when called on a super cluster. So explicitly
     make our own temp dir `tmp_pyfhd` where the code is being called. It is
-    assumed many files are to be convert, so `tmp_pyfhd` should be deleted
+    assumed many files are to be converted, so `tmp_pyfhd` should be deleted
     after all calls.
 
     Parameters
@@ -316,3 +316,10 @@ def run_gridding_on_IDL_outputs(pyfhd_config : dict, IDL_output_dir : str,
     after = time.time()
             
     logger.info(f"Gridding/saving outputs took {(after - before) / 60.0:.1f} minutes")
+
+    ##We're going to need the `obs` IDL sav file used for the data that's
+    ##been gridded later on in taking these gridded outputs and converting
+    ##into FHD healpix images. Otherwise the flags created during calibration
+    ##are not preserved
+    shutil.copy(f"{IDL_output_dir}/metadata/{pyfhd_config['obs_id']}_obs.sav",
+                gridding_dir)

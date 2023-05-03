@@ -53,6 +53,7 @@ setup(
                 'PyFHD.data_setup',
                 'PyFHD.gridding',
                 'PyFHD.pyfhd_tools',
+                'PyFHD.source_modeling',
                 'PyFHD.use_idl_fhd'],
     description = 'Python Fast Holograhic Deconvolution: A Python package that does efficient image deconvolution for general radio astronomy, fast-mode Epoch of Reionization analysis, and simulation.',
     long_description = open("README.md").read(),

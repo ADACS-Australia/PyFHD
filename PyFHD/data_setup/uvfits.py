@@ -6,16 +6,23 @@ from pathlib import Path
 import logging
 from typing import Tuple
 from astropy.coordinates import EarthLocation
+import astropy
+from astropy import units as u
 
-def extract_header(pyfhd_config : dict, logger : logging.RootLogger) -> Tuple[dict, np.recarray]:
+
+def extract_header(pyfhd_config : dict, logger : logging.RootLogger, data_uvfits = True) -> Tuple[dict, np.recarray]:
     """_summary_
 
     Parameters
     ----------
+    uvfits_path : str
+        Path to the uvfits to open (either the data or the model)
     pyfhd_config : dict
         This is the config created from the argprase
     logger : logging.RootLogger
         The PyFHD logger
+    data_uvfits : bool
+        If True, load in the data uvfits. If False, load in a model uvfits file.
 
     Returns
     -------
@@ -32,10 +39,21 @@ def extract_header(pyfhd_config : dict, logger : logging.RootLogger) -> Tuple[di
         If the UVFITS file doesn't contain all the data then a KeyError will be raised
     """
 
+    if data_uvfits:
+        uvfits_path = Path(pyfhd_config['input_path'], pyfhd_config['obs_id'] + '.uvfits')
+    else:
+        uvfits_path = Path(pyfhd_config['import_model_uvfits'])
+
+    print("uvfits_path", uvfits_path)
+
     # Retrieve all data from the observation
-    observation = fits.open(Path(pyfhd_config['input_path'], pyfhd_config['obs_id'] + '.uvfits'))
-    params_header = observation[0].header
-    params_data = observation[0].data
+    with fits.open(uvfits_path) as observation:
+
+        params_header = observation[0].header
+        params_data = observation[0].data
+        
+        # Keep the layout header and data for the create_layout function
+        antenna_table = observation[1]
 
     pyfhd_header = {}
     # Retrieve data from the params_header
@@ -53,13 +71,34 @@ def extract_header(pyfhd_config : dict, logger : logging.RootLogger) -> Tuple[di
     pyfhd_header['n_freq'] = params_header['naxis4']
     pyfhd_header['freq_ref'] = params_header['crval4']
     pyfhd_header['freq_res'] = params_header['cdelt4']
-    pyfhd_header['date_obs'] = params_header['date-obs']
+    try:
+        pyfhd_header['date_obs'] = params_header['date-obs']
+    except KeyError:
+        pyfhd_header['date_obs'] = params_header['dateobs']
     freq_ref_i = params_header['crpix4'] - 1
     pyfhd_header['frequency_array'] = (np.arange(pyfhd_header['n_freq']) - freq_ref_i) * pyfhd_header['freq_res'] + pyfhd_header['freq_ref']
-    pyfhd_header['obsra'] = params_header['obsra']
-    pyfhd_header['obsdec'] = params_header['obsdec']
+    try:
+        pyfhd_header['obsra'] = params_header['obsra']
+    except KeyError:
+        logger.warning("OBSRA not found in UVFITS file")
+        pyfhd_header['obsra'] = params_header['ra']
+
+    try:
+        pyfhd_header['obsdec'] = params_header['obsdec']
+    except KeyError:
+        logger.warning("OBSDEC not found in UVFITS file")
+        pyfhd_header['obsdec'] = params_header['dec']
     # Put in locations of instrument from FITS file or from Astropy site data
-    location = EarthLocation.of_site(pyfhd_config['instrument'])
+    try:
+        location = EarthLocation.of_site(pyfhd_config['instrument'])
+    except astropy.coordinates.errors.UnknownSiteException:
+        ##TODO fix this MWA location thing, have some kind of built in
+        ##locations in the repo?
+        logger.info(f"Failed to load in the {pyfhd_config['instrument']} instrument location from astropy. If lon/lat/alt are not in the UVFITS things will fail.")
+
+        location = EarthLocation(lat=-26.7033194*u.deg, lon=116.67081524*u.deg,
+                                 height=377.8299999991432)
+
     try: 
         pyfhd_header['lon'] = params_header['lon']
     except KeyError:
@@ -72,6 +111,8 @@ def extract_header(pyfhd_config : dict, logger : logging.RootLogger) -> Tuple[di
         pyfhd_header['alt'] = params_header['alt']
     except KeyError:
         pyfhd_header['alt'] = location.height.value
+
+    logger.info(f"Setting {pyfhd_config['instrument']} instrument location to: lon {pyfhd_header['lon']:.2f}, lat {pyfhd_header['lat']:.2f}, alt {pyfhd_header['alt']:.2f}")
 
     # Setup params list and names
     param_list = []
@@ -102,6 +143,7 @@ def extract_header(pyfhd_config : dict, logger : logging.RootLogger) -> Tuple[di
     
     pyfhd_header['ant1_i'] = 'ANTENNA1' in param_list
     pyfhd_header['ant2_i'] = 'ANTENNA2' in param_list
+    
     if not pyfhd_header['ant1_i'] or not pyfhd_header['ant2_i']:
         pyfhd_header['baseline_i'] = param_list.index('BASELINE')
         if not pyfhd_header['baseline_i']:
@@ -136,8 +178,7 @@ def extract_header(pyfhd_config : dict, logger : logging.RootLogger) -> Tuple[di
         fits_time.format = 'jd'
         pyfhd_header['jd0'] = fits_time.value
 
-    # Keep the layout header and data for the create_layout function
-    antenna_table = observation[1]
+    
 
     return pyfhd_header, params_data, antenna_table
 
@@ -177,16 +218,22 @@ def create_params(pyfhd_header : dict, params_data : np.recarray, logger : loggi
         # Astropy has already normalized the values by PZEROx, time in Julian
         params['time'] = params_data['DATE']
         # Get baseline and antenna arrays
-        if pyfhd_header['baseline_i']:
-            params['baseline_arr'] = params_data['BASELINE']
-            params['antenna1'] = params['baseline_arr']
         # The antenna arrays already exist then take those
         if pyfhd_header['ant1_i'] and pyfhd_header['ant2_i']:
             params['antenna1'] = params_data['ANTENNA1']
             params['antenna2'] = params_data['ANTENNA2']
+
+        ##TODO I don't think we should ever get to this half-way calc, we
+        ##always want antenna1 and antenna2??
+        # ## baseline_i should be set if ant1_i and ant2_i are not
+        # elif pyfhd_header['baseline_i']:
+        #     params['baseline_arr'] = params_data['BASELINE']
+        #     params['antenna1'] = params['baseline_arr']
+        
         # Else calculate it from the baseline array
         else:
             # Calculate antenna_mod_index to check for bad fits
+            params['baseline_arr'] = params_data['BASELINE']
             baseline_min = np.min(params['baseline_arr'])
             exponent = np.log(np.min(baseline_min)) / np.log(2)
             antenna_mod_index = 2 ** np.floor(exponent)

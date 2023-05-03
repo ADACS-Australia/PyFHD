@@ -510,8 +510,6 @@ def calculate_adaptive_gain(gain_list, convergence_list, iter, base_gain, final_
 
     else:
         gain = base_gain
-    # Is the plan to use gain_list?
-    # vis_calibrate_subroutine doesn't use it so no point in this statement currently
-    # gain_list[iter] = gain
+    gain_list[iter] = gain
 
     return gain

@@ -38,18 +38,23 @@ IF Keyword_Set(!Journal) THEN journal
 ;     weights_grid=weights_grid,save_visibilities=save_visibilities,$
 ;     snapshot_healpix_export=snapshot_healpix_export,log_store=log_store,_Extra=extra)
 
-; TODO this can be removed if we remove the dependence of 
-; healpix_snapshot_cube_generate_read_python on it
+; there are things like array layout that need to be loaded in, get this via the raw data
+; this will also read in things like vis_weights and vis_arr; this is fine, because we read
+; the data and weights directly from the PyFHD hdf5 files, so what's read in here is ignored
 uvfits_read,hdr,params,layout,vis_arr,vis_weights,file_path_vis=file_path_vis,n_pol=n_pol,silent=silent,error=error,_Extra=extra
 IF Keyword_Set(error) THEN BEGIN
     print,"Error occured while reading uvfits data. Returning."
     RETURN
 ENDIF
 
-
 ; load up the psf?
 print, "Loading in the psf from here: ", extra.GRID_PSF_FILE
 psf_in = getvar_savefile(extra.GRID_PSF_FILE, 'psf')
+
+; make sure we restore the obs that was used as an input to gridding
+print, 'Restoring "obs" from this file', python_grid_path + '/' + extra.obs_id + '_obs.sav'
+; RESTORE, python_grid_path + '/' + extra.obs_id + '_obs.sav'
+obs = getvar_savefile(python_grid_path + '/' + extra.obs_id + '_obs.sav', 'obs')
 
 snapshot_healpix_export=1
 
