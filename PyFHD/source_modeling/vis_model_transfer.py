@@ -3,7 +3,7 @@ from astropy.io import fits
 import numpy as np
 from PyFHD.data_setup.uvfits import extract_visibilities, create_params, extract_header
 import logging
-from PyFHD.use_idl_fhd import run_idl_fhd
+from PyFHD.pyfhd_tools.pyfhd_utils import run_command
 import importlib_resources
 import os
 import shutil
@@ -349,7 +349,9 @@ def convert_vis_model_arr_to_sav(vis_model_arr : np.ndarray,
 
     idl_command = f"idl -IDL_DEVICE ps -e convert_model_arr_to_sav -args {model_vis_dir} {pyfhd_config['obs_id']} {n_pol}"
 
-    run_idl_fhd.run_command(idl_command, pyfhd_config['IDL_dry_run'])
+    run_command(idl_command, pyfhd_config['IDL_dry_run'])
+
+
 
 
 

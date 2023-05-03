@@ -8,6 +8,7 @@ from astropy import units as u
 from math import pi
 from logging import RootLogger
 from scipy.stats import median_abs_deviation
+import subprocess
 
 @njit
 def get_bins(min, max, bin_size):
@@ -887,4 +888,22 @@ def resistant_mean(array : np.ndarray, deviations : int, mad_scale = 0.674499999
     # Get the mean of the subset array which contains no outliers
     return np.mean(subarray)
 
+def run_command(cmd : str, dry_run=False):
+    """
+    Runs the command string `cmd` using `subprocess.run`. Returns any text output to stdout
 
+    Parameters
+    ----------
+    cmd : str
+         The command to run on the command line
+    dry_run : bool
+         If True, don't actually run the command. Defaults to False (so defaults to running the command)
+    """
+
+    if dry_run:
+        stdout = "This was a dry run, not launching IDL code\n"
+    else:
+        stdout = subprocess.run(cmd.split(), stdout=subprocess.PIPE,
+                            text = True).stdout
+
+    return stdout

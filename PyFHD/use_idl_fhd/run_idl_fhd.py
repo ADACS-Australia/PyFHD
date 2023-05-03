@@ -6,30 +6,12 @@ import shutil
 import logging
 import time
 import io
+from PyFHD.pyfhd_tools.pyfhd_utils import run_command
 from PyFHD.data_setup.obs import create_obs
 from PyFHD.data_setup.uvfits import extract_header, create_params
 from PyFHD.source_modeling.vis_model_transfer import import_vis_model_from_uvfits, convert_vis_model_arr_to_sav, flag_model_visibilities
 
 
-def run_command(cmd : str, dry_run=False):
-    """
-    Runs the command string `cmd` using `subprocess.run`. Returns any text output to stdout
-
-    Parameters
-    ----------
-    cmd : str
-         The command to run on the command line
-    dry_run : bool
-         If True, don't actually run the command. Defaults to False (so defaults to running the command)
-    """
-
-    if dry_run:
-        stdout = "This was a dry run, not launching IDL code\n"
-    else:
-        stdout = subprocess.run(cmd.split(), stdout=subprocess.PIPE,
-                            text = True).stdout
-
-    return stdout
 
 def convert_argdict_to_pro(pyfhd_config: str, output_dir: str):
     """
