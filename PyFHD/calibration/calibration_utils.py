@@ -4,8 +4,10 @@ from logging import RootLogger
 from PyFHD.pyfhd_tools.pyfhd_utils import resistant_mean, weight_invert
 from copy import deepcopy
 from astropy.io import fits
+from astropy.constants import c
 from pathlib import Path
-from PyFHD.pyfhd_tools.pyfhd_utils import idl_argunique
+from scipy.signal import convolve
+from astropy.convolution import Box1DKernel
 
 
 def vis_extract_autocorr(obs: dict, vis_arr: np.array, time_average = True, auto_tile_i = None) -> Tuple[np.array, np.array]:
@@ -423,13 +425,59 @@ def vis_cal_polyfit(obs: dict, cal: dict, pyfhd_config: dict, logger: RootLogger
     # Cable Reflection Fitting
     if (cal_mode_fit):
         if (pyfhd_config['cal_reflection_mode_file']):
-            pass
-        elif (pyfhd_config['cal_reflection_mode_theory']):
-            pass
-        elif (pyfhd_config['cal_reflection_mode_delay']):
-            pass
-        
+            logger.info('Using mwa calibration reflections fits from instrument_config/mwa_cable_reflection_coefficients.txt.')
+            cable_reflections = np.loadtxt(Path(pyfhd_config['input-path'], 'instrument_config', 'mwa_cable_reflection_coefficients.txt'), skiprows=1).transpose()
+            cable_length = cable_reflections[2]
+            tile_ref_flag = np.minimum(np.maximum(np.zeros_like(cable_reflections[4]), cable_reflections[4]), np.ones_like(cable_reflections[4]))
+            tile_mode_X = cable_reflections[5]
+            tile_amp_X = cable_reflections[6]
+            tile_phase_X = cable_reflections[7]
+            tile_mode_Y = cable_reflections[8]
+            tile_amp_Y = cable_reflections[9]
+            tile_phase_Y = cable_reflections[10]
 
+            # Modes in fourier transform units
+            mode_i_arr = np.zeros((cal['n_pol'], obs['n_tile']))
+            mode_i_arr[0, :] = tile_mode_X * tile_ref_flag
+            mode_i_arr[1, :] = tile_mode_Y * tile_ref_flag
+
+            amp_arr = np.vstack([tile_amp_X, tile_amp_Y])
+            phase_arr = np.vstack[[tile_phase_X, tile_phase_Y]]
+
+        elif (pyfhd_config['cal_reflection_mode_theory']):
+            logger.info('Using theory calculation in nominal reflection mode calibration.')
+            # Get the nominal tile lengths and velocity factors
+            cable_length_data = np.loadtxt(Path(pyfhd_config['input-path'], 'intrument_config', 'mwa_cable_length.txt'), skiprows=1).transpose()
+            cable_length = cable_length_data[2]
+            cable_vf = cable_length_data[3]
+            tile_ref_flag = np.minimum(np.maximum(np.zeros_like(cable_length_data[4]), cable_length_data[4]), np.ones_like(cable_length_data[4]))
+
+            # Nominal Reflect Time
+            reflect_time = (2 * cable_length) / (c * cable_vf)
+            bandwidth = ((np.max(obs['baseline_info']['freq']) - np.min(obs['baseline_info']['freq'])) * obs['n_freq']) / (obs['n_freq'] - 1)
+            # Modes in fourier transform units
+            mode_i_arr = np.tile(bandwidth * reflect_time * tile_ref_flag, [cal["n_pol"], 1])
+
+        elif (pyfhd_config['cal_reflection_mode_delay']):
+            logger.info('Using calibration delay spectrum to calculate nominal reflection modes.')
+            spec_mask = np.zeros(obs['n_freq'])
+            spec_mask[freq_use] = 1
+            freq_cut = np.where(spec_mask == 0)
+            # IDL uses forward FFT by default
+            spec_psf = np.abs(np.fft.fftn(spec_mask, norm='forward'))
+            spec_inds = np.arange(obs['n_freq'] // 2)
+            spec_psf = spec_psf[spec_inds]
+            mode_test = np.zeros(obs['n_freq']  // 2)
+            for pol_i in range(cal['n_pol']):
+                for ti in range(tile_use[0].size):
+                    tile_i = tile_use[0][ti]
+                    spec0 = np.abs(np.fft.fftn(gain_residual[tile_i, pol_i]))
+                    mode_test += spec0[spec_inds]
+            psf_mask = np.zeros(obs['n_freq'] // 2)
+
+            if (freq_cut[0].size > 0):
+                psf_mask[np.where(spec_psf > (np.max(spec_psf) / 1000))] = 1
+                psf_mask = convolve(psf_mask, Box1DKernel(5), mode = 'valid')
 
 
 def vis_cal_combine(): 
