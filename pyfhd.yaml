@@ -38,7 +38,7 @@ cal-phase-degree-fit : 1
 cal-reflection-hyperresolve : true
 cal-reflection-mode-theory : 150
 cal-reflection-mode-delay : false
-cal-reflection-mode-file : ~
+cal-reflection-mode-file : false
 min-cal-baseline : 50.
 vis-baseline-hist : true
 bandpass-calibrate : true

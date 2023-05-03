@@ -422,18 +422,12 @@ def vis_cal_polyfit(obs: dict, cal: dict, pyfhd_config: dict, logger: RootLogger
 
     # Cable Reflection Fitting
     if (cal_mode_fit):
-        logic_test = 1 if pyfhd_config['cal_reflection_mode_file'] else 0 +  1 if pyfhd_config['cal_reflection_mode_delay'] else 0 + 1 if pyfhd_config['cal_reflection_mode_theory'] else 0
-        if (logic_test > 1):
-            logger.warning('More than one nominal mode-fitting procedure specified for calibration reflection fits. Using cal_reflection_mode_theory')
-            pyfhd_config['cal_reflection_mode_file'] = None
-            pyfhd_config['cal_reflection_mode_delay'] = False
-            pyfhd_config['cal_reflection_mode_theory'] = True
-        elif (logic_test == 0):
-            logger.warning('No nominal mode-fitting procedure was specified for calibration reflection fits. Using cal_reflection_mode_delay')
-            pyfhd_config['cal_reflection_mode_file'] = None
-            pyfhd_config['cal_reflection_mode_delay'] = True
-            pyfhd_config['cal_reflection_mode_theory'] = False
-
+        if (pyfhd_config['cal_reflection_mode_file']):
+            pass
+        elif (pyfhd_config['cal_reflection_mode_theory']):
+            pass
+        elif (pyfhd_config['cal_reflection_mode_delay']):
+            pass
         
 
 

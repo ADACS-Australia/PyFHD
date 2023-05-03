@@ -78,7 +78,7 @@ def pyfhd_parser():
     calibration.add_argument('--cal_reflection_hyperresolve', default = False, action = 'store_true', help = 'Hyperresolve and fit residual gains using nominal reflection modes (calculated from cal_reflection_mode_delay or cal_reflection_mode_theory),\nproducing a finetuned mode fit, amplitude, and phase.\nWill be ignored if cal_reflection_mode_file is set because it is assumed that a file read-in contains mode/amp/phase to use.')
     calibration.add_argument('--cal_reflection_mode_theory', default = 150, type = float, help = 'Calculate theoretical cable reflection modes given the velocity and length data stored in a config file named <instrument>_cable_length.txt.\nFile must have a header line and at least five columns (tile index, tile name, cable length, cable velocity factor, logic on whether to fit (1) or not (0)).\nCan set it to positive/negative cable lengths (see cal_mode_fit) to include/exclude certain cable types.')
     calibration.add_argument('--cal_reflection_mode_delay', default = False, action = 'store_true', help = 'Calculate cable reflection modes by Fourier transforming the residual gains, removing modes contaminated by frequency flagging, and choosing the maximum mode.')
-    calibration.add_argument('--cal_reflection_mode_file', default = None, type = Path, help = 'Use predetermined cable reflection parameters (mode, amplitude, and phase) in the calibration solutions from a file.\nThe specified format of the text file must have one header line and eleven columns:\ntile index\ntile name\ncable length\ncable velocity factor\nlogic on whether to fit (1) or not (0)\nmode for X\namplitude for X\nphase for X\nmode for Y\namplitude for Y\nphase for Y')
+    calibration.add_argument('--cal_reflection_mode_file', default = False, action = 'store_true', help = 'Use predetermined cable reflection parameters (mode, amplitude, and phase) in the calibration solutions from a file.\nThe specified format of the text file must have one header line and eleven columns:\ntile index\ntile name\ncable length\ncable velocity factor\nlogic on whether to fit (1) or not (0)\nmode for X\namplitude for X\nphase for X\nmode for Y\namplitude for Y\nphase for Y. The file will be instrument_config of the input directory')
     calibration.add_argument('--vis_baseline_hist', default = False, action = 'store_true', help = 'Calculates the vis_baseline_hist dictionary containing the visibility resolution ratio average and standard deviation')
     calibration.add_argument('--bandpass_calibrate', default = False, action = 'store_true', help = 'Calculates a bandpass.\nThis is an average of tiles by frequency by polarization (default), beamformer-to-LNA cable types by frequency by polarization (see cable_bandpass_fit),\nor over the whole season by pointing by by cable type by frequency by polarization via a read-in file (see saved_run_bp).\nIf unset, no by-frequency bandpass is used')
     calibration.add_argument('--calibration_flag_iterate', default = 0, type = int, help = 'Number of times to repeat calibration in order to better identify and flag bad antennas so as to exclude them from the final result.')
@@ -341,14 +341,20 @@ def pyfhd_setup(options : argparse.Namespace) -> Tuple[dict, logging.RootLogger]
         pyfhd_config['cal_reflection_hyperresolve'] = False
         warnings += 1
 
-    # cal_reflection_mode_file depends on a file (Error)
-    errors += _check_file_exists(pyfhd_config, 'cal_reflection_mode_file')
-
     # cal_reflection_mode_theory and cal_reflection_mode_delay cannot be on at the same time, prioritise mode_theory (Warning)
-    if pyfhd_config['cal_reflection_mode_theory'] and pyfhd_config['cal_reflection_mode_delay']: 
-        logging.warning('Both cal_reflection_mode_theory and cal_reflection_mode_delay have been enabled, prioritising cal_reflection_mode_theory')
-        pyfhd_config['cal_reflection_mode_delay'] = False
+    logic_test = 1 if pyfhd_config['cal_reflection_mode_file'] else 0 +  1 if pyfhd_config['cal_reflection_mode_delay'] else 0 + 1 if pyfhd_config['cal_reflection_mode_theory'] else 0
+    if (logic_test > 1):
+        logger.warning('More than one nominal mode-fitting procedure specified for calibration reflection fits, prioritising cal_reflection_mode_theory')
         warnings += 1
+        pyfhd_config['cal_reflection_mode_file'] = False
+        pyfhd_config['cal_reflection_mode_delay'] = False
+        pyfhd_config['cal_reflection_mode_theory'] = True
+    elif (logic_test == 0):
+        logger.warning('No nominal mode-fitting procedure was specified for calibration reflection fits. Using cal_reflection_mode_delay')
+        warnings += 1
+        pyfhd_config['cal_reflection_mode_file'] = False
+        pyfhd_config['cal_reflection_mode_delay'] = True
+        pyfhd_config['cal_reflection_mode_theory'] = False
     
     # diffuse_calibrate depends on a file (Error)
     errors += _check_file_exists(pyfhd_config, 'diffuse_calibrate')
