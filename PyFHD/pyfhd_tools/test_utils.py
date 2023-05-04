@@ -165,3 +165,33 @@ def try_assert_all_close(actual : np.ndarray, target : np.ndarray, name : str, t
         print(Fore.GREEN + Style.BRIGHT + "Test Passed for {}".format(name) + Style.RESET_ALL)
     except AssertionError as error:
         print(Fore.RED + Style.BRIGHT + "Test Failed for {}:".format(name) + Style.RESET_ALL + "{}".format(error) + Style.RESET_ALL)
+
+def recarray_to_dict(recarray: np.recarray) -> dict:
+    """
+    Turns a record array into a dict, but does it as a deep convert. This was needed due to scipy's readsav
+    returning an inception like experience of record arrays. This would mean to access values from something 
+    like the obs structure for a test, the code had to be obs[0]['baseline_info'][0]['tile_a'], which was became 
+    untenable as the full python translation won't require these leaving us two codebases for IDL compatible and
+    Python compatible. Instead, this function turns all record arrays into dictionaries, which are easier to understand
+    and are faster.
+
+    This was made specifically to work with the readsav function, to get compatibility with general recarrays remove the
+    zero index, as readsav for some reason adds a single dimension to all recarrays.
+
+    Parameters
+    ----------
+    recarray : np.recarray
+        A record array maybe containing nested record arrays
+
+    Returns
+    -------
+    new_dict: dict
+        A potentially nested dictionaries of dictionaries
+    """
+    # Convert the original record array into a dictionary
+    new_dict = {name.lower():recarray[name] for name in recarray.dtype.names}
+    # For every key, if it's a record array, recursively call the function
+    for key in new_dict:
+        if (type(new_dict[key]) == np.recarray):
+            new_dict[key] = recarray_to_dict(new_dict[key][0])
+    return new_dict

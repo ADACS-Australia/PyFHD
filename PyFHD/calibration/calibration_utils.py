@@ -6,8 +6,7 @@ from copy import deepcopy
 from astropy.io import fits
 from astropy.constants import c
 from pathlib import Path
-from scipy.signal import convolve
-from astropy.convolution import Box1DKernel
+from scipy.ndimage import uniform_filter
 
 
 def vis_extract_autocorr(obs: dict, vis_arr: np.array, time_average = True, auto_tile_i = None) -> Tuple[np.array, np.array]:
@@ -477,8 +476,12 @@ def vis_cal_polyfit(obs: dict, cal: dict, pyfhd_config: dict, logger: RootLogger
 
             if (freq_cut[0].size > 0):
                 psf_mask[np.where(spec_psf > (np.max(spec_psf) / 1000))] = 1
-                psf_mask = convolve(psf_mask, Box1DKernel(5), mode = 'valid')
-
+                # Replaces IDL smooth with edge_truncate
+                psf_mask = uniform_filter(psf_mask, size = 5, mode = 'nearest')
+                mask_i = np.nonzero(psf_mask)
+                if (mask_i[0].size > 0):
+                    mode_test[mask_i] = 0
+            mode_i_arr = np.zeros((cal['n_pol'], obs['n_tile'])) + np.argmax(mode_test)
 
 def vis_cal_combine(): 
     pass
