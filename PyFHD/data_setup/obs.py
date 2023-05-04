@@ -79,8 +79,8 @@ def create_obs(pyfhd_header : dict, params : dict, pyfhd_config : dict, logger :
     
     antenna_flag = True
     if np.max(params['antenna1']) > 0 and (np.max(params['antenna2']) > 0):
-        baseline_info['tile_A'] = params['antenna1']
-        baseline_info['tile_B'] = params['antenna2']
+        baseline_info['tile_a'] = params['antenna1']
+        baseline_info['tile_b'] = params['antenna2']
         antenna_flag = False
     if antenna_flag:
         # 256 tile upper limit is hard-coded in CASA format
@@ -92,13 +92,13 @@ def create_obs(pyfhd_header : dict, params : dict, pyfhd_config : dict, logger :
         # Check if a bad fit and if autocorrelations or the first tile are missing
         if (tile_B_test > 1) and (baseline_min % 2 == 1):
             antenna_mod_index /= 2 ** np.floor(np.log(np.min(tile_B_test)) / np.log(2))
-        baseline_info['tile_A'] = np.floor(params['baseline_arr'] / antenna_mod_index)
-        baseline_info['tile_B'] = np.fix(params['baseline_arr'] / antenna_mod_index)
-        if max(np.max(baseline_info['tile_A']), np.max(baseline_info['tile_B'])) != obs['n_tile']:
-            logger.warning(f"Mis-matched n_tiles Header: {obs['n_tile']}, Data: {max(np.max(baseline_info['tile_A']), np.max(baseline_info['tile_B']))}, adjusting n_tiles to be same as data")
-            obs['n_tile'] = max(np.max(baseline_info['tile_A']), np.max(baseline_info['tile_B']))
-        params['antenna1'] = baseline_info['tile_A']
-        params['antenna2'] = baseline_info['tile_B']
+        baseline_info['tile_a'] = np.floor(params['baseline_arr'] / antenna_mod_index)
+        baseline_info['tile_b'] = np.fix(params['baseline_arr'] / antenna_mod_index)
+        if max(np.max(baseline_info['tile_a']), np.max(baseline_info['tile_b'])) != obs['n_tile']:
+            logger.warning(f"Mis-matched n_tiles Header: {obs['n_tile']}, Data: {max(np.max(baseline_info['tile_a']), np.max(baseline_info['tile_b']))}, adjusting n_tiles to be same as data")
+            obs['n_tile'] = max(np.max(baseline_info['tile_a']), np.max(baseline_info['tile_b']))
+        params['antenna1'] = baseline_info['tile_a']
+        params['antenna2'] = baseline_info['tile_b']
     
     baseline_info['freq_use'] = np.ones(obs['n_freq'], dtype = np.int64)
 
