@@ -29,10 +29,10 @@ def vis_extract_autocorr(obs: dict, vis_arr: np.array, time_average = True, auto
     Tuple[autocorr: np.array, auto_tile_i: np.array]
         The first array is the auto-correlation visibilities and the second array is the unique tile values
     """
-    # TODO: check if tile_A and tile_B 2D
-    autocorr_i = np.where(obs["baseline_info"]["tile_A"] == obs["baseline_info"]["tile_B"])[0]
+    # TODO: check if tile_a and tile_b 2D
+    autocorr_i = np.where(obs["baseline_info"]["tile_a"] == obs["baseline_info"]["tile_b"])[0]
     if (autocorr_i[0].size > 0):
-        auto_tile_i = obs["baseline_info"]["tile_A"][autocorr_i] - 1
+        auto_tile_i = obs["baseline_info"]["tile_a"][autocorr_i] - 1
         auto_tile_i_single = np.unique(auto_tile_i)
         auto_corr = np.zeros(obs["n_pol"])
         for pol_i in range(obs["n_pol"]):

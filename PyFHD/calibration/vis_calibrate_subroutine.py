@@ -60,7 +60,7 @@ def vis_calibrate_subroutine(vis_ptr, vis_model_ptr, vis_weight_ptr, obs, cal,
     n_time = cal['n_time'][0]
     # weights WILL be over-written! (Only for NAN gain solutions)
     vis_weight_ptr_use = vis_weight_ptr
-    # tile_A & tile_B contribution indexed from 0
+    # tile_a & tile_b contribution indexed from 0
     tile_A_i = cal['tile_a'][0] - 1
     tile_B_i = cal['tile_b'][0] - 1
     freq_arr = cal['freq'][0]

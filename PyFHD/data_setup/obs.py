@@ -188,7 +188,7 @@ def create_obs(pyfhd_header : dict, params : dict, pyfhd_config : dict, logger :
     obs['healpix'] = healpix
 
     # Save the baseline_info into obs
-    baseline_info['Jdate'] = meta['jdate']
+    baseline_info['jdate'] = meta['jdate']
     baseline_info['tile_names'] = meta['tile_names']
     baseline_info['tile_height'] = meta['tile_height']
     baseline_info['tile_flag'] = meta['tile_flag']
