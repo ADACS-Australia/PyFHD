@@ -1,7 +1,19 @@
 import numpy as np
 from typing import Tuple
 from logging import RootLogger
-from PyFHD.calibration.calibration_utils import vis_extract_autocorr, vis_cal_auto_init, vis_calibration_flag, vis_cal_bandpass, vis_cal_polyfit, vis_cal_combine, vis_cal_auto_fit, vis_cal_subtract, vis_calibration_apply
+from PyFHD.calibration.calibration_utils import (
+    vis_extract_autocorr, 
+    vis_cal_auto_init, 
+    vis_calibration_flag, 
+    vis_cal_bandpass, 
+    vis_cal_polyfit, 
+    vis_cal_combine, 
+    vis_cal_auto_fit, 
+    vis_cal_subtract, 
+    vis_calibration_apply, 
+    cal_auto_ratio_divide, 
+    cal_auto_ratio_remultiply
+)
 from PyFHD.calibration.vis_calibrate_subroutine import vis_calibrate_subroutine
 from PyFHD.pyfhd_tools.pyfhd_utils import extract_subarray, resistant_mean
 
@@ -30,11 +42,20 @@ def calibrate(obs: dict, params: dict, vis_arr: np.array, vis_weights: np.array,
 
     # Perform bandpass (amp + phase per fine freq) and polynomial fitting (low order amp + phase fit plus cable reflection fit)
     if (pyfhd_config["bandpass-calibrate"]):
+        if (pyfhd_config['auto_ratio_calibration']):
+            cal, auto_ratio = cal_auto_ratio_divide(obs, cal, vis_auto, auto_tile_i)
+        else:
+            auto_ratio = None
         cal_bandpass, cal_remainder = vis_cal_bandpass(obs, cal, params, pyfhd_config, logger)
 
         if (pyfhd_config["calibration-polyfit"]):
-            cal_polyfit = vis_cal_polyfit(cal_remainder, obs)
+            cal_polyfit = vis_cal_polyfit(cal_remainder, obs, auto_ratio, pyfhd_config, logger)
             cal = vis_cal_combine(cal_polyfit, cal_bandpass)
+        else:
+            cal = cal_bandpass
+        
+        if(pyfhd_config['auto_ratio_calibration']):
+            cal = cal_auto_ratio_remultiply(obs, cal, auto_tile_i)
     elif (pyfhd_config["calibration-polyfit"]):
         cal = vis_cal_polyfit(cal, obs)
 

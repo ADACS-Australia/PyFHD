@@ -42,6 +42,8 @@ cal-reflection-mode-file : false
 min-cal-baseline : 50.
 vis-baseline-hist : true
 bandpass-calibrate : true
+auto-ratio-calibration: true
+digital-gain-jump-polyfit: true
 return-cal-visibilities : true
 calibration-flag-iterate : 0
 diffuse-calibrate : ~

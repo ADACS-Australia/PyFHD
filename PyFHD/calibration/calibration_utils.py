@@ -1,7 +1,7 @@
 import numpy as np
 from typing import Tuple
 from logging import RootLogger
-from PyFHD.pyfhd_tools.pyfhd_utils import resistant_mean, weight_invert
+from PyFHD.pyfhd_tools.pyfhd_utils import resistant_mean, weight_invert, rebin
 from copy import deepcopy
 from astropy.io import fits
 from astropy.constants import c
@@ -289,6 +289,9 @@ def vis_cal_bandpass(obs: dict, cal: dict, params: dict, pyfhd_config: dict, log
         bandpass_arr = np.zeros(obs["n_freq"], cal["n_pol"] * cable_length_ref.size + 1)
         bandpass_arr[:, 0] = cal["freq"]
         bandpass_col_count = 1
+        if (pyfhd_config['auto_ratio_calibration']):
+            logger.info('auto_ratio_calibration is set, using global bandpass')
+            global_bandpass = True
         for cable_i in range(cable_length_ref.size):
             # This is an option to calibrate over all tiles to find the 'global' bandpass. It will be looped over by the number
             # of cable lengths, and will redo the same calculation everytime. It is inefficient, but effective.
@@ -365,7 +368,9 @@ def vis_cal_bandpass(obs: dict, cal: dict, params: dict, pyfhd_config: dict, log
     cal_remainder["gain"] = cal_remainder_gain
     return cal_bandpass, cal_remainder
 
-def vis_cal_polyfit(obs: dict, cal: dict, pyfhd_config: dict, logger: RootLogger) -> dict:
+def vis_cal_polyfit(obs: dict, cal: dict, auto_ratio: np.ndarray | None, pyfhd_config: dict, logger: RootLogger) -> dict:
+    # Keep the og_gain_arr for calculations later
+    og_gain_arr = cal['gain']
     if (pyfhd_config['cal_reflection_mode_theory'] or 
         pyfhd_config['cal_reflection_mode_file'] or 
         pyfhd_config['cal_reflection_mode_delay'] or
@@ -402,10 +407,26 @@ def vis_cal_polyfit(obs: dict, cal: dict, pyfhd_config: dict, logger: RootLogger
             fit_params = np.polynomial.Polynomial.fit(freq_use, gain, deg = pyfhd_config["cal_amp_degree_fit"]).convert().coef
             cal['amp_params'][pol_i, tile_i, :] = fit_params
             gain_fit = np.zeros(obs['n_freq'])
-            for di in range(pyfhd_config['cal_amp_degree_fit']):
-                gain_fit += fit_params[di, :, :] * np.arange(obs['n_freq'])**di
-            # If you wish to fit pre and post digital gain jump separately for highband MWA data, do that here
-            # TODO: Check size of this line, maybe something is off?
+            # Pre and post digital gain jump separately for highband MWA data
+            if (pyfhd_config['digital_gain_jump_polyfit']):
+                pre_dig_inds = np.where(obs['baseline_info']['freq'][freq_use] < 187.515e6)
+                if pre_dig_inds[0].size == 0:
+                    f_d = np.max(pre_dig_inds[0])
+                    f_end = freq_use[0].size
+                    fit_params1 = np.polynomial.Polynomial.fit(freq_use[0: f_d], gain[0:f_d], pyfhd_config['cal_amp_degree_fit'] - 1).convert().coef
+                    fit_params2 = np.polynomial.Polynomial.fit(freq_use[f_d + 1: f_end], gain[f_d + 1: f_end], pyfhd_config['cal_amp_degree_fit']).convert().coef
+                    for di in range(pyfhd_config['cal_amp_degree_fit']):
+                        gain_fit[freq_use[0] : freq_use[f_d]] += fit_params1[di] * (np.arange(freq_use[f_d]) ** di)
+                        gain_fit[freq_use[f_d + 1] : freq_use[f_end]] += fit_params2[di] * (np.arange(freq_use[f_end] - freq_use[f_d + 1] + 1) + freq_use[f_d + 1])**di
+                    fit_params = [fit_params1, fit_params2]
+                    cal['amp_params'][pol_i, tile_i] = fit_params
+                else:
+                    logger.warning('digital_gain_jump_polyfit only works with highband mwa data. Full band polyfit applied instead.')
+            else: 
+                for di in range(pyfhd_config['cal_amp_degree_fit']):
+                    gain_fit += fit_params[di, :, :] * np.arange(obs['n_freq'])**di
+            
+            # TODO: Check shape of this line, maybe something is off?
             gain_residual[tile_i, pol_i] = np.squeeze(gain_amp[tile_i, :] - gain_fit)
 
             # Fit for phase
@@ -483,6 +504,54 @@ def vis_cal_polyfit(obs: dict, cal: dict, pyfhd_config: dict, logger: RootLogger
                     mode_test[mask_i] = 0
             mode_i_arr = np.zeros((cal['n_pol'], obs['n_tile'])) + np.argmax(mode_test)
 
+        # If you wish to implement the option to fit only certain cable lengths do that here
+        # My suggestion to create a new argparse option set as an array of cable lengths
+        # I would use the array as the cable lengths you want to only fit.
+        # Loop through the array and use a flag array to multiply the mode_i_arr by 1 or 0
+        # 0 will exclude the cable length from fitting, 1 will include it.
+        # Do note you shouldn't do it if auto_ratio is defined and auto_ratio_calibration is enabled
+
+        for pol_i in range(cal['n_pol']):
+            # Divide the polyfit to reveal the residual cable reflections better
+            gain_arr = og_gain_arr[pol_i] / cal['gain'][pol_i]
+            for ti in range(tile_use[0].size):
+                tile_i = tile_use[ti]
+                mode_i = mode_i_arr[pol_i, tile_i]
+                if (mode_i == 0):
+                    continue
+                else:
+                    # Options to hyperresolve or fit the reflection modes/amp/phase given the nominal calculations
+                    if (pyfhd_config['cal_reflection_hyperresolve']):
+                        # start with nominal cable length
+                        mode0 = mode_i
+                        # overresolve the FT used for the fit (normal resolution would be dmode=1)
+                        dmode = 0.05
+                        # range around the central mode to test
+                        nmodes = 101
+                        # array of modes to try
+                        modes = (np.arange(nmodes) - nmodes // 2) * dmode + mode0
+                        # reshape for ease of computing
+                        modes = rebin(modes, (nmodes, freq_use[0].size))
+
+                        if (auto_ratio):
+                            # Find tiles which will *not* be accidently coherent in their cable reflection in order to reduce bias
+                            inds = np.where((obs['baseline_info']['tile_use']) & (mode_i_arr[pol_i, :] > 0) & (np.abs(mode_i_arr[pol_i,:] - mode_i)) > 0.01)
+                            # mean over frequency for each tile
+                            freq_mean = np.mean(auto_ratio[pol_i], axis = 1)
+                            # normalized autos using each tile's freq mean
+                            norm_autos = auto_ratio[pol_i] / rebin(np.transpose(freq_mean), (obs['n_freq'], obs['n_tile']))
+                            # mean over all tiles which *are not* accidently coherent as a func of freq
+                            incoherent_mean = np.mean(norm_autos[:, inds], axis=0)
+                            # Residual and normalized (using incoherent mean) auto-correlation
+                            resautos = (norm_autos[:, tile_i] / incoherent_mean) - np.mean(norm_autos[:, tile_i] / incoherent_mean)
+                            gain_temp = rebin(np.transpose(np.squeeze(resautos[freq_use])), (nmodes, freq_use[0].size))
+                        else:
+                            # dimension manipulatio, add dim for mode fitting
+                            # Subtract the mean so aliasing is reduced in the dft cable fitting
+                            gain_temp = rebin(np.transpose(gain_arr[tile_i, freq_use]) - np.mean(gain_arr[tile_i, freq_use]), (nmodes, freq_use[0].size))
+
+                        freq_mat = rebin(np.transpose(freq_use[0]), (nmodes, freq_use[0].size))
+                        
 def vis_cal_combine(): 
     pass
 
@@ -493,6 +562,12 @@ def vis_cal_subtract():
     pass
 
 def vis_calibration_apply():
+    pass
+
+def cal_auto_ratio_divide(obs: dict, cal: dict, vis_auto: np.ndarray, auto_tile_i: np.ndarray) -> Tuple[dict, np.ndarray]:
+    pass
+
+def cal_auto_ratio_remultiply(obs: dict, cal: dict, auto_tile_i: np.ndarray) -> dict:
     pass
 
 def calculate_adaptive_gain(gain_list, convergence_list, iter, base_gain, final_convergence_estimate = None):
