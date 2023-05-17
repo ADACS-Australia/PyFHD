@@ -549,8 +549,56 @@ def vis_cal_polyfit(obs: dict, cal: dict, auto_ratio: np.ndarray | None, pyfhd_c
                             # dimension manipulatio, add dim for mode fitting
                             # Subtract the mean so aliasing is reduced in the dft cable fitting
                             gain_temp = rebin(np.transpose(gain_arr[tile_i, freq_use]) - np.mean(gain_arr[tile_i, freq_use]), (nmodes, freq_use[0].size))
-
+                        # freq_use matrix to multiply/collapse in fit
                         freq_mat = rebin(np.transpose(freq_use[0]), (nmodes, freq_use[0].size))
+                        # Perform DFT of gains to test modes
+                        test_fits = np.sum(np.exp(1j * 2 * np.pi/obs['n_freq'] * modes * freq_mat) * gain_temp, axis=-1)
+                        # Pick out highest amplitude fit (mode_ind gives the index of the mode)
+                        amp_use = np.max(np.abs(test_fits)) / freq_use[0].size
+                        mode_ind = np.argmax(np.abs(test_fits))
+                        # Phase of said fit
+                        # TODO: change arctan if test_fits isn't complex (it should be though)
+                        phase_use = np.arctan2(test_fits[mode_ind].imag, test_fits[mode_ind].real)
+                        # The actual mode
+                        mode_i = modes[0, mode_ind]
+
+                        # Using the mode selected from the gains, optionally use the phase to find the amp and phase
+                        if (auto_ratio):
+                            # Find tiles which will not be accidently coherent in their cable reflection in order to reduce bias
+                            inds = np.where(
+                                obs['baseline_info']['tile_use'] & 
+                                mode_i_arr[pol_i, :] > 0 & 
+                                np.abs(mode_i_arr[pol_i, :] - mode_i) > 0.01
+                            )
+                            # TODO: check gain_arr indexing
+                            residual_phase = np.arctan2(gain_arr[:, freq_use].imag, gain_arr[:, freq_use].real)
+                            incoherent_residual_phase = residual_phase[tile_i, :] - np.mean(residual_phase[inds, :], axis=1)
+                            test_fits = np.sum(np.exp(1j * 2 * np.pi/ obs['n_freq'] * mode_i * freq_use) * incoherent_residual_phase)
+                            # Factor of 2 from fitting just the phase
+                            amp_use = 2 * np.abs(test_fits) / freq_use[0].size
+                            # Factor of pi/2 from just fitting the phase
+                            phase_use = np.arctan2(test_fits.imag, test_fits.real) + np.pi/2
+                    elif (pyfhd_config['cal_reflection_mode_file']):
+                        # Use predetermined fits
+                        # TODO check amp_arr and phase_arr indexing
+                        amp_use = amp_arr[pol_i, tile_i]
+                        phase_use = phase_arr[pol_i, tile_i]
+                    else:
+                        # Use nominal delay mode, but fit amplitude and phase of reflections
+                        # TODO: check indexing of gain_arr
+                        mode_fit = np.sum(np.exp(1j * 2 * np.pi / obs['n_freq'] * mode_i * freq_use) * np.squeeze(gain_arr[tile_i, freq_use]))
+                        amp_use = np.abs(mode_fit) / freq_use[0].size
+                        phase_use = np.arctan2(mode_fit.imag, mode_fit.real)
+                    
+                    gain_mode_fit = amp_use * np.exp(-1j * 2 * np.pi * (mode_i * np.arange(obs['n_freq']) / obs['n_freq']) + 1j * phase_use)
+                    if (auto_ratio):
+                        # Only fit for the cable reflection in the phases
+                        cal['gain'][pol_i][tile_i, :] *= np.exp(1j * gain_mode_fit.imag)
+                    else:
+                        cal['gain'][pol_i][tile_i, :] *= 1 + gain_mode_fit 
+                    # If you want to keep the mode params do that here
+                    # TODO: check with Jack to see if this is needed
+    return cal
                         
 def vis_cal_combine(): 
     pass

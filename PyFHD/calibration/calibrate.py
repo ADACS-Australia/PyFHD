@@ -63,7 +63,7 @@ def calibrate(obs: dict, params: dict, vis_arr: np.array, vis_weights: np.array,
     cal_auto = vis_cal_auto_fit(obs, cal, vis_auto, vis_auto_model, auto_tile_i)
     cal_res = vis_cal_subtract(cal_base, cal)
 
-    # TODO: Add plotting later
+    # Add plotting later here, plot_cals was the function in IDL if you wish to translate
 
     # Apply Calibration
     vis_cal = vis_calibration_apply(vis_arr, cal, vis_model_arr, vis_weights)
