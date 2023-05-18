@@ -84,11 +84,12 @@ def calibrate(obs: dict, params: dict, vis_arr: np.array, vis_weights: np.array,
     elif (pyfhd_config["calibration-polyfit"]):
         cal = vis_cal_polyfit(cal, obs)
 
-    # Get amp from auto-correlation visibilities for plotting (or optionally for the calibration solution itself)
-    cal_auto = vis_cal_auto_fit(obs, cal, vis_auto, vis_auto_model, auto_tile_i)
     if (pyfhd_config['calibration_auto_fit']):
+        # Get amp from auto-correlation visibilities for plotting (or optionally for the calibration solution itself)
+        cal_auto = vis_cal_auto_fit(obs, cal, vis_auto, vis_auto_model, auto_tile_i)
         cal_res = vis_cal_subtract(cal_base, cal_auto)
-    cal_res = vis_cal_subtract(cal_base, cal)
+    else:
+        cal_res = vis_cal_subtract(cal_base, cal)
 
     # Add plotting later here, plot_cals was the function in IDL if you wish to translate
 

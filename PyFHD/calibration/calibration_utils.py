@@ -601,8 +601,55 @@ def vis_cal_polyfit(obs: dict, cal: dict, auto_ratio: np.ndarray | None, pyfhd_c
                     # TODO: check with Jack to see if this is needed
     return cal
 
-def vis_cal_auto_fit():
-    pass
+def vis_cal_auto_fit(obs: dict, cal: dict, vis_auto : np.ndarray, vis_auto_model: np.ndarray, auto_tile_i: np.ndarray) -> dict:
+    """
+    TODO: _summary_
+
+    Parameters
+    ----------
+    obs : dict
+        _description_
+    cal : dict
+        _description_
+    vis_auto : np.ndarray
+        _description_
+    vis_auto_model : np.ndarray
+        _description_
+    auto_tile_i : np.ndarray
+        _description_
+
+    Returns
+    -------
+    cal_auto: dict
+        _description_
+    """
+    freq_i_use = np.nonzero(obs['baseline_info']['freq_use'])
+    freq_i_flag = np.where(obs['baseline_info']['freq_use'] == 0)[0]
+    # If the number of frequencies not being used is above 0, then ignore the frequencies surrounding them.
+    if (freq_i_flag.size > 0):
+        freq_flag = np.zeros(obs['n_freq'])
+        freq_flag[freq_i_use] = 1
+        for freq_i in range(freq_i_flag.size):
+            minimum = max(0, freq_i_flag[freq_i] - 1)
+            maximum = min(freq_i_flag.size - 1, freq_i_flag[freq_i] + 1)
+            freq_flag[minimum : maximum] = 0
+        freq_i_use2 = np.nonzero(freq_flag)
+    # Vectorized loop for via_cal_auto_fit lines 45-55 in IDL
+    auto_gain = np.sqrt(vis_auto*weight_invert(vis_auto_model))
+    gain_cross = cal['gain']
+    fit_slope = np.empty((cal['n_pol'], obs['n_tile']))
+    fit_offset = np.empty_like(fit_slope)
+    # Didn't vectorize as the polyfit won't be vectorized
+    for pol_i in range(cal['n_pol']):
+        for tile_i in range(obs['n_tile']):
+            tile_i = auto_tile_i[tile_i]
+            phase_cross_single = np.arctan2(gain_cross[pol_i, tile_i, :].imag, gain_cross[pol_i, tile_i, :].real)
+            gain_auto_single = np.abs(auto_gain[pol_i, tile_i, :])
+            gain_cross_single = np.abs(gain_cross[pol_i, tile_i, :])
+            # linfit from IDL uses chi-square error calculations to do the linear fit, instead of least squares.
+            # TODO: Is there a good reason why?
+            fit_single = np.polynomial.Polynomial.fit()
+        
 
 def vis_cal_subtract():
     pass
@@ -634,6 +681,7 @@ def cal_auto_ratio_divide(obs: dict, cal: dict, vis_auto: np.ndarray, auto_tile_
         and the auto_ratio array containing the normalized reference (i.e. cable reflections)
     """
     auto_ratio = np.empty([cal['n_pol'], obs['n_tile'], obs['n_freq']])
+    # TODO: Vectorize
     for pol_i in range(cal['n_pol']):
         # fhd_struct_init_cal puts the ref_antenna as 1 if it's not set, which is never appears to be
         v0 = vis_auto[pol_i, auto_tile_i[1], :]
