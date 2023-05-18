@@ -39,6 +39,9 @@ cal-reflection-hyperresolve : true
 cal-reflection-mode-theory : 150
 cal-reflection-mode-delay : false
 cal-reflection-mode-file : false
+calibration-auto-fit: false
+calibration-auto-initialize: true
+cal_gain_init: 1
 min-cal-baseline : 50.
 vis-baseline-hist : true
 bandpass-calibrate : true

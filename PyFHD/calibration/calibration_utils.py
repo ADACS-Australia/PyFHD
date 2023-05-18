@@ -94,13 +94,14 @@ def vis_cal_auto_init(obs : dict, cal : dict, vis_arr: np.array, vis_model_arr: 
         res_mean_model = resistant_mean(vis_model_arr[pol_i, :, freq_i_use], 2)
         auto_scale[pol_i] = np.sqrt(res_mean_data / res_mean_model)
     # TODO: This should be a list, or ideally an numpy array with a known shape, change this line to reflect this
+    # TODO: Vectorize below loops
     auto_gain = np.zeros(cal["n_pol"], dtype=np.complex128)
     for pol_i in range(cal["n_pol"]):
         gain_arr = np.zeros([obs["n_tile"], obs["n_freq"]], dtype=np.complex128)
         for freq_i in range(obs["n_freq"]):
             for tile_i in range(auto_tile_i.size):
                 # TODO: Check size of gain_single in FHD and compare against what's here
-                gain_arr[auto_tile_i[tile_i], freq_i] = np.sqrt(vis_auto[pol_i, tile_i, freq_i] * weight_invert(vis_model_arr[pol_i, tile_i, freq_i]))
+                gain_arr[auto_tile_i[tile_i], freq_i] = np.sqrt(vis_auto[pol_i, tile_i, freq_i] * weight_invert(vis_auto_model[pol_i, tile_i, freq_i]))
         gain_arr *= auto_scale[pol_i] * weight_invert(np.mean(gain_arr))
         gain_arr[np.isnan(gain_arr)] = 1
         gain_arr[np.where(gain_arr) <= 0] = 1
@@ -599,9 +600,6 @@ def vis_cal_polyfit(obs: dict, cal: dict, auto_ratio: np.ndarray | None, pyfhd_c
                     # If you want to keep the mode params do that here
                     # TODO: check with Jack to see if this is needed
     return cal
-                        
-def vis_cal_combine(): 
-    pass
 
 def vis_cal_auto_fit():
     pass
@@ -613,10 +611,62 @@ def vis_calibration_apply():
     pass
 
 def cal_auto_ratio_divide(obs: dict, cal: dict, vis_auto: np.ndarray, auto_tile_i: np.ndarray) -> Tuple[dict, np.ndarray]:
-    pass
+    """
+    Create autos which are normalized via a reference to reveal antenna-dependent parameters
+    (i.e. cable reflections). Then weight the crosses by their auto ratios in order to remove
+    antenna-dependent parameters before creation of a global bandpass.
 
-def cal_auto_ratio_remultiply(obs: dict, cal: dict, auto_tile_i: np.ndarray) -> dict:
-    pass
+    Parameters
+    ----------
+    obs : dict
+        The observation dictionary
+    cal : dict
+        The calibration dictionary
+    vis_auto : np.ndarray        
+        TODO: _description_
+    auto_tile_i : np.ndarray
+        TODO: _description_
+
+    Returns
+    -------
+    (cal: dict, auto_ratio: np.ndarray)
+        A Tuple which contains the cal_dcit with an updated gain with removed antenna-dependent parameters
+        and the auto_ratio array containing the normalized reference (i.e. cable reflections)
+    """
+    auto_ratio = np.empty([cal['n_pol'], obs['n_tile'], obs['n_freq']])
+    for pol_i in range(cal['n_pol']):
+        # fhd_struct_init_cal puts the ref_antenna as 1 if it's not set, which is never appears to be
+        v0 = vis_auto[pol_i, auto_tile_i[1], :]
+        auto_ratio[pol_i, auto_tile_i, :] = np.sqrt(vis_auto[pol_i, np.arange(auto_tile_i.size), :] * weight_invert(v0))
+        # TODO: check shape of gain
+        cal['gain'][pol_i, :, :] = cal['gain'][pol_i, :, :] * weight_invert(auto_ratio[pol_i, : ,:])
+    return cal, auto_ratio
+    
+
+def cal_auto_ratio_remultiply(obs: dict, cal: dict, auto_ratio: np.ndarray, auto_tile_i: np.ndarray) -> dict:
+    """Reform the original calibration gains using the auto ratios
+
+    Parameters
+    ----------
+    obs : dict
+        The observation dictionary
+    cal : dict
+        The calibration dictionary
+    auto_ratio : np.ndarray
+        TODO:_description_
+    auto_tile_i : np.ndarray
+        TODO:_description_
+
+    Returns
+    -------
+    cal: dict
+        The calibration dictonary containing the reformed gain
+    """
+    # Replaced for loop in remultiply, this should remultiply by the auto_ratios
+    # TODO: check shape of cal['gain']
+    cal['gain'][0: cal['n_pol'], auto_tile_i, :] = cal['gain'][0: cal['n_pol'], auto_tile_i, :] * np.abs(auto_ratio[0 : cal['n_pol'], auto_tile_i, :])
+    return cal
+
 
 def calculate_adaptive_gain(gain_list, convergence_list, iter, base_gain, final_convergence_estimate = None):
     """

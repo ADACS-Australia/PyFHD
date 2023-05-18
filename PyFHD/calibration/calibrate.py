@@ -18,6 +18,28 @@ from PyFHD.calibration.vis_calibrate_subroutine import vis_calibrate_subroutine
 from PyFHD.pyfhd_tools.pyfhd_utils import extract_subarray, resistant_mean
 
 def calibrate(obs: dict, params: dict, vis_arr: np.array, vis_weights: np.array, pyfhd_config: dict, logger: RootLogger) -> Tuple[np.array, np.array, dict] :
+    """TODO: Docstring
+
+    Parameters
+    ----------
+    obs : dict
+        _description_
+    params : dict
+        _description_
+    vis_arr : np.array
+        _description_
+    vis_weights : np.array
+        _description_
+    pyfhd_config : dict
+        _description_
+    logger : RootLogger
+        _description_
+
+    Returns
+    -------
+    Tuple[np.array, np.array, dict]
+        _description_
+    """
     # Initialize cal dict
     cal = {}
     # Calculate this here as it's used throughout the calibration process
@@ -30,9 +52,11 @@ def calibrate(obs: dict, params: dict, vis_arr: np.array, vis_weights: np.array,
     vis_auto, auto_tile_i = vis_extract_autocorr(obs, vis_arr);
     # Calculate auto-correlation visibilities 
     vis_auto_model, auto_tile_i = vis_extract_autocorr(obs, vis_model_arr, auto_tile_i = auto_tile_i)
-    # Auto Initialize in FHD is set to 1, and is always true
-    cal["gain"] = vis_cal_auto_init(obs, cal, vis_arr, vis_model_arr, vis_auto, vis_auto_model, auto_tile_i)
-    
+    # Initalize the gain
+    if (pyfhd_config['calibration_auto_initialize']):
+        cal["gain"] = vis_cal_auto_init(obs, cal, vis_arr, vis_model_arr, vis_auto, vis_auto_model, auto_tile_i)
+    else:
+        cal["gain"] = np.full((cal['n_pol'], obs['n_tile'], obs['n_freq']), pyfhd_config['cal_gain_init'])
 
     # Do the calibration with vis_calibrate_subroutine 
     # TODO: vis_calibrate_subroutine outputs cal structure in FHD, likely will need to change here, or for the cal dictionary to be passed in and edited
@@ -50,7 +74,8 @@ def calibrate(obs: dict, params: dict, vis_arr: np.array, vis_weights: np.array,
 
         if (pyfhd_config["calibration-polyfit"]):
             cal_polyfit = vis_cal_polyfit(cal_remainder, obs, auto_ratio, pyfhd_config, logger)
-            cal = vis_cal_combine(cal_polyfit, cal_bandpass)
+            # Replace vis_cal_combine with this line as the gain is the same size for polyfit and bandpass
+            cal['gain'] = cal_polyfit['gain'] * cal_bandpass['gain']
         else:
             cal = cal_bandpass
         
@@ -61,13 +86,20 @@ def calibrate(obs: dict, params: dict, vis_arr: np.array, vis_weights: np.array,
 
     # Get amp from auto-correlation visibilities for plotting (or optionally for the calibration solution itself)
     cal_auto = vis_cal_auto_fit(obs, cal, vis_auto, vis_auto_model, auto_tile_i)
+    if (pyfhd_config['calibration_auto_fit']):
+        cal_res = vis_cal_subtract(cal_base, cal_auto)
     cal_res = vis_cal_subtract(cal_base, cal)
 
     # Add plotting later here, plot_cals was the function in IDL if you wish to translate
 
+    # If calibration_auto_fit was set then replace cal with cal_auto, usually for diagnostic purposes
+    if (pyfhd_config['calibration_auto_fit']):
+        cal = cal_auto
     # Apply Calibration
     vis_cal = vis_calibration_apply(vis_arr, cal, vis_model_arr, vis_weights)
     cal["gain_resolution"] = cal_res["gain"]
+
+    # Save the ratio and sigma average variance related to vis_cal
 
     # Calculate statistics to put into the calibration dictionary for output purposes
     nc_pol = min(obs["n_pol"], 2)
@@ -99,4 +131,4 @@ def calibrate(obs: dict, params: dict, vis_arr: np.array, vis_weights: np.array,
 
 
     # Return the calibrated visibility array
-    return vis_arr, vis_model_arr, cal
+    return vis_cal, vis_model_arr, cal
