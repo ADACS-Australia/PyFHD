@@ -608,20 +608,20 @@ def vis_cal_auto_fit(obs: dict, cal: dict, vis_auto : np.ndarray, vis_auto_model
     Parameters
     ----------
     obs : dict
-        _description_
+        The observation dictionary
     cal : dict
-        _description_
+        The calibration dictionary
     vis_auto : np.ndarray
-        _description_
+        TODO: _description_
     vis_auto_model : np.ndarray
-        _description_
+        TODO: _description_
     auto_tile_i : np.ndarray
-        _description_
+        TODO: _description_
 
     Returns
     -------
-    cal_auto: dict
-        _description_
+    cal: dict
+        The calibration dictionary with the calibration fitted using autocorrelations
     """
     freq_i_use = np.nonzero(obs['baseline_info']['freq_use'])
     freq_i_flag = np.where(obs['baseline_info']['freq_use'] == 0)[0]
@@ -633,7 +633,7 @@ def vis_cal_auto_fit(obs: dict, cal: dict, vis_auto : np.ndarray, vis_auto_model
             minimum = max(0, freq_i_flag[freq_i] - 1)
             maximum = min(freq_i_flag.size - 1, freq_i_flag[freq_i] + 1)
             freq_flag[minimum : maximum] = 0
-        freq_i_use2 = np.nonzero(freq_flag)
+        freq_i_use = np.nonzero(freq_flag)
     # Vectorized loop for via_cal_auto_fit lines 45-55 in IDL
     auto_gain = np.sqrt(vis_auto*weight_invert(vis_auto_model))
     gain_cross = cal['gain']
@@ -647,14 +647,22 @@ def vis_cal_auto_fit(obs: dict, cal: dict, vis_auto : np.ndarray, vis_auto_model
             gain_auto_single = np.abs(auto_gain[pol_i, tile_i, :])
             gain_cross_single = np.abs(gain_cross[pol_i, tile_i, :])
             # linfit from IDL uses chi-square error calculations to do the linear fit, instead of least squares.
-            # TODO: Is there a good reason why?
-            fit_single = np.polynomial.Polynomial.fit()
-        
+            # The polynomial fit uses least square method
+            # TODO: Is there a good reason to use chi-square of least square in this case?
+            fit_single = np.polynomial.Polynomial.fit(gain_auto_single[freq_i_use], gain_cross_single[freq_i_use]).convert().coef
+            cal['gain'][pol_i, tile_i, :] = (gain_auto_single*fit_single[1] + fit_single[0]) * np.exp(1j * phase_cross_single)
+            fit_slope[pol_i, tile_i] = fit_single[1]
+            fit_offset[pol_i, tile_i] = fit_single[0]
+    cal['auto_scale'] = np.sum(fit_slope, axis=0)
+    cal['auto_params'] = np.empty([cal['n_pol'], cal['n_pol'], obs['n_tile']])
+    cal['auto_params'][0, :, :] = fit_offset
+    cal['auto_params'][1, :, :] = fit_slope
+    return cal
 
-def vis_cal_subtract():
+def vis_calibration_apply(vis_arr: np.ndarray, cal: dict, vis_model_arr: np.ndarray, vis_weights: np.ndarray) -> np.ndarray:
     pass
 
-def vis_calibration_apply():
+def vis_baseline_hist():
     pass
 
 def cal_auto_ratio_divide(obs: dict, cal: dict, vis_auto: np.ndarray, auto_tile_i: np.ndarray) -> Tuple[dict, np.ndarray]:

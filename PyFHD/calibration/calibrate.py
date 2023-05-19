@@ -6,11 +6,10 @@ from PyFHD.calibration.calibration_utils import (
     vis_cal_auto_init, 
     vis_calibration_flag, 
     vis_cal_bandpass, 
-    vis_cal_polyfit, 
-    vis_cal_combine, 
+    vis_cal_polyfit,  
     vis_cal_auto_fit, 
-    vis_cal_subtract, 
-    vis_calibration_apply, 
+    vis_calibration_apply,
+    vis_baseline_hist,
     cal_auto_ratio_divide, 
     cal_auto_ratio_remultiply
 )
@@ -84,12 +83,14 @@ def calibrate(obs: dict, params: dict, vis_arr: np.array, vis_weights: np.array,
     elif (pyfhd_config["calibration-polyfit"]):
         cal = vis_cal_polyfit(cal, obs)
 
+    # Get the gain residuals
+    cal_res = cal_base
     if (pyfhd_config['calibration_auto_fit']):
         # Get amp from auto-correlation visibilities for plotting (or optionally for the calibration solution itself)
         cal_auto = vis_cal_auto_fit(obs, cal, vis_auto, vis_auto_model, auto_tile_i)
-        cal_res = vis_cal_subtract(cal_base, cal_auto)
+        cal_res = cal_base['gain'] - cal_auto['gain']
     else:
-        cal_res = vis_cal_subtract(cal_base, cal)
+        cal_res = cal_base['gain'] - cal['gain']
 
     # Add plotting later here, plot_cals was the function in IDL if you wish to translate
 
@@ -101,6 +102,7 @@ def calibrate(obs: dict, params: dict, vis_arr: np.array, vis_weights: np.array,
     cal["gain_resolution"] = cal_res["gain"]
 
     # Save the ratio and sigma average variance related to vis_cal
+    vis_baseline_hist()
 
     # Calculate statistics to put into the calibration dictionary for output purposes
     nc_pol = min(obs["n_pol"], 2)
