@@ -768,7 +768,7 @@ def vis_baseline_hist(obs: dict, params: dict, vis_cal: np.ndarray, vis_model_ar
 
     Returns
     -------
-    dict
+    vis_baseline_hist : dict
         _description_
     """
     kx_arr = params['uu'] / obs['kpix']
@@ -780,6 +780,33 @@ def vis_baseline_hist(obs: dict, params: dict, vis_cal: np.ndarray, vis_model_ar
 
     vis_res_ratio_mean = np.empty([obs['n_pol'], bins.size])
     vis_res_sigma = np.empty([obs['n_pol'], bins.size])
+    for pol_i in range(obs['n_pol']):
+        for bin_i in range(bins.size):
+            if (dist_hist[bin_i] > 0):
+                inds = dist_ri[dist_ri[bin_i] : dist_ri[bin_i+1]]
+                # TODO: Check shape of vis_model_arr
+                model_vals = vis_model_arr[pol_i, inds, :]
+                wh_noflag = np.where(np.abs(model_vals) > 0)
+                if (wh_noflag[0].size > 0):
+                    inds = inds[wh_noflag]
+                else:
+                    continue
+                # TODO: check shape of vis_cal and how inds should be used with it (might need flattening)
+                vis_res_ratio_mean[pol_i, :] = np.mean(np.abs(vis_cal[pol_i, inds, :] - model_vals)) / np.mean(np.abs(model_vals))
+                vis_res_sigma[pol_i, :] = np.sqrt(np.var(np.abs(vis_cal[pol_i, inds, :] - model_vals))) / np.mean(np.abs(model_vals))
+            else:
+                continue
+    # In a change from FHD, the baseline_length is saved as dist_locs the array,
+    # but dist_locs is only used for it's length, so I decided to take the length
+    # of the bins array (which I used instead of dist_locs) and store this. This dict
+    # will then get stored in the calibration dictionary when that gets saved.
+    # If you wish to save it separately a call to h5py or deepdish and saving it separately
+    # will work just fine
+    return {
+        'baseline_length' : bins.size,
+        'vis_res_ratio_mean' : vis_res_ratio_mean,
+        'vis_res_sigma' : vis_res_sigma
+    }
     
 
 def cal_auto_ratio_divide(obs: dict, cal: dict, vis_auto: np.ndarray, auto_tile_i: np.ndarray) -> Tuple[dict, np.ndarray]:
