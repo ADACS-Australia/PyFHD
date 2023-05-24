@@ -11,7 +11,8 @@ from astropy import units as u
 
 
 def extract_header(pyfhd_config : dict, logger : logging.RootLogger, data_uvfits = True) -> Tuple[dict, np.recarray]:
-    """_summary_
+    """
+    TODO:_summary_
 
     Parameters
     ----------
@@ -44,7 +45,7 @@ def extract_header(pyfhd_config : dict, logger : logging.RootLogger, data_uvfits
     else:
         uvfits_path = Path(pyfhd_config['import_model_uvfits'])
 
-    print("uvfits_path", uvfits_path)
+    logger.info(f"uvfits_path: {uvfits_path}")
 
     # Retrieve all data from the observation
     with fits.open(uvfits_path) as observation:

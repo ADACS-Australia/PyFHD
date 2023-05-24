@@ -98,11 +98,11 @@ def calibrate(obs: dict, params: dict, vis_arr: np.array, vis_weights: np.array,
     if (pyfhd_config['calibration_auto_fit']):
         cal = cal_auto
     # Apply Calibration
-    vis_cal = vis_calibration_apply(vis_arr, cal, vis_model_arr, vis_weights)
+    vis_cal, cal = vis_calibration_apply(vis_arr, obs, cal, vis_model_arr, vis_weights)
     cal["gain_resolution"] = cal_res["gain"]
 
     # Save the ratio and sigma average variance related to vis_cal
-    vis_baseline_hist()
+    cal['vis_baseline_hist'] = vis_baseline_hist(obs, params, vis_cal, vis_model_arr)
 
     # Calculate statistics to put into the calibration dictionary for output purposes
     nc_pol = min(obs["n_pol"], 2)

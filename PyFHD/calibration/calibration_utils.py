@@ -1,7 +1,7 @@
 import numpy as np
 from typing import Tuple
 from logging import RootLogger
-from PyFHD.pyfhd_tools.pyfhd_utils import resistant_mean, weight_invert, rebin
+from PyFHD.pyfhd_tools.pyfhd_utils import resistant_mean, weight_invert, rebin, histogram
 from copy import deepcopy
 from astropy.io import fits
 from astropy.constants import c
@@ -659,11 +659,128 @@ def vis_cal_auto_fit(obs: dict, cal: dict, vis_auto : np.ndarray, vis_auto_model
     cal['auto_params'][1, :, :] = fit_slope
     return cal
 
-def vis_calibration_apply(vis_arr: np.ndarray, cal: dict, vis_model_arr: np.ndarray, vis_weights: np.ndarray) -> np.ndarray:
-    pass
+def vis_calibration_apply(vis_arr: np.ndarray, obs: dict, cal: dict, vis_model_arr: np.ndarray, vis_weights: np.ndarray, logger: RootLogger) -> np.ndarray:
+    """
+    TODO: Docstring
 
-def vis_baseline_hist():
-    pass
+    Parameters
+    ----------
+    vis_arr : np.ndarray
+        _description_
+    obs : dict
+        _description_
+    cal : dict
+        _description_
+    vis_model_arr : np.ndarray
+        _description_
+    vis_weights : np.ndarray
+        _description_
+    logger : RootLogger
+        _description_
+
+    Returns
+    -------
+    np.ndarray
+        _description_
+    """
+    # tile numbering starts at 1
+    tile_a_i = obs['baseline_info']['tile_a'] - 1
+    tile_b_i = obs['baseline_info']['tile_b'] - 1
+    # TODO: Check this is polarizations from vis_arr, should be 2 or 4
+    n_pol_vis = vis_arr.shape[0]
+    gain_pol_arr1 = [0,1,0,1]
+    gain_pol_arr2 = [0,1,1,0]
+
+    inds_rebin_arr = rebin(np.arange(obs['n_freq']), [obs['n_freq'], obs['n_baselines']], sample = True)
+    inds_a = inds_rebin_arr + rebin(np.transpose(tile_a_i)* obs['n_freq'], [obs['n_freq'], obs['n_baselines']])
+    inds_b = inds_rebin_arr + rebin(np.transpose(tile_b_i)* obs['n_freq'], [obs['n_freq'], obs['n_baselines']])
+
+    # TODO: Vectorize
+    for pol_i in range(n_pol_vis):
+        gain_arr1 = cal['gain'][gain_pol_arr1[pol_i], : , :]
+        gain_arr2 = cal['gain'][gain_pol_arr2[pol_i], : , :]
+        # If you wish to add a way to invert the gain do that here with weight_invert
+        vis_gain = gain_arr1[inds_a] * np.conjugate(gain_arr2[inds_b])
+        vis_arr[pol_i, :, :] *= weight_invert(vis_gain)
+
+    if (n_pol_vis == 4):
+        if (vis_model_arr and vis_weights):
+            # This if statement replaces vis_calibrate_crosspol_phase 
+            # as this was the only place where the function was used
+            # This code should calculate the phase fit between the X and Y
+            # antenna polarizations.
+            # TODO: Check shape of vis_arr
+            # Use the xx flags (yy should be identitical at this point)
+            weights_use = np.maximum(np.squeeze(vis_arr[0, obs['n_freq'], obs['n_baselines'], obs['n_times']]), np.zeros_like(np.squeeze(vis_arr[0, obs['n_freq'], obs['n_baselines'], obs['n_times']])))
+            weights_use = np.minimum(weights_use, np.ones_like(weights_use))
+
+            # Average the visbilities in time
+            # TODO: check shape of vis_arr and adjust the rest accordingly
+            vis_xy = np.squeeze(vis_arr[2, obs['n_freq'], obs['n_baselines'], obs['n_time']])
+            # TODO: check where time axis ends up and adjust the axis parameter
+            vis_xy = np.sum(vis_xy * weights_use, axis = -1)
+            vis_yx = np.squeeze(vis_arr[3, obs['n_freq'], obs['n_baselines'], obs['n_times']])
+            vis_yx = np.sum(vis_yx * weights_use, axis = -1)
+            # TODO: check shape of vis_model_arr and adjust the rest accordingly
+            model_xy = np.squeeze(vis_model_arr[2, obs['n_freq'], obs['n_baselines'], obs['n_time']])
+            # TODO: check where time axis ends up and adjust the axis parameter
+            model_xy = np.sum(model_xy * weights_use, axis = -1)
+            model_yx = np.squeeze(vis_model_arr[3, obs['n_freq'], obs['n_baselines'], obs['n_times']])
+            model_yx = np.sum(model_yx * weights_use, axis = -1)
+            
+            # Remove Zeros
+            # TODO: Again check where time axis ends up and adjust
+            weight = np.sum(weights_use, axis = -1)
+            i_use = np.nonzero(weight)
+            # TODO: Check IDL shapes for *_xy and *_yx as it uses a reform with 1 as its dimension which is weird (?)
+            vis_xy = np.squeeze(vis_xy[i_use])
+            vis_yx = np.squeeze(vis_yx[i_use])
+            model_xy = np.squeeze(model_xy[i_use])
+            model_yx = np.squeeze(model_yx[i_use])
+
+            vis_sum = np.sum(np.conjugate(vis_xy) * model_xy) + np.sum(vis_yx * np.conjugate(model_yx))
+            cross_phase = np.arctan2(vis_sum.imag, vis_sum.real)
+
+            logger.info(f"Phase fit between X and Y antenna polarizations: {cross_phase}")
+
+            cal["cross_phase"] = cross_phase
+        
+        vis_arr[2, : ,:] *= np.exp(1j * 0)
+        vis_arr[3, :, :] *= np.exp(-1j * 0)
+
+    return vis_arr, cal
+
+
+def vis_baseline_hist(obs: dict, params: dict, vis_cal: np.ndarray, vis_model_arr: np.ndarray) -> dict:
+    """
+    TODO: Docstring
+
+    Parameters
+    ----------
+    obs : dict
+        _description_
+    params : dict
+        _description_
+    vis_cal : np.ndarray
+        _description_
+    vis_model_arr : np.ndarray
+        _description_
+
+    Returns
+    -------
+    dict
+        _description_
+    """
+    kx_arr = params['uu'] / obs['kpix']
+    ky_arr = params['vv'] / obs['kpix']
+    kr_arr = np.sqrt(kx_arr ** 2 + ky_arr ** 2)
+    # TODO: Check what type of matrix multiply it is, guessed an outer because freq array is one dimensional
+    dist_arr = np.outer(kr_arr, obs['baseline_info']['freq'])
+    dist_hist, bins, dist_ri = histogram(dist_arr, min=obs['min_baseline'], max=obs['max_baseline'], bin_size=5.0)
+
+    vis_res_ratio_mean = np.empty([obs['n_pol'], bins.size])
+    vis_res_sigma = np.empty([obs['n_pol'], bins.size])
+    
 
 def cal_auto_ratio_divide(obs: dict, cal: dict, vis_auto: np.ndarray, auto_tile_i: np.ndarray) -> Tuple[dict, np.ndarray]:
     """
