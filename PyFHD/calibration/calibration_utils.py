@@ -227,8 +227,57 @@ def transfer_bandpass(obs: dict, params: dict, cal: dict, pyfhd_config: dict, lo
     cal_bandpass = {}
     try:  
         calfits = fits.open(Path(pyfhd_config['input_path'], pyfhd_config["cal_bp_transfer"]))
+        # Get the data
+        data_array = calfits[0].data
+        # Read in the header
+        naxis = calfits[0].header['naxis']
+        n_jones = calfits[0].header['njones']
+        if ('delay' in calfits[0].header['caltype']):
+            raise Exception('Input Delay calibration not supported at this time, skipping calibration bandpass transfer.')
+        time_integration = calfits[0].header['inttime']
+        freq_channel_width = calfits[0].header['chwidth']
+        x_orient = calfits[0].header['xorient']
+        data_dims = np.empty(naxis, dtype = np.int_)
+        data_types = np.empty(naxis, dtype = str)
+        for naxis_i in range(naxis):
+            # Get the dimensions of the data
+            data_dims[naxis_i] = calfits[0].header[f"naxis{naxis_i + 1}"]
+            # Get the ctypes
+            data_types[naxis_i] = calfits[0].header[f"ctype{naxis_i + 1}"].strip()
+        # Get the indexes for the FITS standard checks
+        data_index = np.nonzero('Narrays' == data_types)[0][0]
+        ant_index = np.nonzero('antaxis' == data_types)[0][0]
+        freq_index = np.nonzero('freqs' == data_types)[0][0]
+        time_index = np.nonzero('time' == data_types)[0][0]
+        jones_index = np.nonzero('jones' == data_types)[0][0]
+        # Deal with spec_wind_index separately as default highband file doesn't have this in
+        # May cause issues with other fits files, adjust the code then.
+        spec_wind_index = np.nonzero('if' == data_types)[0]
+        if (spec_wind_index.size == 0):
+            spec_wind_index = -1
+
+        # Check the indexes given to see if they match standards, if not raise exception
+        if (data_index != 0 or ant_index != 4 or freq_index != 3 or time_index != 2 or jones_index != 1):
+            if (data_index == 0 and ant_index == 5 and freq_index == 3 and time_index == 2 and jones_index == 1 and spec_wind_index == 4):
+                logger.info("Calfits adheres to the Fall 2018 pyuvdata convention")
+                if (calfits[0].header['naxis5'] != 1):
+                    raise Exception('Calfits file includes more than one spectral window. Note that this feature is not yet supported in PyFHD.')
+                # Remove spectral window dimension for compatibility
+                data_array = np.mean(data_array, axis = 0)
+            else:
+                raise Exception("Calfits file does not appear to adhere to standard. Please see github:pyuvdata/docs/references")
+
+        freq_start = calfits[0].header[f"crval{freq_index + 1}"]
+        time_start = calfits[0].header[f"crval{time_index + 1}"]
+        time_delt = calfits[0].header[f"cdelt{time_index + 1}"]
+        jones_start = calfits[0].header[f"crval{jones_index + 1}"]
+        jones_delt = calfits[0].header[f"cdelt{jones_index + 1}"]
+        
     except FileNotFoundError as e:
         logger.error(f"{pyfhd_config['cal_bp_transfer']} file wasn't found, skipping calibration bandpass transfer")
+        return {}, {}
+    except Exception as e:
+        logger.error(e)
         return {}, {}
     cal_remainder = deepcopy(cal)
     cal_remainder["gain"][0 : cal["n_pol"]] = cal["gain"][0 : cal["n_pol"]] / cal_bandpass["gain"][0 : cal["n_pol"]]
@@ -750,7 +799,6 @@ def vis_calibration_apply(vis_arr: np.ndarray, obs: dict, cal: dict, vis_model_a
 
     return vis_arr, cal
 
-
 def vis_baseline_hist(obs: dict, params: dict, vis_cal: np.ndarray, vis_model_arr: np.ndarray) -> dict:
     """
     TODO: Docstring
@@ -808,7 +856,6 @@ def vis_baseline_hist(obs: dict, params: dict, vis_cal: np.ndarray, vis_model_ar
         'vis_res_sigma' : vis_res_sigma
     }
     
-
 def cal_auto_ratio_divide(obs: dict, cal: dict, vis_auto: np.ndarray, auto_tile_i: np.ndarray) -> Tuple[dict, np.ndarray]:
     """
     Create autos which are normalized via a reference to reveal antenna-dependent parameters
@@ -841,7 +888,6 @@ def cal_auto_ratio_divide(obs: dict, cal: dict, vis_auto: np.ndarray, auto_tile_
         # TODO: check shape of gain
         cal['gain'][pol_i, :, :] = cal['gain'][pol_i, :, :] * weight_invert(auto_ratio[pol_i, : ,:])
     return cal, auto_ratio
-    
 
 def cal_auto_ratio_remultiply(obs: dict, cal: dict, auto_ratio: np.ndarray, auto_tile_i: np.ndarray) -> dict:
     """Reform the original calibration gains using the auto ratios
@@ -866,7 +912,6 @@ def cal_auto_ratio_remultiply(obs: dict, cal: dict, auto_ratio: np.ndarray, auto
     # TODO: check shape of cal['gain']
     cal['gain'][0: cal['n_pol'], auto_tile_i, :] = cal['gain'][0: cal['n_pol'], auto_tile_i, :] * np.abs(auto_ratio[0 : cal['n_pol'], auto_tile_i, :])
     return cal
-
 
 def calculate_adaptive_gain(gain_list, convergence_list, iter, base_gain, final_convergence_estimate = None):
     """
