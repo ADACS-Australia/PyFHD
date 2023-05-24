@@ -45,11 +45,11 @@ def vis_extract_autocorr(obs: dict, vis_arr: np.array, time_average = True, auto
                     baseline_i = np.where(auto_tile_i == auto_tile_i_single[tile_i])
                     baseline_i = baseline_i[time_inds]
                     if (time_inds[0].size > 1): 
-                        # TODO: Replace extract_subarray
-                        auto_single[tile_i, :] = np.sum(extract_subarray(auto_vals, np.arange(obs["n_freq"]), baseline_i)) / time_inds[0].size
+                        # TODO: Check axis sum is being applied to
+                        auto_single[tile_i, :] = np.sum(auto_vals[baseline_i, :][:, np.arange(obs['n_freq'])], axis = 1) / time_inds[0].size
                     else:
-                        # TODO: Replace extract_subarray
-                        auto_single[tile_i, :] = extract_subarray(auto_vals, np.arange(obs["n_freq"]), baseline_i)
+                        # TODO: Check Size of auto_single
+                        auto_single[tile_i, :] = auto_vals[baseline_i, :][:, np.arange(obs['n_freq'])]
                 auto_vals = auto_single
             # TODO: Get size of auto_vals or do a python list of numpy arrays
             auto_corr[pol_i] = auto_vals
@@ -141,7 +141,7 @@ def vis_calibration_flag(obs: dict, cal: dict, params: dict, pyfhd_config: dict,
 
         # first flag based on overall amplitude
         # extract_subarray is not being used as it was FHD's way of taking the fact that
-        # IDL's indexing can be weird and won't allow to index the resut
+        # IDL's indexing can be weird and won't allow to index the result
         # TODO: May need to adjust the indexing to match IDL as tile_use_i and freq_use_i use np.where on gain, which will be multidimensional as well
         amp_sub = amp[tile_use_i[0],:][: , freq_use_i[0]]
         gain_freq_fom = np.std(amp_sub[:, 0: freq_use_i[0].size])

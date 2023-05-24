@@ -14,7 +14,7 @@ from PyFHD.calibration.calibration_utils import (
     cal_auto_ratio_remultiply
 )
 from PyFHD.calibration.vis_calibrate_subroutine import vis_calibrate_subroutine
-from PyFHD.pyfhd_tools.pyfhd_utils import extract_subarray, resistant_mean
+from PyFHD.pyfhd_tools.pyfhd_utils import resistant_mean
 
 def calibrate(obs: dict, params: dict, vis_arr: np.array, vis_weights: np.array, pyfhd_config: dict, logger: RootLogger) -> Tuple[np.array, np.array, dict] :
     """TODO: Docstring
@@ -115,8 +115,9 @@ def calibrate(obs: dict, params: dict, vis_arr: np.array, vis_weights: np.array,
         freq_use_i = np.where(obs["baseline_info"]["freq_use"])[0]
         if (tile_use_i.size == 0 or freq_use_i.size == 0):
             continue
-        gain_ref = extract_subarray(cal["gain"][pol_i], freq_use_i, tile_use_i)
-        gain_res = extract_subarray(cal_res["gain"][pol_i], freq_use_i, tile_use_i)
+        # Replaced extract_subarray with just the proper indexing
+        gain_ref = cal["gain"][pol_i, tile_use_i, freq_use_i]
+        gain_res = cal_res["gain"][pol_i, tile_use_i, freq_use_i]
         cal_gain_avg[pol_i] = np.mean(np.abs(gain_ref))
         cal_res_avg[pol_i] = np.mean(np.abs(gain_res))
         res_mean = resistant_mean(np.abs(gain_res), 2)
