@@ -233,7 +233,7 @@ def transfer_bandpass(obs: dict, params: dict, cal: dict, pyfhd_config: dict, lo
         naxis = calfits[0].header['naxis']
         n_jones = calfits[0].header['njones']
         if ('delay' in calfits[0].header['caltype']):
-            raise Exception('Input Delay calibration not supported at this time, skipping calibration bandpass transfer.')
+            raise RuntimeWarning('Input Delay calibration not supported at this time, skipping calibration bandpass transfer.')
         time_integration = calfits[0].header['inttime']
         freq_channel_width = calfits[0].header['chwidth']
         x_orient = calfits[0].header['xorient'].strip()
@@ -262,11 +262,11 @@ def transfer_bandpass(obs: dict, params: dict, cal: dict, pyfhd_config: dict, lo
             if (data_index == 0 and ant_index == 5 and freq_index == 3 and time_index == 2 and jones_index == 1 and spec_wind_index == 4):
                 logger.info("Calfits adheres to the Fall 2018 pyuvdata convention")
                 if (calfits[0].header['naxis5'] != 1):
-                    raise Exception('Calfits file includes more than one spectral window. Note that this feature is not yet supported in PyFHD.')
+                    raise RuntimeWarning('Calfits file includes more than one spectral window. Note that this feature is not yet supported in PyFHD.')
                 # Remove spectral window dimension for compatibility
                 data_array = np.mean(data_array, axis = 0)
             else:
-                raise Exception("Calfits file does not appear to adhere to standard. Please see github:pyuvdata/docs/references")
+                raise RuntimeWarning("Calfits file does not appear to adhere to standard. Please see github:pyuvdata/docs/references")
 
         freq_start = calfits[0].header[f"crval{freq_index + 1}"]
         time_start = calfits[0].header[f"crval{time_index + 1}"]
@@ -288,7 +288,7 @@ def transfer_bandpass(obs: dict, params: dict, cal: dict, pyfhd_config: dict, lo
             jones_type_matrix = jones_type_matrix[0: obs['n_pol']]
             data_array = data_array[: ,: ,:, 0: obs['n_pol'], :]
         elif (data_dims[1] < obs['n_pol']):
-            raise Exception("Not enough polarizations defined in the calibration fits file.")
+            raise RuntimeWarning("Not enough polarizations defined in the calibration fits file.")
         
         # Switch the pol convention to FHD standard if necessary
         if (x_orient == 'north' or x_orient == 'south'):
@@ -304,9 +304,9 @@ def transfer_bandpass(obs: dict, params: dict, cal: dict, pyfhd_config: dict, lo
             else:
                 logic_test = 1/freq_factor - np.floor(1/freq_factor)
             if (logic_test != 0):
-                raise Exception(f"Calfits input freq channel width is not easily castable to the observation, different by a factor of {freq_factor}")
+                raise RuntimeWarning(f"Calfits input freq channel width is not easily castable to the observation, different by a factor of {freq_factor}")
             if (freq_start != obs['baseline_info']['freq'][0]):
-                raise Exception("Calfits input freq start is not equal to observation freq start")
+                raise RuntimeWarning("Calfits input freq start is not equal to observation freq start")
             # Downselect the data array
             if (freq_factor > 1):
                 logger.warning(f"Calfits input freq channel width is different by a factor of {freq_factor}. Avergaing Down.")
@@ -328,7 +328,7 @@ def transfer_bandpass(obs: dict, params: dict, cal: dict, pyfhd_config: dict, lo
             elif (freq_factor < 1):
                 logger.warning(f"Calfits input freq channel width is different by a factor of {freq_factor}. Using linear interpolation")
                 # The IDL code has 5 nested loops, and I can't think of the vectorization right now in a reasonable ampount of time
-                # Please vectorize this later
+                # TODO: Please vectorize this later
                 data_array_temp = np.zeros((data_dims[4], obs.n_freq, n_time, n_jones, 2))
                 for data_i in range(2):
                     for jones_i in range(n_jones):
@@ -346,16 +346,101 @@ def transfer_bandpass(obs: dict, params: dict, cal: dict, pyfhd_config: dict, lo
                 data_array = np.copy(data_array_temp)
         
         # Check to see what time range this needs to be applied to, and if pointings are necessary
-        
+        if (n_time != 1):
+            sec_upperlimit = 2000
+            sec_lowerlimit = 1600
+            if ((time_integration < sec_upperlimit and time_integration > sec_lowerlimit) or (time_delt < sec_upperlimit and time_delt > sec_lowerlimit)):
+                # Calibration fits are per pointing
+                # Keep all the delay patterns in a dictionary
+                delay_patterns = {
+                     (-5): [0, 5, 10, 15, 1, 6, 11, 16, 2, 7, 12, 17, 3, 8, 13, 18],
+                    (-4): [0, 4, 8, 12, 1, 5, 9, 13, 2, 6, 10, 14, 3, 7, 11, 15],
+                    (-3): [0, 3, 6, 9, 0, 3, 6, 9, 0, 3, 6, 9, 0, 3, 6, 9],
+                    (-2): [0, 2, 4, 6, 0, 2, 4, 6, 0, 2, 4, 6, 0, 2, 4, 6],
+                    (-1): [0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3],
+                    (0): [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                    (5): [15, 10, 5, 0, 16, 11, 6, 1, 17, 12, 7, 2, 18, 13, 8, 3],
+                    (4): [12, 8, 4, 0, 13, 9, 5, 1, 14, 10, 6, 2, 15, 11, 7, 3],
+                    (3): list(reversed([0, 3, 6, 9, 0, 3, 6, 9, 0, 3, 6, 9, 0, 3, 6, 9])),
+                    (2): list(reversed([0, 2, 4, 6, 0, 2, 4, 6, 0, 2, 4, 6, 0, 2, 4, 6])),
+                    (1): list(reversed([0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3])),
+                }
+                obs_pointing = None
+                for pointing, pattern in delay_patterns.items():
+                    if np.array_equal(obs['delays'], pattern):
+                        obs_pointing = pointing
+                if (obs_pointing is None):
+                    raise RuntimeWarning("Pointing number not within 5 pointings around zenith.")
+                obs_julian_date = obs['astr']['mjdobs'] + 2400000.5
 
+                # Find corresponding in the calfits
+                # Number of days since Auguest 23 2013
+                days_since_ref = np.floor(obs_julian_date) - np.floor(time_start)
+                # pointing start shift amount depending on how many days since ref
+                obs_pointing_shift_since_ref = ((24 - 23.9344699) / 24) * days_since_ref
+                # pointing start time for HH:MM:SS on Aug23 (in JD) plus comparible pointing start time for reference, using calculated shift
+                pointing_jdhms_ref = np.array([.13611,.15157,.17565,.19963,.22222,.24342593,.26453705,.28574074,.30694,.33657407]) + obs_pointing_shift_since_ref
+                pointing_num_ref = [-5,-4,-3,-2,-1,0,1,2,3,4]
+                # pointing start time for HH:MM:SS for calfits day (in JD)
+                pointing_jdhms_calfits = time_start - np.floor(time_start)
+                # find the closest index between reference and calfits
+                pointing_calfits_index = np.argmin(np.abs(pointing_jdhms_ref - pointing_jdhms_calfits))
+                # make sure the index is greater than the pointing start time
+                if (pointing_jdhms_calfits < pointing_jdhms_ref[pointing_calfits_index]):
+                    pointing_calfits_index -= 1
+
+                if (
+                    (pointing_jdhms_calfits > (np.max(pointing_jdhms_ref) + (pointing_jdhms_ref[1] - pointing_jdhms_ref[0]))) or
+                    (pointing_jdhms_calfits < (np.min(pointing_jdhms_ref) - (pointing_jdhms_ref[1] - pointing_jdhms_ref[0])))
+                ):
+                    raise RuntimeWarning("Calfits does not start between five pointings before zenith and four pointings after zenith. Not suitable for pointing cal at this time.")
+                # find which pointing is the start of the calfits data
+                pointing_calfits_start = pointing_num_ref[pointing_calfits_index]
+                if (obs_pointing < pointing_calfits_start):
+                    raise RuntimeWarning("Calfits file does not contain pointing of observation")
+                # select pointing index in calfits that matches observation
+                obs_pointing_index = abs(pointing_calfits_start - obs_pointing)
+                # choose the corresponding pointing from the calfits data array
+                data_array = data_array[:, :, obs_pointing_index, :, :] 
+            elif (np.floor(time_delt) == np.floor(obs['time_res'])):
+                # Calibration fits are per-timeres
+                logger.info("Averaging calfits to observation length, an FHD requirement at this time.")
+                data_array_temp = np.zeros([data_dims[4], obs.n_freq, 1, data_dims[1], data_dims[0]])
+                data_array_temp[:,:,0,:,:] = np.mean(data_array, axis = 2)
+                data_array = np.copy(data_array_temp)
+            else:
+                # Calibration fits are for a random set of times
+                logger.info("Finding closest match in time between calfits and obs. Obs metadata assumed to report start time, calfits metadata assumed to report center time.")
+                time_delta = time_integration / (60 * 60 * 24)
+                time_array = np.full(n_time, time_start + time_delta)
+                obs_julian_date = obs['astr']['mjdobs'] + 2400000.5 + ((obs['n_time'] * obs['time_res']) / (2* 60 * 60 * 24))
+                if (
+                    (obs_julian_date < time_array[0] - 2 * time_delta) or
+                    (obs_julian_date > time_array[-1] + 2 * time_delta)
+                ):
+                    raise RuntimeWarning("Observation does not seem to fit within the time frame of the calfits")
+                # find the closest index between calfits and observation
+                time_index = np.argmin(np.abs(obs_julian_date - time_array))
+                data_array = data_array[:, :, time_index, :, :]
+
+        # Check number of tiles
+        if (n_ant_data != obs['n_tile']):
+            raise RuntimeWarning("Number of antennas in calfits file does match observation antenna number")
+
+        # Now that the checks are done, return the cal structure
+        cal_bandpass["n_pol"] = min(obs["n_pol"], 2)
+        cal_bandpass["conv_thresh"] = 1e-7
+        cal_bandpass["gain"] = np.full((cal_bandpass['n_pol'], obs['n_tile'], obs['n_freq']), pyfhd_config['cal_gain_init'])
+        cal_bandpass["gain"][0 : obs['n_pol'], :, :] = np.squeeze(data_array[:, :, 0, 0: obs['n_pol'], 0]) + 1j * np.squeeze(data_array[:, :, 0, 0 : obs['n_pol'], 1])
+        logger.info("Calfits File has been read and cal_bandpass has been created")
     except FileNotFoundError as e:
         logger.error(f"{pyfhd_config['cal_bp_transfer']} file wasn't found, skipping calibration bandpass transfer")
         return {}, {}
-    except Exception as e:
+    except RuntimeWarning as e:
         logger.error(e)
         return {}, {}
     cal_remainder = deepcopy(cal)
-    cal_remainder["gain"][0 : cal["n_pol"]] = cal["gain"][0 : cal["n_pol"]] / cal_bandpass["gain"][0 : cal["n_pol"]]
+    cal_remainder["gain"][0 : cal["n_pol"], :, :] = cal["gain"][0 : cal["n_pol"], :, :] / cal_bandpass["gain"][0 : cal["n_pol"], :, :]
     return cal_bandpass, cal_remainder
 
 def vis_cal_bandpass(obs: dict, cal: dict, params: dict, pyfhd_config: dict, logger: RootLogger) -> Tuple[dict, dict]:

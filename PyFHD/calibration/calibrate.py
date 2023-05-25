@@ -43,6 +43,7 @@ def calibrate(obs: dict, params: dict, vis_arr: np.array, vis_weights: np.array,
     cal = {}
     # Calculate this here as it's used throughout the calibration process
     cal["n_pol"] = min(obs["n_pol"], 2)
+    cal["conv_thresh"] = 1e-7
     
     # TODO: Get the vis_model_arr from sources, This will be the code from the branch model_transfer, add a placeholder for now
     vis_model_arr = np.array([])
