@@ -236,16 +236,17 @@ def transfer_bandpass(obs: dict, params: dict, cal: dict, pyfhd_config: dict, lo
             raise Exception('Input Delay calibration not supported at this time, skipping calibration bandpass transfer.')
         time_integration = calfits[0].header['inttime']
         freq_channel_width = calfits[0].header['chwidth']
-        x_orient = calfits[0].header['xorient']
+        x_orient = calfits[0].header['xorient'].strip()
         data_dims = np.empty(naxis, dtype = np.int_)
-        data_types = np.empty(naxis, dtype = str)
+        data_types = naxis * ['']
         for naxis_i in range(naxis):
             # Get the dimensions of the data
             data_dims[naxis_i] = calfits[0].header[f"naxis{naxis_i + 1}"]
             # Get the ctypes
-            data_types[naxis_i] = calfits[0].header[f"ctype{naxis_i + 1}"].strip()
+            data_types[naxis_i] = calfits[0].header[f"ctype{naxis_i + 1}"].lower().strip()
+        data_types = np.array(data_types)
         # Get the indexes for the FITS standard checks
-        data_index = np.nonzero('Narrays' == data_types)[0][0]
+        data_index = np.nonzero('narrays' == data_types)[0][0]
         ant_index = np.nonzero('antaxis' == data_types)[0][0]
         freq_index = np.nonzero('freqs' == data_types)[0][0]
         time_index = np.nonzero('time' == data_types)[0][0]
@@ -272,7 +273,81 @@ def transfer_bandpass(obs: dict, params: dict, cal: dict, pyfhd_config: dict, lo
         time_delt = calfits[0].header[f"cdelt{time_index + 1}"]
         jones_start = calfits[0].header[f"crval{jones_index + 1}"]
         jones_delt = calfits[0].header[f"cdelt{jones_index + 1}"]
+
+        n_ant_data = data_array.shape[0]
+        n_freq = data_array.shape[1]
+        n_time = data_array.shape[2]
+
+        # Check whether the number of polarizations specified matches the observation analysis run
+        jones_type_matrix = np.zeros(data_dims[1])
+        for jones_i in range(1, data_dims[1]):
+            jones_type_matrix[jones_i-1] = jones_start+(jones_delt*jones_i)
+        if (data_dims[1] > obs['n_pol']):
+            logger.warning("More polarizations in calibration fits file than in observation analysis. Reducing calibration to match obs.")
+            data_dims[1] = obs['n_pol']
+            jones_type_matrix = jones_type_matrix[0: obs['n_pol']]
+            data_array = data_array[: ,: ,:, 0: obs['n_pol'], :]
+        elif (data_dims[1] < obs['n_pol']):
+            raise Exception("Not enough polarizations defined in the calibration fits file.")
         
+        # Switch the pol convention to FHD standard if necessary
+        if (x_orient == 'north' or x_orient == 'south'):
+            data_array[: ,: ,:, 0, :], data_array[:, :, :, 1, :] = data_array[:, :, :, 1, :], data_array[: ,: ,:, 0, :]
+            if (obs['n_pol'] > 2):
+                data_array[: ,: ,:, 2, :], data_array[:, :, :, 3, :] = data_array[:, :, :, 3, :], data_array[: ,: ,:, 2, :]
+
+        # Check to see if the calibraton and observation frequency resolution match
+        if (freq_channel_width != obs['freq_res']):
+            freq_factor = obs['freq_res'] / freq_channel_width
+            if (freq_factor >= 1): 
+                logic_test = freq_factor - np.floor(freq_factor)
+            else:
+                logic_test = 1/freq_factor - np.floor(1/freq_factor)
+            if (logic_test != 0):
+                raise Exception(f"Calfits input freq channel width is not easily castable to the observation, different by a factor of {freq_factor}")
+            if (freq_start != obs['baseline_info']['freq'][0]):
+                raise Exception("Calfits input freq start is not equal to observation freq start")
+            # Downselect the data array
+            if (freq_factor > 1):
+                logger.warning(f"Calfits input freq channel width is different by a factor of {freq_factor}. Avergaing Down.")
+                # Set flagged indices to NAN to remove them from mean calculation
+                flag_inds = np.where(np.abs(np.squeeze(data_array[: ,: ,:, :, 2])) == 1)
+                data_array[flag_inds][0] = np.nan 
+                data_array[flag_inds][1] = np.nan 
+                for channel_i in range(obs['n_freq']):
+                    data_array[:, channel_i, :, :, :] = np.nanmean(
+                        data_array[
+                            :, 
+                            max(channel_i * freq_factor - np.floor(freq_factor / 2), 0) 
+                            : channel_i * freq_factor + np.floor(freq_factor/2.), 
+                            :, 
+                            :, 
+                            :
+                    ])
+                data_array = data_array[:, 0 : obs['n_freq'], :, :, :]
+            elif (freq_factor < 1):
+                logger.warning(f"Calfits input freq channel width is different by a factor of {freq_factor}. Using linear interpolation")
+                # The IDL code has 5 nested loops, and I can't think of the vectorization right now in a reasonable ampount of time
+                # Please vectorize this later
+                data_array_temp = np.zeros((data_dims[4], obs.n_freq, n_time, n_jones, 2))
+                for data_i in range(2):
+                    for jones_i in range(n_jones):
+                        for times_i in range(n_time):
+                            for tile_i in range(data_dims[4]):
+                                for channel_i in range(obs.n_freq - 1):
+                                    start_idx = int(channel_i * (1.0 / freq_factor))
+                                    end_idx = int((channel_i + 1) * (1.0 / freq_factor))
+                                    data_array_temp[tile_i, start_idx:end_idx, times_i, jones_i, data_i] = np.interp(
+                                        np.arange(start_idx, end_idx, 1.0),
+                                        np.arange(channel_i, channel_i + 1, 1.0),
+                                        data_array[data_i, jones_i, times_i, channel_i:channel_i + 1, tile_i]
+                                    )
+                data_array_temp[:, obs.n_freq-1, :, :, :] = data_array[:, n_freq-1, :, :, :]                                     
+                data_array = np.copy(data_array_temp)
+        
+        # Check to see what time range this needs to be applied to, and if pointings are necessary
+        
+
     except FileNotFoundError as e:
         logger.error(f"{pyfhd_config['cal_bp_transfer']} file wasn't found, skipping calibration bandpass transfer")
         return {}, {}
