@@ -980,7 +980,7 @@ def vis_weights_update(vis_weights : np.ndarray, obs: dict, params: dict, pyfhd_
         if (ti_cut[0].size > 0):
             vis_weights[0: obs['n_pol'], : , :, ti_cut] = 0
     
-    flag_i = np.where(vis_weights[0, :, :, :] <= 0)
+    flag_i = np.where(vis_weights[0] <= 0)
     flag_i_new = np.where(xmin < 0)
     if (flag_i_new[0].size > 0):
         vis_weights[0: obs['n_pol'], flag_i_new[0], flag_i_new[1], flag_i_new[2]] = 0
@@ -1001,3 +1001,6 @@ def vis_weights_update(vis_weights : np.ndarray, obs: dict, params: dict, pyfhd_
     obs['n_freq_flag'] = np.sum(1 - obs['baseline_info']['freq_use'])
 
     return vis_weights, obs
+
+def vis_noise_calc(obs: dict, vis_arr: np.ndarray, vis_weights: np.ndarray) -> np.ndarray:
+    pass
