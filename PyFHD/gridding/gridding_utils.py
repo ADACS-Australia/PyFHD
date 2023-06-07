@@ -151,7 +151,7 @@ def baseline_grid_locations(obs, psf, params, vis_weights, bi_use = None, fi_use
             bi_use = np.where(flag_test > 0)[0]
         else:
             tile_use = np.arange(n_tile) + 1
-            bi_use, _ = array_match(b_info[0]['tile_a'][0].astype(int), tile_use, array_2 = b_info[0]['tile_b'][0].astype(int))
+            bi_use = array_match(b_info[0]['tile_a'][0].astype(int), tile_use, array_2 = b_info[0]['tile_b'][0].astype(int))
     
     # Calculate indices of visibilities to grid during this call (i.e. specific freqs, time sets)
     # and initialize output arrays

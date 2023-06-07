@@ -22,6 +22,7 @@ beam-clip-floor : true
 interpolate-kernel : true
 dipole-mutual-coupling-factor : true
 beam-nfreq-avg : 16
+psf-dim: 54
 psf-resolution : 100
 beam-model-version : 2
 beam-offset-time : 56
@@ -57,7 +58,7 @@ transfer-model-uv : ~
 
 # Flagging
 flag-visibilities : false
-flag-calibration : false
+flag-calibration : true
 flag-freq-start : ~
 flag-freq-end : ~
 transfer-weights : ~

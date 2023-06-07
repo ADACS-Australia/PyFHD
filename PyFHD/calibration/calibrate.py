@@ -61,7 +61,8 @@ def calibrate(obs: dict, params: dict, vis_arr: np.array, vis_weights: np.array,
     # Do the calibration with vis_calibrate_subroutine 
     # TODO: vis_calibrate_subroutine outputs cal structure in FHD, likely will need to change here, or for the cal dictionary to be passed in and edited
     cal = vis_calibrate_subroutine(vis_arr, vis_model_arr, vis_weights, obs, cal)
-    obs = vis_calibration_flag(obs, cal, pyfhd_config, logger)
+    if (pyfhd_config['flag_calibration']):
+        obs = vis_calibration_flag(obs, cal, pyfhd_config, logger)
     cal_base = cal.copy()
 
     # Perform bandpass (amp + phase per fine freq) and polynomial fitting (low order amp + phase fit plus cable reflection fit)

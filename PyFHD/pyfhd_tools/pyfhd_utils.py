@@ -586,9 +586,7 @@ def array_match(array_1, value_match, array_2 = None) :
 
     Returns
     -------
-    indices: array
-        TODO: Add Description for return of array_match
-    matching indices: array
+    match_indices: array
         TODO: Add Description for return of array_match
     
     Raises
@@ -637,7 +635,7 @@ def array_match(array_1, value_match, array_2 = None) :
     
     match_indices = np.nonzero(ind_arr)[0]
     # Return our matching indices
-    return match_indices, match_indices.size
+    return match_indices
 
 def meshgrid(dimension, elements, axis = None, return_integer = False):
     """
@@ -907,3 +905,99 @@ def run_command(cmd : str, dry_run=False):
                             text = True).stdout
 
     return stdout
+
+def vis_weights_update(vis_weights : np.ndarray, obs: dict, params: dict, pyfhd_config: dict) -> tuple[np.ndarray, dict]:
+    """
+    TODO: _summary_
+
+    Parameters
+    ----------
+    vis_weights : np.ndarray
+        _description_
+    obs : dict
+        _description_
+    params : dict
+        _description_
+    pyfhd_config : dict
+        _description_
+
+    Returns
+    -------
+    tuple[vis_weights: np.ndarray, obs: dict]
+        The updated vis_weights and the obs dictionary now containing the sums of the flags
+    """
+    kx_arr = params['uu'] / obs['kpix']
+    ky_arr = params['vv'] / obs['kpix']
+    dist_test = np.sqrt(kx_arr ** 2 + ky_arr ** 2) * obs['kpix']
+    # TODO: Check if its a outer or dot needed
+    dist_test = np.outer(dist_test, obs['baseline_info']['freq'])
+    flag_dist_i = np.where((dist_test < obs['min_baseline']) | (dist_test > obs['max_baseline']))
+    conj_i = np.where(ky_arr > 0)
+    if (conj_i[0].size > 0):
+        kx_arr[conj_i] = -kx_arr[conj_i]
+        ky_arr[conj_i] = -ky_arr[conj_i]
+
+    # TODO: check if it needs to be outer or dot
+    xcen = np.outer(kx_arr, obs['baseline_info']['freq'])
+    xmin = np.floor(xcen) + obs['dimension'] / 2 - (pyfhd_config['psf_dim'] / 2 - 1)
+    ycen = np.outer(ky_arr, obs['baseline_info']['freq'])
+    ymin = np.floor(ycen) + obs['elements'] / 2 - (pyfhd_config['psf_dim'] / 2 - 1)
+
+    range_test_x_i = np.where((xmin <= 0) | ((xmin + pyfhd_config['psf_dim'] - 1) >= obs['dimension'] - 1))
+    if (range_test_x_i[0].size > 0):
+        xmin[range_test_x_i] = -1
+        ymin[range_test_x_i] = -1
+    range_test_y_i = np.where((ymin <= 0) | ((ymin + pyfhd_config['psf_dim'] - 1) >= obs['elements'] - 1))
+    if (range_test_y_i[0].size > 0):
+        xmin[range_test_y_i] = -1
+        ymin[range_test_y_i] = -1
+    del range_test_x_i
+    del range_test_y_i
+
+    if (flag_dist_i[0].size > 0):
+        xmin[flag_dist_i] = -1
+        ymin[flag_dist_i] = -1
+
+    # no_frequency_flagging isn't set in FHD from what I can see, begin frequency and tile flagging
+    freq_cut_i = np.where(obs['baseline_info']['freq_use'] == 0)
+    if (freq_cut_i[0].size > 0):
+        # TODO: check shape of vis_weights
+        vis_weights[0: range(obs['n_pol']), freq_cut_i, :, :] = 0
+    tile_cut_i = np.where(obs['baseline_info']['tile_use'])
+    if (tile_cut_i[0].size > 0):
+        bi_cut = array_match(obs['baseline_info']['tile_a'], tile_cut_i + 1, obs['baseline_info']['tile_b'])
+        if (bi_cut.size > 0):
+            # TODO: Check shape of vis_weights
+            vis_weights[0: obs['n_pol'], : , bi_cut, :] = 0
+    
+    time_cut_i = np.where(obs['baseline_info']['time_use'] == 0)[0]
+    bin_offset = np.append(obs['baseline_info']['bin_offset'], kx_arr.size)
+    time_bin = np.zeros(kx_arr.size)
+    for ti in range(obs['baseline_info']['time_use'].size):
+        time_bin[bin_offset[ti] : bin_offset[ti + 1]] = ti
+    for ti in range(time_cut_i.size):
+        ti_cut = np.where(time_bin == time_cut_i[ti])
+        if (ti_cut[0].size > 0):
+            vis_weights[0: obs['n_pol'], : , :, ti_cut] = 0
+    
+    flag_i = np.where(vis_weights[0, :, :, :] <= 0)
+    flag_i_new = np.where(xmin < 0)
+    if (flag_i_new[0].size > 0):
+        vis_weights[0: obs['n_pol'], flag_i_new[0], flag_i_new[1], flag_i_new[2]] = 0
+    if (flag_i[0].size > 0):
+        xmin[flag_i] = -1
+        ymin[flag_i] = -1
+
+    if (min(np.max(xmin), np.max(ymin)) < 0):
+        obs['n_vis'] = 0
+        return vis_weights, obs
+    
+    bin_n, _, _ = histogram(xmin + ymin * obs['dimension'], min = 0)
+    bin_i = np.nonzero(bin_n)
+    obs['n_vis'] = np.sum(bin_n)
+
+    obs['n_time_flag'] = np.sum(1 - obs['baseline_info']['time_use'])
+    obs['n_tile_flag'] = np.sum(1 - obs['baseline_info']['tile_use'])
+    obs['n_freq_flag'] = np.sum(1 - obs['baseline_info']['freq_use'])
+
+    return vis_weights, obs

@@ -102,6 +102,7 @@ def pyfhd_parser():
     # Beam Setup Group
     beam.add_argument('-b', '--recalculate_beam', default = False, action = 'store_true', help = "Forces PyFHD to redo the beam setup using PyFHD's beam setup.")
     beam.add_argument('--beam_nfreq_avg', type = int, default = 16, help = "The number of fine frequency channels to calculate a beam for, using the average of the frequencies.\nThe beam is a function of frequency, and a calculation on the finest level is most correct (beam_nfreq_avg=1).\nHowever, this is computationally difficult for most machines.")
+    beam.add_argument('--psf_dim', default = 54, type = int, help = 'Controls the span of the beam in u-v space. Some defaults are 30, 54 (1e6 mask with -2) or 62 (1e7 with -2).')
     beam.add_argument('--psf_resolution', default = 100, type = int, help = 'Super-resolution factor of the psf in UV space. Values greater than 1 increase the resolution of the gridding kernel.')
     beam.add_argument('--beam_model_version', type = int, default = 2, help = 'A number that indicates the tile beam model calculation.\nThis is dependent on the instrument, and specific calculations are carried out in <instrument>_beam_setup_gain.\nMWA range: 0, 1 (or anything else captured in the else statement), 2\nPAPER range: 1 (or anything else captured in the else statement), 2\nHERA range: 2 (or anything else captured in the else statement)')
     beam.add_argument('--beam_clip_floor', default = False, action = 'store_true', help = 'Set to subtract the minimum non-zero value of the beam model from all pixels.')
