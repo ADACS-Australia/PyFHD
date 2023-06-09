@@ -100,6 +100,8 @@ def main_python_only(pyfhd_config : dict, logger : logging.RootLogger):
 
     obs['vis_noise'] = vis_noise_calc(obs, vis_arr, vis_weights)
 
+    # TODO: add the gridding function after calibration testing is finished
+
     # np.save('../notebooks/pyfhd_config.npy', pyfhd_config, allow_pickle=True)
 
 def main():
