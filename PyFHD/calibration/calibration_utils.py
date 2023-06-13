@@ -68,7 +68,7 @@ def vis_extract_autocorr(obs: dict, vis_arr: np.array, time_average = True, auto
         ## TODO should the zeros and ones at least be the correct shape here?
         return np.zeros(1), np.zeros(0)
 
-def vis_cal_auto_init(obs : dict, cal : dict, vis_arr: np.array, vis_model_arr: np.array, vis_auto: np.array, vis_auto_model: np.array, auto_tile_i: np.array) -> np.array:
+def vis_cal_auto_init(obs : dict, cal : dict, vis_arr: np.array, vis_model_arr: np.array, vis_auto: np.array, vis_auto_model: np.array, auto_tile_i: np.array) -> np.ndarray:
     """
     TODO: Docstring
 
@@ -99,10 +99,9 @@ def vis_cal_auto_init(obs : dict, cal : dict, vis_arr: np.array, vis_model_arr: 
     auto_scale = np.zeros(cal["n_pol"])
     freq_i_use = np.where(obs["baseline_info"]["freq_use"])[0]
     for pol_i in range(cal["n_pol"]):
-        res_mean_data = resistant_mean(vis_arr[pol_i, freq_i_use, :], 2)
-        res_mean_model = resistant_mean(vis_model_arr[pol_i, freq_i_use, :], 2)
-        ##TODO should this be abs??
-        auto_scale[pol_i] = np.sqrt(np.abs(res_mean_data) / np.abs(res_mean_model))
+        res_mean_data = resistant_mean(np.abs(vis_arr[pol_i, freq_i_use, :]), 2)
+        res_mean_model = resistant_mean(np.abs(vis_model_arr[pol_i, freq_i_use, :]), 2)
+        auto_scale[pol_i] = np.sqrt(res_mean_data / res_mean_model)
     # TODO: This should be a list, or ideally an numpy array with a known shape, change this line to reflect this
     # TODO: Vectorize below loops
     auto_gain = np.zeros((cal["n_pol"], obs["n_freq"], obs["n_tile"]), dtype=np.complex128)

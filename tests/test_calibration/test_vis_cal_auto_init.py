@@ -8,7 +8,6 @@ from PyFHD.pyfhd_tools.test_utils import recarray_to_dict, sav_file_vis_arr_swap
 
 import numpy as np
 import deepdish as dd
-import matplotlib.pyplot as plt
 
 @pytest.fixture
 def data_dir():
@@ -84,62 +83,21 @@ def run_test(data_loc):
     vis_model_auto = h5_before['vis_model_auto']
     auto_tile_i = h5_before['auto_tile_i']
 
-    # print(vis_arr.shape, vis_model_arr.shape, vis_auto.shape)
-    
     expected_cal = h5_after['cal_init']
-
     expected_auto_gain = sav_file_vis_arr_swap_axes(expected_cal['gain'])
-
-
 
     ##TODO this is failing, there are a couple of translation boo-boos
 
     result_auto_gain = vis_cal_auto_init(obs, cal, vis_arr, vis_model_arr, vis_auto, vis_model_auto, auto_tile_i)
 
-    # print(result_auto_gain[0, 0, :10])
-    # print(expected_auto_gain[0, 0, :10])
-
-    fig, axs = plt.subplots(2, 1)
-
-    # axs.hist(np.real(expected_auto_gain[0, 0, :]), histtype='step', label='Expected')
-    # axs.hist(np.real(result_auto_gain[0, 0, :]), histtype='step', label='PyFHD')
-
-    freqind = 10
-
-    axs[0].plot(np.real(expected_auto_gain[0, freqind, :]), label='Expected')
-    axs[0].plot(np.real(result_auto_gain[0, freqind, :]), label='PyFHD')
-
-    
-    axs[0].set_ylabel('Real value (Jy)')
-
-    ratio = np.real(expected_auto_gain[0, freqind, :]) / np.real(result_auto_gain[0, freqind, :])
-
-    axs[1].plot(ratio, label='Ratio (FHD / PyFHD)')
-
-    print("expec / PyFHD mean, std", np.mean(ratio), np.std(ratio))
-
-    axs[1].set_xlabel('Auto correlation index')
-
-    axs[0].set_ylabel('Real value (Jy)')
-
-    axs[1].legend()
-
-    fig.savefig('cmooooon.png', bbox_inches='tight')
-    plt.close()
-    
-    # ##Check returned gain is as expected
-    # assert np.allclose(result_auto_gain, expected_auto_gain, atol=1e-5)
-
-    # ##Check that the gain value is inserted in `gain_list` correctly
-    # assert np.allclose(gain_list[iter], expected_gain, atol=1e-8)
-
+    ##Check returned gain is as expected
+    assert np.allclose(result_auto_gain, expected_auto_gain, atol=1e-4)
 
 def test_pointsource1_vary(base_dir):
     """Test using the `pointsource1_vary1` set of inputs"""
 
     run_test(Path(base_dir, "pointsource1_vary1"))
 
-    
 if __name__ == "__main__":
 
     def convert_before_sav(test_dir):
