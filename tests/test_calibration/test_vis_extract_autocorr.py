@@ -1,12 +1,12 @@
 import pytest
 from os import environ as env
 from pathlib import Path
+import deepdish as dd
+import numpy as np
+
 from PyFHD.calibration.calibration_utils import vis_extract_autocorr
 from PyFHD.use_idl_fhd.use_idl_outputs import convert_sav_to_dict
 from PyFHD.pyfhd_tools.test_utils import recarray_to_dict
-import deepdish as dd
-import numpy as np
-# from copy import deepcopy
 
 @pytest.fixture
 def base_dir():
@@ -30,15 +30,31 @@ def run_test(data_loc):
                                                     vis_arr,
                                                     time_average=time_average)
 
-    ##Check returned values
-    assert np.allclose(expected_auto_corr, result_auto_corr, atol=1e-8)
+    ##Outputs from .sav file can be an a 1D array containging 2D arrays
+    ##PyFHD is making 3D arrays. So test things match as a loop
+    ##over polarisations. Furthermore, FHD and PyFHD have different
+    ##axes orders, so transpose the expected values
 
-    assert result_auto_tile_i == expected_auto_tile_i
+    for pol_i in range(obs['n_pol']):
+        assert np.allclose(expected_auto_corr[pol_i].transpose(),
+                           result_auto_corr[pol_i], atol=1e-8)
+        
+    assert np.array_equal(result_auto_tile_i, expected_auto_tile_i)
+
+    ##Check returned values
+    # assert np.allclose(expected_auto_corr, result_auto_corr, atol=1e-8)
+
+    # assert result_auto_tile_i == expected_auto_tile_i
 
 def test_pointsource1_vary1(base_dir):
     """Test using the `pointsource1_vary1` set of inputs"""
 
     run_test(Path(base_dir, "pointsource1_vary1"))
+
+def test_pointsource1_vary1(base_dir):
+    """Test using the `pointsource1_standard` set of inputs"""
+
+    run_test(Path(base_dir, "pointsource1_standard"))
 
     
 if __name__ == "__main__":
@@ -55,16 +71,17 @@ if __name__ == "__main__":
         sav_dict = convert_sav_to_dict(str(Path(test_dir, "before_vis_extract_autocorr.sav")), "meh")
 
         ##convert obs from a recarray into a dictionary
-        obs = recarray_to_dict(sav_dict['obs'][0])
+        obs = recarray_to_dict(sav_dict['obs'])
         
         ##fix the shape of vis_arr
         ##TODO might need to swap axis 1 and 2 here depending on what happens
         ##inside vis_extract_autocorr
         ##Currently I'm reading into a shape of (n_pol, n_freq, n_baselines)
         vis_arr = np.empty((obs["n_pol"], sav_dict['vis_arr'][0].shape[1],
-                                          sav_dict['vis_arr'][0].shape[0]))
+                                          sav_dict['vis_arr'][0].shape[0]),
+                                          dtype=complex)
         for pol in range(obs["n_pol"]):
-            vis_arr[pol] = sav_dict['vis_arr'][pol].transpose()
+            vis_arr[pol, :, :] = sav_dict['vis_arr'][pol].transpose()
         
         ##super dictionary to save everything in
         h5_save_dict = {}
@@ -100,6 +117,6 @@ if __name__ == "__main__":
     base_dir = Path(env.get('PYFHD_TEST_PATH'))
 
     ##Each test_set contains a run with a different set of inputs/options
-    for test_set in ['pointsource1_vary1']:
+    for test_set in ['pointsource1_vary1', 'pointsource1_standard']:
         convert_sav(Path(base_dir, test_set))
         # run_test(Path(base_dir, test_set))

@@ -8,7 +8,6 @@ from astropy.constants import c
 from pathlib import Path
 from scipy.ndimage import uniform_filter
 
-
 def vis_extract_autocorr(obs: dict, vis_arr: np.array, time_average = True, auto_tile_i = None) -> Tuple[np.array, np.array]:
     """
     TODO: Docstring
@@ -29,35 +28,44 @@ def vis_extract_autocorr(obs: dict, vis_arr: np.array, time_average = True, auto
     Tuple[autocorr: np.array, auto_tile_i: np.array]
         The first array is the auto-correlation visibilities and the second array is the unique tile values
     """
-    # TODO: check if tile_a and tile_b 2D
+
     autocorr_i = np.where(obs["baseline_info"]["tile_a"] == obs["baseline_info"]["tile_b"])[0]
-    if (autocorr_i[0].size > 0):
+    if (autocorr_i.size > 0):
         auto_tile_i = obs["baseline_info"]["tile_a"][autocorr_i] - 1
         auto_tile_i_single = np.unique(auto_tile_i)
-        auto_corr = np.zeros(obs["n_pol"])
+        ##TODO this is now explicitly a 3D array; parts of the code potentially
+        ##expect it as a list of 2D arrays, so there might be trouble
+        auto_corr = np.zeros((obs["n_pol"], obs['n_freq'], auto_tile_i_single.size))
+
         for pol_i in range(obs["n_pol"]):
-            # TODO: check vis_arr shape again, compare against IDL
-            auto_vals = vis_arr[pol_i, :, autocorr_i]
+            ##Auto-correlations by definition are enirely real, so take the
+            ##real part here
+            ##index this way in case people have vis_arr as one dimensional
+            ##array, containing two further 2D arrays, rather than a proper 3D
+            ##array. Turns out this indexing is consistent across both cases
+            auto_vals = np.real(vis_arr[pol_i][:, autocorr_i])
             if (time_average):
-                auto_single = np.zeros([auto_tile_i_single.size, obs["n_freq"]])
-                time_inds = np.where(obs["baseline_info"]["time_use"])
-                for tile_i in range(time_inds[0].size):
-                    baseline_i = np.where(auto_tile_i == auto_tile_i_single[tile_i])
+                auto_single = np.zeros((obs["n_freq"], auto_tile_i_single.size))
+                time_inds = np.where(obs["baseline_info"]["time_use"])[0]
+                for tile_i in range(auto_tile_i_single.size):
+                    baseline_i = np.where(auto_tile_i == auto_tile_i_single[tile_i])[0]
                     baseline_i = baseline_i[time_inds]
-                    if (time_inds[0].size > 1): 
-                        # TODO: Check axis sum is being applied to
-                        auto_single[tile_i, :] = np.sum(auto_vals[baseline_i, :][:, np.arange(obs['n_freq'])], axis = 1) / time_inds[0].size
+                    if (time_inds.size > 1): 
+                        ##OK, auto_vals is of shape (n_freq, n_autos)
+                        ##We want to average a subset of baseline_i within auto_vals,
+                        ##to average a specific auto-correlation over time
+                        auto_single[:, tile_i] = np.sum(auto_vals[:, baseline_i][np.arange(obs['n_freq']), :], axis = 1) / time_inds.size
+
                     else:
-                        # TODO: Check Size of auto_single
-                        auto_single[tile_i, :] = auto_vals[baseline_i, :][:, np.arange(obs['n_freq'])]
+                        auto_single[:, tile_i] = auto_vals[:, baseline_i][np.arange(obs['n_freq']), :]
                 auto_vals = auto_single
-            # TODO: Get size of auto_vals or do a python list of numpy arrays
-            auto_corr[pol_i] = auto_vals
+            auto_corr[pol_i, :, :] = auto_vals
         if (time_average):
             auto_tile_i = auto_tile_i_single
         return auto_corr, auto_tile_i
     else:
         # Return auto_corr as 0 and auto_tile_i as an empty array
+        ## TODO should the zeros and ones at least be the correct shape here?
         return np.zeros(1), np.zeros(0)
 
 def vis_cal_auto_init(obs : dict, cal : dict, vis_arr: np.array, vis_model_arr: np.array, vis_auto: np.array, vis_auto_model: np.array, auto_tile_i: np.array) -> np.array:

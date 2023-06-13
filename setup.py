@@ -1,9 +1,28 @@
 from setuptools import setup
 import setuptools
-import numpy as np
-from PyFHD.pyfhd_tools.git_helper import make_gitdict
+from subprocess import check_output
 import os
 from setuptools.command.build_py import build_py as _build_py
+
+def get_commandline_output(command_list):
+    """
+    Takes a command line entry separated into list entries, and returns the
+    output from the command line as a string
+
+    Parameters
+    ----------
+    command_list : list of strings
+        list of strings that when combined form a coherent command to input into
+        the command line
+
+    Returns
+    -------
+    output : string
+        the output result of running the command
+
+    """
+    output = check_output(command_list,universal_newlines=True).strip()
+    return output
 
 class GitInfo(setuptools.Command):
   '''A custom command to create a json file containing PyFHD git information.'''
@@ -24,14 +43,19 @@ class GitInfo(setuptools.Command):
         print('Creating file PyFHD/PyFHD_gitinfo.npz')
 
   def run(self):
-    '''Write the PyFHD git npz file.'''
+    '''Write the PyFHD git text file.'''
 
     ##Find where we are running the pip install from, and add in a sensible
     ##place to save the git dictionary
-    save_path = os.path.join(os.path.abspath(os.path.dirname(__file__)),'PyFHD', 'PyFHD_gitinfo.npz')
+    save_path = os.path.join(os.path.abspath(os.path.dirname(__file__)),'PyFHD', 'PyFHD_gitinfo.txt')
 
-    git_dict = make_gitdict()
-    np.savez(save_path, **git_dict)
+    # git_dict = make_gitdict()
+    # np.savez(save_path, **git_dict)
+
+    with open(save_path, 'w') as outfile:
+        outfile.write(get_commandline_output(["git", "describe", "--always"]) + "\n")
+        outfile.write(get_commandline_output(["git", "log", "-1", "--format=%cd"]) + "\n")
+        outfile.write(get_commandline_output(["git", "rev-parse", "--abbrev-ref", "HEAD"]) + "\n")
 
 
 class BuildPyCommand(_build_py):
@@ -69,6 +93,6 @@ setup(
     entry_points = {
         'console_scripts' : ['pyfhd = PyFHD.pyfhd:main'],
     },
-    package_data={'PyFHD': ['templates/*', 'PyFHD_gitinfo.npz']},
+    package_data={'PyFHD': ['templates/*', 'PyFHD_gitinfo.txt']},
     
 )
