@@ -238,3 +238,31 @@ def convert_to_h5(test_path: Path, save_path: Path, *args) -> None:
         for key in var:
             to_save[key] = var[key]
     dd.io.save(save_path, to_save)
+
+def sav_file_vis_arr_swap_axes(sav_file_vis_arr : np.ndarray):
+    """After saving arrays from IDL like `vis_arr` and `vis_model_arr` into
+    and IDL .sav file, and subsequently loading in via scipy.io.readsav,
+    they come out in a shape/format unsuitable for PyFHD. Use this function
+    to reshape into shape = (n_pol, n_freq, n_baselines)
+
+    Parameters
+    ----------
+    sav_file_vis_arr : np.ndarray
+        Array as read in by scipy.io.readsav, if `n_pol = 2` should have `shape=(2,)`
+
+    Returns
+    -------
+    np.ndarray
+        Returns the array with `shape=(n_pol, n_freq, n_baselines)`
+    """
+
+    n_pol = sav_file_vis_arr.shape[0]
+
+    vis_arr = np.empty((n_pol, sav_file_vis_arr[0].shape[1],
+                               sav_file_vis_arr[0].shape[0]),
+                               dtype=sav_file_vis_arr[0].dtype)
+
+    for pol in range(n_pol):
+        vis_arr[pol, :, :] = sav_file_vis_arr[pol].transpose()
+
+    return vis_arr

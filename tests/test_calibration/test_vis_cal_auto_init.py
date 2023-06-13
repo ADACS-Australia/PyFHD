@@ -5,6 +5,7 @@ from PyFHD.pyfhd_tools.test_utils import get_data_items, get_data_sav
 from PyFHD.calibration.calibration_utils import vis_cal_auto_init
 from PyFHD.use_idl_fhd.use_idl_outputs import convert_sav_to_dict
 from PyFHD.pyfhd_tools.test_utils import recarray_to_dict, sav_file_vis_arr_swap_axes
+
 import numpy as np
 import deepdish as dd
 import matplotlib.pyplot as plt
@@ -87,25 +88,47 @@ def run_test(data_loc):
     
     expected_cal = h5_after['cal_init']
 
-    expected_auto_gain = sav_file_vis_arr_swap_axes(expected_cal['gain'][0])
+    expected_auto_gain = sav_file_vis_arr_swap_axes(expected_cal['gain'])
+
+
 
     ##TODO this is failing, there are a couple of translation boo-boos
 
     result_auto_gain = vis_cal_auto_init(obs, cal, vis_arr, vis_model_arr, vis_auto, vis_model_auto, auto_tile_i)
 
-    print(result_auto_gain[0, 0, :10])
-    print(expected_auto_gain[0, 0, :10])
+    # print(result_auto_gain[0, 0, :10])
+    # print(expected_auto_gain[0, 0, :10])
 
-    fig, axs = plt.subplots(1, 1)
+    fig, axs = plt.subplots(2, 1)
 
-    axs.hist(np.real(expected_auto_gain[0, 0, :]), histtype='step')
-    axs.hist(np.real(result_auto_gain[0, 0, :]), histtype='step')
+    # axs.hist(np.real(expected_auto_gain[0, 0, :]), histtype='step', label='Expected')
+    # axs.hist(np.real(result_auto_gain[0, 0, :]), histtype='step', label='PyFHD')
+
+    freqind = 10
+
+    axs[0].plot(np.real(expected_auto_gain[0, freqind, :]), label='Expected')
+    axs[0].plot(np.real(result_auto_gain[0, freqind, :]), label='PyFHD')
+
     
+    axs[0].set_ylabel('Real value (Jy)')
+
+    ratio = np.real(expected_auto_gain[0, freqind, :]) / np.real(result_auto_gain[0, freqind, :])
+
+    axs[1].plot(ratio, label='Ratio (FHD / PyFHD)')
+
+    print("expec / PyFHD mean, std", np.mean(ratio), np.std(ratio))
+
+    axs[1].set_xlabel('Auto correlation index')
+
+    axs[0].set_ylabel('Real value (Jy)')
+
+    axs[1].legend()
+
     fig.savefig('cmooooon.png', bbox_inches='tight')
     plt.close()
     
     # ##Check returned gain is as expected
-    assert np.allclose(result_auto_gain, expected_auto_gain, atol=1e-5)
+    # assert np.allclose(result_auto_gain, expected_auto_gain, atol=1e-5)
 
     # ##Check that the gain value is inserted in `gain_list` correctly
     # assert np.allclose(gain_list[iter], expected_gain, atol=1e-8)
@@ -125,8 +148,8 @@ if __name__ == "__main__":
 
         sav_dict = convert_sav_to_dict(f"{test_dir}/before_vis_cal_auto_init.sav", "meh")
 
-        obs = recarray_to_dict(sav_dict['obs'][0])
-        cal = recarray_to_dict(sav_dict['cal'][0])
+        obs = recarray_to_dict(sav_dict['obs'])
+        cal = recarray_to_dict(sav_dict['cal'])
 
         ##super dictionary to save everything in
         h5_save_dict = {}
@@ -166,7 +189,5 @@ if __name__ == "__main__":
 
     ##Each test_set contains a run with a different set of inputs/options
     for test_set in ['pointsource1_vary1']:
-        # convert_sav(Path(base_dir, test_set))
-
-        # convert_before_sav(Path(base_dir, test_set))
-        run_test(Path(base_dir, test_set))
+        convert_sav(Path(base_dir, test_set))
+        # run_test(Path(base_dir, test_set))

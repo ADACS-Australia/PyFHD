@@ -95,25 +95,27 @@ def vis_cal_auto_init(obs : dict, cal : dict, vis_arr: np.array, vis_model_arr: 
         _description_
     """
     # TODO: This should be a list, or ideally an numpy array with a known shape, change this line to reflect this
+
     auto_scale = np.zeros(cal["n_pol"])
-    freq_i_use = np.where(obs["baseline_info"]["freq_use"])
+    freq_i_use = np.where(obs["baseline_info"]["freq_use"])[0]
     for pol_i in range(cal["n_pol"]):
-        res_mean_data = resistant_mean(vis_arr[pol_i, :, freq_i_use], 2)
-        res_mean_model = resistant_mean(vis_model_arr[pol_i, :, freq_i_use], 2)
-        auto_scale[pol_i] = np.sqrt(res_mean_data / res_mean_model)
+        res_mean_data = resistant_mean(vis_arr[pol_i, freq_i_use, :], 2)
+        res_mean_model = resistant_mean(vis_model_arr[pol_i, freq_i_use, :], 2)
+        ##TODO should this be abs??
+        auto_scale[pol_i] = np.sqrt(np.abs(res_mean_data) / np.abs(res_mean_model))
     # TODO: This should be a list, or ideally an numpy array with a known shape, change this line to reflect this
     # TODO: Vectorize below loops
-    auto_gain = np.zeros(cal["n_pol"], dtype=np.complex128)
+    auto_gain = np.zeros((cal["n_pol"], obs["n_freq"], obs["n_tile"]), dtype=np.complex128)
     for pol_i in range(cal["n_pol"]):
-        gain_arr = np.zeros([obs["n_tile"], obs["n_freq"]], dtype=np.complex128)
+        gain_arr = np.zeros((obs["n_freq"], obs["n_tile"]), dtype=np.complex128)
         for freq_i in range(obs["n_freq"]):
             for tile_i in range(auto_tile_i.size):
                 # TODO: Check size of gain_single in FHD and compare against what's here
-                gain_arr[auto_tile_i[tile_i], freq_i] = np.sqrt(vis_auto[pol_i, tile_i, freq_i] * weight_invert(vis_auto_model[pol_i, tile_i, freq_i]))
+                gain_arr[freq_i, auto_tile_i[tile_i]] = np.sqrt(vis_auto[pol_i, freq_i, tile_i] * weight_invert(vis_auto_model[pol_i, freq_i, tile_i]))
         gain_arr *= auto_scale[pol_i] * weight_invert(np.mean(gain_arr))
         gain_arr[np.isnan(gain_arr)] = 1
-        gain_arr[np.where(gain_arr) <= 0] = 1
-        auto_gain[pol_i] = gain_arr
+        gain_arr[gain_arr <= 0] = 1
+        auto_gain[pol_i, :, :] = gain_arr
     return auto_gain
 
 def vis_calibration_flag(obs: dict, cal: dict, params: dict, pyfhd_config: dict, logger: RootLogger) -> dict:

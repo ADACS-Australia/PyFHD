@@ -507,7 +507,7 @@ def rebin(a, shape, sample = False):
                 rebinned = rebin_columns(row_rebinned, ax, shape, col_sizer)
     return rebinned
 
-def weight_invert(weights, threshold = None):
+def weight_invert(weights : np.ndarray | int | float | np.number, threshold = None):
     """
     The weights invert function cleans the weights given by removing
     the values that are 0, NaN or Inf ready for additional calculation.
@@ -547,7 +547,9 @@ def weight_invert(weights, threshold = None):
     IDL on the otherhand, uses the ABS function on COMPLEX numbers before using WHERE.
     Hence the behaviour we're seeing above.
     '''
+
     weights_use = weights
+
     if np.iscomplexobj(weights):
         weights_use = np.abs(weights)
     # If threshold has been set then...
@@ -557,17 +559,25 @@ def weight_invert(weights, threshold = None):
         i_use = np.where(weights_use >= threshold)
     else:
         # Otherwise get where they are not zero
-        i_use = np.where(weights_use)
+        i_use = np.where(weights_use != 0)
+
     if np.size(i_use) > 0:
-        result[i_use] = 1 / weights[i_use]
+        ##If someone is using a single number and not an array and we've
+        ##got here, we just need to divide by that single number
+        if type(weights) != np.ndarray:
+            result = 1 / weights
+        else:
+            result[i_use] = 1 / weights[i_use]
+
     # Replace all NaNs with Zeros
     if np.size(np.where(np.isnan(result))) != 0:
         result[np.where(np.isnan(result))] = 0
     # Replace all Infinities with Zeros
     if np.size(np.where(np.isinf(result))) != 0:
         result[np.where(np.isinf(result))] = 0
-    # If the result contains only 1 result, then return the result, not an array
-    if np.size(result) == 1:
+
+    # If the result is an array containing 1 result, then return the result, not an array
+    if type(result) == np.ndarray and np.size(result) == 1:
         result = result[0]
     return result
 
@@ -829,7 +839,7 @@ def simple_deproject_w_term(obs : dict, params : dict, vis_arr : np.ndarray, dir
 
     return vis_arr
 
-def resistant_mean(array : np.ndarray, deviations : int, mad_scale = 0.67449999999999999, sigma_coeff = np.array([0.020142000000000000, -0.23583999999999999 , 0.90722999999999998 , -0.15404999999999999])) -> Union[int, float, complex, np.number]:
+def resistant_mean(array : np.ndarray, deviations : int, mad_scale = 0.67449999999999999, sigma_coeff = np.array([0.020142000000000000, -0.23583999999999999 , 0.90722999999999998 , -0.15404999999999999])) -> int | float | complex | np.number:
     """
     The resistant_mean function translate the IDLAstro function resistant_mean[1]_ from IDL to Python using NumPy.
     The values mad_scale and sigma_coeff are also retrieved from the same IDLAstro function when running in Double 
@@ -884,6 +894,7 @@ def resistant_mean(array : np.ndarray, deviations : int, mad_scale = 0.674499999
     # Also take the absolute value of sigma_threshold to get the same behaviour as LE in IDL
     subarray = array[np.where(abs_dev <= np.abs(sigma_threshold))]
     # Get the mean of the subset array which contains no outliers
+
     return np.mean(subarray)
 
 def run_command(cmd : str, dry_run=False):
