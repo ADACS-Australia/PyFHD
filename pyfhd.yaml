@@ -22,6 +22,7 @@ beam-clip-floor : true
 interpolate-kernel : true
 dipole-mutual-coupling-factor : true
 beam-nfreq-avg : 16
+psf-dim: 54
 psf-resolution : 100
 beam-model-version : 2
 beam-offset-time : 56
@@ -39,9 +40,14 @@ cal-reflection-hyperresolve : true
 cal-reflection-mode-theory : 150
 cal-reflection-mode-delay : false
 cal-reflection-mode-file : false
+calibration-auto-fit: false
+calibration-auto-initialize: true
+cal_gain_init: 1
 min-cal-baseline : 50.
 vis-baseline-hist : true
 bandpass-calibrate : true
+auto-ratio-calibration: true
+digital-gain-jump-polyfit: true
 return-cal-visibilities : true
 calibration-flag-iterate : 0
 diffuse-calibrate : ~
@@ -52,7 +58,7 @@ transfer-model-uv : ~
 
 # Flagging
 flag-visibilities : false
-flag-calibration : false
+flag-calibration : true
 flag-freq-start : ~
 flag-freq-end : ~
 transfer-weights : ~

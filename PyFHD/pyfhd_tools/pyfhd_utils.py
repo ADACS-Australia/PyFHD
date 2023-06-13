@@ -586,9 +586,7 @@ def array_match(array_1, value_match, array_2 = None) :
 
     Returns
     -------
-    indices: array
-        TODO: Add Description for return of array_match
-    matching indices: array
+    match_indices: array
         TODO: Add Description for return of array_match
     
     Raises
@@ -637,7 +635,7 @@ def array_match(array_1, value_match, array_2 = None) :
     
     match_indices = np.nonzero(ind_arr)[0]
     # Return our matching indices
-    return match_indices, match_indices.size
+    return match_indices
 
 def meshgrid(dimension, elements, axis = None, return_integer = False):
     """
@@ -907,3 +905,184 @@ def run_command(cmd : str, dry_run=False):
                             text = True).stdout
 
     return stdout
+
+def vis_weights_update(vis_weights : np.ndarray, obs: dict, params: dict, pyfhd_config: dict) -> tuple[np.ndarray, dict]:
+    """
+    TODO: _summary_
+
+    Parameters
+    ----------
+    vis_weights : np.ndarray
+        _description_
+    obs : dict
+        _description_
+    params : dict
+        _description_
+    pyfhd_config : dict
+        _description_
+
+    Returns
+    -------
+    tuple[vis_weights: np.ndarray, obs: dict]
+        The updated vis_weights and the obs dictionary now containing the sums of the flags
+    """
+    kx_arr = params['uu'] / obs['kpix']
+    ky_arr = params['vv'] / obs['kpix']
+    dist_test = np.sqrt(kx_arr ** 2 + ky_arr ** 2) * obs['kpix']
+    # TODO: Check if its a outer or dot needed
+    dist_test = np.outer(dist_test, obs['baseline_info']['freq'])
+    flag_dist_i = np.where((dist_test < obs['min_baseline']) | (dist_test > obs['max_baseline']))
+    conj_i = np.where(ky_arr > 0)
+    if (conj_i[0].size > 0):
+        kx_arr[conj_i] = -kx_arr[conj_i]
+        ky_arr[conj_i] = -ky_arr[conj_i]
+
+    # TODO: check if it needs to be outer or dot
+    xcen = np.outer(kx_arr, obs['baseline_info']['freq'])
+    xmin = np.floor(xcen) + obs['dimension'] / 2 - (pyfhd_config['psf_dim'] / 2 - 1)
+    ycen = np.outer(ky_arr, obs['baseline_info']['freq'])
+    ymin = np.floor(ycen) + obs['elements'] / 2 - (pyfhd_config['psf_dim'] / 2 - 1)
+
+    range_test_x_i = np.where((xmin <= 0) | ((xmin + pyfhd_config['psf_dim'] - 1) >= obs['dimension'] - 1))
+    if (range_test_x_i[0].size > 0):
+        xmin[range_test_x_i] = -1
+        ymin[range_test_x_i] = -1
+    range_test_y_i = np.where((ymin <= 0) | ((ymin + pyfhd_config['psf_dim'] - 1) >= obs['elements'] - 1))
+    if (range_test_y_i[0].size > 0):
+        xmin[range_test_y_i] = -1
+        ymin[range_test_y_i] = -1
+    del range_test_x_i
+    del range_test_y_i
+
+    if (flag_dist_i[0].size > 0):
+        xmin[flag_dist_i] = -1
+        ymin[flag_dist_i] = -1
+
+    # no_frequency_flagging isn't set in FHD from what I can see, begin frequency and tile flagging
+    freq_cut_i = np.where(obs['baseline_info']['freq_use'] == 0)
+    if (freq_cut_i[0].size > 0):
+        # TODO: check shape of vis_weights
+        vis_weights[0: range(obs['n_pol']), freq_cut_i, :, :] = 0
+    tile_cut_i = np.where(obs['baseline_info']['tile_use'])
+    if (tile_cut_i[0].size > 0):
+        bi_cut = array_match(obs['baseline_info']['tile_a'], tile_cut_i + 1, obs['baseline_info']['tile_b'])
+        if (bi_cut.size > 0):
+            # TODO: Check shape of vis_weights
+            vis_weights[0: obs['n_pol'], : , bi_cut, :] = 0
+    
+    time_cut_i = np.where(obs['baseline_info']['time_use'] == 0)[0]
+    bin_offset = np.append(obs['baseline_info']['bin_offset'], kx_arr.size)
+    time_bin = np.zeros(kx_arr.size)
+    for ti in range(obs['baseline_info']['time_use'].size):
+        time_bin[bin_offset[ti] : bin_offset[ti + 1]] = ti
+    for ti in range(time_cut_i.size):
+        ti_cut = np.where(time_bin == time_cut_i[ti])
+        if (ti_cut[0].size > 0):
+            vis_weights[0: obs['n_pol'], : , :, ti_cut] = 0
+    
+    flag_i = np.where(vis_weights[0] <= 0)
+    flag_i_new = np.where(xmin < 0)
+    if (flag_i_new[0].size > 0):
+        vis_weights[0: obs['n_pol'], flag_i_new[0], flag_i_new[1], flag_i_new[2]] = 0
+    if (flag_i[0].size > 0):
+        xmin[flag_i] = -1
+        ymin[flag_i] = -1
+
+    if (min(np.max(xmin), np.max(ymin)) < 0):
+        obs['n_vis'] = 0
+        return vis_weights, obs
+    
+    bin_n, _, _ = histogram(xmin + ymin * obs['dimension'], min = 0)
+    bin_i = np.nonzero(bin_n)
+    obs['n_vis'] = np.sum(bin_n)
+
+    obs['n_time_flag'] = np.sum(1 - obs['baseline_info']['time_use'])
+    obs['n_tile_flag'] = np.sum(1 - obs['baseline_info']['tile_use'])
+    obs['n_freq_flag'] = np.sum(1 - obs['baseline_info']['freq_use'])
+
+    return vis_weights, obs
+
+def split_vis_weights(obs: dict, vis_weights: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    """
+    TODO: _summary_
+
+    Parameters
+    ----------
+    obs : dict
+        _description_
+    vis_weights : np.ndarray
+        _description_
+
+    Returns
+    -------
+    tuple[np.ndarray, np.ndarray]
+        _description_
+    """
+    # Not always used in vis_noise_calc requires this check in other cases
+    if (obs["n_time"] < 2):
+        return vis_weights
+
+    # Get the number of baselines, should be the last in this case
+    nb = vis_weights.shape[-1]
+    bin_end = np.zeros(obs['n_time'])
+    bin_end[0: obs['n_time'] - 1] = obs["baseline_info"]["bin_offset"][1: obs['n_time']] - 1
+    bin_end[-1] = nb - 1
+    bin_i = np.full(nb, -1, dtype = np.int64)
+    for t_i in range(obs['n_time'] // 2):
+        bin_i[obs["baseline_info"]["bin_offset"][t_i] : bin_end[t_i]] = t_i
+
+    time_start_i = np.min(np.nonzero(obs['baseline_info']['time_use'])[0])
+    nt3 = np.floor((obs['n_time'] - time_start_i) / 2) * 2
+    time_use_0 = obs['baseline_info']['time_use'][time_start_i : time_start_i + nt3 : 2]
+    time_use_1 = obs['baseline_info']['time_use'][time_start_i + 1 : time_start_i + nt3 : 2]
+    time_use_01 = time_use_0 * time_use_1
+    time_use = obs['baseline_info']['time_use']
+    time_use[time_start_i: time_start_i + nt3 : 2] = time_use_01
+    time_use[time_start_i + 1: time_start_i + nt3 : 2] = time_use_01
+    time_cut_i = np.where(time_use <= 0)[0]
+    if (time_cut_i.size > 0):
+        for cut_i in range(time_cut_i.size):
+            bin_i_cut = np.where(bin_i == time_cut_i[cut_i])
+            if (bin_i_cut[0].size > 0):
+                bin_i[bin_i_cut] = -1
+
+    bi_use = [np.where(bin_i % 2 == 0)[0], np.where(bin_i % 2 == 1)[0]]
+    if (bi_use[0].size > bi_use[1].size):
+        bi_use[1] = bi_use[1][0 : bi_use[0].size]
+    elif (bi_use[1].size > bi_use[0].size):
+        bi_use[0] = bi_use[0][0 : bi_use[1].size]
+
+    # Reset vis_weights
+    vis_weights *= 0
+    for pol_i in range(obs['n_pol']):
+        # In IDL they are doing x > y < w < z
+        flag_use = np.minimum(np.maximum(vis_weights[pol_i, : , :, bi_use[0]], 0) , np.minimum(vis_weights[pol_i, : , :, bi_use[1]], 1))
+        # No keywords used for odd_only or even_only in entirety of FHD
+        vis_weights[pol_i, :, :, bi_use[0]] = flag_use
+        vis_weights[pol_i, : ,:, bi_use[1]] = flag_use
+
+    return vis_weights, bi_use
+
+
+
+def vis_noise_calc(obs: dict, vis_arr: np.ndarray, vis_weights: np.ndarray) -> np.ndarray:
+    noise_arr = np.zeros([obs["n_pol"], obs["n_freq"]])
+
+    if (obs["n_time"] < 2): 
+        return noise_arr
+
+    # bi_use isn't set before running this, so always use split_vis_weights in this case
+    vis_weights_use, bi_use = split_vis_weights(obs, vis_weights)
+
+    for pol_i in range(obs["n_pol"]):
+        data_diff = vis_arr[pol_i, :, :, bi_use[0]].imag - vis_arr[pol_i, : ,:, bi_use[1]]
+        # TODO: Might need to be squeezed for easier use
+        vis_weight_diff = np.maximum(vis_weights_use[pol_i, :, :, bi_use[0]], 0) * np.maximum(vis_weights_use[pol_i, : ,:, bi_use[1]], 0)
+        for fi in range(obs["n_freq"]):
+            ind_use = np.where(vis_weight_diff[fi])
+            if (ind_use[0].size > 0):
+                # TODO: data_diff subsetting likely needs ind_use to be separated into the separate axes
+                noise_arr[pol_i, fi] = np.std(data_diff[fi, ind_use])
+    
+    return noise_arr
+    

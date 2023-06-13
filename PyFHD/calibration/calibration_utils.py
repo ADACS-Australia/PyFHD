@@ -1,7 +1,7 @@
 import numpy as np
 from typing import Tuple
 from logging import RootLogger
-from PyFHD.pyfhd_tools.pyfhd_utils import resistant_mean, weight_invert
+from PyFHD.pyfhd_tools.pyfhd_utils import resistant_mean, weight_invert, rebin, histogram
 from copy import deepcopy
 from astropy.io import fits
 from astropy.constants import c
@@ -45,11 +45,11 @@ def vis_extract_autocorr(obs: dict, vis_arr: np.array, time_average = True, auto
                     baseline_i = np.where(auto_tile_i == auto_tile_i_single[tile_i])
                     baseline_i = baseline_i[time_inds]
                     if (time_inds[0].size > 1): 
-                        # TODO: Replace extract_subarray
-                        auto_single[tile_i, :] = np.sum(extract_subarray(auto_vals, np.arange(obs["n_freq"]), baseline_i)) / time_inds[0].size
+                        # TODO: Check axis sum is being applied to
+                        auto_single[tile_i, :] = np.sum(auto_vals[baseline_i, :][:, np.arange(obs['n_freq'])], axis = 1) / time_inds[0].size
                     else:
-                        # TODO: Replace extract_subarray
-                        auto_single[tile_i, :] = extract_subarray(auto_vals, np.arange(obs["n_freq"]), baseline_i)
+                        # TODO: Check Size of auto_single
+                        auto_single[tile_i, :] = auto_vals[baseline_i, :][:, np.arange(obs['n_freq'])]
                 auto_vals = auto_single
             # TODO: Get size of auto_vals or do a python list of numpy arrays
             auto_corr[pol_i] = auto_vals
@@ -94,13 +94,14 @@ def vis_cal_auto_init(obs : dict, cal : dict, vis_arr: np.array, vis_model_arr: 
         res_mean_model = resistant_mean(vis_model_arr[pol_i, :, freq_i_use], 2)
         auto_scale[pol_i] = np.sqrt(res_mean_data / res_mean_model)
     # TODO: This should be a list, or ideally an numpy array with a known shape, change this line to reflect this
+    # TODO: Vectorize below loops
     auto_gain = np.zeros(cal["n_pol"], dtype=np.complex128)
     for pol_i in range(cal["n_pol"]):
         gain_arr = np.zeros([obs["n_tile"], obs["n_freq"]], dtype=np.complex128)
         for freq_i in range(obs["n_freq"]):
             for tile_i in range(auto_tile_i.size):
                 # TODO: Check size of gain_single in FHD and compare against what's here
-                gain_arr[auto_tile_i[tile_i], freq_i] = np.sqrt(vis_auto[pol_i, tile_i, freq_i] * weight_invert(vis_model_arr[pol_i, tile_i, freq_i]))
+                gain_arr[auto_tile_i[tile_i], freq_i] = np.sqrt(vis_auto[pol_i, tile_i, freq_i] * weight_invert(vis_auto_model[pol_i, tile_i, freq_i]))
         gain_arr *= auto_scale[pol_i] * weight_invert(np.mean(gain_arr))
         gain_arr[np.isnan(gain_arr)] = 1
         gain_arr[np.where(gain_arr) <= 0] = 1
@@ -140,7 +141,7 @@ def vis_calibration_flag(obs: dict, cal: dict, params: dict, pyfhd_config: dict,
 
         # first flag based on overall amplitude
         # extract_subarray is not being used as it was FHD's way of taking the fact that
-        # IDL's indexing can be weird and won't allow to index the resut
+        # IDL's indexing can be weird and won't allow to index the result
         # TODO: May need to adjust the indexing to match IDL as tile_use_i and freq_use_i use np.where on gain, which will be multidimensional as well
         amp_sub = amp[tile_use_i[0],:][: , freq_use_i[0]]
         gain_freq_fom = np.std(amp_sub[:, 0: freq_use_i[0].size])
@@ -226,11 +227,220 @@ def transfer_bandpass(obs: dict, params: dict, cal: dict, pyfhd_config: dict, lo
     cal_bandpass = {}
     try:  
         calfits = fits.open(Path(pyfhd_config['input_path'], pyfhd_config["cal_bp_transfer"]))
+        # Get the data
+        data_array = calfits[0].data
+        # Read in the header
+        naxis = calfits[0].header['naxis']
+        n_jones = calfits[0].header['njones']
+        if ('delay' in calfits[0].header['caltype']):
+            raise RuntimeWarning('Input Delay calibration not supported at this time, skipping calibration bandpass transfer.')
+        time_integration = calfits[0].header['inttime']
+        freq_channel_width = calfits[0].header['chwidth']
+        x_orient = calfits[0].header['xorient'].strip()
+        data_dims = np.empty(naxis, dtype = np.int_)
+        data_types = naxis * ['']
+        for naxis_i in range(naxis):
+            # Get the dimensions of the data
+            data_dims[naxis_i] = calfits[0].header[f"naxis{naxis_i + 1}"]
+            # Get the ctypes
+            data_types[naxis_i] = calfits[0].header[f"ctype{naxis_i + 1}"].lower().strip()
+        data_types = np.array(data_types)
+        # Get the indexes for the FITS standard checks
+        data_index = np.nonzero('narrays' == data_types)[0][0]
+        ant_index = np.nonzero('antaxis' == data_types)[0][0]
+        freq_index = np.nonzero('freqs' == data_types)[0][0]
+        time_index = np.nonzero('time' == data_types)[0][0]
+        jones_index = np.nonzero('jones' == data_types)[0][0]
+        # Deal with spec_wind_index separately as default highband file doesn't have this in
+        # May cause issues with other fits files, adjust the code then.
+        spec_wind_index = np.nonzero('if' == data_types)[0]
+        if (spec_wind_index.size == 0):
+            spec_wind_index = -1
+
+        # Check the indexes given to see if they match standards, if not raise exception
+        if (data_index != 0 or ant_index != 4 or freq_index != 3 or time_index != 2 or jones_index != 1):
+            if (data_index == 0 and ant_index == 5 and freq_index == 3 and time_index == 2 and jones_index == 1 and spec_wind_index == 4):
+                logger.info("Calfits adheres to the Fall 2018 pyuvdata convention")
+                if (calfits[0].header['naxis5'] != 1):
+                    raise RuntimeWarning('Calfits file includes more than one spectral window. Note that this feature is not yet supported in PyFHD.')
+                # Remove spectral window dimension for compatibility
+                data_array = np.mean(data_array, axis = 0)
+            else:
+                raise RuntimeWarning("Calfits file does not appear to adhere to standard. Please see github:pyuvdata/docs/references")
+
+        freq_start = calfits[0].header[f"crval{freq_index + 1}"]
+        time_start = calfits[0].header[f"crval{time_index + 1}"]
+        time_delt = calfits[0].header[f"cdelt{time_index + 1}"]
+        jones_start = calfits[0].header[f"crval{jones_index + 1}"]
+        jones_delt = calfits[0].header[f"cdelt{jones_index + 1}"]
+
+        n_ant_data = data_array.shape[0]
+        n_freq = data_array.shape[1]
+        n_time = data_array.shape[2]
+
+        # Check whether the number of polarizations specified matches the observation analysis run
+        jones_type_matrix = np.zeros(data_dims[1])
+        for jones_i in range(1, data_dims[1]):
+            jones_type_matrix[jones_i-1] = jones_start+(jones_delt*jones_i)
+        if (data_dims[1] > obs['n_pol']):
+            logger.warning("More polarizations in calibration fits file than in observation analysis. Reducing calibration to match obs.")
+            data_dims[1] = obs['n_pol']
+            jones_type_matrix = jones_type_matrix[0: obs['n_pol']]
+            data_array = data_array[: ,: ,:, 0: obs['n_pol'], :]
+        elif (data_dims[1] < obs['n_pol']):
+            raise RuntimeWarning("Not enough polarizations defined in the calibration fits file.")
+        
+        # Switch the pol convention to FHD standard if necessary
+        if (x_orient == 'north' or x_orient == 'south'):
+            data_array[: ,: ,:, 0, :], data_array[:, :, :, 1, :] = data_array[:, :, :, 1, :], data_array[: ,: ,:, 0, :]
+            if (obs['n_pol'] > 2):
+                data_array[: ,: ,:, 2, :], data_array[:, :, :, 3, :] = data_array[:, :, :, 3, :], data_array[: ,: ,:, 2, :]
+
+        # Check to see if the calibraton and observation frequency resolution match
+        if (freq_channel_width != obs['freq_res']):
+            freq_factor = obs['freq_res'] / freq_channel_width
+            if (freq_factor >= 1): 
+                logic_test = freq_factor - np.floor(freq_factor)
+            else:
+                logic_test = 1/freq_factor - np.floor(1/freq_factor)
+            if (logic_test != 0):
+                raise RuntimeWarning(f"Calfits input freq channel width is not easily castable to the observation, different by a factor of {freq_factor}")
+            if (freq_start != obs['baseline_info']['freq'][0]):
+                raise RuntimeWarning("Calfits input freq start is not equal to observation freq start")
+            # Downselect the data array
+            if (freq_factor > 1):
+                logger.warning(f"Calfits input freq channel width is different by a factor of {freq_factor}. Avergaing Down.")
+                # Set flagged indices to NAN to remove them from mean calculation
+                flag_inds = np.where(np.abs(np.squeeze(data_array[: ,: ,:, :, 2])) == 1)
+                data_array[flag_inds][0] = np.nan 
+                data_array[flag_inds][1] = np.nan 
+                for channel_i in range(obs['n_freq']):
+                    data_array[:, channel_i, :, :, :] = np.nanmean(
+                        data_array[
+                            :, 
+                            max(channel_i * freq_factor - np.floor(freq_factor / 2), 0) 
+                            : channel_i * freq_factor + np.floor(freq_factor/2.), 
+                            :, 
+                            :, 
+                            :
+                    ])
+                data_array = data_array[:, 0 : obs['n_freq'], :, :, :]
+            elif (freq_factor < 1):
+                logger.warning(f"Calfits input freq channel width is different by a factor of {freq_factor}. Using linear interpolation")
+                # The IDL code has 5 nested loops, and I can't think of the vectorization right now in a reasonable ampount of time
+                # TODO: Please vectorize this later
+                data_array_temp = np.zeros((data_dims[4], obs.n_freq, n_time, n_jones, 2))
+                for data_i in range(2):
+                    for jones_i in range(n_jones):
+                        for times_i in range(n_time):
+                            for tile_i in range(data_dims[4]):
+                                for channel_i in range(obs.n_freq - 1):
+                                    start_idx = int(channel_i * (1.0 / freq_factor))
+                                    end_idx = int((channel_i + 1) * (1.0 / freq_factor))
+                                    data_array_temp[tile_i, start_idx:end_idx, times_i, jones_i, data_i] = np.interp(
+                                        np.arange(start_idx, end_idx, 1.0),
+                                        np.arange(channel_i, channel_i + 1, 1.0),
+                                        data_array[data_i, jones_i, times_i, channel_i:channel_i + 1, tile_i]
+                                    )
+                data_array_temp[:, obs.n_freq-1, :, :, :] = data_array[:, n_freq-1, :, :, :]                                     
+                data_array = np.copy(data_array_temp)
+        
+        # Check to see what time range this needs to be applied to, and if pointings are necessary
+        if (n_time != 1):
+            sec_upperlimit = 2000
+            sec_lowerlimit = 1600
+            if ((time_integration < sec_upperlimit and time_integration > sec_lowerlimit) or (time_delt < sec_upperlimit and time_delt > sec_lowerlimit)):
+                # Calibration fits are per pointing
+                # Keep all the delay patterns in a dictionary
+                delay_patterns = {
+                     (-5): [0, 5, 10, 15, 1, 6, 11, 16, 2, 7, 12, 17, 3, 8, 13, 18],
+                    (-4): [0, 4, 8, 12, 1, 5, 9, 13, 2, 6, 10, 14, 3, 7, 11, 15],
+                    (-3): [0, 3, 6, 9, 0, 3, 6, 9, 0, 3, 6, 9, 0, 3, 6, 9],
+                    (-2): [0, 2, 4, 6, 0, 2, 4, 6, 0, 2, 4, 6, 0, 2, 4, 6],
+                    (-1): [0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3],
+                    (0): [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                    (5): [15, 10, 5, 0, 16, 11, 6, 1, 17, 12, 7, 2, 18, 13, 8, 3],
+                    (4): [12, 8, 4, 0, 13, 9, 5, 1, 14, 10, 6, 2, 15, 11, 7, 3],
+                    (3): list(reversed([0, 3, 6, 9, 0, 3, 6, 9, 0, 3, 6, 9, 0, 3, 6, 9])),
+                    (2): list(reversed([0, 2, 4, 6, 0, 2, 4, 6, 0, 2, 4, 6, 0, 2, 4, 6])),
+                    (1): list(reversed([0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3])),
+                }
+                obs_pointing = None
+                for pointing, pattern in delay_patterns.items():
+                    if np.array_equal(obs['delays'], pattern):
+                        obs_pointing = pointing
+                if (obs_pointing is None):
+                    raise RuntimeWarning("Pointing number not within 5 pointings around zenith.")
+                obs_julian_date = obs['astr']['mjdobs'] + 2400000.5
+
+                # Find corresponding in the calfits
+                # Number of days since Auguest 23 2013
+                days_since_ref = np.floor(obs_julian_date) - np.floor(time_start)
+                # pointing start shift amount depending on how many days since ref
+                obs_pointing_shift_since_ref = ((24 - 23.9344699) / 24) * days_since_ref
+                # pointing start time for HH:MM:SS on Aug23 (in JD) plus comparible pointing start time for reference, using calculated shift
+                pointing_jdhms_ref = np.array([.13611,.15157,.17565,.19963,.22222,.24342593,.26453705,.28574074,.30694,.33657407]) + obs_pointing_shift_since_ref
+                pointing_num_ref = [-5,-4,-3,-2,-1,0,1,2,3,4]
+                # pointing start time for HH:MM:SS for calfits day (in JD)
+                pointing_jdhms_calfits = time_start - np.floor(time_start)
+                # find the closest index between reference and calfits
+                pointing_calfits_index = np.argmin(np.abs(pointing_jdhms_ref - pointing_jdhms_calfits))
+                # make sure the index is greater than the pointing start time
+                if (pointing_jdhms_calfits < pointing_jdhms_ref[pointing_calfits_index]):
+                    pointing_calfits_index -= 1
+
+                if (
+                    (pointing_jdhms_calfits > (np.max(pointing_jdhms_ref) + (pointing_jdhms_ref[1] - pointing_jdhms_ref[0]))) or
+                    (pointing_jdhms_calfits < (np.min(pointing_jdhms_ref) - (pointing_jdhms_ref[1] - pointing_jdhms_ref[0])))
+                ):
+                    raise RuntimeWarning("Calfits does not start between five pointings before zenith and four pointings after zenith. Not suitable for pointing cal at this time.")
+                # find which pointing is the start of the calfits data
+                pointing_calfits_start = pointing_num_ref[pointing_calfits_index]
+                if (obs_pointing < pointing_calfits_start):
+                    raise RuntimeWarning("Calfits file does not contain pointing of observation")
+                # select pointing index in calfits that matches observation
+                obs_pointing_index = abs(pointing_calfits_start - obs_pointing)
+                # choose the corresponding pointing from the calfits data array
+                data_array = data_array[:, :, obs_pointing_index, :, :] 
+            elif (np.floor(time_delt) == np.floor(obs['time_res'])):
+                # Calibration fits are per-timeres
+                logger.info("Averaging calfits to observation length, an FHD requirement at this time.")
+                data_array_temp = np.zeros([data_dims[4], obs.n_freq, 1, data_dims[1], data_dims[0]])
+                data_array_temp[:,:,0,:,:] = np.mean(data_array, axis = 2)
+                data_array = np.copy(data_array_temp)
+            else:
+                # Calibration fits are for a random set of times
+                logger.info("Finding closest match in time between calfits and obs. Obs metadata assumed to report start time, calfits metadata assumed to report center time.")
+                time_delta = time_integration / (60 * 60 * 24)
+                time_array = np.full(n_time, time_start + time_delta)
+                obs_julian_date = obs['astr']['mjdobs'] + 2400000.5 + ((obs['n_time'] * obs['time_res']) / (2* 60 * 60 * 24))
+                if (
+                    (obs_julian_date < time_array[0] - 2 * time_delta) or
+                    (obs_julian_date > time_array[-1] + 2 * time_delta)
+                ):
+                    raise RuntimeWarning("Observation does not seem to fit within the time frame of the calfits")
+                # find the closest index between calfits and observation
+                time_index = np.argmin(np.abs(obs_julian_date - time_array))
+                data_array = data_array[:, :, time_index, :, :]
+
+        # Check number of tiles
+        if (n_ant_data != obs['n_tile']):
+            raise RuntimeWarning("Number of antennas in calfits file does match observation antenna number")
+
+        # Now that the checks are done, return the cal structure
+        cal_bandpass["n_pol"] = min(obs["n_pol"], 2)
+        cal_bandpass["conv_thresh"] = 1e-7
+        cal_bandpass["gain"] = np.full((cal_bandpass['n_pol'], obs['n_tile'], obs['n_freq']), pyfhd_config['cal_gain_init'])
+        cal_bandpass["gain"][0 : obs['n_pol'], :, :] = np.squeeze(data_array[:, :, 0, 0: obs['n_pol'], 0]) + 1j * np.squeeze(data_array[:, :, 0, 0 : obs['n_pol'], 1])
+        logger.info("Calfits File has been read and cal_bandpass has been created")
     except FileNotFoundError as e:
         logger.error(f"{pyfhd_config['cal_bp_transfer']} file wasn't found, skipping calibration bandpass transfer")
         return {}, {}
+    except RuntimeWarning as e:
+        logger.error(e)
+        return {}, {}
     cal_remainder = deepcopy(cal)
-    cal_remainder["gain"][0 : cal["n_pol"]] = cal["gain"][0 : cal["n_pol"]] / cal_bandpass["gain"][0 : cal["n_pol"]]
+    cal_remainder["gain"][0 : cal["n_pol"], :, :] = cal["gain"][0 : cal["n_pol"], :, :] / cal_bandpass["gain"][0 : cal["n_pol"], :, :]
     return cal_bandpass, cal_remainder
 
 def vis_cal_bandpass(obs: dict, cal: dict, params: dict, pyfhd_config: dict, logger: RootLogger) -> Tuple[dict, dict]:
@@ -289,6 +499,9 @@ def vis_cal_bandpass(obs: dict, cal: dict, params: dict, pyfhd_config: dict, log
         bandpass_arr = np.zeros(obs["n_freq"], cal["n_pol"] * cable_length_ref.size + 1)
         bandpass_arr[:, 0] = cal["freq"]
         bandpass_col_count = 1
+        if (pyfhd_config['auto_ratio_calibration']):
+            logger.info('auto_ratio_calibration is set, using global bandpass')
+            global_bandpass = True
         for cable_i in range(cable_length_ref.size):
             # This is an option to calibrate over all tiles to find the 'global' bandpass. It will be looped over by the number
             # of cable lengths, and will redo the same calculation everytime. It is inefficient, but effective.
@@ -365,7 +578,9 @@ def vis_cal_bandpass(obs: dict, cal: dict, params: dict, pyfhd_config: dict, log
     cal_remainder["gain"] = cal_remainder_gain
     return cal_bandpass, cal_remainder
 
-def vis_cal_polyfit(obs: dict, cal: dict, pyfhd_config: dict, logger: RootLogger) -> dict:
+def vis_cal_polyfit(obs: dict, cal: dict, auto_ratio: np.ndarray | None, pyfhd_config: dict, logger: RootLogger) -> dict:
+    # Keep the og_gain_arr for calculations later
+    og_gain_arr = cal['gain']
     if (pyfhd_config['cal_reflection_mode_theory'] or 
         pyfhd_config['cal_reflection_mode_file'] or 
         pyfhd_config['cal_reflection_mode_delay'] or
@@ -402,10 +617,26 @@ def vis_cal_polyfit(obs: dict, cal: dict, pyfhd_config: dict, logger: RootLogger
             fit_params = np.polynomial.Polynomial.fit(freq_use, gain, deg = pyfhd_config["cal_amp_degree_fit"]).convert().coef
             cal['amp_params'][pol_i, tile_i, :] = fit_params
             gain_fit = np.zeros(obs['n_freq'])
-            for di in range(pyfhd_config['cal_amp_degree_fit']):
-                gain_fit += fit_params[di, :, :] * np.arange(obs['n_freq'])**di
-            # If you wish to fit pre and post digital gain jump separately for highband MWA data, do that here
-            # TODO: Check size of this line, maybe something is off?
+            # Pre and post digital gain jump separately for highband MWA data
+            if (pyfhd_config['digital_gain_jump_polyfit']):
+                pre_dig_inds = np.where(obs['baseline_info']['freq'][freq_use] < 187.515e6)
+                if pre_dig_inds[0].size == 0:
+                    f_d = np.max(pre_dig_inds[0])
+                    f_end = freq_use[0].size
+                    fit_params1 = np.polynomial.Polynomial.fit(freq_use[0: f_d], gain[0:f_d], pyfhd_config['cal_amp_degree_fit'] - 1).convert().coef
+                    fit_params2 = np.polynomial.Polynomial.fit(freq_use[f_d + 1: f_end], gain[f_d + 1: f_end], pyfhd_config['cal_amp_degree_fit']).convert().coef
+                    for di in range(pyfhd_config['cal_amp_degree_fit']):
+                        gain_fit[freq_use[0] : freq_use[f_d]] += fit_params1[di] * (np.arange(freq_use[f_d]) ** di)
+                        gain_fit[freq_use[f_d + 1] : freq_use[f_end]] += fit_params2[di] * (np.arange(freq_use[f_end] - freq_use[f_d + 1] + 1) + freq_use[f_d + 1])**di
+                    fit_params = [fit_params1, fit_params2]
+                    cal['amp_params'][pol_i, tile_i] = fit_params
+                else:
+                    logger.warning('digital_gain_jump_polyfit only works with highband mwa data. Full band polyfit applied instead.')
+            else: 
+                for di in range(pyfhd_config['cal_amp_degree_fit']):
+                    gain_fit += fit_params[di, :, :] * np.arange(obs['n_freq'])**di
+            
+            # TODO: Check shape of this line, maybe something is off?
             gain_residual[tile_i, pol_i] = np.squeeze(gain_amp[tile_i, :] - gain_fit)
 
             # Fit for phase
@@ -483,17 +714,364 @@ def vis_cal_polyfit(obs: dict, cal: dict, pyfhd_config: dict, logger: RootLogger
                     mode_test[mask_i] = 0
             mode_i_arr = np.zeros((cal['n_pol'], obs['n_tile'])) + np.argmax(mode_test)
 
-def vis_cal_combine(): 
-    pass
+        # If you wish to implement the option to fit only certain cable lengths do that here
+        # My suggestion to create a new argparse option set as an array of cable lengths
+        # I would use the array as the cable lengths you want to only fit.
+        # Loop through the array and use a flag array to multiply the mode_i_arr by 1 or 0
+        # 0 will exclude the cable length from fitting, 1 will include it.
+        # Do note you shouldn't do it if auto_ratio is defined and auto_ratio_calibration is enabled
 
-def vis_cal_auto_fit():
-    pass
+        for pol_i in range(cal['n_pol']):
+            # Divide the polyfit to reveal the residual cable reflections better
+            gain_arr = og_gain_arr[pol_i] / cal['gain'][pol_i]
+            for ti in range(tile_use[0].size):
+                tile_i = tile_use[ti]
+                mode_i = mode_i_arr[pol_i, tile_i]
+                if (mode_i == 0):
+                    continue
+                else:
+                    # Options to hyperresolve or fit the reflection modes/amp/phase given the nominal calculations
+                    if (pyfhd_config['cal_reflection_hyperresolve']):
+                        # start with nominal cable length
+                        mode0 = mode_i
+                        # overresolve the FT used for the fit (normal resolution would be dmode=1)
+                        dmode = 0.05
+                        # range around the central mode to test
+                        nmodes = 101
+                        # array of modes to try
+                        modes = (np.arange(nmodes) - nmodes // 2) * dmode + mode0
+                        # reshape for ease of computing
+                        modes = rebin(modes, (nmodes, freq_use[0].size))
 
-def vis_cal_subtract():
-    pass
+                        if (auto_ratio):
+                            # Find tiles which will *not* be accidently coherent in their cable reflection in order to reduce bias
+                            inds = np.where((obs['baseline_info']['tile_use']) & (mode_i_arr[pol_i, :] > 0) & (np.abs(mode_i_arr[pol_i,:] - mode_i)) > 0.01)
+                            # mean over frequency for each tile
+                            freq_mean = np.mean(auto_ratio[pol_i], axis = 1)
+                            # normalized autos using each tile's freq mean
+                            norm_autos = auto_ratio[pol_i] / rebin(np.transpose(freq_mean), (obs['n_freq'], obs['n_tile']))
+                            # mean over all tiles which *are not* accidently coherent as a func of freq
+                            incoherent_mean = np.mean(norm_autos[:, inds], axis=0)
+                            # Residual and normalized (using incoherent mean) auto-correlation
+                            resautos = (norm_autos[:, tile_i] / incoherent_mean) - np.mean(norm_autos[:, tile_i] / incoherent_mean)
+                            gain_temp = rebin(np.transpose(np.squeeze(resautos[freq_use])), (nmodes, freq_use[0].size))
+                        else:
+                            # dimension manipulatio, add dim for mode fitting
+                            # Subtract the mean so aliasing is reduced in the dft cable fitting
+                            gain_temp = rebin(np.transpose(gain_arr[tile_i, freq_use]) - np.mean(gain_arr[tile_i, freq_use]), (nmodes, freq_use[0].size))
+                        # freq_use matrix to multiply/collapse in fit
+                        freq_mat = rebin(np.transpose(freq_use[0]), (nmodes, freq_use[0].size))
+                        # Perform DFT of gains to test modes
+                        test_fits = np.sum(np.exp(1j * 2 * np.pi/obs['n_freq'] * modes * freq_mat) * gain_temp, axis=-1)
+                        # Pick out highest amplitude fit (mode_ind gives the index of the mode)
+                        amp_use = np.max(np.abs(test_fits)) / freq_use[0].size
+                        mode_ind = np.argmax(np.abs(test_fits))
+                        # Phase of said fit
+                        # TODO: change arctan if test_fits isn't complex (it should be though)
+                        phase_use = np.arctan2(test_fits[mode_ind].imag, test_fits[mode_ind].real)
+                        # The actual mode
+                        mode_i = modes[0, mode_ind]
 
-def vis_calibration_apply():
-    pass
+                        # Using the mode selected from the gains, optionally use the phase to find the amp and phase
+                        if (auto_ratio):
+                            # Find tiles which will not be accidently coherent in their cable reflection in order to reduce bias
+                            inds = np.where(
+                                obs['baseline_info']['tile_use'] & 
+                                mode_i_arr[pol_i, :] > 0 & 
+                                np.abs(mode_i_arr[pol_i, :] - mode_i) > 0.01
+                            )
+                            # TODO: check gain_arr indexing
+                            residual_phase = np.arctan2(gain_arr[:, freq_use].imag, gain_arr[:, freq_use].real)
+                            incoherent_residual_phase = residual_phase[tile_i, :] - np.mean(residual_phase[inds, :], axis=1)
+                            test_fits = np.sum(np.exp(1j * 2 * np.pi/ obs['n_freq'] * mode_i * freq_use) * incoherent_residual_phase)
+                            # Factor of 2 from fitting just the phase
+                            amp_use = 2 * np.abs(test_fits) / freq_use[0].size
+                            # Factor of pi/2 from just fitting the phase
+                            phase_use = np.arctan2(test_fits.imag, test_fits.real) + np.pi/2
+                    elif (pyfhd_config['cal_reflection_mode_file']):
+                        # Use predetermined fits
+                        # TODO check amp_arr and phase_arr indexing
+                        amp_use = amp_arr[pol_i, tile_i]
+                        phase_use = phase_arr[pol_i, tile_i]
+                    else:
+                        # Use nominal delay mode, but fit amplitude and phase of reflections
+                        # TODO: check indexing of gain_arr
+                        mode_fit = np.sum(np.exp(1j * 2 * np.pi / obs['n_freq'] * mode_i * freq_use) * np.squeeze(gain_arr[tile_i, freq_use]))
+                        amp_use = np.abs(mode_fit) / freq_use[0].size
+                        phase_use = np.arctan2(mode_fit.imag, mode_fit.real)
+                    
+                    gain_mode_fit = amp_use * np.exp(-1j * 2 * np.pi * (mode_i * np.arange(obs['n_freq']) / obs['n_freq']) + 1j * phase_use)
+                    if (auto_ratio):
+                        # Only fit for the cable reflection in the phases
+                        cal['gain'][pol_i][tile_i, :] *= np.exp(1j * gain_mode_fit.imag)
+                    else:
+                        cal['gain'][pol_i][tile_i, :] *= 1 + gain_mode_fit 
+                    # If you want to keep the mode params do that here
+                    # TODO: check with Jack to see if this is needed
+    return cal
+
+def vis_cal_auto_fit(obs: dict, cal: dict, vis_auto : np.ndarray, vis_auto_model: np.ndarray, auto_tile_i: np.ndarray) -> dict:
+    """
+    TODO: _summary_
+
+    Parameters
+    ----------
+    obs : dict
+        The observation dictionary
+    cal : dict
+        The calibration dictionary
+    vis_auto : np.ndarray
+        TODO: _description_
+    vis_auto_model : np.ndarray
+        TODO: _description_
+    auto_tile_i : np.ndarray
+        TODO: _description_
+
+    Returns
+    -------
+    cal: dict
+        The calibration dictionary with the calibration fitted using autocorrelations
+    """
+    freq_i_use = np.nonzero(obs['baseline_info']['freq_use'])
+    freq_i_flag = np.where(obs['baseline_info']['freq_use'] == 0)[0]
+    # If the number of frequencies not being used is above 0, then ignore the frequencies surrounding them.
+    if (freq_i_flag.size > 0):
+        freq_flag = np.zeros(obs['n_freq'])
+        freq_flag[freq_i_use] = 1
+        for freq_i in range(freq_i_flag.size):
+            minimum = max(0, freq_i_flag[freq_i] - 1)
+            maximum = min(freq_i_flag.size - 1, freq_i_flag[freq_i] + 1)
+            freq_flag[minimum : maximum] = 0
+        freq_i_use = np.nonzero(freq_flag)
+    # Vectorized loop for via_cal_auto_fit lines 45-55 in IDL
+    auto_gain = np.sqrt(vis_auto*weight_invert(vis_auto_model))
+    gain_cross = cal['gain']
+    fit_slope = np.empty((cal['n_pol'], obs['n_tile']))
+    fit_offset = np.empty_like(fit_slope)
+    # Didn't vectorize as the polyfit won't be vectorized
+    for pol_i in range(cal['n_pol']):
+        for tile_i in range(obs['n_tile']):
+            tile_i = auto_tile_i[tile_i]
+            phase_cross_single = np.arctan2(gain_cross[pol_i, tile_i, :].imag, gain_cross[pol_i, tile_i, :].real)
+            gain_auto_single = np.abs(auto_gain[pol_i, tile_i, :])
+            gain_cross_single = np.abs(gain_cross[pol_i, tile_i, :])
+            # linfit from IDL uses chi-square error calculations to do the linear fit, instead of least squares.
+            # The polynomial fit uses least square method
+            # TODO: Is there a good reason to use chi-square of least square in this case?
+            fit_single = np.polynomial.Polynomial.fit(gain_auto_single[freq_i_use], gain_cross_single[freq_i_use]).convert().coef
+            cal['gain'][pol_i, tile_i, :] = (gain_auto_single*fit_single[1] + fit_single[0]) * np.exp(1j * phase_cross_single)
+            fit_slope[pol_i, tile_i] = fit_single[1]
+            fit_offset[pol_i, tile_i] = fit_single[0]
+    cal['auto_scale'] = np.sum(fit_slope, axis=0)
+    cal['auto_params'] = np.empty([cal['n_pol'], cal['n_pol'], obs['n_tile']])
+    cal['auto_params'][0, :, :] = fit_offset
+    cal['auto_params'][1, :, :] = fit_slope
+    return cal
+
+def vis_calibration_apply(vis_arr: np.ndarray, obs: dict, cal: dict, vis_model_arr: np.ndarray, vis_weights: np.ndarray, logger: RootLogger) -> np.ndarray:
+    """
+    TODO: Docstring
+
+    Parameters
+    ----------
+    vis_arr : np.ndarray
+        _description_
+    obs : dict
+        _description_
+    cal : dict
+        _description_
+    vis_model_arr : np.ndarray
+        _description_
+    vis_weights : np.ndarray
+        _description_
+    logger : RootLogger
+        _description_
+
+    Returns
+    -------
+    np.ndarray
+        _description_
+    """
+    # tile numbering starts at 1
+    tile_a_i = obs['baseline_info']['tile_a'] - 1
+    tile_b_i = obs['baseline_info']['tile_b'] - 1
+    # TODO: Check this is polarizations from vis_arr, should be 2 or 4
+    n_pol_vis = vis_arr.shape[0]
+    gain_pol_arr1 = [0,1,0,1]
+    gain_pol_arr2 = [0,1,1,0]
+
+    inds_rebin_arr = rebin(np.arange(obs['n_freq']), [obs['n_freq'], obs['n_baselines']], sample = True)
+    inds_a = inds_rebin_arr + rebin(np.transpose(tile_a_i)* obs['n_freq'], [obs['n_freq'], obs['n_baselines']])
+    inds_b = inds_rebin_arr + rebin(np.transpose(tile_b_i)* obs['n_freq'], [obs['n_freq'], obs['n_baselines']])
+
+    # TODO: Vectorize
+    for pol_i in range(n_pol_vis):
+        gain_arr1 = cal['gain'][gain_pol_arr1[pol_i], : , :]
+        gain_arr2 = cal['gain'][gain_pol_arr2[pol_i], : , :]
+        # If you wish to add a way to invert the gain do that here with weight_invert
+        vis_gain = gain_arr1[inds_a] * np.conjugate(gain_arr2[inds_b])
+        vis_arr[pol_i, :, :] *= weight_invert(vis_gain)
+
+    if (n_pol_vis == 4):
+        if (vis_model_arr and vis_weights):
+            # This if statement replaces vis_calibrate_crosspol_phase 
+            # as this was the only place where the function was used
+            # This code should calculate the phase fit between the X and Y
+            # antenna polarizations.
+            # TODO: Check shape of vis_arr
+            # Use the xx flags (yy should be identitical at this point)
+            weights_use = np.maximum(np.squeeze(vis_arr[0, obs['n_freq'], obs['n_baselines'], obs['n_times']]), np.zeros_like(np.squeeze(vis_arr[0, obs['n_freq'], obs['n_baselines'], obs['n_times']])))
+            weights_use = np.minimum(weights_use, np.ones_like(weights_use))
+
+            # Average the visbilities in time
+            # TODO: check shape of vis_arr and adjust the rest accordingly
+            vis_xy = np.squeeze(vis_arr[2, obs['n_freq'], obs['n_baselines'], obs['n_time']])
+            # TODO: check where time axis ends up and adjust the axis parameter
+            vis_xy = np.sum(vis_xy * weights_use, axis = -1)
+            vis_yx = np.squeeze(vis_arr[3, obs['n_freq'], obs['n_baselines'], obs['n_times']])
+            vis_yx = np.sum(vis_yx * weights_use, axis = -1)
+            # TODO: check shape of vis_model_arr and adjust the rest accordingly
+            model_xy = np.squeeze(vis_model_arr[2, obs['n_freq'], obs['n_baselines'], obs['n_time']])
+            # TODO: check where time axis ends up and adjust the axis parameter
+            model_xy = np.sum(model_xy * weights_use, axis = -1)
+            model_yx = np.squeeze(vis_model_arr[3, obs['n_freq'], obs['n_baselines'], obs['n_times']])
+            model_yx = np.sum(model_yx * weights_use, axis = -1)
+            
+            # Remove Zeros
+            # TODO: Again check where time axis ends up and adjust
+            weight = np.sum(weights_use, axis = -1)
+            i_use = np.nonzero(weight)
+            # TODO: Check IDL shapes for *_xy and *_yx as it uses a reform with 1 as its dimension which is weird (?)
+            vis_xy = np.squeeze(vis_xy[i_use])
+            vis_yx = np.squeeze(vis_yx[i_use])
+            model_xy = np.squeeze(model_xy[i_use])
+            model_yx = np.squeeze(model_yx[i_use])
+
+            vis_sum = np.sum(np.conjugate(vis_xy) * model_xy) + np.sum(vis_yx * np.conjugate(model_yx))
+            cross_phase = np.arctan2(vis_sum.imag, vis_sum.real)
+
+            logger.info(f"Phase fit between X and Y antenna polarizations: {cross_phase}")
+
+            cal["cross_phase"] = cross_phase
+        
+        vis_arr[2, : ,:] *= np.exp(1j * 0)
+        vis_arr[3, :, :] *= np.exp(-1j * 0)
+
+    return vis_arr, cal
+
+def vis_baseline_hist(obs: dict, params: dict, vis_cal: np.ndarray, vis_model_arr: np.ndarray) -> dict:
+    """
+    TODO: Docstring
+
+    Parameters
+    ----------
+    obs : dict
+        _description_
+    params : dict
+        _description_
+    vis_cal : np.ndarray
+        _description_
+    vis_model_arr : np.ndarray
+        _description_
+
+    Returns
+    -------
+    vis_baseline_hist : dict
+        _description_
+    """
+    kx_arr = params['uu'] / obs['kpix']
+    ky_arr = params['vv'] / obs['kpix']
+    kr_arr = np.sqrt(kx_arr ** 2 + ky_arr ** 2)
+    # TODO: Check what type of matrix multiply it is, guessed an outer because freq array is one dimensional
+    dist_arr = np.outer(kr_arr, obs['baseline_info']['freq'])
+    dist_hist, bins, dist_ri = histogram(dist_arr, min=obs['min_baseline'], max=obs['max_baseline'], bin_size=5.0)
+
+    vis_res_ratio_mean = np.empty([obs['n_pol'], bins.size])
+    vis_res_sigma = np.empty([obs['n_pol'], bins.size])
+    for pol_i in range(obs['n_pol']):
+        for bin_i in range(bins.size):
+            if (dist_hist[bin_i] > 0):
+                inds = dist_ri[dist_ri[bin_i] : dist_ri[bin_i+1]]
+                # TODO: Check shape of vis_model_arr
+                model_vals = vis_model_arr[pol_i, inds, :]
+                wh_noflag = np.where(np.abs(model_vals) > 0)
+                if (wh_noflag[0].size > 0):
+                    inds = inds[wh_noflag]
+                else:
+                    continue
+                # TODO: check shape of vis_cal and how inds should be used with it (might need flattening)
+                vis_res_ratio_mean[pol_i, :] = np.mean(np.abs(vis_cal[pol_i, inds, :] - model_vals)) / np.mean(np.abs(model_vals))
+                vis_res_sigma[pol_i, :] = np.sqrt(np.var(np.abs(vis_cal[pol_i, inds, :] - model_vals))) / np.mean(np.abs(model_vals))
+            else:
+                continue
+    # In a change from FHD, the baseline_length is saved as dist_locs the array,
+    # but dist_locs is only used for it's length, so I decided to take the length
+    # of the bins array (which I used instead of dist_locs) and store this. This dict
+    # will then get stored in the calibration dictionary when that gets saved.
+    # If you wish to save it separately a call to h5py or deepdish and saving it separately
+    # will work just fine
+    return {
+        'baseline_length' : bins.size,
+        'vis_res_ratio_mean' : vis_res_ratio_mean,
+        'vis_res_sigma' : vis_res_sigma
+    }
+    
+def cal_auto_ratio_divide(obs: dict, cal: dict, vis_auto: np.ndarray, auto_tile_i: np.ndarray) -> Tuple[dict, np.ndarray]:
+    """
+    Create autos which are normalized via a reference to reveal antenna-dependent parameters
+    (i.e. cable reflections). Then weight the crosses by their auto ratios in order to remove
+    antenna-dependent parameters before creation of a global bandpass.
+
+    Parameters
+    ----------
+    obs : dict
+        The observation dictionary
+    cal : dict
+        The calibration dictionary
+    vis_auto : np.ndarray        
+        TODO: _description_
+    auto_tile_i : np.ndarray
+        TODO: _description_
+
+    Returns
+    -------
+    (cal: dict, auto_ratio: np.ndarray)
+        A Tuple which contains the cal_dcit with an updated gain with removed antenna-dependent parameters
+        and the auto_ratio array containing the normalized reference (i.e. cable reflections)
+    """
+    auto_ratio = np.empty([cal['n_pol'], obs['n_tile'], obs['n_freq']])
+    # TODO: Vectorize
+    for pol_i in range(cal['n_pol']):
+        # fhd_struct_init_cal puts the ref_antenna as 1 if it's not set, which is never appears to be
+        v0 = vis_auto[pol_i, auto_tile_i[1], :]
+        auto_ratio[pol_i, auto_tile_i, :] = np.sqrt(vis_auto[pol_i, np.arange(auto_tile_i.size), :] * weight_invert(v0))
+        # TODO: check shape of gain
+        cal['gain'][pol_i, :, :] = cal['gain'][pol_i, :, :] * weight_invert(auto_ratio[pol_i, : ,:])
+    return cal, auto_ratio
+
+def cal_auto_ratio_remultiply(obs: dict, cal: dict, auto_ratio: np.ndarray, auto_tile_i: np.ndarray) -> dict:
+    """Reform the original calibration gains using the auto ratios
+
+    Parameters
+    ----------
+    obs : dict
+        The observation dictionary
+    cal : dict
+        The calibration dictionary
+    auto_ratio : np.ndarray
+        TODO:_description_
+    auto_tile_i : np.ndarray
+        TODO:_description_
+
+    Returns
+    -------
+    cal: dict
+        The calibration dictonary containing the reformed gain
+    """
+    # Replaced for loop in remultiply, this should remultiply by the auto_ratios
+    # TODO: check shape of cal['gain']
+    cal['gain'][0: cal['n_pol'], auto_tile_i, :] = cal['gain'][0: cal['n_pol'], auto_tile_i, :] * np.abs(auto_ratio[0 : cal['n_pol'], auto_tile_i, :])
+    return cal
 
 def calculate_adaptive_gain(gain_list, convergence_list, iter, base_gain, final_convergence_estimate = None):
     """

@@ -5,10 +5,11 @@ import numpy as np
 from PyFHD.pyfhd_tools.pyfhd_setup import pyfhd_parser, pyfhd_setup
 from PyFHD.data_setup.obs import create_obs
 from PyFHD.data_setup.uvfits import extract_header, create_params, extract_visibilities, create_layout
-from PyFHD.pyfhd_tools.pyfhd_utils import simple_deproject_w_term
-from PyFHD.calibration.calibrate import calibrate
+from PyFHD.pyfhd_tools.pyfhd_utils import simple_deproject_w_term, vis_weights_update, vis_noise_calc
+from PyFHD.calibration.calibrate import calibrate, calibrate_qu_mixing
 from PyFHD.use_idl_fhd.run_idl_fhd import run_IDL_calibration_only, run_IDL_convert_gridding_to_healpix_images
 from PyFHD.use_idl_fhd.use_idl_outputs import run_gridding_on_IDL_outputs
+from PyFHD.flagging import vis_flag
 import logging
 
 def _print_time_diff(start : float, end : float, description : str, logger : RootLogger):
@@ -89,6 +90,17 @@ def main_python_only(pyfhd_config : dict, logger : logging.RootLogger):
     # Skipped initializing the cal structure as it mostly just copies values from the obs, params, config and the skymodel from FHD
     # However, there may be a resulting cal structure for logging and output purposes depending on calibration translation.
     vis_arr, vis_model_arr, cal = calibrate(obs, params, vis_arr, vis_weights, pyfhd_config, logger)
+
+    if (obs['n_pol'] == 4):
+        cal["stokes_mix_phase"] = calibrate_qu_mixing(vis_arr, vis_model_arr, vis_weights, obs)
+
+    vis_weights, obs = vis_weights_update(vis_weights, obs, params, pyfhd_config)
+
+    vis_weights, obs = vis_flag(vis_arr, vis_weights, obs, params)
+
+    obs['vis_noise'] = vis_noise_calc(obs, vis_arr, vis_weights)
+
+    # TODO: add the gridding function after calibration testing is finished
 
     # np.save('../notebooks/pyfhd_config.npy', pyfhd_config, allow_pickle=True)
 

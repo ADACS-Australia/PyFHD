@@ -4,6 +4,7 @@ from pathlib import Path
 import numpy.testing as npt
 from colorama import Fore
 from colorama import Style
+import deepdish as dd
 
 def get_data(data_dir, data_filename, *args):
     """
@@ -166,7 +167,7 @@ def try_assert_all_close(actual : np.ndarray, target : np.ndarray, name : str, t
     except AssertionError as error:
         print(Fore.RED + Style.BRIGHT + "Test Failed for {}:".format(name) + Style.RESET_ALL + "{}".format(error) + Style.RESET_ALL)
 
-def recarray_to_dict(recarray: np.recarray) -> dict:
+def recarray_to_dict(data: np.recarray | dict) -> dict:
     """
     Turns a record array into a dict, but does it as a deep convert. This was needed due to scipy's readsav
     returning an inception like experience of record arrays. This would mean to access values from something 
@@ -178,49 +179,62 @@ def recarray_to_dict(recarray: np.recarray) -> dict:
     This was made specifically to work with the readsav function, to get compatibility with general recarrays remove the
     zero index, as readsav for some reason adds a single dimension to all recarrays.
 
+    This was updated later to also take a dictionary which may contain record arrays too.
+
     Parameters
     ----------
-    recarray : np.recarray
-        A record array maybe containing nested record arrays
+    data : np.recarray or dict
+        A record array or dictionary maybe containing nested record arrays
 
     Returns
     -------
-    new_dict: dict
+    data: dict
         A potentially nested dictionaries of dictionaries
     """
     # Convert the original record array into a dictionary
-    new_dict = {name.lower():recarray[name] for name in recarray.dtype.names}
+    if (type(data) == np.recarray):
+        data = {name.lower():data[name] for name in data.dtype.names}
     # For every key, if it's a record array, recursively call the function
-    for key in new_dict:
-        if (type(new_dict[key]) == np.recarray):
-            new_dict[key] = recarray_to_dict(new_dict[key][0])
-    return new_dict
+    for key in data:
+        # Sometimes the recarray is in a standard numpy object array and other times its not for some reason...
+        if (type(data[key]) == np.recarray):
+            data[key] = recarray_to_dict(data[key])
+        elif (type(data[key]) == np.ndarray and type(data[key][0]) == np.recarray):
+            data[key] = recarray_to_dict(data[key][0])
+        # Every now and then you do get object arrays that contain only one element or arrays that contain only one element
+        # These are not useful so I will extract the element out
+        if (type(data[key]) == np.ndarray and data[key].size == 1):
+            data[key] = data[key][0]
+    return data
 
+def convert_to_h5(test_path: Path, save_path: Path, *args) -> None:
+    """
+    For every file specified as an arg, read the file from the test_path into a python dictionary.
+    If it's a dict or recarray that contaisn recarrays, convert all the recarrays using recarray_to_dict.
+    The files can be .npy or .sav files. The python dict will then be written into a HDF5 file for testing 
+    purposes.
 
-def sav_file_vis_arr_swap_axes(sav_file_vis_arr : np.ndarray):
-    """After saving arrays from IDL like `vis_arr` and `vis_model_arr` into
-    and IDL .sav file, and subsequently loading in via scipy.io.readsav,
-    they come out in a shape/format unsuitable for PyFHD. Use this function
-    to reshape into shape = (n_pol, n_freq, n_baselines)
+    This function was made to convert many of the .npy and .sav files into something that can be read and written more
+    easily by other packages other than numpyt or scipy.
 
     Parameters
     ----------
-    sav_file_vis_arr : np.ndarray
-        Array as read in by scipy.io.readsav, if `n_pol = 2` should have `shape=(2,)`
-
-    Returns
-    -------
-    np.ndarray
-        Returns the array with `shape=(n_pol, n_freq, n_baselines)`
+    test_path : Path
+        The path to a directory with all the files inside it
+    save_path : Path
+        The path to the file for saving the HDF5
+    *args : list[str]
+        A list of file names to be read in, can be .npy or .sav files
     """
-
-    n_pol = sav_file_vis_arr.shape[0]
-
-    vis_arr = np.empty((n_pol, sav_file_vis_arr[0].shape[1],
-                               sav_file_vis_arr[0].shape[0]),
-                               dtype=sav_file_vis_arr[0].dtype)
-    
-    for pol in range(n_pol):
-            vis_arr[pol] = sav_file_vis_arr[pol].transpose()
-
-    return vis_arr
+    to_save = {}
+    # Process the file differently depending on whether its IDL or numpy files
+    for file in args:
+        if (file.endswith('.sav')):
+            var = readsav(Path(test_path, file), python_dict = True)
+            # Convert to nested dictionaries
+            var = recarray_to_dict(var)
+        elif(file.endswith('.npy')):
+            var = np.load(Path(test_path, file), allow_pickle=True).item()
+        for key in var:
+            to_save[key] = var[key]
+    dd.io.save(save_path, to_save)
