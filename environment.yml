@@ -9,6 +9,7 @@ dependencies:
   - numba
   - numpy
   - pytest
+  - pytest-cov
   - scipy
   - setuptools
   - sphinx

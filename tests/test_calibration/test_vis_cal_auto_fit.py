@@ -16,12 +16,12 @@ def data_dir():
 def base_dir():
     return Path(env.get('PYFHD_TEST_PATH'))
 
-def run_test(data_loc):
+def test_pointsource1_vary(data_dir):
     """Runs the test on `vis_cal_auto_fit` - reads in the data in `data_loc`,
     and then calls `vis_cal_auto_fit`, checking the outputs match expectations"""
 
-    h5_before = dd.io.load(Path(data_loc, "before_vis_cal_auto_fit.h5"))
-    h5_after = dd.io.load(Path(data_loc, "after_vis_cal_auto_fit.h5"))
+    h5_before = dd.io.load(Path(data_dir, "before_vis_cal_auto_fit.h5"))
+    h5_after = dd.io.load(Path(data_dir, "after_vis_cal_auto_fit.h5"))
 
     obs = h5_before['obs']
     cal = h5_before['cal']
@@ -30,20 +30,15 @@ def run_test(data_loc):
     auto_tile_i = h5_before['auto_tile_i']
 
     expected_cal_fit = h5_after['cal_fit']
-    
-    ##TODO make this work depending on how the function is translated
 
-    # return_cal_fit = vis_cal_auto_fit(obs, cal, vis_auto, vis_model_auto, auto_tile_i)
-    # assert np.allclose(return_cal_fit['auto_scale'], expected_cal_fit['auto_scale'])
-    # assert np.allclose(return_cal_fit['auto_params'], expected_cal_fit['auto_params'])
-    
-    
-
-def test_pointsource1_vary(base_dir):
-    """Test using the `pointsource1_vary1` set of inputs"""
-
-    run_test(Path(base_dir, "pointsource1_vary1"))
-
+    return_cal_fit = vis_cal_auto_fit(obs, cal, vis_auto, vis_model_auto, auto_tile_i)
+    # auto_scale is nan, nan from FHD and Python, can't compare them due to the nans
+    # assert np.array_equal(return_cal_fit['auto_scale'], expected_cal_fit['auto_scale'])
+    # cal_fit['auto_params'] came in as an object array
+    auto_params = np.empty([2, cal["n_pol"], cal['n_tile']], dtype = np.float64)
+    auto_params[0] = expected_cal_fit['auto_params'][0].transpose()
+    auto_params[1] = expected_cal_fit['auto_params'][1].transpose()
+    assert np.allclose(return_cal_fit['auto_params'], auto_params)
     
 if __name__ == "__main__":
 

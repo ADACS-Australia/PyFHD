@@ -477,7 +477,7 @@ def vis_cal_bandpass(obs: dict, cal: dict, params: dict, pyfhd_config: dict, log
     """
     freq_use = np.nonzero(obs["baseline_info"]["freq_use"])[0]
     tile_use = np.nonzero(obs["baseline_info"]["tile_use"])[0]
-    n_pol = cal["gain"].size
+    n_pol = cal["gain"].shape[0]
     # Set a flag for global bandpass, will turn true if too many tiles are flagged
     global_bandpass = False
 
@@ -862,17 +862,17 @@ def vis_cal_auto_fit(obs: dict, cal: dict, vis_auto : np.ndarray, vis_auto_model
     for pol_i in range(cal['n_pol']):
         for tile_i in range(obs['n_tile']):
             tile_i = auto_tile_i[tile_i]
-            phase_cross_single = np.arctan2(gain_cross[pol_i, tile_i, :].imag, gain_cross[pol_i, tile_i, :].real)
-            gain_auto_single = np.abs(auto_gain[pol_i, tile_i, :])
-            gain_cross_single = np.abs(gain_cross[pol_i, tile_i, :])
+            phase_cross_single = np.arctan2(gain_cross[pol_i, :, tile_i].imag, gain_cross[pol_i, :, tile_i].real)
+            gain_auto_single = np.abs(auto_gain[pol_i, :, tile_i])
+            gain_cross_single = np.abs(gain_cross[pol_i, :, tile_i])
             # linfit from IDL uses chi-square error calculations to do the linear fit, instead of least squares.
             # The polynomial fit uses least square method
             # TODO: Is there a good reason to use chi-square of least square in this case?
-            fit_single = np.polynomial.Polynomial.fit(gain_auto_single[freq_i_use], gain_cross_single[freq_i_use]).convert().coef
-            cal['gain'][pol_i, tile_i, :] = (gain_auto_single*fit_single[1] + fit_single[0]) * np.exp(1j * phase_cross_single)
+            fit_single = np.polynomial.Polynomial.fit(gain_auto_single[freq_i_use], gain_cross_single[freq_i_use], deg = 1).convert().coef
+            cal['gain'][pol_i, :, tile_i] = (gain_auto_single*fit_single[1] + fit_single[0]) * np.exp(1j * phase_cross_single)
             fit_slope[pol_i, tile_i] = fit_single[1]
             fit_offset[pol_i, tile_i] = fit_single[0]
-    cal['auto_scale'] = np.sum(fit_slope, axis=0)
+    cal['auto_scale'] = np.sum(fit_slope, axis=1) / auto_tile_i.size
     cal['auto_params'] = np.empty([cal['n_pol'], cal['n_pol'], obs['n_tile']])
     cal['auto_params'][0, :, :] = fit_offset
     cal['auto_params'][1, :, :] = fit_slope
