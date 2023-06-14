@@ -68,12 +68,12 @@ def base_dir():
 #     assert expected_gain == result_gain
 # '''
 
-def run_test(data_loc):
+def test_pointsource1_vary(data_dir):
     """Runs the test on `vis_cal_auto_init` - reads in the data in `data_loc`,
     and then calls `vis_cal_auto_init`, checking the outputs match expectations"""
 
-    h5_before = dd.io.load(Path(data_loc, "before_vis_cal_auto_init.h5"))
-    h5_after = dd.io.load(Path(data_loc, "after_vis_cal_auto_init.h5"))
+    h5_before = dd.io.load(Path(data_dir, "before_vis_cal_auto_init.h5"))
+    h5_after = dd.io.load(Path(data_dir, "after_vis_cal_auto_init.h5"))
 
     obs = h5_before['obs']
     cal = h5_before['cal']
@@ -92,11 +92,6 @@ def run_test(data_loc):
 
     ##Check returned gain is as expected
     assert np.allclose(result_auto_gain, expected_auto_gain, atol=1e-4)
-
-def test_pointsource1_vary(base_dir):
-    """Test using the `pointsource1_vary1` set of inputs"""
-
-    run_test(Path(base_dir, "pointsource1_vary1"))
 
 if __name__ == "__main__":
 
