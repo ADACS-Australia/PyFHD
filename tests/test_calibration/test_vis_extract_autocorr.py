@@ -9,15 +9,19 @@ from PyFHD.use_idl_fhd.use_idl_outputs import convert_sav_to_dict
 from PyFHD.pyfhd_tools.test_utils import recarray_to_dict
 
 @pytest.fixture
+def data_dir():
+    return Path(env.get('PYFHD_TEST_PATH'), 'vis_extract_autocorr')
+
+@pytest.fixture
 def base_dir():
     return Path(env.get('PYFHD_TEST_PATH'))
 
-def run_test(data_loc):
+def test_pointsource1_vary1(data_dir):
     """Runs the test on `vis_extract_autocorr` - reads in the data in `data_loc`,
     and then calls `vis_extract_autocorr`, checking the outputs match expectations"""
 
-    h5_before = dd.io.load(Path(data_loc, "before_vis_extract_autocorr.h5"))
-    h5_after = dd.io.load(Path(data_loc, "after_vis_extract_autocorr.h5"))
+    h5_before = dd.io.load(Path(data_dir, "before_vis_extract_autocorr.h5"))
+    h5_after = dd.io.load(Path(data_dir, "after_vis_extract_autocorr.h5"))
 
     obs = h5_before['obs']
     vis_arr = h5_before['vis_arr']
@@ -40,21 +44,6 @@ def run_test(data_loc):
                            result_auto_corr[pol_i], atol=1e-8)
         
     assert np.array_equal(result_auto_tile_i, expected_auto_tile_i)
-
-    ##Check returned values
-    # assert np.allclose(expected_auto_corr, result_auto_corr, atol=1e-8)
-
-    # assert result_auto_tile_i == expected_auto_tile_i
-
-def test_pointsource1_vary1(base_dir):
-    """Test using the `pointsource1_vary1` set of inputs"""
-
-    run_test(Path(base_dir, "pointsource1_vary1"))
-
-def test_pointsource1_vary1(base_dir):
-    """Test using the `pointsource1_standard` set of inputs"""
-
-    run_test(Path(base_dir, "pointsource1_standard"))
 
     
 if __name__ == "__main__":

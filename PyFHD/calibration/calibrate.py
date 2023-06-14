@@ -56,7 +56,7 @@ def calibrate(obs: dict, params: dict, vis_arr: np.array, vis_weights: np.array,
     if (pyfhd_config['calibration_auto_initialize']):
         cal["gain"] = vis_cal_auto_init(obs, cal, vis_arr, vis_model_arr, vis_auto, vis_auto_model, auto_tile_i)
     else:
-        cal["gain"] = np.full((cal['n_pol'], obs['n_tile'], obs['n_freq']), pyfhd_config['cal_gain_init'])
+        cal["gain"] = np.full((cal['n_pol'], obs['n_freq'], obs['n_tile']), pyfhd_config['cal_gain_init'])
 
     # Do the calibration with vis_calibrate_subroutine 
     # TODO: vis_calibrate_subroutine outputs cal structure in FHD, likely will need to change here, or for the cal dictionary to be passed in and edited
