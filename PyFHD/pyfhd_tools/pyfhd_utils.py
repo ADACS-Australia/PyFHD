@@ -1067,10 +1067,10 @@ def split_vis_weights(obs: dict, vis_weights: np.ndarray) -> tuple[np.ndarray, n
     vis_weights *= 0
     for pol_i in range(obs['n_pol']):
         # In IDL they are doing x > y < w < z
-        flag_use = np.minimum(np.maximum(vis_weights[pol_i, : , :, bi_use[0]], 0) , np.minimum(vis_weights[pol_i, : , :, bi_use[1]], 1))
+        flag_use = np.minimum(np.maximum(vis_weights[pol_i, : , bi_use[0]], 0) , np.minimum(vis_weights[pol_i, : , bi_use[1]], 1))
         # No keywords used for odd_only or even_only in entirety of FHD
-        vis_weights[pol_i, :, :, bi_use[0]] = flag_use
-        vis_weights[pol_i, : ,:, bi_use[1]] = flag_use
+        vis_weights[pol_i, :, bi_use[0]] = flag_use
+        vis_weights[pol_i, :, bi_use[1]] = flag_use
 
     return vis_weights, bi_use
 

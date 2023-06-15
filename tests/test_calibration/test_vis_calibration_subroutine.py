@@ -4,6 +4,7 @@ from os import environ as env
 from pathlib import Path
 from PyFHD.calibration.vis_calibrate_subroutine import vis_calibrate_subroutine
 from PyFHD.pyfhd_tools.test_utils import get_data_items
+from glob import glob
 
 @pytest.fixture
 def data_dir():

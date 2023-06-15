@@ -813,9 +813,9 @@ def vis_cal_polyfit(obs: dict, cal: dict, auto_ratio: np.ndarray | None, pyfhd_c
                     gain_mode_fit = amp_use * np.exp(-1j * 2 * np.pi * (mode_i * np.arange(obs['n_freq']) / obs['n_freq']) + 1j * phase_use)
                     if (auto_ratio):
                         # Only fit for the cable reflection in the phases
-                        cal['gain'][pol_i][tile_i, :] *= np.exp(1j * gain_mode_fit.imag)
+                        cal['gain'][pol_i, :, tile_i] *= np.exp(1j * gain_mode_fit.imag)
                     else:
-                        cal['gain'][pol_i][tile_i, :] *= 1 + gain_mode_fit 
+                        cal['gain'][pol_i, :, tile_i] *= 1 + gain_mode_fit 
                     # If you want to keep the mode params do that here
                     # TODO: check with Jack to see if this is needed
     return cal
@@ -850,7 +850,7 @@ def vis_cal_auto_fit(obs: dict, cal: dict, vis_auto : np.ndarray, vis_auto_model
         freq_flag[freq_i_use] = 1
         for freq_i in range(freq_i_flag.size):
             minimum = max(0, freq_i_flag[freq_i] - 1)
-            maximum = min(freq_i_flag.size - 1, freq_i_flag[freq_i] + 1)
+            maximum = min(obs['n_freq'], freq_i_flag[freq_i] + 2)
             freq_flag[minimum : maximum] = 0
         freq_i_use = np.nonzero(freq_flag)
     # Vectorized loop for via_cal_auto_fit lines 45-55 in IDL
@@ -860,18 +860,18 @@ def vis_cal_auto_fit(obs: dict, cal: dict, vis_auto : np.ndarray, vis_auto_model
     fit_offset = np.empty_like(fit_slope)
     # Didn't vectorize as the polyfit won't be vectorized
     for pol_i in range(cal['n_pol']):
-        for tile_i in range(obs['n_tile']):
-            tile_i = auto_tile_i[tile_i]
-            phase_cross_single = np.arctan2(gain_cross[pol_i, :, tile_i].imag, gain_cross[pol_i, :, tile_i].real)
-            gain_auto_single = np.abs(auto_gain[pol_i, :, tile_i])
-            gain_cross_single = np.abs(gain_cross[pol_i, :, tile_i])
+        for tile in range(obs['n_tile']):
+            tile_idx = auto_tile_i[tile]
+            phase_cross_single = np.arctan2(gain_cross[pol_i, :, tile_idx].imag, gain_cross[pol_i, :, tile_idx].real)
+            gain_auto_single = np.abs(auto_gain[pol_i, :, tile_idx])
+            gain_cross_single = np.abs(gain_cross[pol_i, :, tile_idx])
             # linfit from IDL uses chi-square error calculations to do the linear fit, instead of least squares.
             # The polynomial fit uses least square method
             # TODO: Is there a good reason to use chi-square of least square in this case?
             fit_single = np.polynomial.Polynomial.fit(gain_auto_single[freq_i_use], gain_cross_single[freq_i_use], deg = 1).convert().coef
-            cal['gain'][pol_i, :, tile_i] = (gain_auto_single*fit_single[1] + fit_single[0]) * np.exp(1j * phase_cross_single)
-            fit_slope[pol_i, tile_i] = fit_single[1]
-            fit_offset[pol_i, tile_i] = fit_single[0]
+            cal['gain'][pol_i, :, tile_idx] = (gain_auto_single*fit_single[1] + fit_single[0]) * np.exp(1j * phase_cross_single)
+            fit_slope[pol_i, tile_idx] = fit_single[1]
+            fit_offset[pol_i, tile_idx] = fit_single[0]
     cal['auto_scale'] = np.sum(fit_slope, axis=1) / auto_tile_i.size
     cal['auto_params'] = np.empty([cal['n_pol'], cal['n_pol'], obs['n_tile']])
     cal['auto_params'][0, :, :] = fit_offset
@@ -1059,7 +1059,7 @@ def cal_auto_ratio_divide(obs: dict, cal: dict, vis_auto: np.ndarray, auto_tile_
         cal['gain'][pol_i, :, :] = cal['gain'][pol_i, :, :] * weight_invert(auto_ratio[pol_i, : ,:])
     return cal, auto_ratio
 
-def cal_auto_ratio_remultiply(obs: dict, cal: dict, auto_ratio: np.ndarray, auto_tile_i: np.ndarray) -> dict:
+def cal_auto_ratio_remultiply(cal: dict, auto_ratio: np.ndarray, auto_tile_i: np.ndarray) -> dict:
     """Reform the original calibration gains using the auto ratios
 
     Parameters
