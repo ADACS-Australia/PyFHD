@@ -20,8 +20,8 @@ def test_pointsource1_vary(data_dir):
     """Runs the test on `vis_cal_auto_fit` - reads in the data in `data_loc`,
     and then calls `vis_cal_auto_fit`, checking the outputs match expectations"""
 
-    h5_before = dd.io.load(Path(data_dir, "before_vis_cal_auto_fit.h5"))
-    h5_after = dd.io.load(Path(data_dir, "after_vis_cal_auto_fit.h5"))
+    h5_before = dd.io.load(Path(data_dir, "pointsource1_vary1_before_vis_cal_auto_fit.h5"))
+    h5_after = dd.io.load(Path(data_dir, "pointsource1_vary1_after_vis_cal_auto_fit.h5"))
 
     obs = h5_before['obs']
     cal = h5_before['cal']
