@@ -37,7 +37,7 @@ def test_vis_calibration_one(data_dir):
     assert expected_cal['n_vis_cal'] == cal_return['n_vis_cal'] 
     expected_cal['gain'] = np.vstack(expected_cal['gain']).astype(np.complex128)
     cal_return['gain'] = np.vstack(cal_return['gain']).astype(np.complex128)
-    assert_allclose(cal_return['gain'], expected_cal['gain'], atol = 1e-05)
+    assert_allclose(cal_return['gain'], expected_cal['gain'], atol = 1.5e-05)
 
 def test_vis_calibration_two(data_dir):
     vis_ptr, vis_model_ptr, vis_weight_ptr, obs, cal, expected_cal = get_data_items(

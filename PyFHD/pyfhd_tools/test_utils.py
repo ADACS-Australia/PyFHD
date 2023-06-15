@@ -181,6 +181,9 @@ def recarray_to_dict(data: np.recarray | dict) -> dict:
 
     This was updated later to also take a dictionary which may contain record arrays too.
 
+    This was also updated later to turn object arrays into multidimensional arrays if they can be one. In the
+    case the object array couldn't be turned into a multidimensional array it was turned into a list instead.
+
     Parameters
     ----------
     data : np.recarray or dict
@@ -201,6 +204,15 @@ def recarray_to_dict(data: np.recarray | dict) -> dict:
             data[key] = recarray_to_dict(data[key])
         elif (type(data[key]) == np.ndarray and type(data[key][0]) == np.recarray):
             data[key] = recarray_to_dict(data[key][0])
+        # You can also get object arrays which themselves contain numpy arrays, it's best to turn these
+        # into multidimensional arrays. If they can't turn into multidimensional arrays due to them 
+        # being different types or not of the same size then it will convert the numpy object array 
+        # into a list of objects instead.
+        elif (type(data[key]) == np.ndarray and data[key].dtype == object and type(data[key][0]) == np.ndarray):
+            try:
+                data[key] = np.vstack(data[key]).astype(data[key][0].dtype)
+            except ValueError:
+                data[key] = list(x for x in data[key])
         # Every now and then you do get object arrays that contain only one element or arrays that contain only one element
         # These are not useful so I will extract the element out
         if (type(data[key]) == np.ndarray and data[key].size == 1):
