@@ -182,7 +182,7 @@ def recarray_to_dict(data: np.recarray | dict) -> dict:
     This was updated later to also take a dictionary which may contain record arrays too.
 
     This was also updated later to turn object arrays into multidimensional arrays if they can be one. In the
-    case the object array couldn't be turned into a multidimensional array it was turned into a list instead.
+    case the object array couldn't be turned into a multidimensional array it was turned into a list
 
     Parameters
     ----------
@@ -210,7 +210,16 @@ def recarray_to_dict(data: np.recarray | dict) -> dict:
         # into a list of objects instead.
         elif (type(data[key]) == np.ndarray and data[key].dtype == object and type(data[key][0]) == np.ndarray):
             try:
-                data[key] = np.vstack(data[key]).astype(data[key][0].dtype)
+                # If it's not an object array, numpy will stack the axes, which isn't desired here
+                # as we want to maintain the multidimensional nature of the data. So we'll create an 
+                # array of the desired size using the shape of the first element.
+                if (data[key][0].dtype != object):
+                    new_array = np.empty([data[key].size, *data[key][0].shape], dtype = data[key][0].dtype)
+                    for idx in range(new_array.shape[0]):
+                        new_array[idx] = data[key][idx]
+                    data[key] = new_array
+                else: 
+                    data[key] = np.vstack(data[key]).astype(data[key][0].dtype)
             except ValueError:
                 data[key] = list(x for x in data[key])
         # Every now and then you do get object arrays that contain only one element or arrays that contain only one element
