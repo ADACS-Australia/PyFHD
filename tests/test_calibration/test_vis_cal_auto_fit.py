@@ -12,9 +12,9 @@ import deepdish as dd
 def data_dir():
     return Path(env.get('PYFHD_TEST_PATH'), "vis_cal_auto_fit")
 
-@pytest.fixture
-def base_dir():
-    return Path(env.get('PYFHD_TEST_PATH'))
+# @pytest.fixture
+# def base_dir():
+#     return Path(env.get('PYFHD_TEST_PATH'))
 
 def test_pointsource1_vary(data_dir):
     """Runs the test on `vis_cal_auto_fit` - reads in the data in `data_loc`,
@@ -42,14 +42,15 @@ def test_pointsource1_vary(data_dir):
     
 if __name__ == "__main__":
 
-    def convert_before_sav(test_dir):
+    def convert_before_sav(data_dir, tag_name):
         """Takes the before .sav file out of FHD function `vis_cal_auto_fit`
         and converts into an hdf5 format"""
 
-        sav_dict = convert_sav_to_dict(f"{test_dir}/before_vis_cal_auto_fit.sav", "meh")
+        # path = Path(data_dir, f"{tag_name}_before_vis_cal_auto_fit.sav")
+        sav_dict = convert_sav_to_dict(f"{data_dir}/{tag_name}_before_vis_cal_auto_fit.sav", "meh")
 
-        obs = recarray_to_dict(sav_dict['obs'][0])
-        cal = recarray_to_dict(sav_dict['cal'][0])
+        obs = recarray_to_dict(sav_dict['obs'])
+        cal = recarray_to_dict(sav_dict['cal'])
 
         ##Swap the freq and tile dimensions
         ##this make shape (n_pol, n_freq, n_tile)
@@ -63,15 +64,16 @@ if __name__ == "__main__":
         h5_save_dict['vis_model_auto'] = sav_file_vis_arr_swap_axes(sav_dict['vis_model_auto'])
         h5_save_dict['auto_tile_i'] = sav_dict['auto_tile_i']
         
-        dd.io.save(Path(test_dir, "before_vis_cal_auto_fit.h5"), h5_save_dict)
+        dd.io.save(Path(data_dir, f"{tag_name}_before_vis_cal_auto_fit.h5"), h5_save_dict)
         
-    def convert_after_sav(test_dir):
+    def convert_after_sav(data_dir, tag_name):
         """Takes the after .sav file out of FHD function `vis_cal_auto_fit`
         and converts into an hdf5 format"""
 
-        sav_dict = convert_sav_to_dict(f"{test_dir}/after_vis_cal_auto_fit.sav", "meh")
+        # path = Path(data_dir, f"{data_dir}/{tag_name}_after_vis_cal_auto_fit.sav")
+        sav_dict = convert_sav_to_dict(f"{data_dir}/{tag_name}_after_vis_cal_auto_fit.sav", "meh")
         
-        cal_fit = recarray_to_dict(sav_dict['cal_fit'][0])
+        cal_fit = recarray_to_dict(sav_dict['cal_fit'])
         
         ##Swap the freq and tile dimensions
         ##this make shape (n_pol, n_freq, n_tile)
@@ -81,19 +83,22 @@ if __name__ == "__main__":
         h5_save_dict = {}
         
         h5_save_dict['cal_fit'] = cal_fit
-        dd.io.save(Path(test_dir, "after_vis_cal_auto_fit.h5"), h5_save_dict)
+        dd.io.save(Path(data_dir, f"{tag_name}_after_vis_cal_auto_fit.h5"), h5_save_dict)
         
-    def convert_sav(test_dir):
+    def convert_sav(data_dir, tag_name):
         """Load the inputs and outputs needed for testing `vis_cal_auto_fit`"""
-        convert_before_sav(test_dir)
-        convert_after_sav(test_dir)
+        convert_before_sav(data_dir, tag_name)
+        convert_after_sav(data_dir, tag_name)
 
     ##Where be all of our data
-    base_dir = Path(env.get('PYFHD_TEST_PATH'))
+    data_dir = Path(env.get('PYFHD_TEST_PATH'), "vis_cal_auto_fit")
+
+    print("DATA DIR IS", data_dir)
 
     ##Each test_set contains a run with a different set of inputs/options
-    for test_set in ['pointsource1_vary1']:
-        convert_sav(Path(base_dir, test_set))
+    ##TODO get the tag_names from some kind of glob on the relevant dir
+    tag_names = ['pointsource1_vary1']
 
-        # convert_before_sav(Path(base_dir, test_set))
+    for tag_name in tag_names:
+        convert_sav(data_dir, tag_name)
         # run_test(Path(base_dir, test_set))
