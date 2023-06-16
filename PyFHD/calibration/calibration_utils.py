@@ -7,6 +7,7 @@ from astropy.io import fits
 from astropy.constants import c
 from pathlib import Path
 from scipy.ndimage import uniform_filter
+import importlib_resources
 
 def vis_extract_autocorr(obs: dict, vis_arr: np.array, time_average = True, auto_tile_i = None) -> Tuple[np.array, np.array]:
     """
@@ -491,22 +492,28 @@ def vis_cal_bandpass(obs: dict, cal: dict, params: dict, pyfhd_config: dict, log
     cal_bandpass = deepcopy(cal)
     cal_remainder = deepcopy(cal)
      # These replace gain_arr_ptr_2 & 3 from FHD with better names
-    cal_bandpass_gain = np.empty(n_pol)
-    cal_remainder_gain = np.empty(n_pol)
+    # cal_bandpass_gain = np.empty((n_pol, gain.shape[1], gain.shape[2]))
+    # cal_remainder_gain = np.empty((n_pol, gain.shape[1], gain.shape[2]))
+
+    cal_bandpass_gain = np.empty(cal["gain"].shape, dtype=np.complex128)
+    cal_remainder_gain = np.empty(cal["gain"].shape, dtype=np.complex128)
 
     if (pyfhd_config["cable_bandpass_fit"]):
         # Using preexisting file to extract information about which tiles have which cable length
-        cable_len = np.loadtxt(Path(pyfhd_config["input"], pyfhd_config["cable-reflection-coefficients"]), skiprows=1)[:, 2].flatten()
+        # cable_len = np.loadtxt(Path(pyfhd_config["input"], pyfhd_config["cable-reflection-coefficients"]), skiprows=1)[:, 2].flatten()
+        cable_len_filepath = importlib_resources.files('PyFHD.templates').joinpath(f"{pyfhd_config['instrument']}_cable_reflection_coefficients.txt")
+        cable_len = np.loadtxt(cable_len_filepath, skiprows=1)[:, 2].flatten()
+        
         # Taking tile information and cross-matching it with the nonflagged tiles array, resulting in nonflagged tile arrays grouped by cable length
         cable_length_ref = np.unique(cable_len)
-        tile_use_arr = [] * cable_length_ref.size
+        tile_use_arr = [0] * cable_length_ref.size
         for cable_i in range(cable_length_ref.size):
-            tile_use_arr[cable_i] = np.where((obs["baseline_info"]["tile_use"]) & (cable_len == cable_length_ref[cable_i]))
-            if (tile_use_arr[0].size == 0):
+            tile_use_arr[cable_i] = np.where((obs["baseline_info"]["tile_use"]) & (cable_len == cable_length_ref[cable_i]))[0]
+            if (tile_use_arr[cable_i].size == 0):
                 logger.warning("Too Many flagged tiles to implement bandpass cable averaging, using global bandpass.")
                 global_bandpass = True
         # n_freq x 13 array. columns are frequency, 90m xx, 90m yy, 150m xx, 150m yy, 230m xx, 230m yy, 320m xx, 320m yy, 400m xx, 400m yy, 524m xx, 524m yy
-        bandpass_arr = np.zeros(obs["n_freq"], cal["n_pol"] * cable_length_ref.size + 1)
+        bandpass_arr = np.zeros((obs["n_freq"], cal["n_pol"] * cable_length_ref.size + 1))
         bandpass_arr[:, 0] = cal["freq"]
         bandpass_col_count = 1
         if (pyfhd_config['auto_ratio_calibration']):
@@ -524,66 +531,77 @@ def vis_cal_bandpass(obs: dict, cal: dict, params: dict, pyfhd_config: dict, log
                 gain = cal["gain"][pol_i]
                 # gain2 is a temporary variable used in place of the gain array for an added layer of safety
                 if (cable_i == 0 and pol_i == 0):
-                    gain2 = np.zeros((gain.shape[0], gain[1], cal["n_pol"]), dtype = np.complex128)
+                    gain2 = np.zeros(cal["gain"].shape, dtype = np.complex128)
                 # Only use gains from unflagged tiles and frequencies, and calculate the amplitude and phase
-                gain_use = gain[tile_use_cable,:][: , freq_use]
+                gain_use = gain[freq_use, :][:, tile_use_cable]
                 amp = np.abs(gain_use)
                 # amp2 is a temporary variable used in place of the amp array for an added layer of safety
-                amp2 = np.zeros(tile_use_cable.size, freq_use.size)
+                amp2 = np.zeros((freq_use.size, tile_use_cable.size))
                 # This is the normalization loop for each tile. If the mean of gain amplitudes over all frequencies is nonzero, then divide
                 # the gain amplitudes by that number, otherwise make the gain amplitudes zero.
                 for tile_i in range(tile_use_cable.size):
-                    res_mean = resistant_mean(amp[tile_i, :], 2)
+                    res_mean = resistant_mean(amp[:, tile_i], 2)
                     if res_mean != 0:
-                        amp2[tile_i, :] = amp[tile_i, :] / res_mean
+                        amp2[:, tile_i] = amp[:, tile_i] / res_mean
                     else:
-                        amp2[tile_i, :] = 0
+                        amp2[:, tile_i] = 0
                 # This finds the normalized gain amplitude mean per frequency over all tiles, which is the final bandpass per cable group.
-                bandpass_single = np.empty((freq_use.size, tile_use.size))
+                bandpass_single = np.empty(freq_use.size)
                 # If this is slow, resistant_mean can be vectorized
                 for f_i in range(freq_use.size):
-                    bandpass_single[f_i, :] = resistant_mean(amp2[:, f_i], 2)
+                    bandpass_single[f_i] = resistant_mean(amp2[f_i, :], 2)
                 # Want iterative to start at 1 (to not overwrite freq) and store final bandpass per cable group.
                 bandpass_arr[freq_use, bandpass_col_count] = bandpass_single
                 bandpass_col_count += 1
-                # Fill temporary variable gain2, set equal to final bandpass per cable group for each tile that will use that bandpass. 
-                gain2[tile_use_cable, freq_use, pol_i] = bandpass_single
+                # Fill temporary variable gain2, set equal to final bandpass per cable group for each tile that will use that bandpass.
+
+                ##TODO cannot get this to work in a vector
+                for tile_i in range(tile_use_cable.size):
+                    gain2[pol_i, freq_use, tile_use_cable[tile_i]] = bandpass_single
+
                 # For the last bit at the end of the cable
                 if cable_i == cable_length_ref.size - 1:
                     # Set gain3 to the input gains
-                    gain3 = deepcopy(cal["gain"])
+                    gain3 = deepcopy(cal["gain"][pol_i])
                     # Set what will be passed back as the output gain as the final bandpass per cable type.
-                    gain2_input = np.squeeze(gain2[:, : , pol_i])
+                    gain2_input = np.squeeze(gain2[pol_i, :, :])
                     cal_bandpass_gain[pol_i] = gain2_input
                     # Set what will be passed back as the residual as the input gain divided by the final bandpass per cable type.
-                    gain3[0: obs["n_tile"], freq_use] /= gain2_input[0 : obs["n_tile"], freq_use]
+                    gain3[freq_use, :] /= gain2_input[freq_use, :]
                     cal_remainder_gain[pol_i] = gain3
         # Add Levine Memo bandpass to the gain solutions here if you wish
     else:
+        bandpass_arr = np.zeros((obs["n_freq"], cal["n_pol"] + 1))
+        bandpass_arr[:, 0] = cal["freq"]
         for pol_i in range(cal["n_pol"]):
             gain = cal["gain"][pol_i]
-            gain_use = gain[tile_use_cable,:][: , freq_use]
+            gain_use = gain[freq_use, :][:, tile_use]
             amp = np.abs(gain_use)
-            amp2 = np.zeros(tile_use.size, freq_use.size)
+            amp2 = np.zeros((freq_use.size, tile_use.size))
             for tile_i in range(tile_use.size):
-                res_mean = resistant_mean(amp[tile_i, :], 2)
-                if res_mean:
-                    amp2[tile_i, : ] = amp[tile_i , : ] / res_mean
+                res_mean = resistant_mean(amp[:, tile_i], 2)
+                if res_mean != 0:
+                    amp2[:, tile_i] = amp[:, tile_i] / res_mean
                 else:
-                    amp2[tile_i, : ] = 0
-            bandpass_single = np.empty((freq_use.size, tile_use.size))
+                    amp2[:, tile_i] = 0
+                        
+            bandpass_single = np.empty(freq_use.size)
             # If this is slow, resistant_mean can be vectorized
             for f_i in range(freq_use.size):
-                bandpass_single[f_i, :] = resistant_mean(amp2[: ,f_i], 2)
+                bandpass_single[f_i] = resistant_mean(amp2[f_i, :], 2)
+
             bandpass_arr[freq_use, pol_i + 1] = bandpass_single
             # Work out the gain for the bandpass
             gain2 = np.zeros(gain.shape, dtype = np.complex128)
-            gain2[0 : tile_use.size, freq_use] = bandpass_single
-            cal_bandpass_gain[pol_i] = gain2
-            # Work out the gain for the remaider of the cable
-            gain3 = gain
-            gain3[0: tile_use.size, freq_use] /= bandpass_single
-            cal_remainder_gain[pol_i] = gain3
+            gain3 = deepcopy(gain)
+            ##TODO cannot get this to work in a vector
+            for tile_i in range(cal['n_tile']):
+                gain2[freq_use, tile_i] = bandpass_single
+                gain3[freq_use, tile_i] /= bandpass_single
+
+            cal_bandpass_gain[pol_i, :, :] = gain2
+            cal_remainder_gain[pol_i, :, :] = gain3
+
     cal_bandpass["gain"] = cal_bandpass_gain
     cal_remainder["gain"] = cal_remainder_gain
     return cal_bandpass, cal_remainder

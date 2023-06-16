@@ -8,92 +8,96 @@ from PyFHD.pyfhd_tools.test_utils import recarray_to_dict, sav_file_vis_arr_swap
 import numpy as np
 import deepdish as dd
 import importlib_resources
-
 from logging import RootLogger
 
 @pytest.fixture
 def data_dir():
     return Path(env.get('PYFHD_TEST_PATH'), "vis_cal_bandpass")
 
-@pytest.fixture
-def base_dir():
-    return Path(env.get('PYFHD_TEST_PATH'))
-
-def run_test(data_loc):
+def run_test(data_dir, tag_name):
     """Runs the test on `vis_cal_bandpass` - reads in the data in `data_loc`,
     and then calls `vis_cal_bandpass`, checking the outputs match expectations"""
 
-    h5_before = dd.io.load(Path(data_loc, "before_vis_cal_bandpass.h5"))
-    h5_after = dd.io.load(Path(data_loc, "after_vis_cal_bandpass.h5"))
+    h5_before = dd.io.load(Path(data_dir, f"{tag_name}_before_vis_cal_bandpass.h5"))
+    h5_after = dd.io.load(Path(data_dir, f"{tag_name}_after_vis_cal_bandpass.h5"))
 
     obs = h5_before['obs']
     cal = h5_before['cal']
     params = h5_before['params']
     pyfhd_config = h5_before['pyfhd_config']
-    
-    ##TODO if cable_bandpass_fit=True we need to setup:
-    '''
-    pyfhd_config["input"]
-    pyfhd_config["cable-reflection-coefficients"]
-    to make
-    cable_len = np.loadtxt(Path(pyfhd_config["input"], pyfhd_config["cable-reflection-coefficients"]), skiprows=1)[:, 2].flatten()
-    
-    
-    need cable len file to point to
-    
-    PyFHD/input/instrument_config/mwa_cable_reflection_coefficients.txt
-    
-    work'''
-    
-    ##TODO for this to work, we have to move mwa_cable_reflection_coefficients.txt
-    ##into PyFHD.templates as it needs to be in a PyFHD module
-    pyfhd_config["cable_reflection_coefficients"] = importlib_resources.files('PyFHD.templates').joinpath('mwa_cable_reflection_coefficients.txt')
-    
+
     exptected_cal_bandpass = h5_after['cal_bandpass']
     exptected_cal_remainder = h5_after['cal_remainder']
     
     logger = RootLogger(1)
     
     result_cal_bandpass, result_cal_remainder = vis_cal_bandpass(obs, cal, params, pyfhd_config, logger)
-    
-    # print(result_res_mean, expected_res_mean)
 
-    # assert np.allclose(result_res_mean, expected_res_mean, atol=1e-4)
+    ##The FHD function does some dividing by zeros, so we end up with NaNs
+    ##in both the expected and result data. To check we are replicating
+    ##the NaNs correctly, check both results for NaNs and assert they are
+    ##in the same place
 
-    # ##Check that the gain value is inserted in `gain_list` correctly
-    # assert np.allclose(gain_list[iter], expected_gain, atol=1e-8)
+    expec_nan_inds = np.where(np.isnan(exptected_cal_remainder['gain']) == True)
+    result_nan_inds = np.where(np.isnan(exptected_cal_remainder['gain']) == True)
 
-def test_pointsource1_vary(base_dir):
+    assert np.array_equal(expec_nan_inds, result_nan_inds)
+
+    ##find where things are not NaN and check they are close
+    test_inds = np.where(np.isnan(exptected_cal_remainder['gain']) == False)
+
+    rtol = 1e-5
+    atol = 1e-7
+
+    assert np.allclose(exptected_cal_remainder['gain'][test_inds],
+                       result_cal_remainder['gain'][test_inds],
+                       rtol=rtol, atol=atol)
+
+    ##shouoldn't be NaNs in this, so just check all the outputs
+    assert np.allclose(exptected_cal_bandpass['gain'],
+                       result_cal_bandpass['gain'], rtol=rtol, atol=atol)
+
+
+def test_pointsource1_vary(data_dir):
     """Test using the `pointsource1_vary1` set of inputs"""
 
-    run_test(Path(base_dir, "pointsource1_vary1"))
+    run_test(data_dir, "pointsource1_vary1")
+
+def test_pointsource2_vary(data_dir):
+    """Test using the `pointsource1_vary2` set of inputs"""
+
+    run_test(data_dir, "pointsource1_vary2")
 
     
 if __name__ == "__main__":
 
-    def convert_before_sav(test_dir):
+    def convert_before_sav(data_dir, tag_name):
         """Takes the before .sav file out of FHD function `vis_cal_bandpass`
         and converts into an hdf5 format"""
 
-        sav_dict = convert_sav_to_dict(f"{test_dir}/before_vis_cal_bandpass.sav", "meh")
+        sav_dict = convert_sav_to_dict(f"{data_dir}/{tag_name}_before_vis_cal_bandpass.sav", "meh")
 
-        obs = recarray_to_dict(sav_dict['obs'][0])
-        cal = recarray_to_dict(sav_dict['cal'][0])
+        obs = recarray_to_dict(sav_dict['obs'])
+        cal = recarray_to_dict(sav_dict['cal'])
         
         ##Swap the freq and tile dimensions
         ##this make shape (n_pol, n_freq, n_tile)
         gain = sav_file_vis_arr_swap_axes(cal['gain'])
         cal['gain'] = gain
         
-        params = recarray_to_dict(sav_dict['params'][0])
+        params = recarray_to_dict(sav_dict['params'])
         
         ##make a slimmed down version of pyfhd_config
         pyfhd_config = {}
         
-        ##If keyword cal_bp_transfer is not set, IDL won't save it,
+        ##If keywords cal_bp_transfer, cable_bandpass_fit are not set, IDL won't save it,
         ##so catch non-existent key and set to zero if this is the case
+        ##Also, pyfhd uses None instead of 0 for False, so swap to none if
+        ##needed
         try:
             pyfhd_config['cal_bp_transfer'] = sav_dict['cal_bp_transfer']
+            if pyfhd_config['cal_bp_transfer'] == 0:
+                pyfhd_config['cal_bp_transfer'] = None
         except KeyError:
             pyfhd_config['cal_bp_transfer'] = None
             
@@ -101,6 +105,15 @@ if __name__ == "__main__":
             pyfhd_config['cable_bandpass_fit'] = sav_dict['cable_bandpass_fit']
         except KeyError:
             pyfhd_config['cable_bandpass_fit'] = None
+
+        try:
+            pyfhd_config['auto_ratio_calibration'] = sav_dict['auto_ratio_calibration']
+        except KeyError:
+            pyfhd_config['auto_ratio_calibration'] = None
+
+
+        ##need the instrument as that's needed for a file path
+        pyfhd_config['instrument'] = 'mwa'
             
         ##super dictionary to save everything in
         h5_save_dict = {}
@@ -109,17 +122,16 @@ if __name__ == "__main__":
         h5_save_dict['params'] = params
         h5_save_dict['pyfhd_config'] = pyfhd_config
         
-        dd.io.save(Path(test_dir, "before_vis_cal_bandpass.h5"), h5_save_dict)
+        dd.io.save(Path(data_dir, f"{tag_name}_before_vis_cal_bandpass.h5"), h5_save_dict)
         
-    def convert_after_sav(test_dir):
+    def convert_after_sav(data_dir, tag_name):
         """Takes the after .sav file out of FHD function `vis_cal_bandpass`
         and converts into an hdf5 format"""
 
-        sav_dict = convert_sav_to_dict(f"{test_dir}/after_vis_cal_bandpass.sav", "meh")
+        sav_dict = convert_sav_to_dict(f"{data_dir}/{tag_name}_after_vis_cal_bandpass.sav", "meh")
         
-        cal_bandpass = recarray_to_dict(sav_dict['cal_bandpass'][0])
-        cal_remainder = recarray_to_dict(sav_dict['cal_remainder'][0])
-        
+        cal_bandpass = recarray_to_dict(sav_dict['cal_bandpass'])
+        cal_remainder = recarray_to_dict(sav_dict['cal_remainder'])
         
         ##Swap the freq and tile dimensions
         ##this make shape (n_pol, n_freq, n_tile)
@@ -135,19 +147,19 @@ if __name__ == "__main__":
         h5_save_dict['cal_bandpass'] = cal_bandpass
         h5_save_dict['cal_remainder'] = cal_remainder
         
-        dd.io.save(Path(test_dir, "after_vis_cal_bandpass.h5"), h5_save_dict)
+        dd.io.save(Path(data_dir, f"{tag_name}_after_vis_cal_bandpass.h5"), h5_save_dict)
         
-    def convert_sav(test_dir):
+    def convert_sav(base_dir, tag_name):
         """Load the inputs and outputs needed for testing `vis_cal_bandpass`"""
-        convert_before_sav(test_dir)
-        convert_after_sav(test_dir)
+        convert_before_sav(base_dir, tag_name)
+        convert_after_sav(base_dir, tag_name)
 
     ##Where be all of our data
-    base_dir = Path(env.get('PYFHD_TEST_PATH'))
+    base_dir = Path(env.get('PYFHD_TEST_PATH'), 'vis_cal_bandpass')
 
-    ##Each test_set contains a run with a different set of inputs/options
-    for test_set in ['pointsource1_vary1']:
-        convert_sav(Path(base_dir, test_set))
+     ##TODO get the tag_names from some kind of glob on the relevant dir
+    tag_names = ['pointsource1_vary1', 'pointsource1_vary2']
 
-        # convert_before_sav(Path(base_dir, test_set))
-        run_test(Path(base_dir, test_set))
+    for tag_name in tag_names:
+        convert_sav(base_dir, tag_name)
+        # run_test(base_dir, tag_name)
