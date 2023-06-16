@@ -599,7 +599,7 @@ def vis_cal_polyfit(obs: dict, cal: dict, auto_ratio: np.ndarray | None, pyfhd_c
         if (pyfhd_config['cal_reflection_mode_theory'] and abs(pyfhd_config['cal_reflection_mode_theory']) > 1):
             cal_mode_fit = pyfhd_config['cal_reflection_mode_theory']
         else:
-            cal_mode_fit = 1
+            cal_mode_fit = True
     freq_use = np.where(obs['baseline_info']['freq_use'])
     tile_use = np.where(obs['baseline_info']['tile_use'])
 
@@ -868,7 +868,11 @@ def vis_cal_auto_fit(obs: dict, cal: dict, vis_auto : np.ndarray, vis_auto_model
             # linfit from IDL uses chi-square error calculations to do the linear fit, instead of least squares.
             # The polynomial fit uses least square method
             # TODO: Is there a good reason to use chi-square of least square in this case?
-            fit_single = np.polynomial.Polynomial.fit(gain_auto_single[freq_i_use], gain_cross_single[freq_i_use], deg = 1).convert().coef
+            x = np.vstack([gain_auto_single[freq_i_use], np.ones(gain_auto_single[freq_i_use].size)]).T
+            fit_single = np.linalg.lstsq(x, gain_cross_single[freq_i_use], rcond = None)
+            # IDL gives the solution in terms of [A, B] while Python does [B, A] assuming we're
+            # solving the equation y = A + Bx
+            fit_single = np.flip(fit_single)
             cal['gain'][pol_i, :, tile_idx] = (gain_auto_single*fit_single[1] + fit_single[0]) * np.exp(1j * phase_cross_single)
             fit_slope[pol_i, tile_idx] = fit_single[1]
             fit_offset[pol_i, tile_idx] = fit_single[0]
