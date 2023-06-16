@@ -15,29 +15,31 @@ from logging import RootLogger
 def data_dir():
     return Path(env.get('PYFHD_TEST_PATH'), "vis_cal_polyfit")
 
-def test_pointsource1_vary(data_loc):
+def test_pointsource1_vary(data_dir):
     """Runs the test on `vis_cal_polyfit` - reads in the data in `data_loc`,
     and then calls `vis_cal_polyfit`, checking the outputs match expectations"""
 
-    h5_before = dd.io.load(Path(data_loc, "pointsource1_vary1_before_vis_cal_polyfit.h5"))
-    h5_after = dd.io.load(Path(data_loc, "pointsource1_vary1_after_vis_cal_polyfit.h5"))
+    h5_before = dd.io.load(Path(data_dir, "pointsource1_vary1_before_vis_cal_polyfit.h5"))
+    h5_after = dd.io.load(Path(data_dir, "pointsource1_vary1_after_vis_cal_polyfit.h5"))
 
     obs = h5_before['obs']
     cal = h5_before['cal']
+    
     pyfhd_config = h5_before['pyfhd_config']
     
     ##TODO for this to work, we have to move mwa_cable_reflection_coefficients.txt
     ##into PyFHD.templates as it needs to be in a PyFHD module
     pyfhd_config["cable_reflection_coefficients"] = importlib_resources.files('PyFHD.templates').joinpath('mwa_cable_reflection_coefficients.txt')
     
-    exptected_cal_return = h5_after['cal_return']
+    expected_cal_return = h5_after['cal_return']
     
     logger = RootLogger(1)
     
     cal_polyfit = vis_cal_polyfit(obs, cal, pyfhd_config, logger)
     
-    ##TODO actually test something!
-    
+    npt.assert_allclose(cal_polyfit['gain'], expected_cal_return['gain'])
+    npt.assert_allclose(cal_polyfit['amp_params'], expected_cal_return['amp_params'])
+    npt.assert_allclose(cal_polyfit['phase_params'], expected_cal_return['phase_params'])
 
     
 if __name__ == "__main__":
