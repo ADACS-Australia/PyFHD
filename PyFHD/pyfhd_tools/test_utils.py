@@ -199,6 +199,10 @@ def recarray_to_dict(data: np.recarray | dict) -> dict:
         data = {name.lower():data[name] for name in data.dtype.names}
     # For every key, if it's a record array, recursively call the function
     for key in data:
+        # Every now and then you do get object arrays that contain only one element or arrays that contain only one element
+        # These are not useful so I will extract the element out
+        if (type(data[key]) == np.ndarray and data[key].size == 1):
+            data[key] = data[key][0]
         # Sometimes the recarray is in a standard numpy object array and other times its not for some reason...
         if (type(data[key]) == np.recarray):
             data[key] = recarray_to_dict(data[key])
@@ -222,10 +226,6 @@ def recarray_to_dict(data: np.recarray | dict) -> dict:
                     data[key] = np.vstack(data[key]).astype(data[key][0].dtype)
             except ValueError:
                 data[key] = list(x for x in data[key])
-        # Every now and then you do get object arrays that contain only one element or arrays that contain only one element
-        # These are not useful so I will extract the element out
-        if (type(data[key]) == np.ndarray and data[key].size == 1):
-            data[key] = data[key][0]
     return data
 
 def convert_to_h5(test_path: Path, save_path: Path, *args) -> None:
@@ -287,3 +287,36 @@ def sav_file_vis_arr_swap_axes(sav_file_vis_arr : np.ndarray):
         vis_arr[pol, :, :] = sav_file_vis_arr[pol].transpose()
 
     return vis_arr
+
+def print_types(dictionary, dict_name, indent_level = 1):
+    """
+    When generating the tests, I'd find it useful to see the types of all the keys and value pairs inside
+    the dictionary I'm manipulating. The Debug mode is helpful for this too, but this can be easily used 
+    inside a notebook if experimenting in there too. 
+
+    Parameters
+    ----------
+    dictionary : dict
+        The dictionary to print the types of
+    dict_name : string
+        The name of the dict
+    indent_level : int
+        Sets the indent levels for printing as it's a recursive function, by default 1
+    """
+    for key in dictionary.keys():
+        # Print this if it's a NumPy array
+        if type(dictionary[key]) == np.ndarray:
+            print(f"{dict_name}[{key}] : {dictionary[key].dtype} {dictionary[key].shape}\n{indent_level * 2 * ' '}Inside Type: {type(dictionary[key][0])}")
+            if type(dictionary[key][0]) == np.ndarray:
+                print(f"{indent_level * 2 * ' '}NumPy Array Dtype: {dictionary[key][0].dtype}")
+        # Recursively call the function on another sub dict
+        elif type(dictionary[key]) == dict:
+            print(f"{dict_name}[{key}]  : {type(dictionary[key])}")
+            print_types(dictionary[key], dict_name=f"  {key}", indent_level=indent_level + 2)
+        # If it's an object, might be useful to print the value
+        elif type(dictionary[key]) == object:
+            print(f"{dict_name}[{key}]  : {type(dictionary[key])}")
+            print(dictionary[key])
+        # Otherwise just print it out
+        else:
+            print(f"{dict_name}[{key}]  : {type(dictionary[key])}")

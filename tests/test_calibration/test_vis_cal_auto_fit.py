@@ -7,6 +7,7 @@ from PyFHD.use_idl_fhd.use_idl_outputs import convert_sav_to_dict
 from PyFHD.pyfhd_tools.test_utils import recarray_to_dict, sav_file_vis_arr_swap_axes
 import numpy as np
 import deepdish as dd
+import numpy.testing as npt
 
 @pytest.fixture
 def data_dir():
@@ -38,7 +39,7 @@ def test_pointsource1_vary(data_dir):
     auto_params = np.empty([2, cal["n_pol"], cal['n_tile']], dtype = np.float64)
     auto_params[0] = expected_cal_fit['auto_params'][0].transpose()
     auto_params[1] = expected_cal_fit['auto_params'][1].transpose()
-    assert np.allclose(return_cal_fit['auto_params'], auto_params)
+    npt.assert_allclose(return_cal_fit['auto_params'], auto_params)
     
 if __name__ == "__main__":
 
@@ -55,7 +56,7 @@ if __name__ == "__main__":
         ##Swap the freq and tile dimensions
         ##this make shape (n_pol, n_freq, n_tile)
         cal['gain'] = sav_file_vis_arr_swap_axes(cal['gain'])
-        
+
         ##super dictionary to save everything in
         h5_save_dict = {}
         h5_save_dict['obs'] = obs
