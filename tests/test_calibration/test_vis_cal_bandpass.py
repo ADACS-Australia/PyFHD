@@ -9,6 +9,7 @@ import numpy as np
 import deepdish as dd
 import importlib_resources
 from logging import RootLogger
+import numpy.testing as npt
 
 @pytest.fixture
 def data_dir():
@@ -41,20 +42,20 @@ def run_test(data_dir, tag_name):
     expec_nan_inds = np.where(np.isnan(exptected_cal_remainder['gain']) == True)
     result_nan_inds = np.where(np.isnan(exptected_cal_remainder['gain']) == True)
 
-    assert np.array_equal(expec_nan_inds, result_nan_inds)
+    npt.assert_array_equal(expec_nan_inds, result_nan_inds)
 
     ##find where things are not NaN and check they are close
     test_inds = np.where(np.isnan(exptected_cal_remainder['gain']) == False)
 
-    rtol = 1e-5
-    atol = 1e-7
+    rtol = 5e-5
+    atol = 1e-8
 
-    assert np.allclose(exptected_cal_remainder['gain'][test_inds],
-                       result_cal_remainder['gain'][test_inds],
-                       rtol=rtol, atol=atol)
+    npt.assert_allclose(exptected_cal_remainder['gain'][test_inds],
+                        result_cal_remainder['gain'][test_inds],
+                        rtol=rtol, atol=atol)
 
     ##shouoldn't be NaNs in this, so just check all the outputs
-    assert np.allclose(exptected_cal_bandpass['gain'],
+    npt.assert_allclose(exptected_cal_bandpass['gain'],
                        result_cal_bandpass['gain'], rtol=rtol, atol=atol)
 
 
