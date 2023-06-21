@@ -27,15 +27,15 @@ def test_pointsource1_vary(data_dir):
     
     pyfhd_config = h5_before['pyfhd_config']
     
-    ##TODO for this to work, we have to move mwa_cable_reflection_coefficients.txt
-    ##into PyFHD.templates as it needs to be in a PyFHD module
     pyfhd_config["cable_reflection_coefficients"] = importlib_resources.files('PyFHD.templates').joinpath('mwa_cable_reflection_coefficients.txt')
+    pyfhd_config["cable_lengths"] = importlib_resources.files('PyFHD.templates').joinpath('mwa_cable_length.txt')
+    pyfhd_config['digital_gain_jump_polyfit'] = True
     
     expected_cal_return = h5_after['cal_return']
     
     logger = RootLogger(1)
     
-    cal_polyfit = vis_cal_polyfit(obs, cal, pyfhd_config, logger)
+    cal_polyfit = vis_cal_polyfit(obs, cal, None, pyfhd_config, logger)
     
     npt.assert_allclose(cal_polyfit['gain'], expected_cal_return['gain'])
     npt.assert_allclose(cal_polyfit['amp_params'], expected_cal_return['amp_params'])
