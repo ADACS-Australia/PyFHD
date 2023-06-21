@@ -8,6 +8,7 @@ from PyFHD.pyfhd_tools.test_utils import recarray_to_dict, sav_file_vis_arr_swap
 import numpy.testing as npt
 import deepdish as dd
 import importlib_resources
+import numpy as np
 
 from logging import RootLogger
 
@@ -32,14 +33,27 @@ def test_pointsource1_vary(data_dir):
     pyfhd_config['digital_gain_jump_polyfit'] = True
     
     expected_cal_return = h5_after['cal_return']
-    
+    # cal_return keeps amp_params as a pointer array of shape (128, 2)
+    # However because digital_gain_jump_polyfit was used each pointer contains a (2,2)
+    # This means the shape should be (2, 128, 2, 2) or 
+    # (n_pol, n_tile, cal_amp_degree_fit, cal_amp_degree_fit)
+    expected_amp_params = np.empty(
+        (expected_cal_return['n_pol'], 
+         obs['n_tile'], 
+         pyfhd_config['cal_amp_degree_fit'], 
+         pyfhd_config['cal_amp_degree_fit']
+        )
+    )
+    for pol_i in range(expected_cal_return['n_pol']):
+        for tile_i in range(obs['n_tile']):
+            expected_amp_params[pol_i, tile_i] = expected_cal_return['amp_params'][tile_i, pol_i]
     logger = RootLogger(1)
     
     cal_polyfit = vis_cal_polyfit(obs, cal, None, pyfhd_config, logger)
     
-    npt.assert_allclose(cal_polyfit['gain'], expected_cal_return['gain'])
-    npt.assert_allclose(cal_polyfit['amp_params'], expected_cal_return['amp_params'])
+    npt.assert_allclose(cal_polyfit['amp_params'], expected_amp_params)
     npt.assert_allclose(cal_polyfit['phase_params'], expected_cal_return['phase_params'])
+    npt.assert_allclose(cal_polyfit['gain'], expected_cal_return['gain'])
 
     
 if __name__ == "__main__":
