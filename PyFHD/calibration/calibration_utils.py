@@ -1077,9 +1077,8 @@ def cal_auto_ratio_divide(obs: dict, cal: dict, vis_auto: np.ndarray, auto_tile_
     # TODO: Vectorize
     for pol_i in range(cal['n_pol']):
         # fhd_struct_init_cal puts the ref_antenna as 1 if it's not set, which is never appears to be
-        v0 = vis_auto[pol_i, :, auto_tile_i[1]]
+        v0 = vis_auto[pol_i, :, auto_tile_i[cal['ref_antenna']]]
         auto_ratio[pol_i, :, auto_tile_i] = np.sqrt(vis_auto[pol_i, :, np.arange(auto_tile_i.size)] * weight_invert(v0))
-        # TODO: check shape of gain
         cal['gain'][pol_i] = cal['gain'][pol_i] * weight_invert(auto_ratio[pol_i])
     return cal, auto_ratio
 
@@ -1103,8 +1102,7 @@ def cal_auto_ratio_remultiply(cal: dict, auto_ratio: np.ndarray, auto_tile_i: np
         The calibration dictonary containing the reformed gain
     """
     # Replaced for loop in remultiply, this should remultiply by the auto_ratios
-    # TODO: check shape of cal['gain']
-    cal['gain'][0: cal['n_pol'], :, auto_tile_i] = cal['gain'][0: cal['n_pol'], :, auto_tile_i] * np.abs(auto_ratio[0 : cal['n_pol'], :, auto_tile_i])
+    cal['gain'][:cal['n_pol'], :, auto_tile_i] = cal['gain'][:cal['n_pol'], :, auto_tile_i] * np.abs(auto_ratio[:cal['n_pol'], :, auto_tile_i])
     return cal
 
 def calculate_adaptive_gain(gain_list, convergence_list, iter, base_gain, final_convergence_estimate = None):
