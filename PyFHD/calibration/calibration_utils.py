@@ -881,19 +881,19 @@ def vis_cal_auto_fit(obs: dict, cal: dict, vis_auto : np.ndarray, vis_auto_model
         for tile in range(obs['n_tile']):
             tile_idx = auto_tile_i[tile]
             phase_cross_single = np.arctan2(gain_cross[pol_i, :, tile_idx].imag, gain_cross[pol_i, :, tile_idx].real)
+
             gain_auto_single = np.abs(auto_gain[pol_i, :, tile_idx])
             gain_cross_single = np.abs(gain_cross[pol_i, :, tile_idx])
             # linfit from IDL uses chi-square error calculations to do the linear fit, instead of least squares.
             # The polynomial fit uses least square method
             # TODO: Is there a good reason to use chi-square of least square in this case?
             x = np.vstack([gain_auto_single[freq_i_use], np.ones(gain_auto_single[freq_i_use].size)]).T
-            fit_single = np.linalg.lstsq(x, gain_cross_single[freq_i_use], rcond = None)
+            fit_single = np.linalg.lstsq(x, gain_cross_single[freq_i_use], rcond = None)[0]
             # IDL gives the solution in terms of [A, B] while Python does [B, A] assuming we're
             # solving the equation y = A + Bx
-            fit_single = np.flip(fit_single)
-            cal['gain'][pol_i, :, tile_idx] = (gain_auto_single*fit_single[1] + fit_single[0]) * np.exp(1j * phase_cross_single)
-            fit_slope[pol_i, tile_idx] = fit_single[1]
-            fit_offset[pol_i, tile_idx] = fit_single[0]
+            cal['gain'][pol_i, :, tile_idx] = (gain_auto_single*fit_single[0] + fit_single[1]) * np.exp(1j * phase_cross_single)
+            fit_slope[pol_i, tile_idx] = fit_single[0]
+            fit_offset[pol_i, tile_idx] = fit_single[1]
     cal['auto_scale'] = np.sum(fit_slope, axis=1) / auto_tile_i.size
     cal['auto_params'] = np.empty([cal['n_pol'], cal['n_pol'], obs['n_tile']])
     cal['auto_params'][0, :, :] = fit_offset
@@ -1014,26 +1014,32 @@ def vis_baseline_hist(obs: dict, params: dict, vis_cal: np.ndarray, vis_model_ar
     kx_arr = params['uu'] / obs['kpix']
     ky_arr = params['vv'] / obs['kpix']
     kr_arr = np.sqrt(kx_arr ** 2 + ky_arr ** 2)
-    # TODO: Check what type of matrix multiply it is, guessed an outer because freq array is one dimensional
-    dist_arr = np.outer(kr_arr, obs['baseline_info']['freq'])
+    ## take the transpose of this, given our `vis_cal` and `vis_mode_arr` are the
+    ## transpose of the original FHD code
+    dist_arr = np.outer(kr_arr, obs['baseline_info']['freq']).transpose()*obs['kpix']
     dist_hist, bins, dist_ri = histogram(dist_arr, min=obs['min_baseline'], max=obs['max_baseline'], bin_size=5.0)
 
-    vis_res_ratio_mean = np.empty([obs['n_pol'], bins.size])
-    vis_res_sigma = np.empty([obs['n_pol'], bins.size])
+    vis_res_ratio_mean = np.zeros([obs['n_pol'], bins.size])
+    vis_res_sigma = np.zeros([obs['n_pol'], bins.size])
+
     for pol_i in range(obs['n_pol']):
         for bin_i in range(bins.size):
             if (dist_hist[bin_i] > 0):
                 inds = dist_ri[dist_ri[bin_i] : dist_ri[bin_i+1]]
-                # TODO: Check shape of vis_model_arr
-                model_vals = vis_model_arr[pol_i, inds, :]
-                wh_noflag = np.where(np.abs(model_vals) > 0)
-                if (wh_noflag[0].size > 0):
+                model_vals = (vis_model_arr[pol_i]).flatten()[inds]
+                wh_noflag = np.where(np.abs(model_vals) > 0)[0]
+                if (wh_noflag.size > 0):
                     inds = inds[wh_noflag]
                 else:
                     continue
-                # TODO: check shape of vis_cal and how inds should be used with it (might need flattening)
-                vis_res_ratio_mean[pol_i, :] = np.mean(np.abs(vis_cal[pol_i, inds, :] - model_vals)) / np.mean(np.abs(model_vals))
-                vis_res_sigma[pol_i, :] = np.sqrt(np.var(np.abs(vis_cal[pol_i, inds, :] - model_vals))) / np.mean(np.abs(model_vals))
+                ## if Keyword_Set(calibration_visibilities_subtract) THEN BEGIN
+                ## but calibration_visibilities_subtract isn't a function keyword
+                ## so we'll only translate the False of that statement
+                # vis_cal_use = (vis_cal[pol_i].transpose()).flatten()[inds]
+                vis_cal_use = (vis_cal[pol_i]).flatten()[inds]
+                vis_res_ratio_mean[pol_i, bin_i] = np.mean(np.abs(vis_cal_use - model_vals)) / np.mean(np.abs(model_vals))
+                vis_res_sigma[pol_i, bin_i] = np.sqrt(np.var(np.abs(vis_cal_use - model_vals))) / np.mean(np.abs(model_vals))
+
             else:
                 continue
     # In a change from FHD, the baseline_length is saved as dist_locs the array,
