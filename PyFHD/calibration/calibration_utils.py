@@ -618,6 +618,8 @@ def vis_cal_polyfit(obs: dict, cal: dict, auto_ratio: np.ndarray | None, pyfhd_c
             cal_mode_fit = pyfhd_config['cal_reflection_mode_theory']
         else:
             cal_mode_fit = True
+    else:
+        cal_mode_fit = False
     freq_use = np.where(obs['baseline_info']['freq_use'])[0]
     tile_use = np.where(obs['baseline_info']['tile_use'])[0]
 
@@ -675,7 +677,7 @@ def vis_cal_polyfit(obs: dict, cal: dict, auto_ratio: np.ndarray | None, pyfhd_c
             phase_params = np.polynomial.Polynomial.fit(freq_use, phase_use, pyfhd_config['cal_phase_degree_fit']).convert().coef
             cal["phase_params"][pol_i, tile_i, :] = phase_params
             phase_fit = np.zeros(obs['n_freq'])
-            for di in range(pyfhd_config['cal_phase_degree_fit']):
+            for di in range(pyfhd_config['cal_phase_degree_fit'] + 1):
                 phase_fit += phase_params[di] * np.arange(obs['n_freq'])**di
             gain_arr[:, tile_i] = gain_fit * np.exp(1j * phase_fit)
         cal['gain'][pol_i] = gain_arr
@@ -742,12 +744,26 @@ def vis_cal_polyfit(obs: dict, cal: dict, auto_ratio: np.ndarray | None, pyfhd_c
                     mode_test[mask_i] = 0
             mode_i_arr = np.zeros((cal['n_pol'], obs['n_tile'])) + np.argmax(mode_test)
 
-        # If you wish to implement the option to fit only certain cable lengths do that here
-        # My suggestion to create a new argparse option set as an array of cable lengths
-        # I would use the array as the cable lengths you want to only fit.
-        # Loop through the array and use a flag array to multiply the mode_i_arr by 1 or 0
-        # 0 will exclude the cable length from fitting, 1 will include it.
-        # Do note you shouldn't do it if auto_ratio is defined and auto_ratio_calibration is enabled
+        # Option to fit only certain cable lengths, can specify more than one length
+        # Positive length indicates fit mode, negative length indicates exclude mode
+        # This is currently assuming cal_mode_fit is an integer or number, not an array!
+        # If you need an array to fit or exclude cable lengths, then create another option for it
+        # in the config.
+        if (auto_ratio == None and cal_mode_fit != 1):
+            tile_ref_logic = np.zeros(obs['n_tile'])
+            if (cal_mode_fit > 0):
+                cable_cut_i = np.where(cable_length != cal_mode_fit)
+                if (cable_cut_i[0].size > 0):
+                    tile_ref_logic[cable_cut_i] = 1
+            else:
+                cable_cut_i = np.where(cable_length == abs(cal_mode_fit))
+                if (cable_cut_i[0].size > 0):
+                    tile_ref_logic[cable_cut_i] = 1
+            cable_cut = np.nonzero(tile_ref_logic)
+            tile_ref_flag = np.ones(obs['n_tile'])
+            if (cable_cut[0].size > 0):
+                tile_ref_flag[cable_cut] = 0
+            mode_i_arr *= tile_ref_flag
 
         cal['mode_params'] = np.empty([cal['n_pol'], obs['n_tile'], 3])
         for pol_i in range(cal['n_pol']):

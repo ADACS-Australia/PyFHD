@@ -37,6 +37,9 @@ def test_pointsource1_vary(data_dir):
     # However because digital_gain_jump_polyfit was used each pointer contains a (2,2)
     # This means the shape should be (2, 128, 2, 2) or 
     # (n_pol, n_tile, cal_amp_degree_fit, cal_amp_degree_fit)
+    # cal_return also keeps the phase_params as (128, 2) object array, each one containing two 1 element float arrays 
+    # This should be (n_pol, n_tile, cal_phase_degree_fit + 1) or (2, 128, 2) so
+    # We'll grab each one by tile and polarization, and stack and flatten.
     expected_amp_params = np.empty(
         (expected_cal_return['n_pol'], 
          obs['n_tile'], 
@@ -44,15 +47,23 @@ def test_pointsource1_vary(data_dir):
          pyfhd_config['cal_amp_degree_fit']
         )
     )
+    expected_phase_params = np.empty((
+        expected_cal_return['n_pol'],
+        obs['n_tile'],
+        pyfhd_config['cal_phase_degree_fit'] + 1
+    ))
     for pol_i in range(expected_cal_return['n_pol']):
         for tile_i in range(obs['n_tile']):
-            expected_amp_params[pol_i, tile_i] = expected_cal_return['amp_params'][tile_i, pol_i]
+            expected_amp_params[pol_i, tile_i] = np.transpose(expected_cal_return['amp_params'][tile_i, pol_i])
+            expected_phase_params[pol_i, tile_i] = np.vstack(expected_cal_return['phase_params'][tile_i, pol_i]).flatten()
+
     logger = RootLogger(1)
     
     cal_polyfit = vis_cal_polyfit(obs, cal, None, pyfhd_config, logger)
     
-    npt.assert_allclose(cal_polyfit['amp_params'], expected_amp_params)
-    npt.assert_allclose(cal_polyfit['phase_params'], expected_cal_return['phase_params'])
+    # 6e-8 atol for amp_params due to precision errors, still really close to single_precision
+    npt.assert_allclose(cal_polyfit['amp_params'], expected_amp_params, atol=6e-8)
+    npt.assert_allclose(cal_polyfit['phase_params'], expected_phase_params)
     npt.assert_allclose(cal_polyfit['gain'], expected_cal_return['gain'])
 
     
