@@ -608,7 +608,7 @@ def vis_cal_bandpass(obs: dict, cal: dict, params: dict, pyfhd_config: dict, log
 
 def vis_cal_polyfit(obs: dict, cal: dict, auto_ratio: np.ndarray | None, pyfhd_config: dict, logger: RootLogger) -> dict:
     # Keep the og_gain_arr for calculations later
-    og_gain_arr = cal['gain']
+    og_gain_arr = np.copy(cal['gain'])
     if (pyfhd_config['cal_reflection_mode_theory'] or 
         pyfhd_config['cal_reflection_mode_file'] or 
         pyfhd_config['cal_reflection_mode_delay'] or
@@ -618,8 +618,8 @@ def vis_cal_polyfit(obs: dict, cal: dict, auto_ratio: np.ndarray | None, pyfhd_c
             cal_mode_fit = pyfhd_config['cal_reflection_mode_theory']
         else:
             cal_mode_fit = True
-    freq_use = np.where(obs['baseline_info']['freq_use'])
-    tile_use = np.where(obs['baseline_info']['tile_use'])
+    freq_use = np.where(obs['baseline_info']['freq_use'])[0]
+    tile_use = np.where(obs['baseline_info']['tile_use'])[0]
 
     # If the amp_degree or phase_degree weren't used, then apply the defaults
     if (not pyfhd_config['cal_amp_degree_fit']):
@@ -631,53 +631,53 @@ def vis_cal_polyfit(obs: dict, cal: dict, auto_ratio: np.ndarray | None, pyfhd_c
     # The cal_step_fit option isn't in the eor_defaults_wrapper or defined in the FHD dictionary.
 
     # Polynomial fitting over the frequency band
-    gain_residual = np.empty((obs['n_tile'], cal['n_pol']))
+    gain_residual = np.empty((cal['n_pol'], obs['n_freq'], obs['n_tile']))
     # create amp_params with the shape of (n_pol, n_tile, amp_degree + 1)
-    cal['amp_params'] = np.empty((cal['n_pol'], obs['n_tile'], pyfhd_config["cal_amp_degree_fit"] + 1))
+    # If we're using the digital_gain_jump_polyfit add extra dimension to amp_params
+    if (pyfhd_config['digital_gain_jump_polyfit']):
+        cal['amp_params'] = np.empty((cal['n_pol'], obs['n_tile'], pyfhd_config["cal_amp_degree_fit"], pyfhd_config["cal_amp_degree_fit"]))
+    else:
+        cal['amp_params'] = np.empty((cal['n_pol'], obs['n_tile'], pyfhd_config["cal_amp_degree_fit"] + 1))
     cal['phase_params'] = np.empty((cal['n_pol'], obs['n_tile'], pyfhd_config["cal_phase_degree_fit"] + 1))
     for pol_i in range(cal['n_pol']):
         gain_arr = cal['gain'][pol_i]
         gain_amp = np.abs(gain_arr)
         gain_phase = np.arctan2(gain_arr.imag, gain_arr.real)
         for tile_i in range(obs['n_tile']):
-            gain = np.squeeze(gain_amp[tile_i, freq_use])
-            # Fit for amplitude
-            fit_params = np.polynomial.Polynomial.fit(freq_use, gain, deg = pyfhd_config["cal_amp_degree_fit"]).convert().coef
-            cal['amp_params'][pol_i, tile_i, :] = fit_params
+            gain = np.squeeze(gain_amp[freq_use, tile_i])
             gain_fit = np.zeros(obs['n_freq'])
             # Pre and post digital gain jump separately for highband MWA data
             if (pyfhd_config['digital_gain_jump_polyfit']):
                 pre_dig_inds = np.where(obs['baseline_info']['freq'][freq_use] < 187.515e6)
-                if pre_dig_inds[0].size == 0:
+                if pre_dig_inds[0].size > 0:
                     f_d = np.max(pre_dig_inds[0])
-                    f_end = freq_use[0].size
-                    fit_params1 = np.polynomial.Polynomial.fit(freq_use[0: f_d], gain[0:f_d], pyfhd_config['cal_amp_degree_fit'] - 1).convert().coef
-                    fit_params2 = np.polynomial.Polynomial.fit(freq_use[f_d + 1: f_end], gain[f_d + 1: f_end], pyfhd_config['cal_amp_degree_fit']).convert().coef
+                    f_end = freq_use.size
+                    fit_params1 = np.polynomial.Polynomial.fit(freq_use[0 : f_d + 1], gain[0 : f_d + 1], deg = pyfhd_config['cal_amp_degree_fit'] - 1).convert().coef
+                    fit_params2 = np.polynomial.Polynomial.fit(freq_use[f_d + 1 : f_end], gain[f_d + 1 : f_end], deg = pyfhd_config['cal_amp_degree_fit'] - 1).convert().coef
                     for di in range(pyfhd_config['cal_amp_degree_fit']):
-                        gain_fit[freq_use[0] : freq_use[f_d]] += fit_params1[di] * (np.arange(freq_use[f_d]) ** di)
-                        gain_fit[freq_use[f_d + 1] : freq_use[f_end]] += fit_params2[di] * (np.arange(freq_use[f_end] - freq_use[f_d + 1] + 1) + freq_use[f_d + 1])**di
-                    fit_params = [fit_params1, fit_params2]
+                        gain_fit[freq_use[0] : freq_use[f_d + 1]] += fit_params1[di] * (np.arange(freq_use[f_d + 1] - 1) ** di)
+                        gain_fit[freq_use[f_d + 1] : freq_use[f_end - 1]] += fit_params2[di] * (np.arange(freq_use[f_end - 1] - freq_use[f_d + 1]) + freq_use[f_d + 1])**di
+                    fit_params = np.vstack([fit_params1, fit_params2])
                     cal['amp_params'][pol_i, tile_i] = fit_params
                 else:
                     logger.warning('digital_gain_jump_polyfit only works with highband mwa data. Full band polyfit applied instead.')
-            else: 
+            # Fit for amplitude
+            else:                 
+                fit_params = np.polynomial.Polynomial.fit(freq_use, gain, deg = pyfhd_config["cal_amp_degree_fit"]).convert().coef
+                cal['amp_params'][pol_i, tile_i, :] = fit_params
                 for di in range(pyfhd_config['cal_amp_degree_fit']):
-                    gain_fit += fit_params[di, :, :] * np.arange(obs['n_freq'])**di
+                    gain_fit += fit_params[di] * np.arange(obs['n_freq'])**di
             
-            # TODO: Check shape of this line, maybe something is off?
-            gain_residual[tile_i, pol_i] = np.squeeze(gain_amp[tile_i, :] - gain_fit)
+            gain_residual[pol_i, :, tile_i] = gain_amp[:, tile_i] - gain_fit
 
             # Fit for phase
-            # TODO: Check the shape of gain_phase
-            phase_use = np.unwrap(np.squeeze(gain_phase[tile_i, freq_use]))
+            phase_use = np.unwrap(np.squeeze(gain_phase[freq_use, tile_i]))
             phase_params = np.polynomial.Polynomial.fit(freq_use, phase_use, pyfhd_config['cal_phase_degree_fit']).convert().coef
             cal["phase_params"][pol_i, tile_i, :] = phase_params
             phase_fit = np.zeros(obs['n_freq'])
             for di in range(pyfhd_config['cal_phase_degree_fit']):
-                # TODO: Check shape
                 phase_fit += phase_params[di] * np.arange(obs['n_freq'])**di
-            gain_arr[tile_i, :] = gain_fit * np.exp(1j * phase_fit)
-        # TODO: Check shape of gain
+            gain_arr[:, tile_i] = gain_fit * np.exp(1j * phase_fit)
         cal['gain'][pol_i] = gain_arr
 
     # Cable Reflection Fitting
@@ -705,13 +705,13 @@ def vis_cal_polyfit(obs: dict, cal: dict, auto_ratio: np.ndarray | None, pyfhd_c
         elif (pyfhd_config['cal_reflection_mode_theory']):
             logger.info('Using theory calculation in nominal reflection mode calibration.')
             # Get the nominal tile lengths and velocity factors
-            cable_length_data = np.loadtxt(Path(pyfhd_config['input-path'], 'intrument_config', 'mwa_cable_length.txt'), skiprows=1).transpose()
+            cable_length_data = np.loadtxt(pyfhd_config["cable_lengths"], skiprows=1).transpose()
             cable_length = cable_length_data[2]
             cable_vf = cable_length_data[3]
-            tile_ref_flag = np.minimum(np.maximum(np.zeros_like(cable_length_data[4]), cable_length_data[4]), np.ones_like(cable_length_data[4]))
+            tile_ref_flag = np.minimum(np.maximum(0, cable_length_data[4]), 1)
 
             # Nominal Reflect Time
-            reflect_time = (2 * cable_length) / (c * cable_vf)
+            reflect_time = (2 * cable_length) / (c.value * cable_vf)
             bandwidth = ((np.max(obs['baseline_info']['freq']) - np.min(obs['baseline_info']['freq'])) * obs['n_freq']) / (obs['n_freq'] - 1)
             # Modes in fourier transform units
             mode_i_arr = np.tile(bandwidth * reflect_time * tile_ref_flag, [cal["n_pol"], 1])
@@ -727,9 +727,9 @@ def vis_cal_polyfit(obs: dict, cal: dict, auto_ratio: np.ndarray | None, pyfhd_c
             spec_psf = spec_psf[spec_inds]
             mode_test = np.zeros(obs['n_freq']  // 2)
             for pol_i in range(cal['n_pol']):
-                for ti in range(tile_use[0].size):
-                    tile_i = tile_use[0][ti]
-                    spec0 = np.abs(np.fft.fftn(gain_residual[tile_i, pol_i]))
+                for ti in range(tile_use.size):
+                    tile_i = tile_use[ti]
+                    spec0 = np.abs(np.fft.fftn(gain_residual[pol_i, tile_i]))
                     mode_test += spec0[spec_inds]
             psf_mask = np.zeros(obs['n_freq'] // 2)
 
@@ -749,10 +749,11 @@ def vis_cal_polyfit(obs: dict, cal: dict, auto_ratio: np.ndarray | None, pyfhd_c
         # 0 will exclude the cable length from fitting, 1 will include it.
         # Do note you shouldn't do it if auto_ratio is defined and auto_ratio_calibration is enabled
 
+        cal['mode_params'] = np.empty([cal['n_pol'], obs['n_tile'], 3])
         for pol_i in range(cal['n_pol']):
             # Divide the polyfit to reveal the residual cable reflections better
             gain_arr = og_gain_arr[pol_i] / cal['gain'][pol_i]
-            for ti in range(tile_use[0].size):
+            for ti in range(tile_use.size):
                 tile_i = tile_use[ti]
                 mode_i = mode_i_arr[pol_i, tile_i]
                 if (mode_i == 0):
@@ -769,35 +770,34 @@ def vis_cal_polyfit(obs: dict, cal: dict, auto_ratio: np.ndarray | None, pyfhd_c
                         # array of modes to try
                         modes = (np.arange(nmodes) - nmodes // 2) * dmode + mode0
                         # reshape for ease of computing
-                        modes = rebin(modes, (nmodes, freq_use[0].size))
+                        modes = rebin(modes, (freq_use.size, nmodes)).T
 
                         if (auto_ratio):
                             # Find tiles which will *not* be accidently coherent in their cable reflection in order to reduce bias
                             inds = np.where((obs['baseline_info']['tile_use']) & (mode_i_arr[pol_i, :] > 0) & (np.abs(mode_i_arr[pol_i,:] - mode_i)) > 0.01)
                             # mean over frequency for each tile
                             freq_mean = np.mean(auto_ratio[pol_i], axis = 1)
-                            # normalized autos using each tile's freq mean
+                            # TODO: check shape, transpose and rebin seem odd together, normalized autos using each tile's freq mean
                             norm_autos = auto_ratio[pol_i] / rebin(np.transpose(freq_mean), (obs['n_freq'], obs['n_tile']))
                             # mean over all tiles which *are not* accidently coherent as a func of freq
                             incoherent_mean = np.mean(norm_autos[:, inds], axis=0)
                             # Residual and normalized (using incoherent mean) auto-correlation
                             resautos = (norm_autos[:, tile_i] / incoherent_mean) - np.mean(norm_autos[:, tile_i] / incoherent_mean)
-                            gain_temp = rebin(np.transpose(np.squeeze(resautos[freq_use])), (nmodes, freq_use[0].size))
+                            gain_temp = rebin(np.transpose(np.squeeze(resautos[freq_use])), (nmodes, freq_use.size))
                         else:
-                            # dimension manipulatio, add dim for mode fitting
+                            # dimension manipulation, add dim for mode fitting
                             # Subtract the mean so aliasing is reduced in the dft cable fitting
-                            gain_temp = rebin(np.transpose(gain_arr[tile_i, freq_use]) - np.mean(gain_arr[tile_i, freq_use]), (nmodes, freq_use[0].size))
+                            gain_temp = rebin(gain_arr[freq_use, tile_i] - np.mean(gain_arr[freq_use, tile_i]), (nmodes, freq_use.size))
                         # freq_use matrix to multiply/collapse in fit
-                        freq_mat = rebin(np.transpose(freq_use[0]), (nmodes, freq_use[0].size))
+                        freq_mat = rebin(freq_use, (nmodes, freq_use.size))
                         # Perform DFT of gains to test modes
                         test_fits = np.sum(np.exp(1j * 2 * np.pi/obs['n_freq'] * modes * freq_mat) * gain_temp, axis=-1)
                         # Pick out highest amplitude fit (mode_ind gives the index of the mode)
-                        amp_use = np.max(np.abs(test_fits)) / freq_use[0].size
+                        amp_use = np.max(np.abs(test_fits)) / freq_use.size
                         mode_ind = np.argmax(np.abs(test_fits))
                         # Phase of said fit
-                        # TODO: change arctan if test_fits isn't complex (it should be though)
                         phase_use = np.arctan2(test_fits[mode_ind].imag, test_fits[mode_ind].real)
-                        # The actual mode
+                        # TODO: check shape and indexing The actual mode
                         mode_i = modes[0, mode_ind]
 
                         # Using the mode selected from the gains, optionally use the phase to find the amp and phase
@@ -808,9 +808,8 @@ def vis_cal_polyfit(obs: dict, cal: dict, auto_ratio: np.ndarray | None, pyfhd_c
                                 mode_i_arr[pol_i, :] > 0 & 
                                 np.abs(mode_i_arr[pol_i, :] - mode_i) > 0.01
                             )
-                            # TODO: check gain_arr indexing
-                            residual_phase = np.arctan2(gain_arr[:, freq_use].imag, gain_arr[:, freq_use].real)
-                            incoherent_residual_phase = residual_phase[tile_i, :] - np.mean(residual_phase[inds, :], axis=1)
+                            residual_phase = np.arctan2(gain_arr[freq_use, :].imag, gain_arr[freq_use, :].real)
+                            incoherent_residual_phase = residual_phase[:, tile_i] - np.mean(residual_phase[inds], axis=1)
                             test_fits = np.sum(np.exp(1j * 2 * np.pi/ obs['n_freq'] * mode_i * freq_use) * incoherent_residual_phase)
                             # Factor of 2 from fitting just the phase
                             amp_use = 2 * np.abs(test_fits) / freq_use[0].size
@@ -818,13 +817,11 @@ def vis_cal_polyfit(obs: dict, cal: dict, auto_ratio: np.ndarray | None, pyfhd_c
                             phase_use = np.arctan2(test_fits.imag, test_fits.real) + np.pi/2
                     elif (pyfhd_config['cal_reflection_mode_file']):
                         # Use predetermined fits
-                        # TODO check amp_arr and phase_arr indexing
                         amp_use = amp_arr[pol_i, tile_i]
                         phase_use = phase_arr[pol_i, tile_i]
                     else:
                         # Use nominal delay mode, but fit amplitude and phase of reflections
-                        # TODO: check indexing of gain_arr
-                        mode_fit = np.sum(np.exp(1j * 2 * np.pi / obs['n_freq'] * mode_i * freq_use) * np.squeeze(gain_arr[tile_i, freq_use]))
+                        mode_fit = np.sum(np.exp(1j * 2 * np.pi / obs['n_freq'] * mode_i * freq_use) * np.squeeze(gain_arr[freq_use, tile_i]))
                         amp_use = np.abs(mode_fit) / freq_use[0].size
                         phase_use = np.arctan2(mode_fit.imag, mode_fit.real)
                     
@@ -834,8 +831,7 @@ def vis_cal_polyfit(obs: dict, cal: dict, auto_ratio: np.ndarray | None, pyfhd_c
                         cal['gain'][pol_i, :, tile_i] *= np.exp(1j * gain_mode_fit.imag)
                     else:
                         cal['gain'][pol_i, :, tile_i] *= 1 + gain_mode_fit 
-                    # If you want to keep the mode params do that here
-                    # TODO: check with Jack to see if this is needed
+                    cal['mode_params'][pol_i, tile_i] = np.array([mode_i, amp_use, phase_use])
     return cal
 
 def vis_cal_auto_fit(obs: dict, cal: dict, vis_auto : np.ndarray, vis_auto_model: np.ndarray, auto_tile_i: np.ndarray) -> dict:
@@ -1077,14 +1073,14 @@ def cal_auto_ratio_divide(obs: dict, cal: dict, vis_auto: np.ndarray, auto_tile_
         A Tuple which contains the cal_dcit with an updated gain with removed antenna-dependent parameters
         and the auto_ratio array containing the normalized reference (i.e. cable reflections)
     """
-    auto_ratio = np.empty([cal['n_pol'], obs['n_tile'], obs['n_freq']])
+    auto_ratio = np.empty([cal['n_pol'], obs['n_freq'], obs['n_tile']])
     # TODO: Vectorize
     for pol_i in range(cal['n_pol']):
         # fhd_struct_init_cal puts the ref_antenna as 1 if it's not set, which is never appears to be
-        v0 = vis_auto[pol_i, auto_tile_i[1], :]
-        auto_ratio[pol_i, auto_tile_i, :] = np.sqrt(vis_auto[pol_i, np.arange(auto_tile_i.size), :] * weight_invert(v0))
+        v0 = vis_auto[pol_i, :, auto_tile_i[1]]
+        auto_ratio[pol_i, :, auto_tile_i] = np.sqrt(vis_auto[pol_i, :, np.arange(auto_tile_i.size)] * weight_invert(v0))
         # TODO: check shape of gain
-        cal['gain'][pol_i, :, :] = cal['gain'][pol_i, :, :] * weight_invert(auto_ratio[pol_i, : ,:])
+        cal['gain'][pol_i] = cal['gain'][pol_i] * weight_invert(auto_ratio[pol_i])
     return cal, auto_ratio
 
 def cal_auto_ratio_remultiply(cal: dict, auto_ratio: np.ndarray, auto_tile_i: np.ndarray) -> dict:
@@ -1108,7 +1104,7 @@ def cal_auto_ratio_remultiply(cal: dict, auto_ratio: np.ndarray, auto_tile_i: np
     """
     # Replaced for loop in remultiply, this should remultiply by the auto_ratios
     # TODO: check shape of cal['gain']
-    cal['gain'][0: cal['n_pol'], auto_tile_i, :] = cal['gain'][0: cal['n_pol'], auto_tile_i, :] * np.abs(auto_ratio[0 : cal['n_pol'], auto_tile_i, :])
+    cal['gain'][0: cal['n_pol'], :, auto_tile_i] = cal['gain'][0: cal['n_pol'], :, auto_tile_i] * np.abs(auto_ratio[0 : cal['n_pol'], :, auto_tile_i])
     return cal
 
 def calculate_adaptive_gain(gain_list, convergence_list, iter, base_gain, final_convergence_estimate = None):
