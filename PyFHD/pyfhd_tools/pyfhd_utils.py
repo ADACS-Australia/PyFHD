@@ -1035,39 +1035,42 @@ def split_vis_weights(obs: dict, vis_weights: np.ndarray) -> tuple[np.ndarray, n
 
     # Get the number of baselines, should be the last in this case
     nb = vis_weights.shape[-1]
-    bin_end = np.zeros(obs['n_time'])
-    bin_end[0: obs['n_time'] - 1] = obs["baseline_info"]["bin_offset"][1: obs['n_time']] - 1
-    bin_end[-1] = nb - 1
+    bin_end = np.zeros(obs['n_time'], dtype=np.int64)
+    bin_end[:obs['n_time']-1] = obs["baseline_info"]["bin_offset"][1:obs['n_time']] - 1
+    bin_end[-1] = int(nb - 1)
     bin_i = np.full(nb, -1, dtype = np.int64)
     for t_i in range(obs['n_time'] // 2):
-        bin_i[obs["baseline_info"]["bin_offset"][t_i] : bin_end[t_i]] = t_i
+        bin_i[obs["baseline_info"]["bin_offset"][t_i]:bin_end[t_i]+1] = t_i
 
-    time_start_i = np.min(np.nonzero(obs['baseline_info']['time_use'])[0])
-    nt3 = np.floor((obs['n_time'] - time_start_i) / 2) * 2
+    time_start_i = int(np.min(np.nonzero(obs['baseline_info']['time_use'])[0]))
+    nt3 = int(np.floor((obs['n_time'] - time_start_i) / 2) * 2)
     time_use_0 = obs['baseline_info']['time_use'][time_start_i : time_start_i + nt3 : 2]
     time_use_1 = obs['baseline_info']['time_use'][time_start_i + 1 : time_start_i + nt3 : 2]
     time_use_01 = time_use_0 * time_use_1
-    time_use = obs['baseline_info']['time_use']
+    time_use = np.zeros(obs['baseline_info']['time_use'].shape, dtype=np.int64)
     time_use[time_start_i: time_start_i + nt3 : 2] = time_use_01
     time_use[time_start_i + 1: time_start_i + nt3 : 2] = time_use_01
     time_cut_i = np.where(time_use <= 0)[0]
     if (time_cut_i.size > 0):
         for cut_i in range(time_cut_i.size):
-            bin_i_cut = np.where(bin_i == time_cut_i[cut_i])
-            if (bin_i_cut[0].size > 0):
+            bin_i_cut = np.where(bin_i == time_cut_i[cut_i])[0]
+            if (bin_i_cut.size > 0):
                 bin_i[bin_i_cut] = -1
 
     bi_use = [np.where(bin_i % 2 == 0)[0], np.where(bin_i % 2 == 1)[0]]
-    if (bi_use[0].size > bi_use[1].size):
+
+    ##Here we ensure that both even and odd samples are the same size by
+    ##ensuring both arrays match the smallest size
+    if (bi_use[0].size < bi_use[1].size):
         bi_use[1] = bi_use[1][0 : bi_use[0].size]
-    elif (bi_use[1].size > bi_use[0].size):
+    elif (bi_use[1].size < bi_use[0].size):
         bi_use[0] = bi_use[0][0 : bi_use[1].size]
 
-    # Reset vis_weights
-    vis_weights *= 0
     for pol_i in range(obs['n_pol']):
         # In IDL they are doing x > y < w < z
         flag_use = np.minimum(np.maximum(vis_weights[pol_i, : , bi_use[0]], 0) , np.minimum(vis_weights[pol_i, : , bi_use[1]], 1))
+        # Reset vis_weights
+        vis_weights[pol_i] = 0
         # No keywords used for odd_only or even_only in entirety of FHD
         vis_weights[pol_i, :, bi_use[0]] = flag_use
         vis_weights[pol_i, :, bi_use[1]] = flag_use
@@ -1086,14 +1089,12 @@ def vis_noise_calc(obs: dict, vis_arr: np.ndarray, vis_weights: np.ndarray) -> n
     vis_weights_use, bi_use = split_vis_weights(obs, vis_weights)
 
     for pol_i in range(obs["n_pol"]):
-        data_diff = vis_arr[pol_i, :, :, bi_use[0]].imag - vis_arr[pol_i, : ,:, bi_use[1]]
-        # TODO: Might need to be squeezed for easier use
-        vis_weight_diff = np.maximum(vis_weights_use[pol_i, :, :, bi_use[0]], 0) * np.maximum(vis_weights_use[pol_i, : ,:, bi_use[1]], 0)
+        data_diff = vis_arr[pol_i, :, bi_use[0]].imag - vis_arr[pol_i, :,  bi_use[1]].imag
+        vis_weight_diff = np.maximum(vis_weights_use[pol_i, :, bi_use[0]], 0) * np.maximum(vis_weights_use[pol_i, :, bi_use[1]], 0)
         for fi in range(obs["n_freq"]):
-            ind_use = np.where(vis_weight_diff[fi])
-            if (ind_use[0].size > 0):
-                # TODO: data_diff subsetting likely needs ind_use to be separated into the separate axes
-                noise_arr[pol_i, fi] = np.std(data_diff[fi, ind_use])
+            ind_use = np.where(vis_weight_diff[fi])[0]
+            if (ind_use.size > 0):
+                noise_arr[pol_i, fi] = np.std(data_diff[fi, ind_use])/np.sqrt(2)
     
     return noise_arr
     
