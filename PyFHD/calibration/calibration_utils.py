@@ -883,24 +883,37 @@ def vis_cal_auto_fit(obs: dict, cal: dict, vis_auto : np.ndarray, vis_auto_model
             maximum = min(obs['n_freq'], freq_i_flag[freq_i] + 2)
             freq_flag[minimum : maximum] = 0
         freq_i_use = np.nonzero(freq_flag)
-    # Vectorized loop for via_cal_auto_fit lines 45-55 in IDL
-    auto_gain = np.sqrt(vis_auto*weight_invert(vis_auto_model))
+    ## Vectorized loop for via_cal_auto_fit lines 45-55 in IDL
+    ## However the logic still indexes the full 128 tiles, so need to shove
+    ## outputs into an empty array of correct size
+    auto_gain = np.empty((cal['n_pol'], obs['n_freq'], obs['n_tile']))
+    auto_gain[:, :, auto_tile_i] = np.sqrt(vis_auto*weight_invert(vis_auto_model))
     gain_cross = cal['gain']
     fit_slope = np.empty((cal['n_pol'], obs['n_tile']))
     fit_offset = np.empty_like(fit_slope)
+
     # Didn't vectorize as the polyfit won't be vectorized
     for pol_i in range(cal['n_pol']):
-        for tile in range(obs['n_tile']):
+        for tile in range(auto_tile_i.size):
             tile_idx = auto_tile_i[tile]
             phase_cross_single = np.arctan2(gain_cross[pol_i, :, tile_idx].imag, gain_cross[pol_i, :, tile_idx].real)
 
             gain_auto_single = np.abs(auto_gain[pol_i, :, tile_idx])
             gain_cross_single = np.abs(gain_cross[pol_i, :, tile_idx])
+
+            ##TODO need to mask out any NaN values; numpy doesn't like them,
+            ##I assume the IDL equiv function just masks them?
+            ##or maybe we need to do a catch for NaNs here, and abandon all
+            ##hope for a fit if there are NaNs?
+            notnan = np.where((np.isnan(gain_auto_single[freq_i_use]) != True) & (np.isnan(gain_cross_single[freq_i_use]) != True))
+            gain_auto_single_fit = gain_auto_single[freq_i_use][notnan]
+            gain_cross_single_fit = gain_cross_single[freq_i_use][notnan]
+
             # linfit from IDL uses chi-square error calculations to do the linear fit, instead of least squares.
             # The polynomial fit uses least square method
             # TODO: Is there a good reason to use chi-square of least square in this case?
-            x = np.vstack([gain_auto_single[freq_i_use], np.ones(gain_auto_single[freq_i_use].size)]).T
-            fit_single = np.linalg.lstsq(x, gain_cross_single[freq_i_use], rcond = None)[0]
+            x = np.vstack([gain_auto_single_fit, np.ones(gain_auto_single_fit.size)]).T
+            fit_single = np.linalg.lstsq(x, gain_cross_single_fit, rcond = None)[0]
             # IDL gives the solution in terms of [A, B] while Python does [B, A] assuming we're
             # solving the equation y = A + Bx
             cal['gain'][pol_i, :, tile_idx] = (gain_auto_single*fit_single[0] + fit_single[1]) * np.exp(1j * phase_cross_single)
@@ -939,30 +952,42 @@ def vis_calibration_apply(vis_arr: np.ndarray, obs: dict, cal: dict, vis_model_a
     # tile numbering starts at 1
     tile_a_i = obs['baseline_info']['tile_a'] - 1
     tile_b_i = obs['baseline_info']['tile_b'] - 1
+
     # TODO: Check this is polarizations from vis_arr, should be 2 or 4
     n_pol_vis = vis_arr.shape[0]
     gain_pol_arr1 = [0,1,0,1]
     gain_pol_arr2 = [0,1,1,0]
 
-    inds_rebin_arr = rebin(np.arange(obs['n_freq']), [obs['n_freq'], obs['n_baselines']], sample = True)
-    inds_a = inds_rebin_arr + rebin(np.transpose(tile_a_i)* obs['n_freq'], [obs['n_freq'], obs['n_baselines']])
-    inds_b = inds_rebin_arr + rebin(np.transpose(tile_b_i)* obs['n_freq'], [obs['n_freq'], obs['n_baselines']])
+    ## OK, it really makes sense to use native python functionality here
+    ## We're just trying to match up the frequency-dependent gains to the
+    ## correct baselines, and apply them. Can use `meshgrid` here instead of
+    ## `rebin`, which will make 2D indexing arrays, so we can directly leave
+    ## the gain arrays in the correct shape and index the directly. Using `rebin`
+    ## means we have to flatten them
+    inds_a_baseline, inds_a_freqs,  = np.meshgrid(tile_a_i, np.arange(obs['n_freq']))
+    inds_b_baseline, inds_b_freqs = np.meshgrid(tile_b_i, np.arange(obs['n_freq']))
 
     # TODO: Vectorize
     for pol_i in range(n_pol_vis):
         gain_arr1 = cal['gain'][gain_pol_arr1[pol_i], : , :]
         gain_arr2 = cal['gain'][gain_pol_arr2[pol_i], : , :]
-        # If you wish to add a way to invert the gain do that here with weight_invert
-        vis_gain = gain_arr1[inds_a] * np.conjugate(gain_arr2[inds_b])
-        vis_arr[pol_i, :, :] *= weight_invert(vis_gain)
 
+        #TODO  If you wish to add a way to invert the gain do that here with weight_invert
+
+        vis_gain = gain_arr1[inds_a_freqs, inds_a_baseline] * np.conjugate(gain_arr2[inds_b_freqs, inds_b_baseline])
+
+        vis_arr[pol_i, :, :] *= weight_invert(vis_gain, use_abs=False)
+
+    ##TODO we haven't run FHD in a way that uses 4 pols yet so this is all
+    ##untested
     if (n_pol_vis == 4):
-        if (vis_model_arr and vis_weights):
+        if type(vis_model_arr) == np.ndarray and type(vis_weights) == np.ndarray:
             # This if statement replaces vis_calibrate_crosspol_phase 
             # as this was the only place where the function was used
+            # Note inside vis_calibrate_crosspol_phase there is a
+            # if n_pol_vis == 4 check hence only run if n_pol_vis == 4
             # This code should calculate the phase fit between the X and Y
             # antenna polarizations.
-            # TODO: Check shape of vis_arr
             # Use the xx flags (yy should be identitical at this point)
             weights_use = np.maximum(np.squeeze(vis_arr[0, obs['n_freq'], obs['n_baselines'], obs['n_times']]), np.zeros_like(np.squeeze(vis_arr[0, obs['n_freq'], obs['n_baselines'], obs['n_times']])))
             weights_use = np.minimum(weights_use, np.ones_like(weights_use))
@@ -997,7 +1022,7 @@ def vis_calibration_apply(vis_arr: np.ndarray, obs: dict, cal: dict, vis_model_a
             logger.info(f"Phase fit between X and Y antenna polarizations: {cross_phase}")
 
             cal["cross_phase"] = cross_phase
-        
+    
         vis_arr[2, : ,:] *= np.exp(1j * 0)
         vis_arr[3, :, :] *= np.exp(-1j * 0)
 
