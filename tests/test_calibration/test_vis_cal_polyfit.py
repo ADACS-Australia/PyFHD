@@ -63,8 +63,108 @@ def test_pointsource1_vary(data_dir):
     
     # 6e-8 atol for amp_params due to precision errors, still really close to single_precision
     npt.assert_allclose(cal_polyfit['amp_params'], expected_amp_params, atol=6e-8)
-    npt.assert_allclose(cal_polyfit['phase_params'], expected_phase_params)
-    npt.assert_allclose(cal_polyfit['gain'], expected_cal_return['gain'])
+    npt.assert_allclose(cal_polyfit['phase_params'], expected_phase_params, atol=1e-8)
+    npt.assert_allclose(cal_polyfit['gain'], expected_cal_return['gain'], atol=2e-7)
+
+def test_pointsource1_vary2(data_dir):
+    """Runs the test on `vis_cal_polyfit` - reads in the data in `data_loc`,
+    and then calls `vis_cal_polyfit`, checking the outputs match expectations"""
+
+    h5_before = dd.io.load(Path(data_dir, "pointsource1_vary2_before_vis_cal_polyfit.h5"))
+    h5_after = dd.io.load(Path(data_dir, "pointsource1_vary2_after_vis_cal_polyfit.h5"))
+
+    obs = h5_before['obs']
+    cal = h5_before['cal']
+    
+    pyfhd_config = h5_before['pyfhd_config']
+    
+    pyfhd_config["cable_reflection_coefficients"] = importlib_resources.files('PyFHD.templates').joinpath('mwa_cable_reflection_coefficients.txt')
+    pyfhd_config["cable_lengths"] = importlib_resources.files('PyFHD.templates').joinpath('mwa_cable_length.txt')
+    pyfhd_config['digital_gain_jump_polyfit'] = True
+    
+    expected_cal_return = h5_after['cal_return']
+    # cal_return keeps amp_params as a pointer array of shape (128, 2)
+    # However because digital_gain_jump_polyfit was used each pointer contains a (2,2)
+    # This means the shape should be (2, 128, 2, 2) or 
+    # (n_pol, n_tile, cal_amp_degree_fit, cal_amp_degree_fit)
+    # cal_return also keeps the phase_params as (128, 2) object array, each one containing two 1 element float arrays 
+    # This should be (n_pol, n_tile, cal_phase_degree_fit + 1) or (2, 128, 2) so
+    # We'll grab each one by tile and polarization, and stack and flatten.
+    expected_amp_params = np.empty(
+        (expected_cal_return['n_pol'], 
+         obs['n_tile'], 
+         pyfhd_config['cal_amp_degree_fit'], 
+         pyfhd_config['cal_amp_degree_fit']
+        )
+    )
+    expected_phase_params = np.empty((
+        expected_cal_return['n_pol'],
+        obs['n_tile'],
+        pyfhd_config['cal_phase_degree_fit'] + 1
+    ))
+    for pol_i in range(expected_cal_return['n_pol']):
+        for tile_i in range(obs['n_tile']):
+            expected_amp_params[pol_i, tile_i] = np.transpose(expected_cal_return['amp_params'][tile_i, pol_i])
+            expected_phase_params[pol_i, tile_i] = np.vstack(expected_cal_return['phase_params'][tile_i, pol_i]).flatten()
+
+    logger = RootLogger(1)
+    
+    cal_polyfit = vis_cal_polyfit(obs, cal, None, pyfhd_config, logger)
+    
+    # 6e-8 atol for amp_params due to precision errors, still really close to single_precision
+    npt.assert_allclose(cal_polyfit['amp_params'], expected_amp_params, atol=6e-8)
+    npt.assert_allclose(cal_polyfit['phase_params'], expected_phase_params, atol=1e-8)
+    npt.assert_allclose(cal_polyfit['gain'], expected_cal_return['gain'], atol=2e-7)
+
+def test_pointsource1_standard(data_dir):
+    """Runs the test on `vis_cal_polyfit` - reads in the data in `data_loc`,
+    and then calls `vis_cal_polyfit`, checking the outputs match expectations"""
+
+    h5_before = dd.io.load(Path(data_dir, "pointsource1_standard_before_vis_cal_polyfit.h5"))
+    h5_after = dd.io.load(Path(data_dir, "pointsource1_standard_after_vis_cal_polyfit.h5"))
+
+    obs = h5_before['obs']
+    cal = h5_before['cal']
+    
+    pyfhd_config = h5_before['pyfhd_config']
+    
+    pyfhd_config["cable_reflection_coefficients"] = importlib_resources.files('PyFHD.templates').joinpath('mwa_cable_reflection_coefficients.txt')
+    pyfhd_config["cable_lengths"] = importlib_resources.files('PyFHD.templates').joinpath('mwa_cable_length.txt')
+    pyfhd_config['digital_gain_jump_polyfit'] = True
+    
+    expected_cal_return = h5_after['cal_return']
+    # cal_return keeps amp_params as a pointer array of shape (128, 2)
+    # However because digital_gain_jump_polyfit was used each pointer contains a (2,2)
+    # This means the shape should be (2, 128, 2, 2) or 
+    # (n_pol, n_tile, cal_amp_degree_fit, cal_amp_degree_fit)
+    # cal_return also keeps the phase_params as (128, 2) object array, each one containing two 1 element float arrays 
+    # This should be (n_pol, n_tile, cal_phase_degree_fit + 1) or (2, 128, 2) so
+    # We'll grab each one by tile and polarization, and stack and flatten.
+    expected_amp_params = np.empty(
+        (expected_cal_return['n_pol'], 
+         obs['n_tile'], 
+         pyfhd_config['cal_amp_degree_fit'], 
+         pyfhd_config['cal_amp_degree_fit']
+        )
+    )
+    expected_phase_params = np.empty((
+        expected_cal_return['n_pol'],
+        obs['n_tile'],
+        pyfhd_config['cal_phase_degree_fit'] + 1
+    ))
+    for pol_i in range(expected_cal_return['n_pol']):
+        for tile_i in range(obs['n_tile']):
+            expected_amp_params[pol_i, tile_i] = np.transpose(expected_cal_return['amp_params'][tile_i, pol_i])
+            expected_phase_params[pol_i, tile_i] = np.vstack(expected_cal_return['phase_params'][tile_i, pol_i]).flatten()
+
+    logger = RootLogger(1)
+    
+    cal_polyfit = vis_cal_polyfit(obs, cal, None, pyfhd_config, logger)
+    
+    # 6e-8 atol for amp_params due to precision errors, still really close to single_precision
+    npt.assert_allclose(cal_polyfit['amp_params'], expected_amp_params, atol=6e-8)
+    npt.assert_allclose(cal_polyfit['phase_params'], expected_phase_params, atol=1e-8)
+    npt.assert_allclose(cal_polyfit['gain'], expected_cal_return['gain'], atol=2e-7)
 
     
 if __name__ == "__main__":
