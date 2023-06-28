@@ -657,8 +657,10 @@ def vis_cal_polyfit(obs: dict, cal: dict, auto_ratio: np.ndarray | None, pyfhd_c
                     fit_params1 = np.polynomial.Polynomial.fit(freq_use[0 : f_d + 1], gain[0 : f_d + 1], deg = pyfhd_config['cal_amp_degree_fit'] - 1).convert().coef
                     fit_params2 = np.polynomial.Polynomial.fit(freq_use[f_d + 1 : f_end], gain[f_d + 1 : f_end], deg = pyfhd_config['cal_amp_degree_fit'] - 1).convert().coef
                     for di in range(pyfhd_config['cal_amp_degree_fit']):
-                        gain_fit[freq_use[0] : freq_use[f_d + 1]] += fit_params1[di] * (np.arange(freq_use[f_d + 1] - 1) ** di)
-                        gain_fit[freq_use[f_d + 1] : freq_use[f_end - 1]] += fit_params2[di] * (np.arange(freq_use[f_end - 1] - freq_use[f_d + 1]) + freq_use[f_d + 1])**di
+                        gain_fit[freq_use[0] : freq_use[f_d] + 1] += fit_params1[di] * (np.arange(freq_use[f_d]) ** di)
+                        gain_fit[freq_use[f_d + 1] : freq_use[f_end - 1] + 1] += fit_params2[di] * (np.arange(freq_use[f_end - 1] - freq_use[f_d + 1] + 1) + freq_use[f_d + 1])**di
+                    # Do notice this is saving the coefficients on a per row basis, so fit_params1 a,b will be [pol_i, tile_i, 0, :]
+                    # While fit_params2 a, b coefficients will be in [pol_i, tile_i, 1, :]
                     fit_params = np.vstack([fit_params1, fit_params2])
                     cal['amp_params'][pol_i, tile_i] = fit_params
                 else:
@@ -744,11 +746,11 @@ def vis_cal_polyfit(obs: dict, cal: dict, auto_ratio: np.ndarray | None, pyfhd_c
                     mode_test[mask_i] = 0
             mode_i_arr = np.zeros((cal['n_pol'], obs['n_tile'])) + np.argmax(mode_test)
 
-        # Option to fit only certain cable lengths, can specify more than one length
+        # Fit only certain cable lengths
         # Positive length indicates fit mode, negative length indicates exclude mode
         # This is currently assuming cal_mode_fit is an integer or number, not an array!
         # If you need an array to fit or exclude cable lengths, then create another option for it
-        # in the config.
+        # in the config and adjust the code accordingly. Ensure every config option only has one purpose.
         if (auto_ratio == None and cal_mode_fit != 1):
             tile_ref_logic = np.zeros(obs['n_tile'])
             if (cal_mode_fit > 0):
@@ -807,7 +809,7 @@ def vis_cal_polyfit(obs: dict, cal: dict, auto_ratio: np.ndarray | None, pyfhd_c
                         # freq_use matrix to multiply/collapse in fit
                         freq_mat = rebin(freq_use, (nmodes, freq_use.size))
                         # Perform DFT of gains to test modes
-                        test_fits = np.sum(np.exp(1j * 2 * np.pi/obs['n_freq'] * modes * freq_mat) * gain_temp, axis=-1)
+                        test_fits = np.sum(np.exp(1j * 2 * np.pi/obs['n_freq'] * modes * freq_mat) * gain_temp, axis=1)
                         # Pick out highest amplitude fit (mode_ind gives the index of the mode)
                         amp_use = np.max(np.abs(test_fits)) / freq_use.size
                         mode_ind = np.argmax(np.abs(test_fits))

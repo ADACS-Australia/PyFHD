@@ -35,7 +35,7 @@ def create_obs(pyfhd_header : dict, params : dict, pyfhd_config : dict, logger :
     baseline_info = {}
 
     # Save the data from the header
-    obs['n_pol'] = pyfhd_header['n_pol']
+    obs['n_pol'] =  pyfhd_config['n_pol'] if pyfhd_config['n_pol'] else pyfhd_header['n_pol']
     obs['n_tile'] = pyfhd_header['n_tile']
     obs['n_freq'] = pyfhd_header['n_freq']
     obs['n_freq_flag'] = 0
