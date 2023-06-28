@@ -507,7 +507,8 @@ def rebin(a, shape, sample = False):
                 rebinned = rebin_columns(row_rebinned, ax, shape, col_sizer)
     return rebinned
 
-def weight_invert(weights : np.ndarray | int | float | np.number, threshold = None):
+def weight_invert(weights : np.ndarray | int | float | np.number, threshold = None,
+                  use_abs = False):
     """
     The weights invert function cleans the weights given by removing
     the values that are 0, NaN or Inf ready for additional calculation.
@@ -522,6 +523,9 @@ def weight_invert(weights : np.ndarray | int | float | np.number, threshold = No
         A real number set as the threshold for the array.
         By default its set to None, in this case function checks
         for zeros.
+    use_abs: bool
+        If True, take the absolute value (sometimes useful for complex numbers)
+        By default this is False, so will leave as a complex number and invert.
 
     Returns
     -------
@@ -550,8 +554,9 @@ def weight_invert(weights : np.ndarray | int | float | np.number, threshold = No
 
     weights_use = weights
 
-    if np.iscomplexobj(weights):
+    if use_abs:
         weights_use = np.abs(weights)
+
     # If threshold has been set then...
     if threshold is not None:
         # Get the indexes which meet the threshold
@@ -565,9 +570,9 @@ def weight_invert(weights : np.ndarray | int | float | np.number, threshold = No
         ##If someone is using a single number and not an array and we've
         ##got here, we just need to divide by that single number
         if type(weights) != np.ndarray:
-            result = 1 / weights
+            result = 1 / weights_use
         else:
-            result[i_use] = 1 / weights[i_use]
+            result[i_use] = 1 / weights_use[i_use]
 
     # Replace all NaNs with Zeros
     if np.size(np.where(np.isnan(result))) != 0:
