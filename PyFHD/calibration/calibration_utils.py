@@ -989,28 +989,32 @@ def vis_calibration_apply(vis_arr: np.ndarray, obs: dict, cal: dict, vis_model_a
             # This code should calculate the phase fit between the X and Y
             # antenna polarizations.
             # Use the xx flags (yy should be identitical at this point)
-            weights_use = np.maximum(np.squeeze(vis_arr[0, obs['n_freq'], obs['n_baselines'], obs['n_times']]), np.zeros_like(np.squeeze(vis_arr[0, obs['n_freq'], obs['n_baselines'], obs['n_times']])))
+
+            ##this is num baselines per time step
+            n_baselines = int(len(tile_a_i) / obs['n_times'])
+            ## reshape from (n_freq, n_baselines*n_times) to (n_freq, n_times, n_baselines). Turns out due to the row major vs col major difference
+            ## between IDL and python, this shape also changes
+            new_shape = (obs['n_freq'], obs['n_times'], n_baselines)
+            weights_use = np.reshape(vis_weights[0, :, :], new_shape)
+            ##carried over from FHD code
+            weights_use = np.maximum(weights_use, np.zeros_like(weights_use))
             weights_use = np.minimum(weights_use, np.ones_like(weights_use))
 
             # Average the visbilities in time
-            # TODO: check shape of vis_arr and adjust the rest accordingly
-            vis_xy = np.squeeze(vis_arr[2, obs['n_freq'], obs['n_baselines'], obs['n_time']])
-            # TODO: check where time axis ends up and adjust the axis parameter
-            vis_xy = np.sum(vis_xy * weights_use, axis = -1)
-            vis_yx = np.squeeze(vis_arr[3, obs['n_freq'], obs['n_baselines'], obs['n_times']])
-            vis_yx = np.sum(vis_yx * weights_use, axis = -1)
-            # TODO: check shape of vis_model_arr and adjust the rest accordingly
-            model_xy = np.squeeze(vis_model_arr[2, obs['n_freq'], obs['n_baselines'], obs['n_time']])
-            # TODO: check where time axis ends up and adjust the axis parameter
-            model_xy = np.sum(model_xy * weights_use, axis = -1)
-            model_yx = np.squeeze(vis_model_arr[3, obs['n_freq'], obs['n_baselines'], obs['n_times']])
-            model_yx = np.sum(model_yx * weights_use, axis = -1)
+            axis_avg = 1
+            vis_xy = np.reshape(vis_arr[2, :, :], new_shape)
+            vis_xy = np.sum(vis_xy * weights_use, axis = axis_avg)
+            vis_yx = np.reshape(vis_arr[3, :, :], new_shape)
+            vis_yx = np.sum(vis_yx * weights_use, axis = axis_avg)
+            
+            model_xy = np.reshape(vis_model_arr[2, :, :], new_shape)
+            model_xy = np.sum(model_xy * weights_use, axis = axis_avg)
+            model_yx = np.reshape(vis_model_arr[3, :, :], new_shape)
+            model_yx = np.sum(model_yx * weights_use, axis = axis_avg)
             
             # Remove Zeros
-            # TODO: Again check where time axis ends up and adjust
-            weight = np.sum(weights_use, axis = -1)
+            weight = np.sum(weights_use, axis = axis_avg)
             i_use = np.nonzero(weight)
-            # TODO: Check IDL shapes for *_xy and *_yx as it uses a reform with 1 as its dimension which is weird (?)
             vis_xy = np.squeeze(vis_xy[i_use])
             vis_yx = np.squeeze(vis_yx[i_use])
             model_xy = np.squeeze(model_xy[i_use])

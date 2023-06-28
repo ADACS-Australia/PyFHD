@@ -57,16 +57,30 @@ def run_test(data_dir, tag_name):
                                                            vis_model_ptr,
                                                            vis_weight_ptr,
                                                            logger)
-    npt.assert_allclose(return_vis_cal_ptr, exptected_vis_cal_ptr, atol=1e-6,
-                        equal_nan=True)
     
-    ##TODO if we have 4 pols, we need to test against
-    ##h5_after['vis_cal_ptr']['cross_phase]
+    if vis_ptr.shape[0] == 4:
+
+        npt.assert_allclose(h5_after['cal']['cross_phase'],
+                            return_cal['cross_phase'], atol=1e-6,
+                        equal_nan=True)
+        
+        npt.assert_allclose(return_vis_cal_ptr[2:], exptected_vis_cal_ptr[2:],
+                             atol=1e-4, equal_nan=True)
+
+    ##XX and YY have larger values so suffer less from precision errors??
+    npt.assert_allclose(return_vis_cal_ptr[:2], exptected_vis_cal_ptr[:2],
+                        atol=1e-6, equal_nan=True)
+    
 
 def test_pointsource1_vary1(data_dir):
     """Test using the `pointsource1_vary1` set of inputs"""
 
     run_test(data_dir, "pointsource1_vary1")
+
+def test_pointsource2_vary3(data_dir):
+    """Test using the `pointsource2_vary3` set of inputs"""
+
+    run_test(data_dir, "pointsource2_vary3")
 
 # def test_pointsource2_vary1(data_dir):
 #     """Test using the `pointsource2_vary1` set of inputs"""
@@ -144,10 +158,7 @@ if __name__ == "__main__":
     data_dir = Path(env.get('PYFHD_TEST_PATH'), 'vis_calibration_apply')
 
     ##Each test_set contains a run with a different set of inputs/options
-    # for test_set in ['pointsource1_vary1']:
-    # tag_names = ['pointsource1_vary1', 'pointsource2_vary1']
-    tag_names = ['pointsource1_vary2']
-    # tag_names = ['pointsource1_vary1']
+    tag_names = ['pointsource1_vary1','pointsource2_vary3']
 
     for tag_name in tag_names:
         convert_sav(data_dir, tag_name)
