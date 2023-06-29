@@ -9,6 +9,8 @@ from math import pi
 from logging import RootLogger
 from scipy.stats import median_abs_deviation
 import subprocess
+from scipy.ndimage import median_filter
+from copy import deepcopy
 
 @njit
 def get_bins(min, max, bin_size):
@@ -1103,3 +1105,46 @@ def vis_noise_calc(obs: dict, vis_arr: np.ndarray, vis_weights: np.ndarray) -> n
     
     return noise_arr
     
+def idl_median(x : np.ndarray, width=0, even=False) -> float:
+    """_summary_
+
+    Parameters
+    ----------
+    x : np.ndarray
+        Data to perform median on
+    width : int
+        If set, perform a type of median filtering. 
+    even : bool, optional
+        _description_, by default False
+
+    
+
+    When `width` is set. unfortunately the edge conditions when using cannot be
+    replicated soley with `scipy.ndimage.median_filter` so use `median_filter`    and set the edge cases manually
+
+    Returns
+    -------
+    float
+        _description_
+    """
+
+    if width:
+
+        ##IDL median leaves everything within width//2 pixels of the edge alone
+        ##So just shove the outputs of median_filter everywhere else. None of
+        ##the `modes` in median_filter capture this behaviour
+        output = deepcopy(x)
+
+        hw = width//2
+        output[hw:-hw] = median_filter(x, size=width)[hw:-hw]
+
+        return output
+
+    else:
+
+        if even:
+            return np.median(x)
+        else:
+            med_index = int(np.ceil(len(x)/2))
+
+            return np.sort(x)[med_index]
