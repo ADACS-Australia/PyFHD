@@ -11,6 +11,7 @@ from scipy.stats import median_abs_deviation
 import subprocess
 from scipy.ndimage import median_filter
 from copy import deepcopy
+from sys import exit
 
 @njit
 def get_bins(min, max, bin_size):
@@ -1148,3 +1149,38 @@ def idl_median(x : np.ndarray, width=0, even=False) -> float:
             med_index = int(np.ceil(len(x)/2))
 
             return np.sort(x)[med_index]
+
+
+def reshape_and_average_in_time(vis_array : np.ndarray, n_freq : int,
+                                n_time : int, n_baselines : int,
+                                vis_weights : np.ndarray) -> np.ndarray:
+    """Given a single polarisation 2D `vis_array` of shape (n_freq, n_time*n_baselines),
+    reshape into (n_freq, n_time, n_baselines), and then average in time, weighting
+    by `vis_weights` (must be of shape (n_freq, n_time, n_baselines))
+    Returns the averaged array in shape (n_freq, n_baselines)
+
+    Parameters
+    ----------
+    vis_array : np.ndarray
+        _description_
+    n_freq : int
+        _description_
+    n_time : int
+        _description_
+    n_baselines : int
+        _description_
+    vis_weights : np.ndarray
+        _description_
+
+    """
+
+    new_shape = (n_freq, n_time, n_baselines)
+
+    if vis_weights.shape != new_shape:
+        exit(f"Attempting to use weights with shape {vis_weights.shape} in `reshape_and_average_in_time`, this is not allowed")
+        
+    reshape_array = np.reshape(vis_array, new_shape)
+    reshape_array = np.sum(reshape_array*vis_weights, axis = 1)
+
+    return reshape_array
+    
