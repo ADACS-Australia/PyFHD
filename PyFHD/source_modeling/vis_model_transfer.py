@@ -349,7 +349,7 @@ def convert_vis_model_arr_to_sav(vis_model_arr : np.ndarray,
 
     idl_command = f"idl -IDL_DEVICE ps -e convert_model_arr_to_sav -args {model_vis_dir} {pyfhd_config['obs_id']} {n_pol}"
 
-    run_command(idl_command, pyfhd_config['IDL_dry_run'])
+    run_command(idl_command, False)
 
 
 
