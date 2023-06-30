@@ -9,7 +9,7 @@ from PyFHD.pyfhd_tools.pyfhd_utils import simple_deproject_w_term, vis_weights_u
 from PyFHD.calibration.calibrate import calibrate, calibrate_qu_mixing
 from PyFHD.use_idl_fhd.run_idl_fhd import run_IDL_calibration_only, run_IDL_convert_gridding_to_healpix_images
 from PyFHD.use_idl_fhd.use_idl_outputs import run_gridding_on_IDL_outputs
-from PyFHD.flagging import vis_flag
+from PyFHD.flagging.flagging import vis_flag
 import logging
 
 def _print_time_diff(start : float, end : float, description : str, logger : RootLogger):
