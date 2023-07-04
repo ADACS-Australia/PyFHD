@@ -14,12 +14,54 @@ import numpy.testing as npt
 def data_dir():
     return Path(env.get('PYFHD_TEST_PATH'), "split_vis_weights")
 
-def run_test(data_dir, tag_name):
-    """Runs the test on `split_vis_weights` - reads in the data in `data_loc`,
-    and then calls `split_vis_weights`, checking the outputs match expectations"""
+@pytest.fixture(scope="function", params=['point_zenith','point_offzenith'])
+def tag(request):
+    return request.param
 
-    h5_before = dd.io.load(Path(data_dir, f"{tag_name}_before_split_vis_weights.h5"))
-    h5_after = dd.io.load(Path(data_dir, f"{tag_name}_after_split_vis_weights.h5"))
+@pytest.fixture(scope="function", params=['run3'])
+def run(request):
+    return request.param
+
+@pytest.fixture
+def before_file(data_dir, tag, run):
+    before_file = Path(data_dir, f"{tag}_{run}_before_{data_dir.name}.h5")
+    # If the h5 file already exists and has been created, return the path to it
+    if before_file.exists():
+        return before_file
+
+    sav_file = before_file.with_suffix('.sav')
+    sav_dict = convert_sav_to_dict(str(sav_file), "faked")
+
+    ##super dictionary to save everything in
+    h5_save_dict = {}
+    h5_save_dict['obs'] = recarray_to_dict(sav_dict['obs'])
+    h5_save_dict['vis_weights'] = sav_file_vis_arr_swap_axes(sav_dict['vis_weights'])
+
+    dd.io.save(before_file, h5_save_dict)
+
+    return before_file
+
+@pytest.fixture
+def after_file(data_dir, tag, run):
+    after_file = Path(data_dir, f"{tag}_{run}_after_{data_dir.name}.h5")
+    # If the h5 file already exists and has been created, return the path to it
+    if after_file.exists():
+        return after_file
+    sav_file = after_file.with_suffix('.sav')
+    sav_dict = convert_sav_to_dict(str(sav_file), "faked")
+
+    ##super dictionary to save everything in
+    h5_save_dict = {}
+    h5_save_dict['vis_weights_use'] = sav_file_vis_arr_swap_axes(sav_dict['vis_weights_use'])
+    h5_save_dict['bi_use'] = sav_dict['bi_use']
+
+    dd.io.save(after_file, h5_save_dict)
+
+    return after_file
+
+def test_split_vis_weights(before_file, after_file):
+    h5_before = dd.io.load(before_file)
+    h5_after = dd.io.load(after_file)
 
     obs = h5_before['obs']
     vis_weights = h5_before['vis_weights']
@@ -39,57 +81,3 @@ def run_test(data_dir, tag_name):
     ##invidually
     for pol in range(obs['n_pol']):
         npt.assert_allclose(expected_bi_use[pol], result_bi_use[pol], atol=atol)
-
-
-def test_pointsource1_standard(data_dir):
-    """Test using the `pointsource1_standard` set of inputs"""
-
-    run_test(data_dir, "pointsource1_standard")
-
-if __name__ == "__main__":
-
-    def convert_before_sav(data_dir, tag_name):
-        """Takes the before .sav file out of FHD function `split_vis_weights`
-        and converts into an hdf5 format"""
-
-        func_name = 'split_vis_weights'
-
-        sav_dict = convert_sav_to_dict(f"{data_dir}/{tag_name}_before_{func_name}.sav", "meh")
-
-        ##super dictionary to save everything in
-        h5_save_dict = {}
-        h5_save_dict['obs'] = recarray_to_dict(sav_dict['obs'])
-        h5_save_dict['vis_weights'] = sav_file_vis_arr_swap_axes(sav_dict['vis_weights'])
-
-        dd.io.save(Path(data_dir, f"{tag_name}_before_{func_name}.h5"), h5_save_dict)
-        
-    def convert_after_sav(data_dir, tag_name):
-        """Takes the after .sav file out of FHD function `split_vis_weights`
-        and converts into an hdf5 format"""
-
-        func_name = 'split_vis_weights'
-
-        sav_dict = convert_sav_to_dict(f"{data_dir}/{tag_name}_after_{func_name}.sav", "meh")
-        
-        ##super dictionary to save everything in
-        h5_save_dict = {}
-        
-        h5_save_dict['vis_weights_use'] = sav_file_vis_arr_swap_axes(sav_dict['vis_weights_use'])
-        h5_save_dict['bi_use'] = sav_dict['bi_use']
-
-        dd.io.save(Path(data_dir, f"{tag_name}_after_{func_name}.h5"), h5_save_dict)
-        
-    def convert_sav(base_dir, tag_name):
-        """Load the inputs and outputs needed for testing `split_vis_weights`"""
-        convert_before_sav(base_dir, tag_name)
-        convert_after_sav(base_dir, tag_name)
-
-    ##Where be all of our data
-    base_dir = Path(env.get('PYFHD_TEST_PATH'), 'split_vis_weights')
-
-    tag_names = ['pointsource1_standard']
-
-    for tag_name in tag_names:
-        convert_sav(base_dir, tag_name)
-        # run_test(base_dir, tag_name)
-        

@@ -34,7 +34,6 @@ def before_file(tag, run, data_dir):
         return before_file
     
     sav_file = before_file.with_suffix('.sav')
-
     sav_dict = convert_sav_to_dict(str(sav_file), "faked")
 
     obs = recarray_to_dict(sav_dict['obs'])

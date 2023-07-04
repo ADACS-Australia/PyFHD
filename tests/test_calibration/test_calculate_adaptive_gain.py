@@ -56,31 +56,87 @@ def after_file(data_dir, tag, run):
 
     return after_file
 
-def test_calc_adapt_gain_one(data_dir):
-    gain_list, convergence_list, iter, base_gain, final_con_est, expected_gain = get_data_items(
-        data_dir,
-        'input_gain_list_1.npy',
-        'input_convergence_list_1.npy',
-        'input_iter_1.npy',
-        'input_base_gain_1.npy',
-        'input_final_convergence_estimate_1.npy',
-        'output_gain_1.npy'
-    )
-    result_gain = calculate_adaptive_gain(gain_list, convergence_list, iter, base_gain, final_convergence_estimate = final_con_est)
-    assert expected_gain == result_gain
+@pytest.fixture(scope="function", params=[1, 2])
+def calc_test(request):
+    return request.param
 
-def test_calc_adapt_gain_two(data_dir):
-    gain_list, convergence_list, iter, base_gain, final_con_est, expected_gain = get_data_items(
+@pytest.fixture
+def calc_test_before(data_dir, calc_test):
+    before_file = Path(data_dir, f"test_{calc_test}_before_{data_dir.name}.h5")
+
+    if before_file.exists():
+        return before_file
+
+    gain_list, convergence_list, iter, base_gain, final_con_est = get_data_items(
         data_dir,
-        'input_gain_list_2.npy',
-        'input_convergence_list_2.npy',
-        'input_iter_2.npy',
-        'input_base_gain_2.npy',
-        'input_final_convergence_estimate_2.npy',
-        'output_gain_2.npy'
+        f"input_gain_list_{calc_test}.npy",
+        f"input_convergence_list_{calc_test}.npy",
+        f"input_iter_{calc_test}.npy",
+        f"input_base_gain_{calc_test}.npy",
+        f"input_final_convergence_estimate_{calc_test}.npy",
     )
-    result_gain = calculate_adaptive_gain(gain_list, convergence_list, iter, base_gain, final_convergence_estimate = final_con_est)
-    assert expected_gain == result_gain
+
+    h5_save_dict = {}
+    h5_save_dict['gain_list'] = gain_list
+    h5_save_dict['convergence_list'] = convergence_list
+    h5_save_dict['iter'] = iter
+    h5_save_dict['base_gain'] = base_gain
+    h5_save_dict['final_convergence_estimate'] = final_con_est
+
+    dd.io.save(before_file, h5_save_dict)
+
+    return before_file
+
+@pytest.fixture
+def calc_test_after(data_dir, calc_test):
+    after_file = Path(data_dir, f"test_{calc_test}_after_{data_dir.name}.h5")
+
+    if after_file.exists():
+        return after_file
+
+    expected_gain = get_data_items(
+        data_dir,
+        f"output_gain_{calc_test}.npy",
+    )
+
+    h5_save_dict = {}
+    h5_save_dict['expected_gain'] = expected_gain
+
+    dd.io.save(after_file, h5_save_dict)
+
+    return after_file
+
+def test_point_offzenith_and_zenith(before_file, after_file):
+    if (before_file == None or after_file == None):
+        pytest.skip(f"This test has been skipped because the test was listed in the skipped tests due to FHD not outpoutting them: {skip_tests}")
+
+    h5_before = dd.io.load(before_file)
+    h5_after = dd.io.load(after_file)
+
+    result_gain = calculate_adaptive_gain(
+        h5_before['gain_list'], 
+        h5_before['convergence_list'], 
+        h5_before['iter'],
+        h5_before['base_gain'],
+        h5_before['final_convergence_estimate']
+    )
+
+    npt.assert_almost_equal(h5_after['gain'], result_gain)
+
+def test_calc_test_1_and_2(calc_test_before, calc_test_after):
+
+    h5_before = dd.io.load(calc_test_before)
+    h5_after = dd.io.load(calc_test_after)
+
+    result_gain = calculate_adaptive_gain(
+        h5_before['gain_list'], 
+        h5_before['convergence_list'], 
+        h5_before['iter'],
+        h5_before['base_gain'],
+        h5_before['final_convergence_estimate']
+    )
+
+    npt.assert_almost_equal(h5_after['expected_gain'], result_gain)
 
 '''
 The below test will never pass due to IDL's default median behaviour, for example
@@ -106,20 +162,3 @@ def test_calc_adapt_gain_three(data_dir):
     result_gain = calculate_adaptive_gain(gain_list, convergence_list, iter, base_gain)
     assert expected_gain == result_gain
 '''
-
-def test_point_offzenith_and_zenith(before_file, after_file):
-    if (before_file == None or after_file == None):
-        pytest.skip(f"This test has been skipped because the test was listed in the skipped tests due to FHD not outpoutting them: {skip_tests}")
-
-    h5_before = dd.io.load(before_file)
-    h5_after = dd.io.load(after_file)
-
-    result_gain = calculate_adaptive_gain(
-        h5_before['gain_list'], 
-        h5_before['convergence_list'], 
-        h5_before['iter'],
-        h5_before['base_gain'],
-        h5_before['final_convergence_estimate']
-    )
-
-    npt.assert_almost_equal(h5_after['gain'], result_gain)

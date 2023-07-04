@@ -14,16 +14,82 @@ import matplotlib.pyplot as plt
 def data_dir():
     return Path(env.get('PYFHD_TEST_PATH'), "vis_cal_auto_fit")
 
-# @pytest.fixture
-# def base_dir():
-#     return Path(env.get('PYFHD_TEST_PATH'))
+@pytest.fixture(scope="function", params=['point_zenith','point_offzenith', '1088716296'])
+def tag(request):
+    return request.param
 
-def run_test(data_dir, tag_name):
+@pytest.fixture(scope="function", params=['run1', 'run2', 'run3'])
+def run(request):
+    return request.param
+
+skip_tests = [['1088716296', "run3"]]
+
+@pytest.fixture()
+def before_file(tag, run, data_dir):
+    if ([tag, run] in skip_tests):
+        return None
+    before_file = Path(data_dir, f"{tag}_{run}_before_{data_dir.name}.h5")
+    # If the h5 file already exists and has been created, return the path to it
+    if before_file.exists():
+        return before_file
+    
+    sav_file = before_file.with_suffix('.sav')
+    sav_dict = convert_sav_to_dict(str(sav_file), "faked")
+
+    obs = recarray_to_dict(sav_dict['obs'])
+    cal = recarray_to_dict(sav_dict['cal'])
+
+    ##Swap the freq and tile dimensions
+    ##this make shape (n_pol, n_freq, n_tile)
+    cal['gain'] = sav_file_vis_arr_swap_axes(cal['gain'])
+
+    ##super dictionary to save everything in
+    h5_save_dict = {}
+    h5_save_dict['obs'] = obs
+    h5_save_dict['cal'] = cal
+    h5_save_dict['vis_auto'] = sav_file_vis_arr_swap_axes(sav_dict['vis_auto'])
+    h5_save_dict['vis_model_auto'] = sav_file_vis_arr_swap_axes(sav_dict['vis_model_auto'])
+    h5_save_dict['auto_tile_i'] = sav_dict['auto_tile_i']
+
+    dd.io.save(before_file, h5_save_dict)
+
+    return before_file
+
+@pytest.fixture()
+def after_file(tag, run, data_dir):
+    if ([tag, run] in skip_tests):
+        return None
+    after_file = Path(data_dir, f"{tag}_{run}_after_{data_dir.name}.h5")
+    # If the h5 file already exists and has been created, return the path to it
+    if after_file.exists():
+        return after_file
+    
+    sav_file = after_file.with_suffix('.sav')
+    sav_dict = convert_sav_to_dict(str(sav_file), "faked")
+
+    cal_fit = recarray_to_dict(sav_dict['cal_fit'])
+        
+    ##Swap the freq and tile dimensions
+    ##this make shape (n_pol, n_freq, n_tile)
+    cal_fit['gain'] = sav_file_vis_arr_swap_axes(cal_fit['gain'])
+    
+    ##super dictionary to save everything in
+    h5_save_dict = {}
+    
+    h5_save_dict['cal_fit'] = cal_fit
+
+    dd.io.save(after_file, h5_save_dict)
+
+    return after_file
+
+def test_vis_cal_auto_fit(before_file, after_file):
     """Runs the test on `vis_cal_bandpass` - reads in the data in `data_loc`,
     and then calls `vis_cal_bandpass`, checking the outputs match expectations"""
+    if (before_file == None or after_file == None):
+        pytest.skip(f"This test has been skipped because the test was listed in the skipped tests due to FHD not outpoutting them: {skip_tests}")
 
-    h5_before = dd.io.load(Path(data_dir, f"{tag_name}_before_vis_cal_auto_fit.h5"))
-    h5_after = dd.io.load(Path(data_dir, f"{tag_name}_after_vis_cal_auto_fit.h5"))
+    h5_before = dd.io.load(before_file)
+    h5_after = dd.io.load(after_file)
 
     obs = h5_before['obs']
     cal = h5_before['cal']
@@ -42,114 +108,38 @@ def run_test(data_dir, tag_name):
     auto_params[1] = expected_cal_fit['auto_params'][1].transpose()
 
     ##TODO get this stored somewhere as a test input
-    actual_gains = np.load('gains_applied_woden.npz')
-    gx = actual_gains['gx'].transpose()
-    gy = actual_gains['gy'].transpose()
+    # actual_gains = np.load('gains_applied_woden.npz')
+    # gx = actual_gains['gx'].transpose()
+    # gy = actual_gains['gy'].transpose()
 
-    # print(gx.shape)
+    # fig, axs = plt.subplots(2, 1)
 
-    # print(expected_cal_fit['gain'][0, :, :].shape)
+    # axs[0].plot(np.abs(gx[0, :]), 's', mfc='none', linestyle='none', label='Sim gains')
+    # axs[0].plot(return_cal_fit['gain'][0, 0, :], 'x', mfc='none', linestyle='none', label='Fit PyFHD')
 
-    fig, axs = plt.subplots(2, 1)
+    # print(expected_cal_fit['gain'][0, 0, 1])
+    # print(return_cal_fit['gain'][0, 0, 1])
 
-    axs[0].plot(np.abs(gx[0, :]), 's', mfc='none', linestyle='none', label='Sim gains')
-    axs[0].plot(return_cal_fit['gain'][0, 0, :], 'x', mfc='none', linestyle='none', label='Fit PyFHD')
+    # axs[1].plot(np.abs(gx[0, :]), 's', mfc='none', linestyle='none', label='Sim gains')
+    # axs[1].plot(expected_cal_fit['gain'][0, 0, :]*0.5, '^', mfc='none', linestyle='none', label='Fit FHD')
 
-    print(expected_cal_fit['gain'][0, 0, 1])
-    print(return_cal_fit['gain'][0, 0, 1])
+    # axs[1].set_xlabel('Tile index')
 
-    axs[1].plot(np.abs(gx[0, :]), 's', mfc='none', linestyle='none', label='Sim gains')
-    axs[1].plot(expected_cal_fit['gain'][0, 0, :]*0.5, '^', mfc='none', linestyle='none', label='Fit FHD')
+    # axs[0].set_ylabel('Gain value')
+    # axs[1].set_ylabel('Gain value')
 
-    axs[1].set_xlabel('Tile index')
+    # axs[0].legend()
+    # axs[1].legend()
 
-    axs[0].set_ylabel('Gain value')
-    axs[1].set_ylabel('Gain value')
-
-    axs[0].legend()
-    axs[1].legend()
-
-    plt.tight_layout()
-    fig.savefig('test_vis_cal_auto_fit.png', bbox_inches='tight', dpi=300)
-    plt.close()
+    # plt.tight_layout()
+    # fig.savefig('test_vis_cal_auto_fit.png', bbox_inches='tight', dpi=300)
+    # plt.close()
 
     rtol = 1e-5
     atol = 1e-3
 
-    # npt.assert_allclose(return_cal_fit['auto_params'], auto_params,
-    #                     rtol=rtol, atol=atol)
+    npt.assert_allclose(return_cal_fit['auto_params'], auto_params,
+                        rtol=rtol, atol=atol)
 
-    # npt.assert_allclose(return_cal_fit['gain'], )
-
-# def test_pointsource1_vary(data_dir):
-#     """Test using the `pointsource1_vary1` set of inputs"""
-
-#     run_test(data_dir, "pointsource1_vary1")
-
-def test_pointsource2_vary1(data_dir):
-    """Test using the `pointsource2_vary1` set of inputs"""
-
-    run_test(data_dir, "pointsource2_vary1")
-    
-if __name__ == "__main__":
-
-    def convert_before_sav(data_dir, tag_name):
-        """Takes the before .sav file out of FHD function `vis_cal_auto_fit`
-        and converts into an hdf5 format"""
-
-        # path = Path(data_dir, f"{tag_name}_before_vis_cal_auto_fit.sav")
-        sav_dict = convert_sav_to_dict(f"{data_dir}/{tag_name}_before_vis_cal_auto_fit.sav", "meh")
-
-        obs = recarray_to_dict(sav_dict['obs'])
-        cal = recarray_to_dict(sav_dict['cal'])
-
-        ##Swap the freq and tile dimensions
-        ##this make shape (n_pol, n_freq, n_tile)
-        cal['gain'] = sav_file_vis_arr_swap_axes(cal['gain'])
-
-        ##super dictionary to save everything in
-        h5_save_dict = {}
-        h5_save_dict['obs'] = obs
-        h5_save_dict['cal'] = cal
-        h5_save_dict['vis_auto'] = sav_file_vis_arr_swap_axes(sav_dict['vis_auto'])
-        h5_save_dict['vis_model_auto'] = sav_file_vis_arr_swap_axes(sav_dict['vis_model_auto'])
-        h5_save_dict['auto_tile_i'] = sav_dict['auto_tile_i']
-        
-        dd.io.save(Path(data_dir, f"{tag_name}_before_vis_cal_auto_fit.h5"), h5_save_dict)
-        
-    def convert_after_sav(data_dir, tag_name):
-        """Takes the after .sav file out of FHD function `vis_cal_auto_fit`
-        and converts into an hdf5 format"""
-
-        # path = Path(data_dir, f"{data_dir}/{tag_name}_after_vis_cal_auto_fit.sav")
-        sav_dict = convert_sav_to_dict(f"{data_dir}/{tag_name}_after_vis_cal_auto_fit.sav", "meh")
-        
-        cal_fit = recarray_to_dict(sav_dict['cal_fit'])
-        
-        ##Swap the freq and tile dimensions
-        ##this make shape (n_pol, n_freq, n_tile)
-        cal_fit['gain'] = sav_file_vis_arr_swap_axes(cal_fit['gain'])
-        
-        ##super dictionary to save everything in
-        h5_save_dict = {}
-        
-        h5_save_dict['cal_fit'] = cal_fit
-        dd.io.save(Path(data_dir, f"{tag_name}_after_vis_cal_auto_fit.h5"), h5_save_dict)
-        
-    def convert_sav(data_dir, tag_name):
-        """Load the inputs and outputs needed for testing `vis_cal_auto_fit`"""
-        convert_before_sav(data_dir, tag_name)
-        convert_after_sav(data_dir, tag_name)
-
-    ##Where be all of our data
-    data_dir = Path(env.get('PYFHD_TEST_PATH'), "vis_cal_auto_fit")
-
-    print("DATA DIR IS", data_dir)
-
-    ##Each test_set contains a run with a different set of inputs/options
-    ##TODO get the tag_names from some kind of glob on the relevant dir
-    tag_names = ['pointsource2_vary1']
-
-    for tag_name in tag_names:
-        convert_sav(data_dir, tag_name)
-        # run_test(data_dir, tag_name)
+    npt.assert_allclose(return_cal_fit['gain'], expected_cal_fit['gain'], 
+                        rtol=rtol, atol=atol)
