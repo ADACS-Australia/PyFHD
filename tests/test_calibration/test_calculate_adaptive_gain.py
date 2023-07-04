@@ -3,10 +3,58 @@ from os import environ as env
 from pathlib import Path
 from PyFHD.pyfhd_tools.test_utils import get_data_items
 from PyFHD.calibration.calibration_utils import calculate_adaptive_gain
+from PyFHD.use_idl_fhd.use_idl_outputs import convert_sav_to_dict
+import deepdish as dd
+import numpy.testing as npt
 
 @pytest.fixture
 def data_dir():
     return Path(env.get('PYFHD_TEST_PATH'), "calculate_adaptive_gain")
+
+@pytest.fixture(scope="function", params=['point_zenith','point_offzenith'])
+def tag(request):
+    return request.param
+
+@pytest.fixture(scope="function", params=['run3'])
+def run(request):
+    return request.param
+
+skip_tests = []
+
+@pytest.fixture
+def before_file(data_dir, tag, run):
+    if ([tag, run] in skip_tests):
+        return None
+    before_file = Path(data_dir, f"{tag}_{run}_before_{data_dir.name}.h5")
+    # If the h5 file already exists and has been created, return the path to it
+    if before_file.exists():
+        return before_file
+    
+    sav_file = before_file.with_suffix('.sav')
+
+    sav_dict = convert_sav_to_dict(str(sav_file), "faked")
+
+    # The dict happens to be good already
+    dd.io.save(before_file ,sav_dict)
+
+    return before_file
+
+@pytest.fixture
+def after_file(data_dir, tag, run):
+    if ([tag, run] in skip_tests):
+        return None
+    after_file = Path(data_dir, f"{tag}_{run}_after_{data_dir.name}.h5")
+    # If the h5 file already exists and has been created, return the path to it
+    if after_file.exists():
+        return after_file
+    
+    sav_file = after_file.with_suffix('.sav')
+    sav_dict = convert_sav_to_dict(str(sav_file), "faked")
+
+    # After is also good in this case
+    dd.io.save(after_file, sav_dict)
+
+    return after_file
 
 def test_calc_adapt_gain_one(data_dir):
     gain_list, convergence_list, iter, base_gain, final_con_est, expected_gain = get_data_items(
@@ -58,3 +106,20 @@ def test_calc_adapt_gain_three(data_dir):
     result_gain = calculate_adaptive_gain(gain_list, convergence_list, iter, base_gain)
     assert expected_gain == result_gain
 '''
+
+def test_point_offzenith_and_zenith(before_file, after_file):
+    if (before_file == None or after_file == None):
+        pytest.skip(f"This test has been skipped because the test was listed in the skipped tests due to FHD not outpoutting them: {skip_tests}")
+
+    h5_before = dd.io.load(before_file)
+    h5_after = dd.io.load(after_file)
+
+    result_gain = calculate_adaptive_gain(
+        h5_before['gain_list'], 
+        h5_before['convergence_list'], 
+        h5_before['iter'],
+        h5_before['base_gain'],
+        h5_before['final_convergence_estimate']
+    )
+
+    npt.assert_almost_equal(h5_after['gain'], result_gain)

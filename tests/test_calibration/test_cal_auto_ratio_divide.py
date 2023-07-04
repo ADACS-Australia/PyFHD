@@ -19,12 +19,14 @@ def tag(request):
 def run(request):
     return request.param
 
+skip_tests = [['1088716296', "run3"]]
+
 # For each combination of tag and run, check if the hdf5 file exists, if not, create it and either way return the path
 # Tests will fail if the fixture fails, not too worried about exceptions here.
 
 @pytest.fixture()
 def before_file(tag, run, data_dir):
-    if (tag == '1088716296' and run == "run3"):
+    if ([tag, run] in skip_tests):
         return None
     before_file = Path(data_dir, f"{tag}_{run}_before_{data_dir.name}.h5")
     # If the h5 file already exists and has been created, return the path to it
@@ -54,7 +56,7 @@ def before_file(tag, run, data_dir):
 # Same as the before_file fixture, except we're taking the the after files
 @pytest.fixture()
 def after_file(tag, run, data_dir):
-    if (tag == '1088716296' and run == "run3"):
+    if ([tag, run] in skip_tests):
         return None
     after_file = Path(data_dir, f"{tag}_{run}_after_{data_dir.name}.h5")
     # If the h5 file already exists and has been created, return the path to it
@@ -81,7 +83,7 @@ def test_cal_auto_ratio_divide(before_file, after_file):
     and then calls `cal_auto_ratio_divide`, checking the outputs match expectations
     """
     if (before_file == None or after_file == None):
-        pytest.skip("This test has been skipped because no output was produced for 1088716296 and run3 in FHD")
+        pytest.skip(f"This test has been skipped because the test was listed in the skipped tests due to FHD not outpoutting them: {skip_tests}")
 
     h5_before = dd.io.load(before_file)
     h5_after = dd.io.load(after_file)
