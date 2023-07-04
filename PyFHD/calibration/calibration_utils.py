@@ -484,7 +484,6 @@ def vis_cal_bandpass(obs: dict, cal: dict, params: dict, pyfhd_config: dict, log
 
     # Initialize cal_bandpass and cal_remainder and transfer them in, if a file has been set (fits only supported right now)
     if (pyfhd_config["cal_bp_transfer"] is not None):
-        # TODO: Finish transfer_bandpass (code to translate will be in calfits_read.pro)
         cal_bandpass, cal_remainder = transfer_bandpass(obs, params, cal, pyfhd_config, logger)
         if (len(cal_bandpass.keys()) != 0 and len(cal_remainder.keys()) != 0):
             logger.info(f"Calibration Bandpass FITS file {pyfhd_config['cal_bp_transfer']} transferred in for cal_bandpass and cal_remainder")

@@ -1,9 +1,5 @@
-import subprocess
-import pathlib
 import os
-from PyFHD.use_idl_fhd.run_idl_fhd import run_command
 from PyFHD.gridding import visibility_grid
-import importlib_resources
 import shutil
 import logging
 from scipy.io import readsav
