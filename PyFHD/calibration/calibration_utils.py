@@ -194,9 +194,9 @@ def vis_calibration_flag(obs: dict, cal: dict, pyfhd_config: dict, logger: RootL
             n_cut = freq_cut_i[0].size + tile_cut_i[0].size
             iter+=1
         if (freq_cut_i[0].size) > 0:
-            obs["baseline_info"]["freq_use"][freq_use_i[freq_cut_i]] = 0
+            obs["baseline_info"]["freq_use"][freq_use_i[0][freq_cut_i]] = 0
         if (tile_cut_i[0].size) > 0:
-            obs["baseline_info"]["tile_use"][tile_use_i[tile_cut_i]] = 0
+            obs["baseline_info"]["tile_use"][tile_use_i[0][tile_cut_i]] = 0
 
         # Reset freq_use_i and tile_use_i for flagging based on phase
         tile_use_i = np.nonzero(obs["baseline_info"]["tile_use"])

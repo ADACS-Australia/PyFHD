@@ -12,9 +12,60 @@ from PyFHD.pyfhd_tools.test_utils import recarray_to_dict
 def data_dir():
     return Path(env.get('PYFHD_TEST_PATH'), 'vis_extract_autocorr')
 
-@pytest.fixture
-def base_dir():
-    return Path(env.get('PYFHD_TEST_PATH'))
+@pytest.fixture(scope="function", params=['point_zenith','point_offzenith', '1088716296'])
+def tag(request):
+    return request.param
+
+@pytest.fixture(scope="function", params=['run1', 'run2', 'run3'])
+def run(request):
+    return request.param
+
+skip_tests = [['1088716296', "run3"]]
+
+@pytest.fixture()
+def before_file(tag, run, data_dir):
+    if ([tag, run] in skip_tests):
+        return None
+    before_file = Path(data_dir, f"{tag}_{run}_before_{data_dir.name}.h5")
+    # If the h5 file already exists and has been created, return the path to it
+    if before_file.exists():
+        return before_file
+    
+    sav_file = before_file.with_suffix('.sav')
+    sav_dict = convert_sav_to_dict(str(sav_file), "faked")
+
+    ##convert obs from a recarray into a dictionary
+    obs = recarray_to_dict(sav_dict['obs'])
+    
+    ##fix the shape of vis_arr
+    ##TODO might need to swap axis 1 and 2 here depending on what happens
+    ##inside vis_extract_autocorr
+    ##Currently I'm reading into a shape of (n_pol, n_freq, n_baselines)
+    vis_arr = np.empty((obs["n_pol"], sav_dict['vis_arr'][0].shape[1],
+                                        sav_dict['vis_arr'][0].shape[0]),
+                                        dtype=complex)
+    for pol in range(obs["n_pol"]):
+        vis_arr[pol, :, :] = sav_dict['vis_arr'][pol].transpose()
+    
+    ##super dictionary to save everything in
+    h5_save_dict = {}
+    h5_save_dict['obs'] = obs
+    h5_save_dict['vis_arr'] = vis_arr
+    h5_save_dict['time_average'] = sav_dict['time_average']
+
+    dd.io.save(before_file, h5_save_dict)
+
+@pytest.fixture()
+def after_file(tag, run, data_dir):
+    if ([tag, run] in skip_tests):
+        return None
+    after_file = Path(data_dir, f"{tag}_{run}_after_{data_dir.name}.h5")
+    # If the h5 file already exists and has been created, return the path to it
+    if after_file.exists():
+        return after_file
+    
+    sav_file = after_file.with_suffix('.sav')
+    sav_dict = convert_sav_to_dict(str(sav_file), "faked")
 
 def test_pointsource1_vary1(data_dir):
     """Runs the test on `vis_extract_autocorr` - reads in the data in `data_loc`,

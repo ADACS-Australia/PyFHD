@@ -81,7 +81,7 @@ def test_cal_auto_ratio_remultiply(before_file, after_file):
     """
     if (before_file == None or after_file == None):
         pytest.skip(f"""This test has been skipped because the test was listed in the 
-                    skipped tests due to FHD not outpoutting them: {skip_tests}""")
+                    skipped tests due to FHD not outputting them: {skip_tests}""")
 
     h5_before = dd.io.load(before_file)
     h5_after = dd.io.load(after_file)
