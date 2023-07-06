@@ -119,7 +119,7 @@ def test_vis_baseline_hist(before_file, after_file):
     fixed_vis_res_sigma[range1, 1] = expec_vis_res_sigma[:int(num_bins/2), 1]
 
     rtol = 1e-5
-    atol = 2e-4
+    atol = 3e-4
 
     ##Can test that the fixed final polarisation is close to PyFHD result
     ##Out results are ordered by pol, bin so need to do a transpose

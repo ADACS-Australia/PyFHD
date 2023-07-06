@@ -14,12 +14,65 @@ import numpy.testing as npt
 def data_dir():
     return Path(env.get('PYFHD_TEST_PATH'), "vis_noise_calc")
 
-def run_test(data_dir, tag_name):
+@pytest.fixture(scope="function", params=['point_zenith','point_offzenith'])
+def tag(request):
+    return request.param
+
+@pytest.fixture(scope="function", params=['run3'])
+def run(request):
+    return request.param
+
+skip_tests = []
+
+@pytest.fixture()
+def before_file(tag, run, data_dir):
+    if ([tag, run] in skip_tests):
+        return None
+    before_file = Path(data_dir, f"{tag}_{run}_before_{data_dir.name}.h5")
+    # If the h5 file already exists and has been created, return the path to it
+    if before_file.exists():
+        return before_file
+    
+    sav_file = before_file.with_suffix('.sav')
+    sav_dict = convert_sav_to_dict(str(sav_file), "faked")
+
+    ##super dictionary to save everything in
+    h5_save_dict = {}
+    h5_save_dict['obs'] = recarray_to_dict(sav_dict['obs'])
+    h5_save_dict['vis_arr'] = sav_file_vis_arr_swap_axes(sav_dict['vis_arr'])
+    h5_save_dict['vis_weights'] = sav_file_vis_arr_swap_axes(sav_dict['vis_weights'])
+    # print('vis-weights shape', h5_save_dict['vis_weights'].shape)
+
+    dd.io.save(before_file, h5_save_dict)
+
+    return before_file
+
+@pytest.fixture()
+def after_file(tag, run, data_dir):
+    if ([tag, run] in skip_tests):
+        return None
+    after_file = Path(data_dir, f"{tag}_{run}_after_{data_dir.name}.h5")
+    # If the h5 file already exists and has been created, return the path to it
+    if after_file.exists():
+        return after_file
+    
+    sav_file = after_file.with_suffix('.sav')
+    sav_dict = convert_sav_to_dict(str(sav_file), "faked")
+
+    ##super dictionary to save everything in
+    h5_save_dict = {}
+    h5_save_dict['noise_arr'] = sav_dict['noise_arr']
+
+    dd.io.save(after_file, h5_save_dict)
+
+    return after_file
+
+def test_points_zenith_and_offzenith(before_file, after_file):
     """Runs the test on `vis_noise_calc` - reads in the data in `data_loc`,
     and then calls `vis_noise_calc`, checking the outputs match expectations"""
 
-    h5_before = dd.io.load(Path(data_dir, f"{tag_name}_before_vis_noise_calc.h5"))
-    h5_after = dd.io.load(Path(data_dir, f"{tag_name}_after_vis_noise_calc.h5"))
+    h5_before = dd.io.load(before_file)
+    h5_after = dd.io.load(after_file)
 
     obs = h5_before['obs']
     vis_arr = h5_before['vis_arr']
@@ -29,61 +82,4 @@ def run_test(data_dir, tag_name):
 
     result_noise_arr = vis_noise_calc(obs, vis_arr, vis_weights)
 
-    atol = 1e-8
-
-    ##how do noise, you good?
-    npt.assert_allclose(expected_noise_arr, result_noise_arr, atol=atol)
-
-
-def test_pointsource1_standard(data_dir):
-    """Test using the `pointsource1_standard` set of inputs"""
-
-    run_test(data_dir, "pointsource1_standard")
-
-if __name__ == "__main__":
-
-    def convert_before_sav(data_dir, tag_name):
-        """Takes the before .sav file out of FHD function `vis_noise_calc`
-        and converts into an hdf5 format"""
-
-        func_name = 'vis_noise_calc'
-
-        sav_dict = convert_sav_to_dict(f"{data_dir}/{tag_name}_before_{func_name}.sav", "meh")
-
-        ##super dictionary to save everything in
-        h5_save_dict = {}
-        h5_save_dict['obs'] = recarray_to_dict(sav_dict['obs'])
-        h5_save_dict['vis_arr'] = sav_file_vis_arr_swap_axes(sav_dict['vis_arr'])
-        h5_save_dict['vis_weights'] = sav_file_vis_arr_swap_axes(sav_dict['vis_weights'])
-        print('vis-weights shape', h5_save_dict['vis_weights'].shape)
-
-        dd.io.save(Path(data_dir, f"{tag_name}_before_{func_name}.h5"), h5_save_dict)
-        
-    def convert_after_sav(data_dir, tag_name):
-        """Takes the after .sav file out of FHD function `vis_noise_calc`
-        and converts into an hdf5 format"""
-
-        func_name = 'vis_noise_calc'
-
-        sav_dict = convert_sav_to_dict(f"{data_dir}/{tag_name}_after_{func_name}.sav", "meh")
-        
-        ##super dictionary to save everything in
-        h5_save_dict = {}
-        
-        h5_save_dict['noise_arr'] = sav_dict['noise_arr']
-
-        dd.io.save(Path(data_dir, f"{tag_name}_after_{func_name}.h5"), h5_save_dict)
-        
-    def convert_sav(base_dir, tag_name):
-        """Load the inputs and outputs needed for testing `vis_noise_calc`"""
-        convert_before_sav(base_dir, tag_name)
-        convert_after_sav(base_dir, tag_name)
-
-    ##Where be all of our data
-    base_dir = Path(env.get('PYFHD_TEST_PATH'), 'vis_noise_calc')
-
-    tag_names = ['pointsource1_standard']
-
-    for tag_name in tag_names:
-        convert_sav(base_dir, tag_name)
-        # run_test(base_dir, tag_name)
+    npt.assert_allclose(expected_noise_arr, result_noise_arr, atol=1e-8)

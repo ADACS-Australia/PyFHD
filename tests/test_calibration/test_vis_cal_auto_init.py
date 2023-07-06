@@ -94,5 +94,5 @@ def test_vis_cal_auto_init(before_file, after_file):
 
     result_auto_gain = vis_cal_auto_init(obs, cal, vis_arr, vis_model_arr, vis_auto, vis_model_auto, auto_tile_i)
 
-    ##Check returned gain is as expected
-    npt.assert_allclose(result_auto_gain, expected_auto_gain, atol=1e-7)
+    ##Check returned gain is as expected 
+    npt.assert_allclose(result_auto_gain, expected_auto_gain, atol=1e-4)

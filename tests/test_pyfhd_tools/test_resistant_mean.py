@@ -11,16 +11,74 @@ from PyFHD.use_idl_fhd.use_idl_outputs import convert_sav_to_dict
 def data_dir():
     return Path(env.get('PYFHD_TEST_PATH'), "resistant_mean")
 
-@pytest.fixture
-def base_dir():
-    return Path(env.get('PYFHD_TEST_PATH'))
+@pytest.fixture(scope="function", params=['point_zenith','point_offzenith', '1088716296'])
+def tag(request):
+    return request.param
 
-def test_pointsource1_vary(data_dir):
-    """Runs the test on `resistant_mean` - reads in the data in `data_loc`,
+@pytest.fixture(scope="function", params=['run2', 'run3'])
+def run(request):
+    return request.param
+
+skip_tests = [['1088716296', "run3"]]
+
+@pytest.fixture()
+def before_file(tag, run, data_dir):
+    if ([tag, run] in skip_tests):
+        return None
+    before_file = Path(data_dir, f"{tag}_{run}_before_{data_dir.name}.h5")
+    # If the h5 file already exists and has been created, return the path to it
+    if before_file.exists():
+        return before_file
+    
+    sav_file = before_file.with_suffix('.sav')
+    sav_dict = convert_sav_to_dict(str(sav_file), "faked")
+
+    input_array = sav_dict['input_array']
+    deviations = sav_dict['deviations']
+    
+    print(input_array.shape)
+
+    ##super dictionary to save everything in
+    h5_save_dict = {}
+    h5_save_dict['input_array'] = input_array
+    h5_save_dict['deviations'] = deviations
+
+    dd.io.save(before_file, h5_save_dict)
+
+    return before_file
+
+@pytest.fixture()
+def after_file(tag, run, data_dir):
+    if ([tag, run] in skip_tests):
+        return None
+    after_file = Path(data_dir, f"{tag}_{run}_after_{data_dir.name}.h5")
+    # If the h5 file already exists and has been created, return the path to it
+    if after_file.exists():
+        return after_file
+    
+    sav_file = after_file.with_suffix('.sav')
+    sav_dict = convert_sav_to_dict(str(sav_file), "faked")
+
+    res_mean_data = sav_dict["res_mean_data"]
+
+    ##super dictionary to save everything in
+    h5_save_dict = {}
+    h5_save_dict['res_mean_data'] = res_mean_data
+
+    dd.io.save(after_file, h5_save_dict)
+
+    return after_file
+
+
+def test_points_zenith_offzenith_and_1088716296(before_file, after_file):
+    """Runs the test on `resistant_mean` - reads in the data in before_file and after_file,
     and then calls `resistant_mean`, checking the outputs match expectations"""
+    if (before_file == None or after_file == None):
+        pytest.skip(f"This test has been skipped because the test was listed in the skipped tests due to FHD not outputting them: {skip_tests}")
 
-    h5_before = dd.io.load(Path(data_dir, "before_resistant_mean.h5"))
-    h5_after = dd.io.load(Path(data_dir, "after_resistant_mean.h5"))
+
+    h5_before = dd.io.load(before_file)
+    h5_after = dd.io.load(after_file)
 
     input_array = h5_before['input_array']
     deviations = h5_before['deviations']
@@ -32,9 +90,6 @@ def test_pointsource1_vary(data_dir):
     print(result_res_mean, expected_res_mean)
 
     assert np.allclose(result_res_mean, expected_res_mean, atol=1e-4)
-
-    # ##Check that the gain value is inserted in `gain_list` correctly
-    # assert np.allclose(gain_list[iter], expected_gain, atol=1e-8)
 
 def test_res_mean_int():
     input = np.concatenate([np.arange(20), np.array([100,200,300,400])])

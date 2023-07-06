@@ -38,7 +38,6 @@ def before_file(tag, run, data_dir):
     obs = recarray_to_dict(sav_dict['obs'])
     
     ##fix the shape of vis_arr
-    ##TODO might need to swap axis 1 and 2 here depending on what happens
     ##inside vis_extract_autocorr
     ##Currently I'm reading into a shape of (n_pol, n_freq, n_baselines)
     vis_arr = np.empty((obs["n_pol"], sav_dict['vis_arr'][0].shape[1],
@@ -51,9 +50,14 @@ def before_file(tag, run, data_dir):
     h5_save_dict = {}
     h5_save_dict['obs'] = obs
     h5_save_dict['vis_arr'] = vis_arr
-    h5_save_dict['time_average'] = sav_dict['time_average']
-
+    if ('time_average' in sav_dict):
+        h5_save_dict['time_average'] = sav_dict['time_average']
+    else:
+        # Set to default
+        h5_save_dict['time_average'] = True
     dd.io.save(before_file, h5_save_dict)
+
+    return before_file
 
 @pytest.fixture()
 def after_file(tag, run, data_dir):
@@ -67,12 +71,23 @@ def after_file(tag, run, data_dir):
     sav_file = after_file.with_suffix('.sav')
     sav_dict = convert_sav_to_dict(str(sav_file), "faked")
 
-def test_pointsource1_vary1(data_dir):
-    """Runs the test on `vis_extract_autocorr` - reads in the data in `data_loc`,
-    and then calls `vis_extract_autocorr`, checking the outputs match expectations"""
+    ##super dictionary
+    h5_save_dict = {}
+    h5_save_dict['auto_corr'] = sav_dict['auto_corr']
+    h5_save_dict['auto_tile_i'] = sav_dict['auto_tile_i']
 
-    h5_before = dd.io.load(Path(data_dir, "before_vis_extract_autocorr.h5"))
-    h5_after = dd.io.load(Path(data_dir, "after_vis_extract_autocorr.h5"))
+    dd.io.save(after_file, h5_save_dict)
+
+    return after_file
+
+def test_points_offzenith_zenith_1088716296(before_file, after_file):
+    """Runs the test on `vis_extract_autocorr` - reads in the data in before_file and after_file,
+    and then calls `vis_extract_autocorr`, checking the outputs match expectations"""
+    if (before_file == None or after_file == None):
+        pytest.skip(f"This test has been skipped because the test was listed in the skipped tests due to FHD not outputting them: {skip_tests}")
+
+    h5_before = dd.io.load(before_file)
+    h5_after = dd.io.load(after_file)
 
     obs = h5_before['obs']
     vis_arr = h5_before['vis_arr']
@@ -97,66 +112,66 @@ def test_pointsource1_vary1(data_dir):
     assert np.array_equal(result_auto_tile_i, expected_auto_tile_i)
 
     
-if __name__ == "__main__":
+# if __name__ == "__main__":
 
-    """Bunch of functions used to convert the IDL FHD .sav files into
-    something pythonic. This should only need to be run once for each test data
-    set (a data set being one run of FHD on a given set of inputs with specific
-    options)"""
+#     """Bunch of functions used to convert the IDL FHD .sav files into
+#     something pythonic. This should only need to be run once for each test data
+#     set (a data set being one run of FHD on a given set of inputs with specific
+#     options)"""
 
-    def convert_before_sav(test_dir):
-        """Takes the before .sav file out of FHD function `vis_extract_autocorr`
-        and converts into an hdf5 format"""
+#     def convert_before_sav(test_dir):
+#         """Takes the before .sav file out of FHD function `vis_extract_autocorr`
+#         and converts into an hdf5 format"""
 
-        sav_dict = convert_sav_to_dict(str(Path(test_dir, "before_vis_extract_autocorr.sav")), "meh")
+#         sav_dict = convert_sav_to_dict(str(Path(test_dir, "before_vis_extract_autocorr.sav")), "meh")
 
-        ##convert obs from a recarray into a dictionary
-        obs = recarray_to_dict(sav_dict['obs'])
+#         ##convert obs from a recarray into a dictionary
+#         obs = recarray_to_dict(sav_dict['obs'])
         
-        ##fix the shape of vis_arr
-        ##TODO might need to swap axis 1 and 2 here depending on what happens
-        ##inside vis_extract_autocorr
-        ##Currently I'm reading into a shape of (n_pol, n_freq, n_baselines)
-        vis_arr = np.empty((obs["n_pol"], sav_dict['vis_arr'][0].shape[1],
-                                          sav_dict['vis_arr'][0].shape[0]),
-                                          dtype=complex)
-        for pol in range(obs["n_pol"]):
-            vis_arr[pol, :, :] = sav_dict['vis_arr'][pol].transpose()
+#         ##fix the shape of vis_arr
+#         ##TODO might need to swap axis 1 and 2 here depending on what happens
+#         ##inside vis_extract_autocorr
+#         ##Currently I'm reading into a shape of (n_pol, n_freq, n_baselines)
+#         vis_arr = np.empty((obs["n_pol"], sav_dict['vis_arr'][0].shape[1],
+#                                           sav_dict['vis_arr'][0].shape[0]),
+#                                           dtype=complex)
+#         for pol in range(obs["n_pol"]):
+#             vis_arr[pol, :, :] = sav_dict['vis_arr'][pol].transpose()
         
-        ##super dictionary to save everything in
-        h5_save_dict = {}
-        h5_save_dict['obs'] = obs
-        h5_save_dict['vis_arr'] = vis_arr
-        h5_save_dict['time_average'] = sav_dict['time_average']
+#         ##super dictionary to save everything in
+#         h5_save_dict = {}
+#         h5_save_dict['obs'] = obs
+#         h5_save_dict['vis_arr'] = vis_arr
+#         h5_save_dict['time_average'] = sav_dict['time_average']
 
-        ##save the thing 
-        dd.io.save(Path(test_dir, "before_vis_extract_autocorr.h5"), h5_save_dict)
+#         ##save the thing 
+#         dd.io.save(Path(test_dir, "before_vis_extract_autocorr.h5"), h5_save_dict)
 
-    def convert_after_sav(test_dir):
-        """Takes the after .sav file out of FHD function `vis_extract_autocorr`
-        and converts into an hdf5 format"""
+#     def convert_after_sav(test_dir):
+#         """Takes the after .sav file out of FHD function `vis_extract_autocorr`
+#         and converts into an hdf5 format"""
 
-        sav_dict = convert_sav_to_dict(str(Path(test_dir, "after_vis_extract_autocorr.sav")), "meh")
+#         sav_dict = convert_sav_to_dict(str(Path(test_dir, "after_vis_extract_autocorr.sav")), "meh")
 
-        ##super dictionary
-        h5_save_dict = {}
-        h5_save_dict['auto_corr'] = sav_dict['auto_corr']
-        h5_save_dict['auto_tile_i'] = sav_dict['auto_tile_i']
+#         ##super dictionary
+#         h5_save_dict = {}
+#         h5_save_dict['auto_corr'] = sav_dict['auto_corr']
+#         h5_save_dict['auto_tile_i'] = sav_dict['auto_tile_i']
 
-        ##save the thing 
-        dd.io.save(Path(test_dir, "after_vis_extract_autocorr.h5"), h5_save_dict)
+#         ##save the thing 
+#         dd.io.save(Path(test_dir, "after_vis_extract_autocorr.h5"), h5_save_dict)
         
-    def convert_sav(test_dir):
-        """Load the inputs and outputs needed for testing `vis_extract_autocorr`"""
-        convert_before_sav(test_dir)
-        convert_after_sav(test_dir)
+#     def convert_sav(test_dir):
+#         """Load the inputs and outputs needed for testing `vis_extract_autocorr`"""
+#         convert_before_sav(test_dir)
+#         convert_after_sav(test_dir)
 
-    ##Start doing the conversion from IDL to Python
+#     ##Start doing the conversion from IDL to Python
 
-    ##Where be all of our data
-    base_dir = Path(env.get('PYFHD_TEST_PATH'))
+#     ##Where be all of our data
+#     base_dir = Path(env.get('PYFHD_TEST_PATH'))
 
-    ##Each test_set contains a run with a different set of inputs/options
-    for test_set in ['pointsource1_vary1', 'pointsource1_standard']:
-        convert_sav(Path(base_dir, test_set))
-        # run_test(Path(base_dir, test_set))
+#     ##Each test_set contains a run with a different set of inputs/options
+#     for test_set in ['pointsource1_vary1', 'pointsource1_standard']:
+#         convert_sav(Path(base_dir, test_set))
+#         # run_test(Path(base_dir, test_set))
