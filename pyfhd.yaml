@@ -48,6 +48,7 @@ min-cal-baseline : 50.
 vis-baseline-hist : true
 bandpass-calibrate : true
 auto-ratio-calibration: true
+cal-time-average: true
 digital-gain-jump-polyfit: true
 return-cal-visibilities : true
 calibration-flag-iterate : 0

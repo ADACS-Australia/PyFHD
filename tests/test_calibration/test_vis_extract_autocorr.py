@@ -50,11 +50,14 @@ def before_file(tag, run, data_dir):
     h5_save_dict = {}
     h5_save_dict['obs'] = obs
     h5_save_dict['vis_arr'] = vis_arr
+    pyfhd_config = {}
     if ('time_average' in sav_dict):
-        h5_save_dict['time_average'] = sav_dict['time_average']
+        pyfhd_config['cal_time_average'] = sav_dict['time_average']
     else:
         # Set to default
-        h5_save_dict['time_average'] = True
+        pyfhd_config['cal_time_average'] = False
+    h5_save_dict['pyfhd_config'] = pyfhd_config
+
     dd.io.save(before_file, h5_save_dict)
 
     return before_file
@@ -91,14 +94,12 @@ def test_points_offzenith_zenith_1088716296(before_file, after_file):
 
     obs = h5_before['obs']
     vis_arr = h5_before['vis_arr']
-    time_average = h5_before['time_average']
+    pyfhd_config = h5_before['pyfhd_config']
     
     expected_auto_corr = h5_after['auto_corr']
     expected_auto_tile_i = h5_after['auto_tile_i']
 
-    result_auto_corr, result_auto_tile_i = vis_extract_autocorr(obs,
-                                                    vis_arr,
-                                                    time_average=time_average)
+    result_auto_corr, result_auto_tile_i = vis_extract_autocorr(obs, vis_arr, pyfhd_config)
 
     #Outputs from .sav file can be an a 1D array containging 2D arrays
     #PyFHD is making 3D arrays. So test things match as a loop

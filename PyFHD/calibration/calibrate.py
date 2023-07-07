@@ -49,9 +49,9 @@ def calibrate(obs: dict, params: dict, vis_arr: np.array, vis_weights: np.array,
     vis_model_arr = np.array([])
 
     # Calculate auto-correlation visibilities, optionally use them for initial calibration estimates
-    vis_auto, auto_tile_i = vis_extract_autocorr(obs, vis_arr);
+    vis_auto, auto_tile_i = vis_extract_autocorr(obs, vis_arr, pyfhd_config);
     # Calculate auto-correlation visibilities 
-    vis_auto_model, auto_tile_i = vis_extract_autocorr(obs, vis_model_arr, auto_tile_i = auto_tile_i)
+    vis_auto_model, auto_tile_i = vis_extract_autocorr(obs, vis_model_arr, pyfhd_config, auto_tile_i = auto_tile_i)
     # Initalize the gain
     if (pyfhd_config['calibration_auto_initialize']):
         cal["gain"] = vis_cal_auto_init(obs, cal, vis_arr, vis_model_arr, vis_auto, vis_auto_model, auto_tile_i)
