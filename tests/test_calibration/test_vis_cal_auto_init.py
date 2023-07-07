@@ -36,7 +36,7 @@ def before_file(tag, run, data_dir):
     obs = recarray_to_dict(sav_dict['obs'])
     cal = recarray_to_dict(sav_dict['cal'])
 
-    ##super dictionary to save everything in
+    #super dictionary to save everything in
     h5_save_dict = {}
     h5_save_dict['obs'] = obs
     h5_save_dict['cal'] = cal
@@ -65,7 +65,7 @@ def after_file(tag, run, data_dir):
     sav_file = after_file.with_suffix('.sav')
     sav_dict = convert_sav_to_dict(str(sav_file), "faked")
 
-    ##super dictionary to save everything in
+    #super dictionary to save everything in
     h5_save_dict = {}
     h5_save_dict['auto_gain'] = sav_file_vis_arr_swap_axes(sav_dict["auto_gain"])
 
@@ -94,5 +94,15 @@ def test_vis_cal_auto_init(before_file, after_file):
 
     result_auto_gain = vis_cal_auto_init(obs, cal, vis_arr, vis_model_arr, vis_auto, vis_model_auto, auto_tile_i)
 
-    ##Check returned gain is as expected 
-    npt.assert_allclose(result_auto_gain, expected_auto_gain, atol=1e-4)
+    # Check returned gain is as expected 
+    # The atol is is a higher value than 1e-8 as resistant_mean has large enough
+    # differences when using single vs double that it can cause issues upto
+    # 1e-2 in some basic cases.
+    atol = 4e-4
+    if (before_file.name.split('_')[0] == "1088716296"):
+        # This is one of those cases as the vis_auto_model array is just an array of ones
+        # until a multiplication of auto_scale which it's values are different at the 2nd
+        # decimal point again due to resistant_mean doing single precision by default unless
+        # the double keyword is used, which in this case it was not.
+        atol = 0.03
+    npt.assert_allclose(result_auto_gain, expected_auto_gain, atol=atol)

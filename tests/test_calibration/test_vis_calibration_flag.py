@@ -41,16 +41,16 @@ def before_file(tag, run, data_dir):
     obs = recarray_to_dict(sav_dict['obs'])
     cal = recarray_to_dict(sav_dict['cal'])
     
-    ##Swap the freq and baseline dimensions
+    #Swap the freq and baseline dimensions
     gain = sav_file_vis_arr_swap_axes(cal['gain'])
     cal['gain'] = gain
     
-    ##Make a small pyfhd_config with just the variables needed for this func
+    #Make a small pyfhd_config with just the variables needed for this func
     pyfhd_config = {}
     pyfhd_config['amp_degree'] = sav_dict['amp_degree']
     pyfhd_config['phase_degree'] = sav_dict['phase_degree']
     
-    ##super dictionary to save everything in
+    #super dictionary to save everything in
     h5_save_dict = {}
     h5_save_dict['obs'] = obs
     h5_save_dict['cal'] = cal
@@ -74,7 +74,7 @@ def after_file(tag, run, data_dir):
 
     obs = recarray_to_dict(sav_dict['obs'])
 
-    ##super dictionary to save everything in
+    #super dictionary to save everything in
     h5_save_dict = {}
     h5_save_dict['obs'] = obs
 
@@ -118,16 +118,16 @@ def test_vis_calibration_flag(before_file, after_file):
 #         obs = recarray_to_dict(sav_dict['obs'][0])
 #         cal = recarray_to_dict(sav_dict['cal'][0])
         
-#         ##Swap the freq and baseline dimensions
+#         #Swap the freq and baseline dimensions
 #         gain = sav_file_vis_arr_swap_axes(cal['gain'])
 #         cal['gain'] = gain
         
-#         ##Make a small pyfhd_config with just the variables needed for this func
+#         #Make a small pyfhd_config with just the variables needed for this func
 #         pyfhd_config = {}
 #         pyfhd_config['amp_degree'] = sav_dict['amp_degree']
 #         pyfhd_config['phase_degree'] = sav_dict['phase_degree']
         
-#         ##super dictionary to save everything in
+#         #super dictionary to save everything in
 #         h5_save_dict = {}
 #         h5_save_dict['obs'] = obs
 #         h5_save_dict['cal'] = cal
@@ -143,7 +143,7 @@ def test_vis_calibration_flag(before_file, after_file):
         
 #         obs = recarray_to_dict(sav_dict['obs'][0])
 
-#         ##super dictionary to save everything in
+#         #super dictionary to save everything in
 #         h5_save_dict = {}
 #         h5_save_dict['obs'] = obs
         
@@ -154,10 +154,10 @@ def test_vis_calibration_flag(before_file, after_file):
 #         convert_before_sav(test_dir)
 #         convert_after_sav(test_dir)
 
-#     ##Where be all of our data
+#     #Where be all of our data
 #     base_dir = Path(env.get('PYFHD_TEST_PATH'))
 
-#     ##Each test_set contains a run with a different set of inputs/options
+#     #Each test_set contains a run with a different set of inputs/options
 #     for test_set in ['pointsource1_vary1']:
 #         convert_sav(Path(base_dir, test_set))
 

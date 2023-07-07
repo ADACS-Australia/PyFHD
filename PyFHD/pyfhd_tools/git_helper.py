@@ -17,7 +17,7 @@ def retrieve_gitdict():
 
     file_path = importlib_resources.files('PyFHD').joinpath('PyFHD_gitinfo.txt')
 
-    ##If things have been pip installed correctly
+    #If things have been pip installed correctly
     if os.path.isfile(file_path):
         with open(file_path) as infile:
             lines = infile.read().split('\n')

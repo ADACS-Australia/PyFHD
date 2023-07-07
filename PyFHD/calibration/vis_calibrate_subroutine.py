@@ -272,9 +272,9 @@ def vis_calibrate_subroutine(vis_ptr, vis_model_ptr, vis_weight_ptr, obs, cal,
                             divergence_test_1 = convergence_strict >= np.median(conv_test[i - divergence_history : i, fii])
                             # Also halt if the convergence gets significantly worse in one iteration
                             divergence_test_2 = convergence_strict >= np.min(conv_test[0:i, fii]) * divergence_factor
-                            ## possible bug fix; should we really test for divergence when only
-                            ## fitting the phase? Fix below doesn't use the phase-only portion
-                            ## of fitting when checking for divergence
+                            # possible bug fix; should we really test for divergence when only
+                            # fitting the phase? Fix below doesn't use the phase-only portion
+                            # of fitting when checking for divergence
                             # divergence_test_2 = convergence_strict >= np.min(conv_test[int(phase_fit_iter): i, fii]) * divergence_factor
                             if divergence_test_1 or divergence_test_2:
                                 # If both measures of convergence are getting worse, we need to stop.

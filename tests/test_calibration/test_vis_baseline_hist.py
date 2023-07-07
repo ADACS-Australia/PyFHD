@@ -43,7 +43,7 @@ def before_file(tag, run, data_dir):
     vis_arr = sav_file_vis_arr_swap_axes(sav_dict['vis_arr'])
     vis_model_arr = sav_file_vis_arr_swap_axes(sav_dict['vis_model_arr'])
 
-    ##super dictionary to save everything in
+    #super dictionary to save everything in
     h5_save_dict = {}
     h5_save_dict['obs'] = obs
     h5_save_dict['params'] = params
@@ -66,7 +66,7 @@ def after_file(tag, run, data_dir):
     sav_file = after_file.with_suffix('.sav')
     sav_dict = convert_sav_to_dict(str(sav_file), "faked")
 
-    ##super dictionary to save everything in
+    #super dictionary to save everything in
     h5_save_dict = {}
     h5_save_dict['vis_baseline_hist'] = recarray_to_dict(sav_dict['vis_baseline_hist'])
 
@@ -99,11 +99,11 @@ def test_vis_baseline_hist(before_file, after_file):
     expec_vis_res_ratio_mean = expec_vis_baseline_hist['vis_res_ratio_mean']
     expec_vis_res_sigma = expec_vis_baseline_hist['vis_res_sigma']
 
-    ##There is an indexing error in the original FHD code, which means only
-    ##the first num_bins of the `vis_res_ratio_mean` array are indexed. This means
-    ##that only results from the last polarisation and saved, and spread over
-    ##the first half of the bin indexes between each pol. We can recover what
-    ##the second polaristaion should be at least for testing
+    #There is an indexing error in the original FHD code, which means only
+    #the first num_bins of the `vis_res_ratio_mean` array are indexed. This means
+    #that only results from the last polarisation and saved, and spread over
+    #the first half of the bin indexes between each pol. We can recover what
+    #the second polaristaion should be at least for testing
 
     fixed_vis_res_ratio_mean = np.zeros((num_bins, 2))
     range0 = range(0, num_bins, 2)
@@ -121,8 +121,8 @@ def test_vis_baseline_hist(before_file, after_file):
     rtol = 1e-5
     atol = 3e-4
 
-    ##Can test that the fixed final polarisation is close to PyFHD result
-    ##Out results are ordered by pol, bin so need to do a transpose
+    #Can test that the fixed final polarisation is close to PyFHD result
+    #Out results are ordered by pol, bin so need to do a transpose
     npt.assert_allclose(fixed_vis_res_ratio_mean[:, 1],
                         result_vis_baseline_hist['vis_res_ratio_mean'].transpose()[:, 1],
                         atol=atol, rtol=rtol)

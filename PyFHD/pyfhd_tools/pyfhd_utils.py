@@ -358,7 +358,6 @@ def rebin_rows(a, ax, shape, old_shape, row_sizer):
     row_rebinned = inferences + np.repeat(a, row_sizer, axis = ax)
     return row_rebinned
 
-
 def rebin(a, shape, sample = False):
     """
     Resizes a 2d array by averaging or repeating elements, new dimensions must be integral factors of original dimensions.
@@ -510,8 +509,7 @@ def rebin(a, shape, sample = False):
                 rebinned = rebin_columns(row_rebinned, ax, shape, col_sizer)
     return rebinned
 
-def weight_invert(weights : np.ndarray | int | float | np.number, threshold = None,
-                  use_abs = False):
+def weight_invert(weights : np.ndarray | int | float | np.number, threshold = None, use_abs = False):
     """
     The weights invert function cleans the weights given by removing
     the values that are 0, NaN or Inf ready for additional calculation.
@@ -536,46 +534,45 @@ def weight_invert(weights : np.ndarray | int | float | np.number, threshold = No
         The weights array that has had NaNs and Infinities removed, and zeros OR
         values that don't meet the threshold.
     """
-
-    result = np.zeros_like(weights)
-    '''
-    Python and IDL use the where function on complex numbers differently.
-    On Python, if you apply a real threshold, it applies to only the real numbers,
-    and if you apply an imaginary threshold it applies to only imaginary numbers.
-    For example Python:
-    test = np.array([1j, 2 + 2j, 3j])
-    np.where(test >= 2) == array([1])
-    np.where(test >= 2j) == array([1,2])
-    Meanwhile in IDL:
-    test = COMPLEX([0,2,0],[1,2,3]) ;COMPLEX(REAL, IMAGINARY)
-    where(test ge 2) == [1, 2]
-    where(test ge COMPLEX(0,2)) == [1, 2]
-
-    IDL on the otherhand, uses the ABS function on COMPLEX numbers before using WHERE.
-    Hence the behaviour we're seeing above.
-    '''
-
+    # IDL is able to treat one number as an array (because every number is aprrently an array of size 1?)
+    # As such we need to check if it's a number less than or equal to 0 and make a zeros array of size 1
+    if (np.isscalar(weights)):
+        result = np.zeros(1, dtype = type(weights))
+        weights = np.array([weights], dtype = type(weights))
+    else:
+        result = np.zeros_like(weights, dtype = weights.dtype)
     weights_use = weights
+    if use_abs or np.iscomplexobj(weights_use):
+        '''
+        Python and IDL use the where function on complex numbers differently.
+        On Python, if you apply a real threshold, it applies to only the real numbers,
+        and if you apply an imaginary threshold it applies to only imaginary numbers.
+        For example Python:
+        test = np.array([1j, 2 + 2j, 3j])
+        np.where(test >= 2) == array([1])
+        np.where(test >= 2j) == array([1,2])
+        Meanwhile in IDL:
+        test = COMPLEX([0,2,0],[1,2,3]) ;COMPLEX(REAL, IMAGINARY)
+        where(test ge 2) == [1, 2]
+        where(test ge COMPLEX(0,2)) == [1, 2]
 
-    if use_abs:
+        IDL on the otherhand, uses the ABS function on COMPLEX numbers before using WHERE.
+        Hence the behaviour we're seeing above. This is why we also check for a complexobj
+        in the if statement
+        '''
         weights_use = np.abs(weights)
 
     # If threshold has been set then...
     if threshold is not None:
         # Get the indexes which meet the threshold
-        # As indicated IDL applies abs before using where to complex numbers
+        # As indicated before IDL applies abs before using where to complex numbers
         i_use = np.where(weights_use >= threshold)
     else:
         # Otherwise get where they are not zero
-        i_use = np.where(weights_use != 0)
+        i_use = np.nonzero(weights_use)
 
     if np.size(i_use) > 0:
-        ##If someone is using a single number and not an array and we've
-        ##got here, we just need to divide by that single number
-        if type(weights) != np.ndarray:
-            result = 1 / weights_use
-        else:
-            result[i_use] = 1 / weights_use[i_use]
+        result[i_use] = 1 / weights[i_use]
 
     # Replace all NaNs with Zeros
     if np.size(np.where(np.isnan(result))) != 0:
@@ -585,8 +582,8 @@ def weight_invert(weights : np.ndarray | int | float | np.number, threshold = No
         result[np.where(np.isinf(result))] = 0
 
     # If the result is an array containing 1 result, then return the result, not an array
-    if type(result) == np.ndarray and np.size(result) == 1:
-        result = result[0]
+    if np.size(result) == 1:
+        return result[0]
     return result
 
 def array_match(array_1, value_match, array_2 = None) :
@@ -902,7 +899,6 @@ def resistant_mean(array : np.ndarray, deviations : int, mad_scale = 0.674499999
     # Also take the absolute value of sigma_threshold to get the same behaviour as LE in IDL
     subarray = array[np.where(abs_dev <= np.abs(sigma_threshold))]
     # Get the mean of the subset array which contains no outliers
-
     return np.mean(subarray)
 
 def run_command(cmd : str, dry_run=False):
@@ -1067,8 +1063,8 @@ def split_vis_weights(obs: dict, vis_weights: np.ndarray) -> tuple[np.ndarray, n
 
     bi_use = [np.where(bin_i % 2 == 0)[0], np.where(bin_i % 2 == 1)[0]]
 
-    ##Here we ensure that both even and odd samples are the same size by
-    ##ensuring both arrays match the smallest size
+    #Here we ensure that both even and odd samples are the same size by
+    #ensuring both arrays match the smallest size
     if (bi_use[0].size < bi_use[1].size):
         bi_use[1] = bi_use[1][0 : bi_use[0].size]
     elif (bi_use[1].size < bi_use[0].size):
@@ -1131,9 +1127,9 @@ def idl_median(x : np.ndarray, width=0, even=False) -> float:
 
     if width:
 
-        ##IDL median leaves everything within width//2 pixels of the edge alone
-        ##So just shove the outputs of median_filter everywhere else. None of
-        ##the `modes` in median_filter capture this behaviour
+        #IDL median leaves everything within width//2 pixels of the edge alone
+        #So just shove the outputs of median_filter everywhere else. None of
+        #the `modes` in median_filter capture this behaviour
         output = deepcopy(x)
 
         hw = width//2

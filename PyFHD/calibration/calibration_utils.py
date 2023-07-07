@@ -34,16 +34,16 @@ def vis_extract_autocorr(obs: dict, vis_arr: np.array, time_average = True, auto
     if (autocorr_i.size > 0):
         auto_tile_i = obs["baseline_info"]["tile_a"][autocorr_i] - 1
         auto_tile_i_single = np.unique(auto_tile_i)
-        ##TODO this is now explicitly a 3D array; parts of the code potentially
-        ##expect it as a list of 2D arrays, so there might be trouble
+        #TODO this is now explicitly a 3D array; parts of the code potentially
+        #expect it as a list of 2D arrays, so there might be trouble
         auto_corr = np.zeros((obs["n_pol"], obs['n_freq'], auto_tile_i_single.size))
 
         for pol_i in range(obs["n_pol"]):
-            ##Auto-correlations by definition are enirely real, so take the
-            ##real part here
-            ##index this way in case people have vis_arr as one dimensional
-            ##array, containing two further 2D arrays, rather than a proper 3D
-            ##array. Turns out this indexing is consistent across both cases
+            #Auto-correlations by definition are enirely real, so take the
+            #real part here
+            #index this way in case people have vis_arr as one dimensional
+            #array, containing two further 2D arrays, rather than a proper 3D
+            #array. Turns out this indexing is consistent across both cases
             auto_vals = np.real(vis_arr[pol_i][:, autocorr_i])
             if (time_average):
                 auto_single = np.zeros((obs["n_freq"], auto_tile_i_single.size))
@@ -52,9 +52,9 @@ def vis_extract_autocorr(obs: dict, vis_arr: np.array, time_average = True, auto
                     baseline_i = np.where(auto_tile_i == auto_tile_i_single[tile_i])[0]
                     baseline_i = baseline_i[time_inds]
                     if (time_inds.size > 1): 
-                        ##OK, auto_vals is of shape (n_freq, n_autos)
-                        ##We want to average a subset of baseline_i within auto_vals,
-                        ##to average a specific auto-correlation over time
+                        #OK, auto_vals is of shape (n_freq, n_autos)
+                        #We want to average a subset of baseline_i within auto_vals,
+                        #to average a specific auto-correlation over time
                         auto_single[:, tile_i] = np.sum(auto_vals[:, baseline_i][np.arange(obs['n_freq']), :], axis = 1) / time_inds.size
 
                     else:
@@ -66,7 +66,7 @@ def vis_extract_autocorr(obs: dict, vis_arr: np.array, time_average = True, auto
         return auto_corr, auto_tile_i
     else:
         # Return auto_corr as 0 and auto_tile_i as an empty array
-        ## TODO should the zeros and ones at least be the correct shape here?
+        # TODO should the zeros and ones at least be the correct shape here?
         return np.zeros(1), np.zeros(0)
 
 def vis_cal_auto_init(obs : dict, cal : dict, vis_arr: np.array, vis_model_arr: np.array, vis_auto: np.array, vis_auto_model: np.array, auto_tile_i: np.array) -> np.ndarray:
@@ -95,22 +95,19 @@ def vis_cal_auto_init(obs : dict, cal : dict, vis_arr: np.array, vis_model_arr: 
     auto_gain : np.array
         _description_
     """
-    # TODO: This should be a list, or ideally an numpy array with a known shape, change this line to reflect this
-
     auto_scale = np.zeros(cal["n_pol"])
     freq_i_use = np.where(obs["baseline_info"]["freq_use"])[0]
     for pol_i in range(cal["n_pol"]):
         res_mean_data = resistant_mean(np.abs(vis_arr[pol_i, freq_i_use, :]), 2)
         res_mean_model = resistant_mean(np.abs(vis_model_arr[pol_i, freq_i_use, :]), 2)
         auto_scale[pol_i] = np.sqrt(res_mean_data / res_mean_model)
-    # TODO: This should be a list, or ideally an numpy array with a known shape, change this line to reflect this
     # TODO: Vectorize below loops
     auto_gain = np.zeros((cal["n_pol"], obs["n_freq"], obs["n_tile"]), dtype=np.complex128)
     for pol_i in range(cal["n_pol"]):
-        gain_arr = np.zeros((obs["n_freq"], obs["n_tile"]), dtype=np.complex128)
+        gain_arr = np.ones((obs["n_freq"], obs["n_tile"]), dtype=np.complex128)
         for freq_i in range(obs["n_freq"]):
             for tile_i in range(auto_tile_i.size):
-                # TODO: Check size of gain_single in FHD and compare against what's here
+                gain_single = np.sqrt(vis_auto[pol_i, freq_i, tile_i] * weight_invert(vis_auto_model[pol_i, freq_i, tile_i]))
                 gain_arr[freq_i, auto_tile_i[tile_i]] = np.sqrt(vis_auto[pol_i, freq_i, tile_i] * weight_invert(vis_auto_model[pol_i, freq_i, tile_i]))
         gain_arr *= auto_scale[pol_i] * weight_invert(np.mean(gain_arr))
         gain_arr[np.isnan(gain_arr)] = 1
@@ -554,7 +551,7 @@ def vis_cal_bandpass(obs: dict, cal: dict, params: dict, pyfhd_config: dict, log
                 bandpass_col_count += 1
                 # Fill temporary variable gain2, set equal to final bandpass per cable group for each tile that will use that bandpass.
 
-                ##TODO cannot get this to work in a vector
+                #TODO cannot get this to work in a vector
                 for tile_i in range(tile_use_cable.size):
                     gain2[pol_i, freq_use, tile_use_cable[tile_i]] = bandpass_single
 
@@ -593,7 +590,7 @@ def vis_cal_bandpass(obs: dict, cal: dict, params: dict, pyfhd_config: dict, log
             # Work out the gain for the bandpass
             gain2 = np.zeros(gain.shape, dtype = np.complex128)
             gain3 = deepcopy(gain)
-            ##TODO cannot get this to work in a vector
+            #TODO cannot get this to work in a vector
             for tile_i in range(cal['n_tile']):
                 gain2[freq_use, tile_i] = bandpass_single
                 gain3[freq_use, tile_i] /= bandpass_single
@@ -884,9 +881,9 @@ def vis_cal_auto_fit(obs: dict, cal: dict, vis_auto : np.ndarray, vis_auto_model
             maximum = min(obs['n_freq'], freq_i_flag[freq_i] + 2)
             freq_flag[minimum : maximum] = 0
         freq_i_use = np.nonzero(freq_flag)
-    ## Vectorized loop for via_cal_auto_fit lines 45-55 in IDL
-    ## However the logic still indexes the full 128 tiles, so need to shove
-    ## outputs into an empty array of correct size
+    # Vectorized loop for via_cal_auto_fit lines 45-55 in IDL
+    # However the logic still indexes the full 128 tiles, so need to shove
+    # outputs into an empty array of correct size
     auto_gain = np.empty((cal['n_pol'], obs['n_freq'], obs['n_tile']))
     auto_gain[:, :, auto_tile_i] = np.sqrt(vis_auto*weight_invert(vis_auto_model))
     gain_cross = cal['gain']
@@ -902,10 +899,10 @@ def vis_cal_auto_fit(obs: dict, cal: dict, vis_auto : np.ndarray, vis_auto_model
             gain_auto_single = np.abs(auto_gain[pol_i, :, tile_idx])
             gain_cross_single = np.abs(gain_cross[pol_i, :, tile_idx])
 
-            ##TODO need to mask out any NaN values; numpy doesn't like them,
-            ##I assume the IDL equiv function just masks them?
-            ##or maybe we need to do a catch for NaNs here, and abandon all
-            ##hope for a fit if there are NaNs?
+            #TODO need to mask out any NaN values; numpy doesn't like them,
+            #I assume the IDL equiv function just masks them?
+            #or maybe we need to do a catch for NaNs here, and abandon all
+            #hope for a fit if there are NaNs?
             notnan = np.where((np.isnan(gain_auto_single[freq_i_use]) != True) & (np.isnan(gain_cross_single[freq_i_use]) != True))
             gain_auto_single_fit = gain_auto_single[freq_i_use][notnan]
             gain_cross_single_fit = gain_cross_single[freq_i_use][notnan]
@@ -959,12 +956,12 @@ def vis_calibration_apply(vis_arr: np.ndarray, obs: dict, cal: dict, vis_model_a
     gain_pol_arr1 = [0,1,0,1]
     gain_pol_arr2 = [0,1,1,0]
 
-    ## OK, it really makes sense to use native python functionality here
-    ## We're just trying to match up the frequency-dependent gains to the
-    ## correct baselines, and apply them. Can use `meshgrid` here instead of
-    ## `rebin`, which will make 2D indexing arrays, so we can directly leave
-    ## the gain arrays in the correct shape and index the directly. Using `rebin`
-    ## means we have to flatten them
+    # OK, it really makes sense to use native python functionality here
+    # We're just trying to match up the frequency-dependent gains to the
+    # correct baselines, and apply them. Can use `meshgrid` here instead of
+    # `rebin`, which will make 2D indexing arrays, so we can directly leave
+    # the gain arrays in the correct shape and index the directly. Using `rebin`
+    # means we have to flatten them
     inds_a_baseline, inds_a_freqs,  = np.meshgrid(tile_a_i, np.arange(obs['n_freq']))
     inds_b_baseline, inds_b_freqs = np.meshgrid(tile_b_i, np.arange(obs['n_freq']))
 
@@ -979,8 +976,8 @@ def vis_calibration_apply(vis_arr: np.ndarray, obs: dict, cal: dict, vis_model_a
 
         vis_arr[pol_i, :, :] *= weight_invert(vis_gain, use_abs=False)
 
-    ##TODO we haven't run FHD in a way that uses 4 pols yet so this is all
-    ##untested
+    #TODO we haven't run FHD in a way that uses 4 pols yet so this is all
+    #untested
     if (n_pol_vis == 4):
         if type(vis_model_arr) == np.ndarray and type(vis_weights) == np.ndarray:
             # This if statement replaces vis_calibrate_crosspol_phase 
@@ -991,13 +988,13 @@ def vis_calibration_apply(vis_arr: np.ndarray, obs: dict, cal: dict, vis_model_a
             # antenna polarizations.
             # Use the xx flags (yy should be identitical at this point)
 
-            ##this is num baselines per time step
+            #this is num baselines per time step
             n_baselines = int(len(tile_a_i) / obs['n_times'])
-            ## reshape from (n_freq, n_baselines*n_times) to (n_freq, n_times, n_baselines). Turns out due to the row major vs col major difference
-            ## between IDL and python, this shape also changes
+            # reshape from (n_freq, n_baselines*n_times) to (n_freq, n_times, n_baselines). Turns out due to the row major vs col major difference
+            # between IDL and python, this shape also changes
             new_shape = (obs['n_freq'], obs['n_times'], n_baselines)
             weights_use = np.reshape(vis_weights[0, :, :], new_shape)
-            ##carried over from FHD code
+            #carried over from FHD code
             weights_use = np.maximum(weights_use, np.zeros_like(weights_use))
             weights_use = np.minimum(weights_use, np.ones_like(weights_use))
 
@@ -1056,8 +1053,8 @@ def vis_baseline_hist(obs: dict, params: dict, vis_cal: np.ndarray, vis_model_ar
     kx_arr = params['uu'] / obs['kpix']
     ky_arr = params['vv'] / obs['kpix']
     kr_arr = np.sqrt(kx_arr ** 2 + ky_arr ** 2)
-    ## take the transpose of this, given our `vis_cal` and `vis_mode_arr` are the
-    ## transpose of the original FHD code
+    # take the transpose of this, given our `vis_cal` and `vis_mode_arr` are the
+    # transpose of the original FHD code
     dist_arr = np.outer(kr_arr, obs['baseline_info']['freq']).transpose()*obs['kpix']
     dist_hist, bins, dist_ri = histogram(dist_arr, min=obs['min_baseline'], max=obs['max_baseline'], bin_size=5.0)
 
@@ -1074,9 +1071,9 @@ def vis_baseline_hist(obs: dict, params: dict, vis_cal: np.ndarray, vis_model_ar
                     inds = inds[wh_noflag]
                 else:
                     continue
-                ## if Keyword_Set(calibration_visibilities_subtract) THEN BEGIN
-                ## but calibration_visibilities_subtract isn't a function keyword
-                ## so we'll only translate the False of that statement
+                # if Keyword_Set(calibration_visibilities_subtract) THEN BEGIN
+                # but calibration_visibilities_subtract isn't a function keyword
+                # so we'll only translate the False of that statement
                 # vis_cal_use = (vis_cal[pol_i].transpose()).flatten()[inds]
                 vis_cal_use = (vis_cal[pol_i]).flatten()[inds]
                 vis_res_ratio_mean[pol_i, bin_i] = np.mean(np.abs(vis_cal_use - model_vals)) / np.mean(np.abs(model_vals))

@@ -41,8 +41,8 @@ def before_file(tag, run, data_dir):
     obs = recarray_to_dict(sav_dict['obs'])
     cal = recarray_to_dict(sav_dict['cal'])
 
-    ##Swap the freq and tile dimensions
-    ##this make shape (n_pol, n_freq, n_tile)
+    #Swap the freq and tile dimensions
+    #this make shape (n_pol, n_freq, n_tile)
     gain = sav_file_vis_arr_swap_axes(cal['gain'])
     cal['gain'] = gain
 
@@ -59,12 +59,12 @@ def before_file(tag, run, data_dir):
                     "cal_amp_degree_fit",
                     "cal_phase_degree_fit"]
     
-    ##make a slimmed down version of pyfhd_config
+    #make a slimmed down version of pyfhd_config
     pyfhd_config = {}
     
-    ##When keys are unset in IDL, they just don't save to a .sav
-    ##file. So try accessing with an exception and set to None
-    ##if they don't exists
+    #When keys are unset in IDL, they just don't save to a .sav
+    #file. So try accessing with an exception and set to None
+    #if they don't exists
     for fhd_key, config_key in zip(fhd_keys, config_keys):
         try:
             pyfhd_config[config_key] = sav_dict[fhd_key]
@@ -75,7 +75,7 @@ def before_file(tag, run, data_dir):
     pyfhd_config["cable_lengths"] = importlib_resources.files('PyFHD.templates').joinpath('mwa_cable_length.txt')
     pyfhd_config['digital_gain_jump_polyfit'] = True
     
-    ##super dictionary to save everything in
+    #super dictionary to save everything in
     h5_save_dict = {}
     h5_save_dict['obs'] = obs
     h5_save_dict['cal'] = cal
@@ -100,12 +100,12 @@ def after_file(tag, run, data_dir):
     cal_return = recarray_to_dict(sav_dict['cal_return'])
         
         
-    ##Swap the freq and tile dimensions
-    ##this make shape (n_pol, n_freq, n_tile)
+    #Swap the freq and tile dimensions
+    #this make shape (n_pol, n_freq, n_tile)
     gain = sav_file_vis_arr_swap_axes(cal_return['gain'])
     cal_return['gain'] = gain
     
-    ##super dictionary to save everything in
+    #super dictionary to save everything in
     h5_save_dict = {}
     
     h5_save_dict['cal_return'] = cal_return

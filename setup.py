@@ -45,8 +45,8 @@ class GitInfo(setuptools.Command):
   def run(self):
     '''Write the PyFHD git text file.'''
 
-    ##Find where we are running the pip install from, and add in a sensible
-    ##place to save the git dictionary
+    #Find where we are running the pip install from, and add in a sensible
+    #place to save the git dictionary
     save_path = os.path.join(os.path.abspath(os.path.dirname(__file__)),'PyFHD', 'PyFHD_gitinfo.txt')
 
     with open(save_path, 'w') as outfile:

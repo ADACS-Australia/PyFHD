@@ -36,7 +36,7 @@ def before_file(tag, run, data_dir):
     sav_file = before_file.with_suffix('.sav')
     sav_dict = convert_sav_to_dict(str(sav_file), "faked")
 
-    ##super dictionary to save everything in
+    #super dictionary to save everything in
     h5_save_dict = {}
     h5_save_dict['obs'] = recarray_to_dict(sav_dict['obs'])
     h5_save_dict['params'] = recarray_to_dict(sav_dict['params'])
@@ -88,12 +88,12 @@ def test_zenith_offzenith(before_file, after_file):
     result_vis_weights, result_obs = vis_flag(vis_arr, vis_weight_ptr,
                                               obs, params, logger)
     
-    ##Should end up with the right number of visis after cutting
+    #Should end up with the right number of visis after cutting
     npt.assert_equal(result_obs['n_vis'], expected_obs['n_vis'])
     
     atol = 1e-8
 
-    ##Weights should be setup
+    #Weights should be setup
     npt.assert_allclose(result_vis_weights, expected_vis_weight_ptr, atol=atol)
 
 
@@ -112,7 +112,7 @@ def test_zenith_offzenith(before_file, after_file):
 
 #         sav_dict = convert_sav_to_dict(f"{data_dir}/{tag_name}_before_{func_name}.sav", "meh")
 
-#         ##super dictionary to save everything in
+#         #super dictionary to save everything in
 #         h5_save_dict = {}
 #         h5_save_dict['obs'] = recarray_to_dict(sav_dict['obs'])
 #         h5_save_dict['params'] = recarray_to_dict(sav_dict['params'])
@@ -129,7 +129,7 @@ def test_zenith_offzenith(before_file, after_file):
 
 #         sav_dict = convert_sav_to_dict(f"{data_dir}/{tag_name}_after_{func_name}.sav", "meh")
 
-#         ##super dictionary to save everything in
+#         #super dictionary to save everything in
 #         h5_save_dict = {}
         
 #         h5_save_dict['vis_weight_ptr'] = sav_file_vis_arr_swap_axes(sav_dict['vis_weight_ptr'])
@@ -142,7 +142,7 @@ def test_zenith_offzenith(before_file, after_file):
 #         convert_before_sav(base_dir, tag_name)
 #         convert_after_sav(base_dir, tag_name)
 
-#     ##Where be all of our data
+#     #Where be all of our data
 #     base_dir = Path(env.get('PYFHD_TEST_PATH'), 'vis_flag')
 
 #     tag_names = ['pointsource2_vary3']

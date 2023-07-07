@@ -41,14 +41,14 @@ def convert_sav_to_dict(sav_path : str, logger : logging.RootLogger,
     if os.path.isfile(sav_path):
         # logger.info(f"{sav_path} found, converting now.")
 
-        ##Ensure the tmp dir exists, create if not
+        #Ensure the tmp dir exists, create if not
         os.makedirs(tmp_dir, exist_ok=True)
 
-        ##Strip off any leading path to leave just the file name
+        #Strip off any leading path to leave just the file name
         temp_name = f"{tmp_dir}/{sav_path.split('/')[-1]}"
 
-        ##Load into a dictionary, decompressed and saving a temporary file if need
-        ##be
+        #Load into a dictionary, decompressed and saving a temporary file if need
+        #be
         sav_dict = readsav(sav_path, python_dict=True, uncompressed_file_name=temp_name)
 
         return sav_dict
@@ -123,12 +123,12 @@ def convert_IDL_calibration_outputs(pyfhd_config : dict, IDL_output_dir : str,
     else:
         logger.info("Converting IDL FHD calibration .sav files now ")
 
-        ##Where to save intermediate data products
+        #Where to save intermediate data products
         tmp_dir = f"{pyfhd_config['output_path']}/{pyfhd_config['top_level_dir']}/tmp_pyfhd_{pyfhd_config['log_time']}"
 
         logger.info(f"Writing intermediate data products to {tmp_dir}")
 
-        ##Observational parameters and variables
+        #Observational parameters and variables
         obs_dict = convert_sav_to_dict(f"{IDL_output_dir}/metadata/{tag}_obs.sav",
                                                logger, tmp_dir=tmp_dir)
         params_dict = convert_sav_to_dict(f"{IDL_output_dir}/metadata/{tag}_params.sav",
@@ -136,7 +136,7 @@ def convert_IDL_calibration_outputs(pyfhd_config : dict, IDL_output_dir : str,
         variables_dict = convert_sav_to_dict(f"{IDL_output_dir}/{tag}_variables.sav",
                                                logger, tmp_dir=tmp_dir)
 
-        ##Visibility data
+        #Visibility data
         vis_XX_dict = convert_sav_to_dict(f"{IDL_output_dir}/vis_data/{tag}_vis_XX.sav",
                                                logger, tmp_dir=tmp_dir)
         vis_YY_dict = convert_sav_to_dict(f"{IDL_output_dir}/vis_data/{tag}_vis_YY.sav",
@@ -148,9 +148,9 @@ def convert_IDL_calibration_outputs(pyfhd_config : dict, IDL_output_dir : str,
         vis_flags_dict = convert_sav_to_dict(f"{IDL_output_dir}/vis_data/{tag}_flags.sav",
                                                logger, tmp_dir=tmp_dir)
 
-        ##Remove the temporary folder holding the decompressed .sav files.
-        ##If for some reason the directory has already been deleted, ignore
-        ##deletion errors
+        #Remove the temporary folder holding the decompressed .sav files.
+        #If for some reason the directory has already been deleted, ignore
+        #deletion errors
         try:
             shutil.rmtree(tmp_dir)
         except FileNotFoundError:
@@ -195,11 +195,11 @@ def run_gridding_on_IDL_outputs(pyfhd_config : dict, IDL_output_dir : str,
 
     before = time.time()
 
-    ##Convert/load in the IDL FHD outputs
+    #Convert/load in the IDL FHD outputs
     idl_cal_dict = convert_IDL_calibration_outputs(pyfhd_config, IDL_output_dir,
                                                    logger)
 
-    ##Grab specific arrays/rec arrays from idl_cal_dict needed to run gridding
+    #Grab specific arrays/rec arrays from idl_cal_dict needed to run gridding
     visibility_XX = idl_cal_dict['vis_XX_dict']['vis_ptr']
     visibility_YY = idl_cal_dict['vis_YY_dict']['vis_ptr']
     
@@ -228,24 +228,24 @@ def run_gridding_on_IDL_outputs(pyfhd_config : dict, IDL_output_dir : str,
     
     n_freq = obs['n_freq'][0]
 
-    ##Report how long it took to load in the IDL calibration sav files
+    #Report how long it took to load in the IDL calibration sav files
     after = time.time()
     logger.info(f"Reading/importing IDL calibration sav files took {after - before:.1f} seconds\n\tNow loading in the gridding psf object. This can take minutes.")
 
-    ##Load up the gridding psf object, and report how long it takes
+    #Load up the gridding psf object, and report how long it takes
     before = time.time()
     psf_dict = np.load(pyfhd_config['grid_psf_file_npz'], allow_pickle=True)
     psf = psf_dict['psf']
     after = time.time()
     logger.info(f"Loading the gridding psf object took {after - before:.1f} seconds.\n\tNow launching python gridding loop")
 
-    ##MUST change dimension of psf ID or things will crash
-    ##Has to do with flagging of the real data no being applied
-    ##to the perfect beam model
+    #MUST change dimension of psf ID or things will crash
+    #Has to do with flagging of the real data no being applied
+    #to the perfect beam model
     psf.id[0] = psf.id[0][:obs.nbaselines[0], :, :]
 
     freq_use = obs['baseline_info'][0]['freq_use'][0]
-    ##TODO how do we remove this hardcording
+    #TODO how do we remove this hardcording
     n_avg = 2. #Hardcode to grid two freqs together for 160kHz res uvf cubes, FHD/epp standard
     freq_bin_i2 = np.floor(np.arange(n_freq) / n_avg).astype(int)
     nf = np.max(freq_bin_i2) + 1
@@ -258,7 +258,7 @@ def run_gridding_on_IDL_outputs(pyfhd_config : dict, IDL_output_dir : str,
 
     gridding_dir = f"{pyfhd_config['output_path']}/{pyfhd_config['top_level_dir']}/gridding_outputs"
 
-    ## Make somewhere to store the outputs
+    # Make somewhere to store the outputs
     os.makedirs(gridding_dir, exist_ok=True)
 
     before = time.time()
@@ -274,7 +274,7 @@ def run_gridding_on_IDL_outputs(pyfhd_config : dict, IDL_output_dir : str,
 
                     print(f"gridding {pol_label}_{bi_use_label}_freqind{freq_ind:03d}")
 
-                    ##Which frequencies to use in this subset of gridding
+                    #Which frequencies to use in this subset of gridding
                     fi_use = np.where((freq_bin_i2 == freq_ind) & (freq_use > 0))[0]
                     
                     these_visis = visibilities[pol_ind]
@@ -299,11 +299,11 @@ def run_gridding_on_IDL_outputs(pyfhd_config : dict, IDL_output_dir : str,
                                       data=gridding_dict['variance'])
                     hf.create_dataset(f'model_return_{name}',
                                       data=gridding_dict['model_return'])
-                    ##This one is n_vis = np.sum(bin_n)
+                    #This one is n_vis = np.sum(bin_n)
                     hf.create_dataset(f'n_vis_{name}',
                                     data=gridding_dict['n_vis'])
 
-                ##This one is the number of visibilities per frequency
+                #This one is the number of visibilities per frequency
                 hf.create_dataset(f'nf_vis',
                                     data=gridding_dict['obs']['nf_vis'][0])
                 
@@ -313,9 +313,9 @@ def run_gridding_on_IDL_outputs(pyfhd_config : dict, IDL_output_dir : str,
             
     logger.info(f"Gridding/saving outputs took {(after - before) / 60.0:.1f} minutes")
 
-    ##We're going to need the `obs` IDL sav file used for the data that's
-    ##been gridded later on in taking these gridded outputs and converting
-    ##into FHD healpix images. Otherwise the flags created during calibration
-    ##are not preserved
+    #We're going to need the `obs` IDL sav file used for the data that's
+    #been gridded later on in taking these gridded outputs and converting
+    #into FHD healpix images. Otherwise the flags created during calibration
+    #are not preserved
     shutil.copy(f"{IDL_output_dir}/metadata/{pyfhd_config['obs_id']}_obs.sav",
                 gridding_dir)

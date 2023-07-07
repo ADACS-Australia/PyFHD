@@ -40,7 +40,7 @@ def before_file(tag, run, data_dir):
 
     cal = recarray_to_dict(sav_dict['cal'])
             
-    ##super dictionary to save everything in
+    #super dictionary to save everything in
     h5_save_dict = {}
     h5_save_dict['cal'] = cal
     h5_save_dict['cal']['gain'] = sav_file_vis_arr_swap_axes(h5_save_dict['cal']['gain'])
@@ -64,7 +64,7 @@ def after_file(tag, run, data_dir):
     sav_file = after_file.with_suffix('.sav')
     sav_dict = convert_sav_to_dict(str(sav_file), "faked")
 
-    ##super dictionary to save everything in
+    #super dictionary to save everything in
     h5_save_dict = {}
     
     h5_save_dict['cal'] = recarray_to_dict(sav_dict['cal'])
@@ -96,7 +96,7 @@ def test_cal_auto_ratio_remultiply(before_file, after_file):
 
     atol = 1e-10
 
-    ##check the gains have been updated
+    #check the gains have been updated
     npt.assert_allclose(expected_cal['gain'], result_cal['gain'], atol=atol)
 
 
@@ -122,7 +122,7 @@ if __name__ == "__main__":
 
         cal = recarray_to_dict(sav_dict['cal'])
             
-        ##super dictionary to save everything in
+        #super dictionary to save everything in
         h5_save_dict = {}
         h5_save_dict['cal'] = cal
         h5_save_dict['cal']['gain'] = sav_file_vis_arr_swap_axes(h5_save_dict['cal']['gain'])
@@ -139,7 +139,7 @@ if __name__ == "__main__":
 
         sav_dict = convert_sav_to_dict(f"{data_dir}/{tag_name}_after_{func_name}.sav", "meh")
         
-        ##super dictionary to save everything in
+        #super dictionary to save everything in
         h5_save_dict = {}
         
         h5_save_dict['cal'] = recarray_to_dict(sav_dict['cal'])
@@ -153,7 +153,7 @@ if __name__ == "__main__":
         convert_before_sav(base_dir, tag_name)
         convert_after_sav(base_dir, tag_name)
 
-    ##Where be all of our data
+    #Where be all of our data
     base_dir = Path(env.get('PYFHD_TEST_PATH'), 'cal_auto_ratio_remultiply')
 
     tag_names = ['pointsource2_vary1', 'pointsource1_vary1']

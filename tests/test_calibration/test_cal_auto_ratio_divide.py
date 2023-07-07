@@ -40,7 +40,7 @@ def before_file(tag, run, data_dir):
     cal = recarray_to_dict(sav_dict['cal'])
     vis_auto = sav_file_vis_arr_swap_axes(sav_dict['vis_auto'])
         
-    ##super dictionary to save everything in
+    #super dictionary to save everything in
     h5_save_dict = {}
     h5_save_dict['obs'] = obs
     h5_save_dict['cal'] = cal
@@ -100,5 +100,5 @@ def test_cal_auto_ratio_divide(before_file, after_file):
     atol = 1e-6
     npt.assert_allclose(expected_auto_ratio, result_auto_ratio, atol=atol)
 
-    ##check the gains have been updated
+    #check the gains have been updated
     npt.assert_allclose(expected_cal['gain'], result_cal['gain'], atol=atol)

@@ -39,11 +39,11 @@ def before_file(tag, run, data_dir):
     obs = recarray_to_dict(sav_dict['obs'])
     cal = recarray_to_dict(sav_dict['cal'])
 
-    ##Swap the freq and tile dimensions
-    ##this make shape (n_pol, n_freq, n_tile)
+    #Swap the freq and tile dimensions
+    #this make shape (n_pol, n_freq, n_tile)
     cal['gain'] = sav_file_vis_arr_swap_axes(cal['gain'])
 
-    ##super dictionary to save everything in
+    #super dictionary to save everything in
     h5_save_dict = {}
     h5_save_dict['obs'] = obs
     h5_save_dict['cal'] = cal
@@ -69,11 +69,11 @@ def after_file(tag, run, data_dir):
 
     cal_fit = recarray_to_dict(sav_dict['cal_fit'])
         
-    ##Swap the freq and tile dimensions
-    ##this make shape (n_pol, n_freq, n_tile)
+    #Swap the freq and tile dimensions
+    #this make shape (n_pol, n_freq, n_tile)
     cal_fit['gain'] = sav_file_vis_arr_swap_axes(cal_fit['gain'])
     
-    ##super dictionary to save everything in
+    #super dictionary to save everything in
     h5_save_dict = {}
     
     h5_save_dict['cal_fit'] = cal_fit
@@ -107,7 +107,7 @@ def test_vis_cal_auto_fit(before_file, after_file):
     auto_params[0] = expected_cal_fit['auto_params'][0].transpose()
     auto_params[1] = expected_cal_fit['auto_params'][1].transpose()
 
-    ##TODO get this stored somewhere as a test input
+    #TODO get this stored somewhere as a test input
     # actual_gains = np.load('gains_applied_woden.npz')
     # gx = actual_gains['gx'].transpose()
     # gy = actual_gains['gy'].transpose()

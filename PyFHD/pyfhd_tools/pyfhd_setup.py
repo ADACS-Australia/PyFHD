@@ -158,7 +158,7 @@ def pyfhd_parser():
     healpix.add_argument('--restrict_hpx_inds', type = Path, default = None, help = "Only allow gridding of the output healpix cubes to include the healpix pixels specified in a file.\nThis is useful for restricting many observations to have consistent healpix pixels during integration, and saves on memory and walltime.")
     healpix.add_argument('--split_ps_export', default = False, action = 'store_true', help = 'Split up the Healpix outputs into even and odd time samples.\nThis is essential to propogating errors in εppsilon.\nRequires more than one time sample.')
 
-    ##Temporary options to run IDL or use IDL outputs.
+    #Temporary options to run IDL or use IDL outputs.
     pyIDL.add_argument('--IDL_calibrate', default=False, action="store_true",
         help="Add to run the calibration stage, using IDL under the hood")
     pyIDL.add_argument('--grid_IDL_outputs', default=False, action="store_true",
@@ -172,10 +172,10 @@ def pyfhd_parser():
     pyIDL.add_argument('--IDL_variables_file', default=None,
         help="Path to a file containing variables to feed directly into `FHD`. Each line should be as would appear in a `.pro` file used to run `FHD`. These lines will be written verbatim into the top-level `.pro` file used to call `FHD`. This means they will supercede duplicate keywords that might be defaults within `PyFHD`.")
 
-    ##Secret things we want to use internally but don't want the user to see
-    ##This is needed because we use nargs='*' for the `--grid_psf_file`
-    ##option. Writing that back into a yaml config file for multiple is
-    ##difficult, so just have two arguments that could be added instead
+    #Secret things we want to use internally but don't want the user to see
+    #This is needed because we use nargs='*' for the `--grid_psf_file`
+    #option. Writing that back into a yaml config file for multiple is
+    #difficult, so just have two arguments that could be added instead
     parser.add_argument('--grid_psf_file_sav', default=False, help=argparse.SUPPRESS)
     parser.add_argument('--grid_psf_file_npz', default=False, help=argparse.SUPPRESS)
 
@@ -200,11 +200,11 @@ def _check_file_exists(config : dict, key : str) -> int:
         Will return 0 if there is no error, 1 if there is.
     """
     if config[key]:
-        ##If it doesn't exist, add error message
+        #If it doesn't exist, add error message
         if not Path(config[key]).exists():
             logging.error("{} has been enabled with a path that doesn't exist, check the path.".format(key))
             return 1
-        ##If it does exist, replace with the absolute path
+        #If it does exist, replace with the absolute path
         else:
             config[key] = Path(os.path.abspath(config[key]))
     return 0
@@ -232,8 +232,8 @@ def _write_collated_yaml_config(pyfhd_config: dict, output_dir : str):
         outfile.write(f"# input options used for run {pyfhd_config['log_name']}\n")
         outfile.write("# git hash for this run: {}\n".format(pyfhd_config['commit']))
         for key in pyfhd_config.keys():
-            ## These either a direct argument or are variables set internally to
-            ## each run,so should not appear in the yaml
+            # These either a direct argument or are variables set internally to
+            # each run,so should not appear in the yaml
             if key in ['top_level_dir', 'log_name', 'log_time', 'commit', 'obs_id', 'config_file', 'grid_psf_file_sav', 'grid_psf_file_npz']:
                 pass
             else:
@@ -243,8 +243,8 @@ def _write_collated_yaml_config(pyfhd_config: dict, output_dir : str):
                     outfile.write(f"{key} : {pyfhd_config[key]}\n")
                 elif type(pyfhd_config[key]) == bool:
                     outfile.write(f"{key} : {pyfhd_config[key]}\n")
-                ##If it's a list, write it out as a list of strings
-                ##(Unless it's empty)
+                #If it's a list, write it out as a list of strings
+                #(Unless it's empty)
                 elif type(pyfhd_config[key]) == list:
                     if len(pyfhd_config[key]) == 0:
                         pass
@@ -326,7 +326,7 @@ def pyfhd_setup(options : argparse.Namespace) -> Tuple[dict, logging.RootLogger]
         warnings += 1
 
     # If cable_bandpass_fit has been enabled an instrument text file should also exist. (Error)
-    ##TODO get this as a template file during pip install
+    #TODO get this as a template file during pip install
     # if pyfhd_config['cable_bandpass_fit']:
     #     if not Path(pyfhd_config['input_path'], 'instrument_config', 'mwa_cable_length' + '.txt').exists():
     #         logging.error('Cable bandpass fit has been enabled but the required text file is missing')
@@ -393,8 +393,8 @@ def pyfhd_setup(options : argparse.Namespace) -> Tuple[dict, logging.RootLogger]
         logger.error("allow_sidelobe_model_sources shouldn't be True when model_visibilities is not, check if you meant to turn on model_visibilities")
         errors += 1
         
-    ## if importing model visiblities from a uvfits file, check that file 
-    ## exists
+    # if importing model visiblities from a uvfits file, check that file 
+    # exists
     if pyfhd_config['import_model_uvfits']:
         errors += _check_file_exists(pyfhd_config, 'import_model_uvfits')
 
@@ -425,8 +425,8 @@ def pyfhd_setup(options : argparse.Namespace) -> Tuple[dict, logging.RootLogger]
     
     pyfhd_config['ring_radius'] =  pyfhd_config['pad_uv_image'] * pyfhd_config['ring_radius_multi']
 
-    ##TODO need better checks on other arguments as to whether we require
-    ##the .sav, .npz, or both files here
+    #TODO need better checks on other arguments as to whether we require
+    #the .sav, .npz, or both files here
     for psf_file in pyfhd_config['grid_psf_file']:
         if psf_file[-4:] == '.sav':
             pyfhd_config['grid_psf_file_sav'] = psf_file
@@ -442,18 +442,18 @@ def pyfhd_setup(options : argparse.Namespace) -> Tuple[dict, logging.RootLogger]
     # Restrict_hpx_inds depends on a file (Error)
     errors += _check_file_exists(pyfhd_config, 'IDL_variables_file')
 
-    ##TODO see lines 41-43 of fhd_core/HEALPix/healpix_snapshot_cube_generate.pro
-    ##for other options in setting the dimesion/elements parameters
-    ##If ks_span is included, resize the dimension and elements as the user
-    ##is specifying how large the 2D gridding array should be
+    #TODO see lines 41-43 of fhd_core/HEALPix/healpix_snapshot_cube_generate.pro
+    #for other options in setting the dimesion/elements parameters
+    #If ks_span is included, resize the dimension and elements as the user
+    #is specifying how large the 2D gridding array should be
     if pyfhd_config['ps_kspan']:
         dimension_use = int(pyfhd_config['ps_kspan']/pyfhd_config['kbinsize'])
         pyfhd_config['dimension'] = dimension_use
         pyfhd_config['elements'] = dimension_use
 
-    ##--------------------------------------------------------------------------
-    ##Checks are finished, report any errors or warings
-    ##--------------------------------------------------------------------------
+    #--------------------------------------------------------------------------
+    #Checks are finished, report any errors or warings
+    #--------------------------------------------------------------------------
     # If there are any errors exit the program.
     if errors:
         logger.error('{} errors detected, check the log above to see the errors, stopping PyFHD now'.format(errors))
@@ -497,11 +497,11 @@ def pyfhd_logger(pyfhd_config: dict) -> Tuple[logging.RootLogger, str]:
     log_time = time.strftime("%Y_%m_%d_%H_%M_%S", run_time)
 
     commit = 'Could not find git info'
-    ##Try and get git_information from the pip install method
+    #Try and get git_information from the pip install method
     git_dict = retrieve_gitdict()
     if git_dict:
         commit = git_dict['describe']
-    ##If that doesn't exist, try directly find the information (we might be
+    #If that doesn't exist, try directly find the information (we might be
     # running from within the git repo)
     else:
         commit = subprocess.run(["git", "rev-parse", "HEAD"], stdout=subprocess.PIPE, text = True).stdout
@@ -599,9 +599,9 @@ def pyfhd_logger(pyfhd_config: dict) -> Tuple[logging.RootLogger, str]:
     # else:
     #     shutil.copy(pyfhd_config['config_file'], Path(output_dir, log_name + '.yaml'))
 
-    ##Write out a config file based
+    #Write out a config file based
 
-    ##Stick a warning in the log if running in an already existing dir
+    #Stick a warning in the log if running in an already existing dir
     if output_dir_exists:
         logger.warning(f"The output dir {output_dir} already exists, so any existing outputs might be overridden depending on settings.")
     

@@ -36,7 +36,7 @@ def before_file(tag, run, data_dir):
     sav_file = before_file.with_suffix('.sav')
     sav_dict = convert_sav_to_dict(str(sav_file), "faked")
 
-    ##super dictionary to save everything in
+    #super dictionary to save everything in
     h5_save_dict = {}
     h5_save_dict['obs'] = recarray_to_dict(sav_dict['obs'])
     h5_save_dict['vis_arr'] = sav_file_vis_arr_swap_axes(sav_dict['vis_arr'])
@@ -59,7 +59,7 @@ def after_file(tag, run, data_dir):
     sav_file = after_file.with_suffix('.sav')
     sav_dict = convert_sav_to_dict(str(sav_file), "faked")
 
-    ##super dictionary to save everything in
+    #super dictionary to save everything in
     h5_save_dict = {}
     h5_save_dict['noise_arr'] = sav_dict['noise_arr']
 

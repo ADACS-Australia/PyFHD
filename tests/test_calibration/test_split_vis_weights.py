@@ -32,7 +32,7 @@ def before_file(data_dir, tag, run):
     sav_file = before_file.with_suffix('.sav')
     sav_dict = convert_sav_to_dict(str(sav_file), "faked")
 
-    ##super dictionary to save everything in
+    #super dictionary to save everything in
     h5_save_dict = {}
     h5_save_dict['obs'] = recarray_to_dict(sav_dict['obs'])
     h5_save_dict['vis_weights'] = sav_file_vis_arr_swap_axes(sav_dict['vis_weights'])
@@ -50,7 +50,7 @@ def after_file(data_dir, tag, run):
     sav_file = after_file.with_suffix('.sav')
     sav_dict = convert_sav_to_dict(str(sav_file), "faked")
 
-    ##super dictionary to save everything in
+    #super dictionary to save everything in
     h5_save_dict = {}
     h5_save_dict['vis_weights_use'] = sav_file_vis_arr_swap_axes(sav_dict['vis_weights_use'])
     h5_save_dict['bi_use'] = sav_dict['bi_use']
@@ -73,11 +73,11 @@ def test_split_vis_weights(before_file, after_file):
 
     atol = 1e-8
 
-    ##Check the returned weights have been spli correctly
+    #Check the returned weights have been spli correctly
     npt.assert_allclose(expected_vis_weights, result_vis_weights,
                         atol=atol)
 
-    ##Annoying shape mis-match, so test each polarisation result
-    ##invidually
+    #Annoying shape mis-match, so test each polarisation result
+    #invidually
     for pol in range(obs['n_pol']):
         npt.assert_allclose(expected_bi_use[pol], result_bi_use[pol], atol=atol)

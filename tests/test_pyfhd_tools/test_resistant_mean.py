@@ -19,7 +19,12 @@ def tag(request):
 def run(request):
     return request.param
 
-skip_tests = [['1088716296', "run3"]]
+skip_tests = [
+    ['1088716296', "run3"], 
+    ['1088716296', "run2"], # Due to resistant_mean calculating in single precision in IDL unless double keyword is used
+    ["point_zenith", "run2"], # Due to resistant_mean calculating in single precision in IDL unless double keyword is used
+    ["point_zenith", "run3"] # Due to resistant_mean calculating in single precision in IDL unless double keyword is used
+]
 
 @pytest.fixture()
 def before_file(tag, run, data_dir):
@@ -38,7 +43,7 @@ def before_file(tag, run, data_dir):
     
     print(input_array.shape)
 
-    ##super dictionary to save everything in
+    #super dictionary to save everything in
     h5_save_dict = {}
     h5_save_dict['input_array'] = input_array
     h5_save_dict['deviations'] = deviations
@@ -61,7 +66,7 @@ def after_file(tag, run, data_dir):
 
     res_mean_data = sav_dict["res_mean_data"]
 
-    ##super dictionary to save everything in
+    #super dictionary to save everything in
     h5_save_dict = {}
     h5_save_dict['res_mean_data'] = res_mean_data
 
@@ -74,7 +79,11 @@ def test_points_zenith_offzenith_and_1088716296(before_file, after_file):
     """Runs the test on `resistant_mean` - reads in the data in before_file and after_file,
     and then calls `resistant_mean`, checking the outputs match expectations"""
     if (before_file == None or after_file == None):
-        pytest.skip(f"This test has been skipped because the test was listed in the skipped tests due to FHD not outputting them: {skip_tests}")
+        pytest.skip(f"""
+                    This test has been skipped because the test was listed in the skipped tests 
+                    due to FHD not outputting them: {skip_tests}. In this case precision played a
+                    major factor, resistant_mean when using the double keyword in IDL will get the same
+                    result as Python, but the tests taken here were single_precision.""")
 
 
     h5_before = dd.io.load(before_file)
@@ -128,7 +137,7 @@ if __name__ == "__main__":
         
         print(input_array.shape)
 
-        ##super dictionary to save everything in
+        #super dictionary to save everything in
         h5_save_dict = {}
         h5_save_dict['input_array'] = input_array
         h5_save_dict['deviations'] = deviations
@@ -143,7 +152,7 @@ if __name__ == "__main__":
         
         res_mean_data = sav_dict["res_mean_data"]
 
-        ##super dictionary to save everything in
+        #super dictionary to save everything in
         h5_save_dict = {}
         h5_save_dict['res_mean_data'] = res_mean_data
         
@@ -154,10 +163,10 @@ if __name__ == "__main__":
         convert_before_sav(test_dir)
         convert_after_sav(test_dir)
 
-    ##Where be all of our data
+    #Where be all of our data
     base_dir = Path(env.get('PYFHD_TEST_PATH'))
 
-    ##Each test_set contains a run with a different set of inputs/options
+    #Each test_set contains a run with a different set of inputs/options
     for test_set in ['pointsource1_vary1']:
         convert_sav(Path(base_dir, test_set))
 

@@ -50,7 +50,7 @@ def vis_flag(vis_arr : np.ndarray, vis_weights: np.ndarray, obs: dict, params: d
             tile_abi = tile_ai
         data_subset = data_abs[:, tile_abi]
         for pol_i in range(min(obs["n_pol"], 2)):
-            ##Dunno why this needs two separate indexes but it works so leave it
+            #Dunno why this needs two separate indexes but it works so leave it
             i_use = np.where((vis_weights[pol_i][:, tile_abi] > 0) & (data_subset > 0))
             if (i_use[0].size > 10):
                 tile_fom[tile_i] += np.std(data_subset[i_use])

@@ -52,9 +52,9 @@ def import_vis_model_from_uvfits(pyfhd_config : dict, obs : dict,
         A `np.complex128` type array of shape (n_pol, n_vis_raw, n_freq)
     """
     
-    ##TODO WORRY about which order XX and YY are
-    ##TODO WORRY about order of baselines comparing WODEN sims and real data
-    ##TODO WORRY about weights
+    #TODO WORRY about which order XX and YY are
+    #TODO WORRY about order of baselines comparing WODEN sims and real data
+    #TODO WORRY about weights
     
     header_model, params_data_model, _ = extract_header(pyfhd_config, logger,
                                                         data_uvfits=False)
@@ -93,12 +93,12 @@ class _FlaggingInfoCounter(object):
 
         self.num_visis = len(params['antenna1'])
 
-        ##If there are no auto-correlations, you don't get every unique tile
-        ##in either antenna1 or antenna2, so do a unique on both of them to be sure
+        #If there are no auto-correlations, you don't get every unique tile
+        #in either antenna1 or antenna2, so do a unique on both of them to be sure
         self.ant_names = np.unique(np.append(ant_names1, ant_names2))
         self.num_ants = len(self.ant_names)
 
-        ##indexes of the auto-correlations
+        #indexes of the auto-correlations
         self.auto_locs = params['antenna1'] == params['antenna2']
         self.num_autos = np.count_nonzero(self.auto_locs)
 
@@ -107,21 +107,21 @@ class _FlaggingInfoCounter(object):
         else:
             self.num_autos_per_time = self.num_ants
             
-        ##indexes of the cross-correlations
+        #indexes of the cross-correlations
         self.cross_locs = params['antenna1'] != params['antenna2']
         
-        ##how many cross-correlations there should be per time step
+        #how many cross-correlations there should be per time step
         self.num_cross_per_time = int((self.num_ants*(self.num_ants - 1)) / 2)
 
-        ##number of visibilities per time step
+        #number of visibilities per time step
         self.num_visi_per_time_step = self.num_cross_per_time + self.num_autos_per_time
 
-        ##within a single time step, where the cross-correlations are indexed
-        ##can use this while iterating over time to select the crosses only
+        #within a single time step, where the cross-correlations are indexed
+        #can use this while iterating over time to select the crosses only
         self.cross_locs_per_time = np.where(self.cross_locs[:self.num_visi_per_time_step])[0]
 
-        ##within a single time step, where the cross-correlations are indexed
-        ##can use this while iterating over time to select the crosses only
+        #within a single time step, where the cross-correlations are indexed
+        #can use this while iterating over time to select the crosses only
         self.auto_locs_per_time = np.where(self.auto_locs[:self.num_visi_per_time_step])[0]
 
         self.ant1_single_time = params['antenna1'][:self.num_visi_per_time_step]
@@ -136,34 +136,34 @@ def flag_model_visibilities(vis_model_arr : np.ndarray,
     """Account for time offset and tile flags, and check that the uvfits
     and compatible. Needs to check if auto-correlations are present"""
 
-    ##TODO - check if auto-correlations are present. If not, turn off
-    ##auto-correlation calibration options
+    #TODO - check if auto-correlations are present. If not, turn off
+    #auto-correlation calibration options
 
-    ##Calculate a number of things we'll need to compare the data to the model
+    #Calculate a number of things we'll need to compare the data to the model
     flaginfo_data = _FlaggingInfoCounter(params_data)
     flaginfo_model = _FlaggingInfoCounter(params_model)
 
-    ##For all time steps in both data and model, check the minimum time offset
-    ##between the two. If there is a constant minimum > 0, the times might
-    ##be consistently offset because of QUACK time
+    #For all time steps in both data and model, check the minimum time offset
+    #between the two. If there is a constant minimum > 0, the times might
+    #be consistently offset because of QUACK time
     time_offsets = []
     for time in flaginfo_data.unique_times:
-        ##convert from julian to seconds via 24*60*60
+        #convert from julian to seconds via 24*60*60
         time_offsets.append(np.min(np.abs(flaginfo_model.unique_times - time))*(24.0*60*60))
 
-    ##The highest time resolution data we'll be dealing with. If the offset is
-    ##less than half of this, could be error in calculations rather than an
-    ##actual time offset
+    #The highest time resolution data we'll be dealing with. If the offset is
+    #less than half of this, could be error in calculations rather than an
+    #actual time offset
     min_integration = 0.5
 
-    ##Try to ascertain is the model is offset in time from the data
-    ##Only believe an offset to an accuracy of 0.25, so round to two decimal
-    ##places. Here we are essentially trying to divine the QUACK time
+    #Try to ascertain is the model is offset in time from the data
+    #Only believe an offset to an accuracy of 0.25, so round to two decimal
+    #places. Here we are essentially trying to divine the QUACK time
     rounded_offset = np.round(np.mean(time_offsets), 2)
 
-    ##If offset is big enough to be real, but smaller than half an integration
-    ##that add the `rounded_offset` (our calculated QUACK time) to the model
-    ##to work out which time steps are closest between model and data
+    #If offset is big enough to be real, but smaller than half an integration
+    #that add the `rounded_offset` (our calculated QUACK time) to the model
+    #to work out which time steps are closest between model and data
     if rounded_offset >= min_integration / 2.0 and rounded_offset <= obs['time_res'] / 2.0:
         flaginfo_model.unique_times += rounded_offset / (24.0*60*60)
 
@@ -177,9 +177,9 @@ def flag_model_visibilities(vis_model_arr : np.ndarray,
 
     model_times_to_use = np.array(model_times_to_use)
 
-    ##This means one or more time steps in the model match best to the same
-    ## time step in the data. This shouldn't happen if the data and model
-    ##have the same time resolution so something bad has happened
+    #This means one or more time steps in the model match best to the same
+    # time step in the data. This shouldn't happen if the data and model
+    #have the same time resolution so something bad has happened
     if flaginfo_data.num_times != len(np.unique(model_times_to_use)):
 
         data_path = pyfhd_config['input_path'], pyfhd_config['obs_id'] + '.uvfits'
@@ -189,13 +189,13 @@ def flag_model_visibilities(vis_model_arr : np.ndarray,
                      "and try again. Exiting now.")
         exit()
 
-    ##Now to flag the model - some models have no flagged tiles (antennas),
-    ##whereas the data might have flagged tiles (and so missing baselines). 
-    ##This means we need to flag the missing tiles out of the data and 
-    ##reshape the model
+    #Now to flag the model - some models have no flagged tiles (antennas),
+    #whereas the data might have flagged tiles (and so missing baselines). 
+    #This means we need to flag the missing tiles out of the data and 
+    #reshape the model
 
-    ##If less antennas in the model than the data, we can't calibrate the whole
-    ##dataset so just error for now
+    #If less antennas in the model than the data, we can't calibrate the whole
+    #dataset so just error for now
     if flaginfo_model.num_ants < flaginfo_data.num_ants:
         model_path = pyfhd_config['import_model_uvfits']
         logger.error(f"There are less antennas (tiles) in the model uvfits "
@@ -204,9 +204,9 @@ def flag_model_visibilities(vis_model_arr : np.ndarray,
                      "and try again. Exiting now.")
         exit()
 
-    ##Test to see if there are auto-correlations in data
-    ##If they are in the data, but not the model, we need to reshape the
-    ##model to include empty autocorrelations in the correct spots
+    #Test to see if there are auto-correlations in data
+    #If they are in the data, but not the model, we need to reshape the
+    #model to include empty autocorrelations in the correct spots
 
     include_autos = True
     if flaginfo_model.num_autos == 0:
@@ -222,31 +222,31 @@ def flag_model_visibilities(vis_model_arr : np.ndarray,
                      "autos to zero and switching off all auto-correlation calibration")
         include_autos = False
 
-    ##This is where the fun begins - pyuvdata uses the tile number as written
-    ##in the 'TILE' column in the metafits file to encode baselines (and so
-    ##populate params[antenna1] and params[antenna2]). The numbers are MWA
-    ##assigned, and have nothing to do with antenna index. Birli and WODEN use
-    ##the tile index (one-indexed as the BASELINE encoding is one-indexed).
-    ##So to match a flagged tile from the data to the model, need to work out
-    ##the index of any flagged tiles in the data. All tile names are read in
-    ##from the metafits
+    #This is where the fun begins - pyuvdata uses the tile number as written
+    #in the 'TILE' column in the metafits file to encode baselines (and so
+    #populate params[antenna1] and params[antenna2]). The numbers are MWA
+    #assigned, and have nothing to do with antenna index. Birli and WODEN use
+    #the tile index (one-indexed as the BASELINE encoding is one-indexed).
+    #So to match a flagged tile from the data to the model, need to work out
+    #the index of any flagged tiles in the data. All tile names are read in
+    #from the metafits
 
     flag_indexes = []
 
 
-    ##if the data just have tile indexes, the maximum should be the number
-    ##of tiles - use that to work out if we have Birli of pyuvdata input
+    #if the data just have tile indexes, the maximum should be the number
+    #of tiles - use that to work out if we have Birli of pyuvdata input
 
-    ##we should have a pyuvdata input in this case as a tile name is greater
-    ##than the number of tiles
+    #we should have a pyuvdata input in this case as a tile name is greater
+    #than the number of tiles
     if np.max(flaginfo_data.ant_names) > len(obs['baseline_info']['tile_names']):
 
-        ##Loop over all possible antenna (tile) names, and if they're not in the
-        ##list of antennas in this data set, append to flag_indexes
+        #Loop over all possible antenna (tile) names, and if they're not in the
+        #list of antennas in this data set, append to flag_indexes
         for ant_ind, ant_name in enumerate(obs['baseline_info']['tile_names']):
             if ant_name not in flaginfo_data.ant_names: flag_indexes.append(ant_ind + 1)
 
-    ##tiles are named by their index (1 indexed as per uvfits standard)
+    #tiles are named by their index (1 indexed as per uvfits standard)
     else:
         for ant_name in range(1, len(obs['baseline_info']['tile_names'])+1):
             if ant_name not in flaginfo_data.ant_names: flag_indexes.append(ant_name)
@@ -254,42 +254,42 @@ def flag_model_visibilities(vis_model_arr : np.ndarray,
     if len(flag_indexes) > 0:
         logger.info(f"Found flagged tiles {flag_indexes} in the data, flagging from the model")
 
-    ##This gives us true/false if the visibilities should be included
-    ##for a single time step based on antenna1 and antenna2
+    #This gives us true/false if the visibilities should be included
+    #for a single time step based on antenna1 and antenna2
     include_per_time_ant1 = np.in1d(flaginfo_model.ant1_single_time,
                                           flag_indexes, invert=True)
     include_per_time_ant2 = np.in1d(flaginfo_model.ant2_single_time,
                                           flag_indexes, invert=True)
 
-    ##Doing a logic union combines info from ant1 and ant2
+    #Doing a logic union combines info from ant1 and ant2
     include_per_time = include_per_time_ant1 & include_per_time_ant2
 
-    ##To get indexes of cross-correlations to use, ensure ant1 != ant2
-    ##These are now indexes of unflagged cross-correlations to grab from model
+    #To get indexes of cross-correlations to use, ensure ant1 != ant2
+    #These are now indexes of unflagged cross-correlations to grab from model
     include_cross_per_time = np.where(flaginfo_model.ant1_single_time[include_per_time] != flaginfo_model.ant2_single_time[include_per_time])[0]
 
-    ##To get indexes of auto-correlations to use, ensure ant1 == ant2
-    ##These are now indexes of unflagged auto-correlations to grab from model
+    #To get indexes of auto-correlations to use, ensure ant1 == ant2
+    #These are now indexes of unflagged auto-correlations to grab from model
     include_auto_per_time = np.where(flaginfo_model.ant1_single_time[include_per_time] == flaginfo_model.ant2_single_time[include_per_time])[0]
 
-    ##empty holder for the flagged model - this should be the same shape
-    ##as the data TODO check is same shape
+    #empty holder for the flagged model - this should be the same shape
+    #as the data TODO check is same shape
     vis_model_arr_flagged = np.zeros((obs['n_pol'], obs['n_freq'],
                                       flaginfo_data.num_visis),
                                       dtype=complex)
 
-    ##For each time step that matches the data, copy across any visibilities
-    ##that aren't to be flagged
+    #For each time step that matches the data, copy across any visibilities
+    #that aren't to be flagged
     for t_data_ind, t_model_ind in enumerate(model_times_to_use):
 
-        ##Subset of cross-corrs from flagged model to select for this time step
+        #Subset of cross-corrs from flagged model to select for this time step
         t_flag_inds = t_data_ind*flaginfo_data.num_visi_per_time_step + flaginfo_data.cross_locs_per_time
-        ##Subset of cross-corrs from full model to select for this time step
+        #Subset of cross-corrs from full model to select for this time step
         t_model_inds = t_model_ind*flaginfo_model.num_visi_per_time_step + include_cross_per_time
-        ##Stick it in the flagged model
+        #Stick it in the flagged model
         vis_model_arr_flagged[:, :, t_flag_inds] = vis_model_arr[:, :, t_model_inds]
 
-        ##If we're doing autocorrelations, jam them in as well
+        #If we're doing autocorrelations, jam them in as well
         if include_autos:
             t_flag_inds = t_data_ind*flaginfo_data.num_visi_per_time_step + flaginfo_data.auto_locs_per_time
             t_model_inds = t_model_ind*flaginfo_model.num_visi_per_time_step + include_auto_per_time
@@ -336,15 +336,15 @@ def convert_vis_model_arr_to_sav(vis_model_arr : np.ndarray,
                 
         hf.close()
 
-    ##Grab the template IDL code and transfer so people can see what code was used
-    ##and modify if they want
+    #Grab the template IDL code and transfer so people can see what code was used
+    #and modify if they want
     model_arr_convert_pro = importlib_resources.files('PyFHD.templates').joinpath('convert_model_arr_to_sav.pro')
     shutil.copy(model_arr_convert_pro, model_vis_dir)
 
-    ##Move into the output directory so IDL can see all the .pro files
+    #Move into the output directory so IDL can see all the .pro files
     os.chdir(model_vis_dir)
     
-    ##Run the IDL code
+    #Run the IDL code
     logger.info(f"vis_model_transfer: converting {model_vis_dir}/{pyfhd_config['obs_id']}_vis_model.h5 to .sav format")
 
     idl_command = f"idl -IDL_DEVICE ps -e convert_model_arr_to_sav -args {model_vis_dir} {pyfhd_config['obs_id']} {n_pol}"

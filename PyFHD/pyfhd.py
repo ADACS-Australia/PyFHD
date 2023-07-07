@@ -112,8 +112,8 @@ def main():
     # Validate options and Create the Logger
     pyfhd_config, logger = pyfhd_setup(options)
 
-    ##If any of the hybrid options have been asked for, circumnavigate the
-    ##main_loop_python_only function, and run the required hybrid options
+    #If any of the hybrid options have been asked for, circumnavigate the
+    #main_loop_python_only function, and run the required hybrid options
     if options.IDL_calibrate or options.grid_IDL_outputs or options.IDL_healpix_gridded_outputs:
 
         idl_output_dir = None
