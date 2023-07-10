@@ -167,14 +167,14 @@ def vis_calibration_flag(obs: dict, cal: dict, pyfhd_config: dict, logger: RootL
         gain_freq_fom[np.isnan(gain_freq_fom)] = 0
         gain_tile_fom[np.isnan(gain_tile_fom)] = 0
         freq_cut_i = np.where(gain_freq_fom == 0)
-        freq_uncut_i = np.nonzero(gain_freq_fom)
+        freq_uncut_i = np.nonzero(gain_freq_fom)[0]
         if (freq_cut_i[0].size > 0):
             obs["baseline_info"]["freq_use"][freq_use_i][0][freq_cut_i] = 0
         tile_cut_i = np.where(gain_tile_fom == 0)
-        tile_uncut_i = np.nonzero(gain_tile_fom)
+        tile_uncut_i = np.nonzero(gain_tile_fom)[0]
         if (tile_cut_i[0].size > 0):
             obs["baseline_info"]["tile_use"][tile_use_i][0][tile_cut_i] = 0
-        if (freq_uncut_i[0].size == 0 or tile_uncut_i[0].size == 0):
+        if (freq_uncut_i.size == 0 or tile_uncut_i.size == 0):
             logger.error("The frequency and tile flagging inside calibration found some values not detected in previous flagging or calibration")
         
         n_addl_cut = max(freq_cut_i[0].size + tile_cut_i[0].size, 1)
@@ -183,13 +183,17 @@ def vis_calibration_flag(obs: dict, cal: dict, pyfhd_config: dict, logger: RootL
         while n_addl_cut > 0 and iter < 3:
             gain_freq_sigma = np.std(gain_freq_fom[freq_uncut_i])
             gain_tile_sigma = np.std(gain_tile_fom[tile_uncut_i])
-            # TODO: Check size of freq_cut_i
             freq_cut_i = np.where((gain_freq_fom - np.median(gain_freq_fom[freq_uncut_i]) - amp_sigma_threshold * gain_freq_sigma) > 0)
-            # TODO: Check size of tile_cut_i
-            tile_cut_i = np.where(
-                ((gain_tile_fom - np.median(gain_tile_fom[tile_uncut_i]) - amp_sigma_threshold * gain_tile_sigma) > 0) |
-                ((gain_tile_avg < np.median(gain_tile_avg) / amp_threshold) | (gain_tile_avg > np.median(gain_tile_avg) * amp_threshold))
-            )
+            # Update the complement of freq_cut_i (the NOT) i.e. freq_uncut_i
+            freq_uncut_i = freq_uncut_i[~np.isin(freq_uncut_i, freq_cut_i)]
+            test1_values = gain_tile_fom - np.median(gain_tile_fom[tile_uncut_i]) - amp_sigma_threshold * gain_tile_sigma
+            test2_values1 = np.median(gain_tile_avg) / amp_threshold
+            test2_values2 = np.median(gain_tile_avg) * amp_threshold
+            tile_cut_test1 = (gain_tile_fom - np.median(gain_tile_fom[tile_uncut_i]) - amp_sigma_threshold * gain_tile_sigma) > 0
+            tile_cut_test2 = (gain_tile_avg < np.median(gain_tile_avg) / amp_threshold) | (gain_tile_avg > np.median(gain_tile_avg) * amp_threshold)
+            tile_cut_i = np.where(tile_cut_test1 | tile_cut_test2)
+            # Update the complement of tile_cut_i (the NOT) i.e. tile_uncut_i
+            tile_uncut_i = tile_uncut_i[~np.isin(tile_uncut_i, tile_cut_i)]
             n_addl_cut = (freq_cut_i[0].size + tile_cut_i[0].size) - n_cut
             n_cut = freq_cut_i[0].size + tile_cut_i[0].size
             iter+=1
@@ -212,7 +216,6 @@ def vis_calibration_flag(obs: dict, cal: dict, pyfhd_config: dict, logger: RootL
             phase_params = phase_params.convert().coef
             phase_fit = np.polynomial.polynomial.polyval(freq_use_i[0], phase_params)
             phase_sigma2 = np.std(phase_use - phase_fit)
-            # TODO: Check coefficients are the same shape
             phase_slope_arr[tile_i] = phase_params[1]
             phase_sigma_arr[tile_i] = phase_sigma2
         iter = 0
@@ -220,7 +223,6 @@ def vis_calibration_flag(obs: dict, cal: dict, pyfhd_config: dict, logger: RootL
         n_cut = 0
         while n_addl_cut > 0 and iter < 3:
             slope_sigma = np.std(phase_slope_arr)
-            # TODO: Check size of tile_cut_i
             tile_cut_i = np.where(
                 ((np.abs(phase_slope_arr) - np.median(np.abs(phase_slope_arr))) > phase_sigma_threshold * slope_sigma) | 
                 ((phase_sigma_arr - np.median(phase_sigma_arr)) > phase_sigma_threshold * np.std(phase_sigma_arr))

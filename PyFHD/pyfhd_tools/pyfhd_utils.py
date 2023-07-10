@@ -1081,8 +1081,6 @@ def split_vis_weights(obs: dict, vis_weights: np.ndarray) -> tuple[np.ndarray, n
 
     return vis_weights, bi_use
 
-
-
 def vis_noise_calc(obs: dict, vis_arr: np.ndarray, vis_weights: np.ndarray) -> np.ndarray:
     noise_arr = np.zeros([obs["n_pol"], obs["n_freq"]])
 

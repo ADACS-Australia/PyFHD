@@ -1,7 +1,6 @@
 import pytest
 from os import environ as env
 from pathlib import Path
-from PyFHD.pyfhd_tools.test_utils import get_data_items, get_data_sav
 from PyFHD.pyfhd_tools.pyfhd_utils import vis_noise_calc
 from PyFHD.use_idl_fhd.use_idl_outputs import convert_sav_to_dict
 from PyFHD.pyfhd_tools.test_utils import recarray_to_dict, sav_file_vis_arr_swap_axes
