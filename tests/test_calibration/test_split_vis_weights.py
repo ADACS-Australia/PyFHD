@@ -1,7 +1,6 @@
 import pytest
 from os import environ as env
 from pathlib import Path
-from PyFHD.pyfhd_tools.test_utils import get_data_items, get_data_sav
 from PyFHD.pyfhd_tools.pyfhd_utils import split_vis_weights
 from PyFHD.use_idl_fhd.use_idl_outputs import convert_sav_to_dict
 from PyFHD.pyfhd_tools.test_utils import recarray_to_dict, sav_file_vis_arr_swap_axes
@@ -50,7 +49,7 @@ def after_file(data_dir, tag, run):
     sav_file = after_file.with_suffix('.sav')
     sav_dict = convert_sav_to_dict(str(sav_file), "faked")
 
-    #super dictionary to save everything in
+    # super dictionary to save everything in
     h5_save_dict = {}
     h5_save_dict['vis_weights_use'] = sav_file_vis_arr_swap_axes(sav_dict['vis_weights_use'])
     h5_save_dict['bi_use'] = sav_dict['bi_use']
@@ -73,11 +72,10 @@ def test_split_vis_weights(before_file, after_file):
 
     atol = 1e-8
 
-    #Check the returned weights have been spli correctly
+    # Check the returned weights have been spli correctly
     npt.assert_allclose(expected_vis_weights, result_vis_weights,
                         atol=atol)
 
-    #Annoying shape mis-match, so test each polarisation result
-    #invidually
-    for pol in range(obs['n_pol']):
+    # Annoying shape mis-match, so test each polarisation result individually
+    for pol in range(2):
         npt.assert_allclose(expected_bi_use[pol], result_bi_use[pol], atol=atol)

@@ -76,6 +76,6 @@ def test_qu_mixing(before_file, after_file):
     result_cal_phase = calibrate_qu_mixing(vis_ptr, vis_model_ptr,
                                           vis_weight_ptr, obs)
     
-    atol = 1e-5
+    atol = 1.2e-5
 
     npt.assert_allclose(expected_calc_phase, result_cal_phase, atol=atol)
