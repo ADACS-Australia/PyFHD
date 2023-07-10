@@ -1094,9 +1094,9 @@ def vis_noise_calc(obs: dict, vis_arr: np.ndarray, vis_weights: np.ndarray) -> n
         data_diff = vis_arr[pol_i, :, bi_use[0]].imag - vis_arr[pol_i, :,  bi_use[1]].imag
         vis_weight_diff = np.maximum(vis_weights_use[pol_i, :, bi_use[0]], 0) * np.maximum(vis_weights_use[pol_i, :, bi_use[1]], 0)
         for fi in range(obs["n_freq"]):
-            ind_use = np.where(vis_weight_diff[fi])[0]
+            ind_use = np.where(vis_weight_diff[:, fi])[0]
             if (ind_use.size > 0):
-                noise_arr[pol_i, fi] = np.std(data_diff[fi, ind_use])/np.sqrt(2)
+                noise_arr[pol_i, fi] = np.std(data_diff[ind_use, fi])/np.sqrt(2)
     
     return noise_arr
     
@@ -1144,7 +1144,6 @@ def idl_median(x : np.ndarray, width=0, even=False) -> float:
 
             return np.sort(x)[med_index]
 
-
 def reshape_and_average_in_time(vis_array : np.ndarray, n_freq : int,
                                 n_time : int, n_baselines : int,
                                 vis_weights : np.ndarray) -> np.ndarray:
@@ -1156,15 +1155,15 @@ def reshape_and_average_in_time(vis_array : np.ndarray, n_freq : int,
     Parameters
     ----------
     vis_array : np.ndarray
-        _description_
+       The visibility array
     n_freq : int
-        _description_
+        Number of frequencies
     n_time : int
-        _description_
+        Number of time steps
     n_baselines : int
-        _description_
+        Number of baselines
     vis_weights : np.ndarray
-        _description_
+        The visibility weights array
 
     """
 

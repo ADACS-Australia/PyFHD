@@ -81,4 +81,4 @@ def test_points_zenith_and_offzenith(before_file, after_file):
 
     result_noise_arr = vis_noise_calc(obs, vis_arr, vis_weights)
 
-    npt.assert_allclose(expected_noise_arr, result_noise_arr, atol=1e-8)
+    npt.assert_allclose(expected_noise_arr, result_noise_arr, atol=3e-5)

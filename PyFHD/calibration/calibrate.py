@@ -17,7 +17,8 @@ from PyFHD.calibration.vis_calibrate_subroutine import vis_calibrate_subroutine
 from PyFHD.pyfhd_tools.pyfhd_utils import resistant_mean, reshape_and_average_in_time
 
 def calibrate(obs: dict, params: dict, vis_arr: np.array, vis_weights: np.array, pyfhd_config: dict, logger: RootLogger) -> Tuple[np.array, np.array, dict] :
-    """TODO: Docstring
+    """
+    TODO: Docstring
 
     Parameters
     ----------
@@ -140,23 +141,24 @@ def calibrate(obs: dict, params: dict, vis_arr: np.array, vis_weights: np.array,
     return vis_cal, vis_model_arr, cal
 
 def calibrate_qu_mixing(vis_arr: np.ndarray, vis_model_arr : np.ndarray, vis_weights: np.ndarray, obs : dict) -> float:
-    """_summary_
+    """
+    TODO: _summary_
 
     Parameters
     ----------
     vis_arr : np.ndarray
-        _description_
+        The visibility array
     vis_model_arr : np.ndarray
-        _description_
+        The array containing the model for the visibilities
     vis_weights : np.ndarray
-        _description_
+        The visibility weights array
     obs : dict
-        _description_
+        The observation dictionary
 
     Returns
     -------
-    float
-        _description_
+    stokes_mix_phase : float
+        TODO: _description_
     """
 
     n_freq = obs['n_freq']

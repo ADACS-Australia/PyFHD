@@ -91,7 +91,7 @@ def main_python_only(pyfhd_config : dict, logger : logging.RootLogger):
     # However, there may be a resulting cal structure for logging and output purposes depending on calibration translation.
     vis_arr, vis_model_arr, cal = calibrate(obs, params, vis_arr, vis_weights, pyfhd_config, logger)
 
-    if (obs['n_pol'] == 4):
+    if (obs['n_pol'] >= 4):
         cal["stokes_mix_phase"] = calibrate_qu_mixing(vis_arr, vis_model_arr, vis_weights, obs)
 
     vis_weights, obs = vis_weights_update(vis_weights, obs, params, pyfhd_config)
