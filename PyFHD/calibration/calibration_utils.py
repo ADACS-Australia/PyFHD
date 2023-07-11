@@ -889,8 +889,9 @@ def vis_cal_auto_fit(obs: dict, cal: dict, vis_auto : np.ndarray, vis_auto_model
     # Vectorized loop for via_cal_auto_fit lines 45-55 in IDL
     # However the logic still indexes the full 128 tiles, so need to shove
     # outputs into an empty array of correct size
+    # We're not using the cross polarizations if they are present
     auto_gain = np.empty((cal['n_pol'], obs['n_freq'], obs['n_tile']))
-    auto_gain[:, :, auto_tile_i] = np.sqrt(vis_auto*weight_invert(vis_auto_model))
+    auto_gain[:, :, auto_tile_i] = np.sqrt(vis_auto[:cal['n_pol']]*weight_invert(vis_auto_model[:cal['n_pol']]))
     gain_cross = cal['gain']
     fit_slope = np.empty((cal['n_pol'], obs['n_tile']))
     fit_offset = np.empty_like(fit_slope)

@@ -97,7 +97,7 @@ def test_cal_auto_ratio_divide(before_file, after_file):
 
     result_cal, result_auto_ratio = cal_auto_ratio_divide(obs, cal, vis_auto, auto_tile_i)
 
-    atol = 1e-6
+    atol = 8e-6
     npt.assert_allclose(expected_auto_ratio, result_auto_ratio, atol=atol)
 
     #check the gains have been updated

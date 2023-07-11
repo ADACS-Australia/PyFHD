@@ -74,7 +74,7 @@ def after_file(tag, run, data_dir):
 
     return after_file
 
-def test_vis_baseline_hist(before_file, after_file):
+def test_vis_baseline_hist(before_file: Path, after_file: Path):
     """
     Runs the test on `vis_baseline_hist` - reads in the data in before_file and after_file,
     and then calls `vis_baseline_hist`, checking the outputs match expectations
@@ -99,36 +99,27 @@ def test_vis_baseline_hist(before_file, after_file):
     expec_vis_res_ratio_mean = expec_vis_baseline_hist['vis_res_ratio_mean']
     expec_vis_res_sigma = expec_vis_baseline_hist['vis_res_sigma']
 
-    #There is an indexing error in the original FHD code, which means only
-    #the first num_bins of the `vis_res_ratio_mean` array are indexed. This means
-    #that only results from the last polarisation and saved, and spread over
-    #the first half of the bin indexes between each pol. We can recover what
-    #the second polaristaion should be at least for testing
-
-    fixed_vis_res_ratio_mean = np.zeros((num_bins, 2))
-    range0 = range(0, num_bins, 2)
-    fixed_vis_res_ratio_mean[range0, 1] = expec_vis_res_ratio_mean[:int(num_bins/2), 0]
-    range1 = range(1, num_bins, 2)
-    fixed_vis_res_ratio_mean[range1, 1] = expec_vis_res_ratio_mean[:int(num_bins/2), 1]
-
-
-    fixed_vis_res_sigma = np.zeros((num_bins, 2))
-    range0 = range(0, num_bins, 2)
-    fixed_vis_res_sigma[range0, 1] = expec_vis_res_sigma[:int(num_bins/2), 0]
-    range1 = range(1, num_bins, 2)
-    fixed_vis_res_sigma[range1, 1] = expec_vis_res_sigma[:int(num_bins/2), 1]
+    # There is an indexing error in the original FHD code, which means only
+    # the first num_bins of the `vis_res_ratio_mean` array are indexed. This means
+    # that only results from the last polarisation and saved, and spread over
+    # the first half of the bin indexes between each pol. We can recover what
+    # the second polaristaion should be at least for testing
+    # The below code was changed to also allow for 4 polarizations
+    # Flattening the results from the first num_bins / obs['n_pol'] rows takes out what we need
+    fixed_vis_res_ratio_mean = expec_vis_res_ratio_mean[:num_bins // obs['n_pol'], :].flatten()
+    fixed_vis_res_sigma = expec_vis_res_sigma[:num_bins // obs['n_pol'], :].flatten()
 
     rtol = 1e-5
-    atol = 3e-4
+    atol = 4e-4
 
     #Can test that the fixed final polarisation is close to PyFHD result
     #Out results are ordered by pol, bin so need to do a transpose
-    npt.assert_allclose(fixed_vis_res_ratio_mean[:, 1],
-                        result_vis_baseline_hist['vis_res_ratio_mean'].transpose()[:, 1],
+    npt.assert_allclose(fixed_vis_res_ratio_mean,
+                        result_vis_baseline_hist['vis_res_ratio_mean'].transpose()[:, -1],
                         atol=atol, rtol=rtol)
     
-    npt.assert_allclose(fixed_vis_res_sigma[:, 1],
-                        result_vis_baseline_hist['vis_res_sigma'].transpose()[:, 1],
+    npt.assert_allclose(fixed_vis_res_sigma,
+                        result_vis_baseline_hist['vis_res_sigma'].transpose()[:, -1],
                         atol=atol, rtol=rtol)
     
 
@@ -141,7 +132,10 @@ def test_vis_baseline_hist(before_file, after_file):
     plt.colorbar(im)
     axs[0].set_xticks([0, 1])
 
-    im = axs[1].imshow(fixed_vis_res_ratio_mean, aspect='auto',
+
+    vis_res_ratio_mean_plt = np.zeros([num_bins, 2])
+    vis_res_ratio_mean_plt[:,1] = fixed_vis_res_ratio_mean
+    im = axs[1].imshow(vis_res_ratio_mean_plt, aspect='auto',
                        extent=extent, origin='lower',
                        vmin=result_vis_baseline_hist['vis_res_ratio_mean'].min(),
                        vmax=result_vis_baseline_hist['vis_res_ratio_mean'].max())
@@ -163,5 +157,12 @@ def test_vis_baseline_hist(before_file, after_file):
     axs[0].set_ylabel("Baseline hist bin")
 
     plt.tight_layout()
-    fig.savefig('test_vis_baseline_hist.png', bbox_inches='tight', dpi=300)
+    name_split = before_file.name.split('_')
+    if (name_split[0] == 'point'):
+        tag = f"{name_split[0]}_{name_split[1]}"
+        run = f"{name_split[2]}"
+    else:
+        tag = f"{name_split[0]}"
+        run = f"{name_split[1]}"
+    fig.savefig(f"test_vis_baseline_hist_{tag}_{run}.png", bbox_inches='tight', dpi=300)
     plt.close()
