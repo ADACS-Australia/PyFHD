@@ -3,70 +3,85 @@ import warnings
 from PyFHD.calibration.calibration_utils import calculate_adaptive_gain
 from PyFHD.pyfhd_tools.pyfhd_utils import weight_invert, histogram
 
-def vis_calibrate_subroutine(vis_ptr, vis_model_ptr, vis_weight_ptr, obs, cal, 
+def vis_calibrate_subroutine(vis_arr: np.ndarray, vis_model_ptr: np.ndarray, vis_weight_ptr: np.ndarray, 
+                             obs: dict, cal: dict, pyfhd_config: dict, 
                              calibration_weights = False,  no_ref_tile = False):
     """
-    TODO: Docstring
-    [summary]
+    TODO:_summary_
 
     Parameters
     ----------
-    vis_ptr : [type]
-        [description]
-    vis_model_ptr : [type]
-        [description]
-    vis_weight_ptr : [type]
-        [description]
-    obs : [type]
-        [description]
-    cal : [type]
-        [description]
-    preserve_visibilities : bool, optional
-        [description], by default False
+    vis_arr : np.ndarray
+        _description_
+    vis_model_ptr : np.ndarray
+        _description_
+    vis_weight_ptr : np.ndarray
+        _description_
+    obs : dict
+        _description_
+    cal : dict
+        _description_
+    pyfhd_config : dict
+        _description_
     calibration_weights : bool, optional
-        [description], by default False
+        _description_, by default False
     no_ref_tile : bool, optional
-        [description], by default True
+        _description_, by default False
+
+    Returns
+    -------
+    _type_
+        _description_
+
+    Raises
+    ------
+    ValueError
+        _description_
     """
     # Retrieve values from data structures
-    reference_tile = cal['ref_antenna'][0]
-    min_baseline = obs['min_baseline'][0]
-    max_baseline = obs['max_baseline'][0]
-    dimension = obs['dimension'][0]
-    elements = obs['elements'][0]
-    min_cal_baseline = cal['min_cal_baseline'][0]
-    max_cal_baseline = cal['max_cal_baseline'][0]
+    # There is a few hardcoded values in here that were previously hardcoded in fhd_struct_init_cal
+    # If you wish to change them, add them to the pyfhd_config through pyfhd_setup and the config in pyfhd.yaml
+    reference_tile = 1
+    min_baseline = obs['min_baseline']
+    max_baseline = obs['max_baseline']
+    dimension = obs['dimension']
+    elements = obs['elements']
+    min_cal_baseline = pyfhd_config['min_cal_baseline'] if pyfhd_config['min_cal_baseline'] else obs['min_baseline']
+    if pyfhd_config['min_cal_baseline'] != None and obs['max_baseline'] > pyfhd_config['max_cal_baseline']:
+        max_cal_baseline = pyfhd_config['max_cal_baseline']  
+    else: 
+        max_cal_baseline = obs['max_baseline']
     # minimum number of calibration equations needed to solve for the gain of one baseline
-    min_cal_solutions = cal['min_solns'][0]
+    min_cal_solutions = 5
     # average the visibilities across time steps before solving for the gains
-    time_average = cal['time_avg'][0]
+    time_average = pyfhd_config['cal_time_average']
     # maximum iterations to perform for the linear least-squares solver
-    max_cal_iter = cal['max_iter'][0]
+    max_cal_iter = 100
     # Leave a warning if its less than 5 iterations, or an Error if its less than 1
     if max_cal_iter < 5:
         warnings.warn("At Least 5 calibrations iterations is recommended.\nYou're currently using {} iterations".format(int(max_cal_iter)))
     elif max_cal_iter < 1:
         raise ValueError("max_cal_iter should be 1 or more. A max_cal_iter of 5 or more is recommended")
-    conv_thresh = cal['conv_thresh'][0]
-    use_adaptive_gain = cal['adaptive_gain'][0]
-    base_gain = cal['base_gain'][0]
+    conv_thresh = pyfhd_config['cal_convergence_threshold']
+    use_adaptive_gain = pyfhd_config['cal_adaptive_calibration_gain']
+    base_gain = cal['base_gain']
     # halt if the strict convergence is worse than most of the last x iterations
     divergence_history = 3
     # halt if the convergence gets significantly worse by a factor of x in one iteration
     divergence_factor = 1.5
-    n_pol = cal['n_pol'][0]
-    n_freq = cal['n_freq'][0]
-    n_tile = cal['n_tile'][0]
-    n_time = cal['n_time'][0]
+    n_pol = cal['n_pol']
+    n_freq = obs['n_freq']
+    n_tile = obs['n_tile']
+    n_time = obs['n_time']
     # weights WILL be over-written! (Only for NAN gain solutions)
     vis_weight_ptr_use = vis_weight_ptr
     # tile_a & tile_b contribution indexed from 0
-    tile_A_i = cal['tile_a'][0] - 1
-    tile_B_i = cal['tile_b'][0] - 1
-    freq_arr = cal['freq'][0]
-    n_baselines = obs['nbaselines'][0]
+    tile_A_i = obs['baseline_info']['tile_a'] - 1
+    tile_B_i = obs['baseline_info']['tile_b'] - 1
+    freq_arr = obs['freq']
+    n_baselines = obs['nbaselines']
     if 'phase_iter' in cal.dtype.names:
-        phase_fit_iter = cal['phase_iter'][0]
+        phase_fit_iter = cal['phase_iter']
     else:
         phase_fit_iter = np.min([np.floor(max_cal_iter / 4), 4])
     kbinsize = obs['kpix'][0]
@@ -91,7 +106,7 @@ def vis_calibrate_subroutine(vis_ptr, vis_model_ptr, vis_weight_ptr, obs, cal,
             vis_weight_use = np.minimum(vis_weight_use, 1)
             vis_model = np.reshape(vis_model_ptr[pol_i], shape)
             vis_model = np.sum(vis_model * vis_weight_use, axis = 0)
-            vis_measured = np.reshape(vis_ptr[pol_i], shape)
+            vis_measured = np.reshape(vis_arr[pol_i], shape)
             vis_avg = np.sum(vis_measured * vis_weight_use, axis = 0)
             weight = np.sum(vis_weight_use, axis = 0)
 
@@ -101,7 +116,7 @@ def vis_calibrate_subroutine(vis_ptr, vis_model_ptr, vis_weight_ptr, obs, cal,
             # In the case of not using a time_average do the following setup instead for weight and vis_avg
             vis_weight_use = np.min([np.max([0, vis_weight_ptr_use[pol_i]]), 1])
             vis_model = vis_model * vis_weight_use
-            vis_avg = vis_ptr[pol_i] * vis_weight_use
+            vis_avg = vis_arr[pol_i] * vis_weight_use
             weight = vis_weight_use
 
             kx_arr = cal['uu'][0] / kbinsize

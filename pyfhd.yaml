@@ -32,7 +32,7 @@ calibrate-visibilities : true
 cable-bandpass-fit : true # Depends on instrument cable length text file
 cable-reflection-coefficients: 'mwa_cable_reflection_coefficients.txt' # Comes from FHD
 cable-lengths: 'mwa_cable_length.txt' # Comes from FHD
-cal-bp-transfer : ~ #'mwa_eor0_highband_season1_cable_bandpass.fits'
+cal-bp-transfer : ~
 calibration-polyfit : true
 allow-sidelobe-cal-sources : true
 cal-amp-degree-fit : 2
@@ -43,7 +43,10 @@ cal-reflection-mode-delay : false
 cal-reflection-mode-file : false
 calibration-auto-fit: false
 calibration-auto-initialize: true
-cal_gain_init: 1
+cal-gain-init: 1
+cal-convergence-threshold: 0.0000001
+cal-adaptive-calibration-gain: false
+cal-base-gain: ~
 min-cal-baseline : 50.
 vis-baseline-hist : true
 bandpass-calibrate : true

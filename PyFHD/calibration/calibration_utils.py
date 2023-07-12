@@ -643,7 +643,7 @@ def vis_cal_polyfit(obs: dict, cal: dict, auto_ratio: np.ndarray | None, pyfhd_c
         cal['amp_params'] = np.empty((cal['n_pol'], obs['n_tile'], pyfhd_config["cal_amp_degree_fit"] + 1))
     cal['phase_params'] = np.empty((cal['n_pol'], obs['n_tile'], pyfhd_config["cal_phase_degree_fit"] + 1))
     for pol_i in range(cal['n_pol']):
-        gain_arr = cal['gain'][pol_i]
+        gain_arr = np.copy(cal['gain'][pol_i])
         gain_amp = np.abs(gain_arr)
         gain_phase = np.arctan2(gain_arr.imag, gain_arr.real)
         for tile_i in range(obs['n_tile']):

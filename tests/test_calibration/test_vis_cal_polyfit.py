@@ -166,7 +166,7 @@ def test_vis_cal_polyfit(before_file, after_file):
     # atol due to differences in precision differences in multiple places with multiplication and polyfits
     # of single precision
     real_not_close = np.where(
-        ((np.abs(cal_polyfit['gain'].real) - np.abs(expected_cal_return['gain'].real)) > 3e-5) & 
+        ((np.abs(cal_polyfit['gain'].real) - np.abs(expected_cal_return['gain'].real)) > 9e-6) & 
         (np.abs(cal_polyfit['gain'].real) > 0) & 
         (np.abs(expected_cal_return['gain'].real) > 0)
     )

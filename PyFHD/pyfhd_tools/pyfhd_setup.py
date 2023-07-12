@@ -68,7 +68,11 @@ def pyfhd_parser():
     calibration.add_argument('--return_cal_visibilities', default = False, action = 'store_true', help = "Saves the visibilities created for calibration for use in the model.\nIf model_visibilities is set to False, then the calibration model visibilities and the model visibilities will be the same if return_cal_visibilities is set.\nIf model_visibilities is set to True, then any new modelling (of more sources, diffuse, etc.) will take place and the visibilities created for the calibration model will be added.\nIf n_pol = 4 (full pol mode), return_cal_visibilites must be set because the visibilites are required for calculating the mixing angle between Q and U.")
     calibration.add_argument('--cal_stop', default = False, action = 'store_true', help = 'Stops the code right after calibration, and saves unflagged model visibilities along with the obs structure in a folder called cal_prerun in the PyFHD file structure.\nThis allows for post-processing calibration steps like multi-day averaging, but still has all of the needed information for minimal reprocessing to get to the calibration step.\nTo run a post-processing run, see keywords model_transfer and transfer_psf')
     calibration.add_argument('--transfer_model_uv', type = Path, default = None, help = "A path to save a model uv array.\nIf it's a file that doesnt exist then vis_calibrate will create one for this run, otherwise if the file exists PyFHD will read it in for this run.\nReplaces model_uv_transfer")
+    calibration.add_argument('--cal_convergence_threshold', type = float, default = 1e-7, help = "Threshold at which calibration ends. Calibration convergence is quantified by the absolute value of the fractional change in the gains over the last calibration iteration. If this quantity is less than cal_convergence_threshold then calibration terminates.")
+    calibration.add_argument('--cal_adaptive_calibration_gain', default = False, action = 'store_true', help = "Controls whether to use a Kalman Filter to adjust the gain to use for each iteration of calculating calibration.")
+    calibration.add_argument('--cal_base_gain', type = float, default = None, help = "The relative weight to give the old calibration solution when averaging with the new. Set to 1. to give equal weight, to 2. to give more weight to the old solution and slow down convergence, or to 0.5 to give greater weight to the new solution and attempt to speed up convergence. If use_adaptive_calibration_gain is set, the weight of the new calibration solutions will be calculated in the range cal_base_gain/2. to 1.0")
     calibration.add_argument('--min_cal_baseline', type = float, default = 50.0, help = 'The minimum baseline length in wavelengths to be used in calibration.')
+    calibration.add_argument('--max_cal_baseline', type = float, default = None, help = 'The maximum baseline length in wavelengths to be used in calibration. If max_baseline is smaller, it will be used instead.')
     calibration.add_argument('--allow_sidelobe_cal_sources', default = False, action = 'store_true', help = 'Allows PyFHD to calibrate on sources in the sidelobes.\nForces the beam_threshold to 0.01 in order to go down to 1%% of the beam to capture sidelobe sources during the generation of a calibration source catalog for the particular observation.')
     calibration.add_argument('--cable_bandpass_fit', default = False, action = 'store_true', help = 'Average the calibration solutions across tiles within a cable grouping for the particular instrument.\nDependency: instrument_config/<instrument>_cable_length.txt')
     calibration.add_argument('--cal_bp_transfer', type = Path, default = None, help = 'Use a saved bandpass for bandpass calibration. Read in the specified file with calfits format greatly preferred.')
@@ -362,6 +366,14 @@ def pyfhd_setup(options : argparse.Namespace) -> Tuple[dict, logging.RootLogger]
         pyfhd_config['cal_reflection_mode_file'] = False
         pyfhd_config['cal_reflection_mode_delay'] = True
         pyfhd_config['cal_reflection_mode_theory'] = False
+
+    # cal_adaptive_calibration_gain impacts cal_base_gain if cal_base_gain isn't set, set to 1.0 unless cal_adaptive_calibration_gain has
+    # been enabled in which case set to 0.75, this does the same behaviour as fhd_struct_init_cal
+    if pyfhd_config['cal_base_gain'] == None:
+        if pyfhd_config['cal_adaptive_calibration_gain']:
+            pyfhd_config['cal_base_gain'] = 0.75
+        else:
+            pyfhd_config['cal_base_gain'] = 1.0
     
     # diffuse_calibrate depends on a file (Error)
     errors += _check_file_exists(pyfhd_config, 'diffuse_calibrate')
