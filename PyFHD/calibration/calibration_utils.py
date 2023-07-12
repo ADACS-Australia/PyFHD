@@ -680,7 +680,7 @@ def vis_cal_polyfit(obs: dict, cal: dict, auto_ratio: np.ndarray | None, pyfhd_c
             phase_params = np.polynomial.Polynomial.fit(freq_use, phase_use, pyfhd_config['cal_phase_degree_fit']).convert().coef
             cal["phase_params"][pol_i, tile_i, :] = phase_params
             phase_fit = np.zeros(obs['n_freq'])
-            for di in range(pyfhd_config['cal_phase_degree_fit'] + 1):
+            for di in range(phase_params.size):
                 phase_fit += phase_params[di] * np.arange(obs['n_freq'])**di
             gain_arr[:, tile_i] = gain_fit * np.exp(1j * phase_fit)
         cal['gain'][pol_i] = gain_arr
@@ -817,7 +817,7 @@ def vis_cal_polyfit(obs: dict, cal: dict, auto_ratio: np.ndarray | None, pyfhd_c
                         # Phase of said fit
                         phase_use = np.arctan2(test_fits[mode_ind].imag, test_fits[mode_ind].real)
                         # TODO: check shape and indexing The actual mode
-                        mode_i = modes[0, mode_ind]
+                        mode_i = modes[mode_ind, 0]
 
                         # Using the mode selected from the gains, optionally use the phase to find the amp and phase
                         if (auto_ratio):
