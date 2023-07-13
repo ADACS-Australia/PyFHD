@@ -42,9 +42,26 @@ def before_file(tag, run, data_dir):
     h5_save_dict = {}
     h5_save_dict['obs'] = recarray_to_dict(sav_dict['obs'])
     h5_save_dict['cal'] = recarray_to_dict(sav_dict['cal'])
+    h5_save_dict["cal"]["gain"] = sav_file_vis_arr_swap_axes(h5_save_dict["cal"]["gain"])
+    # Since we don't want to copy data we are leaving uu and vv in params in PyFHD
+    # Thus we need to copy across for the test and save params as a separate dict
+    params = {}
+    params['uu'] = h5_save_dict['cal']['uu']
+    params['vv'] = h5_save_dict['cal']['vv']
+    h5_save_dict['params'] = params
     h5_save_dict['vis_ptr'] = sav_file_vis_arr_swap_axes(sav_dict['vis_ptr'])
     h5_save_dict['vis_model_ptr'] = sav_file_vis_arr_swap_axes(sav_dict['vis_model_ptr'])
     h5_save_dict['vis_weight_ptr'] = sav_file_vis_arr_swap_axes(sav_dict['vis_weight_ptr'])
+    # Simulate pyfhd_config
+    pyfhd_config = {}
+    pyfhd_config['min_cal_baseline'] = h5_save_dict['cal']['min_cal_baseline']
+    pyfhd_config['max_cal_baseline'] = h5_save_dict['cal']['max_cal_baseline']
+    pyfhd_config['cal_time_average'] = h5_save_dict['cal']['time_avg']
+    pyfhd_config['cal_adaptive_calibration_gain'] = h5_save_dict['cal']['adaptive_gain']
+    pyfhd_config['cal_convergence_threshold'] = h5_save_dict['cal']['conv_thresh']
+    pyfhd_config['base_gain'] = h5_save_dict['cal']['base_gain']
+    pyfhd_config['cal_phase_fit_iter'] = h5_save_dict['cal']['phase_iter']
+    h5_save_dict['pyfhd_config'] = pyfhd_config
 
     dd.io.save(before_file, h5_save_dict)
 
@@ -81,6 +98,8 @@ def test_points_around_zenith_and_1088716296(before_file, after_file):
     vis_weight_ptr = h5_before['vis_weight_ptr']
     obs = h5_before['obs']
     cal = h5_before['cal']
+    params = h5_before['params']
+    pyfhd_config = h5_before['pyfhd_config']
 
     expected_cal = h5_after['cal_return']
 
@@ -90,6 +109,8 @@ def test_points_around_zenith_and_1088716296(before_file, after_file):
         vis_weight_ptr, 
         obs, 
         cal,
+        params,
+        pyfhd_config,
         calibration_weights=True
     )
 
@@ -122,9 +143,25 @@ def subroutine_before(data_dir, subroutine_test):
     h5_save_dict["vis_weight_ptr"] = sav_file_vis_arr_swap_axes(vis_weight_ptr)
     h5_save_dict["obs"] = recarray_to_dict(obs)
     h5_save_dict["cal"] = recarray_to_dict(cal)
-    h5_save_dict['calibration_weights'] = 0
+    h5_save_dict["cal"]["gain"] = sav_file_vis_arr_swap_axes(h5_save_dict["cal"]["gain"])
+    h5_save_dict['calibration_weights'] = False
     if (subroutine_test == 2):
-        h5_save_dict['calibration_weights'] = 1
+        h5_save_dict['calibration_weights'] = True
+    # Simulate params
+    params = {}
+    params['uu'] = h5_save_dict['cal']['uu']
+    params['vv'] = h5_save_dict['cal']['vv']
+    h5_save_dict['params'] = params
+    # Simulate pyfhd_config
+    pyfhd_config = {}
+    pyfhd_config['min_cal_baseline'] = h5_save_dict['cal']['min_cal_baseline']
+    pyfhd_config['max_cal_baseline'] = h5_save_dict['cal']['max_cal_baseline']
+    pyfhd_config['cal_time_average'] = h5_save_dict['cal']['time_avg']
+    pyfhd_config['cal_adaptive_calibration_gain'] = h5_save_dict['cal']['adaptive_gain']
+    pyfhd_config['cal_convergence_threshold'] = h5_save_dict['cal']['conv_thresh']
+    pyfhd_config['base_gain'] = h5_save_dict['cal']['base_gain']
+    pyfhd_config['cal_phase_fit_iter'] = h5_save_dict['cal']['phase_iter']
+    h5_save_dict['pyfhd_config'] = pyfhd_config
    
     dd.io.save(subroutine_before, h5_save_dict)
 
@@ -155,6 +192,8 @@ def test_vis_calibration_x(subroutine_before, subroutine_after):
     obs = h5_before['obs']
     cal = h5_before['cal']
     calibration_weights = h5_before['calibration_weights']
+    params = h5_before['params']
+    pyfhd_config = h5_before['pyfhd_config']
 
     expected_cal = h5_after['cal_return']
 
@@ -164,10 +203,11 @@ def test_vis_calibration_x(subroutine_before, subroutine_after):
         vis_weight_ptr, 
         obs, 
         cal,
+        params,
+        pyfhd_config,
         calibration_weights = calibration_weights
     )
     
-    cal_return = recarray_to_dict(cal_return)
     assert expected_cal['n_vis_cal'] == cal_return['n_vis_cal'] 
     expected_cal['gain'] = np.vstack(expected_cal['gain']).astype(np.complex128)
     cal_return['gain'] = np.vstack(cal_return['gain']).astype(np.complex128)

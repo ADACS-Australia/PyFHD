@@ -4,7 +4,7 @@ from PyFHD.calibration.calibration_utils import calculate_adaptive_gain
 from PyFHD.pyfhd_tools.pyfhd_utils import weight_invert, histogram
 
 def vis_calibrate_subroutine(vis_arr: np.ndarray, vis_model_ptr: np.ndarray, vis_weight_ptr: np.ndarray, 
-                             obs: dict, cal: dict, pyfhd_config: dict, 
+                             obs: dict, cal: dict, params: dict, pyfhd_config: dict, 
                              calibration_weights = False,  no_ref_tile = False):
     """
     TODO:_summary_
@@ -64,7 +64,7 @@ def vis_calibrate_subroutine(vis_arr: np.ndarray, vis_model_ptr: np.ndarray, vis
         raise ValueError("max_cal_iter should be 1 or more. A max_cal_iter of 5 or more is recommended")
     conv_thresh = pyfhd_config['cal_convergence_threshold']
     use_adaptive_gain = pyfhd_config['cal_adaptive_calibration_gain']
-    base_gain = cal['base_gain']
+    base_gain = pyfhd_config['base_gain']
     # halt if the strict convergence is worse than most of the last x iterations
     divergence_history = 3
     # halt if the convergence gets significantly worse by a factor of x in one iteration
@@ -78,19 +78,23 @@ def vis_calibrate_subroutine(vis_arr: np.ndarray, vis_model_ptr: np.ndarray, vis
     # tile_a & tile_b contribution indexed from 0
     tile_A_i = obs['baseline_info']['tile_a'] - 1
     tile_B_i = obs['baseline_info']['tile_b'] - 1
-    freq_arr = obs['freq']
+    freq_arr = obs['baseline_info']['freq']
     n_baselines = obs['nbaselines']
-    if 'phase_iter' in cal.dtype.names:
-        phase_fit_iter = cal['phase_iter']
+    if pyfhd_config['cal_phase_fit_iter']:
+        phase_fit_iter = pyfhd_config['cal_phase_fit_iter']
     else:
+        # This gets set multiple times in FHD, by default it's 4, and is set in fhd_struct_init_cal
         phase_fit_iter = np.min([np.floor(max_cal_iter / 4), 4])
-    kbinsize = obs['kpix'][0]
-    cal_return = cal.copy()
+    kbinsize = obs['kpix']
 
+    cal['convergence'] = np.zeros([n_pol, n_freq, n_tile])
+    cal['conv_iter'] = np.zeros([n_pol, n_freq, n_tile])
+    cal['n_converged'] = np.zeros(n_pol)
     for pol_i in range(n_pol):
-        convergence = np.zeros((n_tile, n_freq))
-        conv_iter_arr = np.zeros((n_tile, n_freq))
-        gain_arr = cal['gain'][0][pol_i]
+        convergence = np.zeros((n_freq, n_tile))
+        conv_iter_arr = np.zeros((n_freq, n_tile))
+        # Want to ensure we're not affecting the current array till we overwrite it
+        gain_arr = cal['gain'][pol_i].copy()
 
         # Average the visibilities over the time steps before solving for the gains solutions
         # This is not recommended, as longer baselines will be downweighted artifically.
@@ -101,6 +105,7 @@ def vis_calibrate_subroutine(vis_arr: np.ndarray, vis_model_ptr: np.ndarray, vis
             tile_B_i = tile_B_i[0 : n_baselines]
             # So IDL does reforms as REFORM(x, cols, rows, num_of_col_row_arrays)
             # Python is row-major, so we need to flip that shape that is used in REFORM
+            # TODO: Check the reshape to make it in line with the gain shape in cal pol, freq, baseline/tile
             shape = np.flip(np.array([n_freq, n_baselines, n_time]))
             vis_weight_use = np.maximum(np.reshape(vis_weight_ptr_use[pol_i], shape), 0)
             vis_weight_use = np.minimum(vis_weight_use, 1)
@@ -110,17 +115,17 @@ def vis_calibrate_subroutine(vis_arr: np.ndarray, vis_model_ptr: np.ndarray, vis
             vis_avg = np.sum(vis_measured * vis_weight_use, axis = 0)
             weight = np.sum(vis_weight_use, axis = 0)
 
-            kx_arr = cal['uu'][0][0 : n_baselines] / kbinsize
-            ky_arr = cal['vv'][0][0 : n_baselines] / kbinsize
+            kx_arr = params['uu'][0 : n_baselines] / kbinsize
+            ky_arr = params['vv'][0 : n_baselines] / kbinsize
         else:
             # In the case of not using a time_average do the following setup instead for weight and vis_avg
-            vis_weight_use = np.min([np.max([0, vis_weight_ptr_use[pol_i]]), 1])
+            vis_weight_use = np.minimum([np.maximum([0, vis_weight_ptr_use[pol_i]]), 1])
             vis_model = vis_model * vis_weight_use
             vis_avg = vis_arr[pol_i] * vis_weight_use
             weight = vis_weight_use
 
-            kx_arr = cal['uu'][0] / kbinsize
-            ky_arr = cal['vv'][0] / kbinsize
+            kx_arr =  params['uu'] / kbinsize
+            ky_arr = params['vv'] / kbinsize
         # Now use the common code from the two possibilities in vis_calibrate_subroutine.pro 
         kr_arr = np.sqrt(kx_arr ** 2 + ky_arr ** 2)
         # When IDL does a matrix multiply on two 1D vectors it does the outer product.
@@ -148,8 +153,8 @@ def vis_calibrate_subroutine(vis_arr: np.ndarray, vis_model_ptr: np.ndarray, vis
         vis_avg *= weight_invert(weight)
         vis_model *= weight_invert(weight)
 
-        tile_use_flag = obs['baseline_info'][0]['tile_use'][0]
-        freq_use_flag = obs['baseline_info'][0]['freq_use'][0]
+        tile_use_flag = obs['baseline_info']['tile_use']
+        freq_use_flag = obs['baseline_info']['freq_use']
 
         freq_weight = np.sum(weight, axis = 0)
         baseline_weight = np.sum(weight, axis = 1)
@@ -172,27 +177,30 @@ def vis_calibrate_subroutine(vis_arr: np.ndarray, vis_model_ptr: np.ndarray, vis
         ref_tile_use = np.where(reference_tile == tile_use)
         if ref_tile_use[0].size == 0:
             ref_tile_use = 0
-            # Are we returning cal?
             cal['ref_antenna'] = tile_use[ref_tile_use]
             cal['ref_antenna_name'] = obs['baseline_info']['tile_names'][cal['ref_antenna']]
         
         # Replace all NaNs with 0's
         vis_model[np.isnan(vis_model)] = 0
 
-        conv_test = np.zeros((max_cal_iter, freq_use.size))
+        conv_test = np.zeros((freq_use.size, max_cal_iter))
         n_converged = 0
         for fii in range(freq_use.size):
             fi = freq_use[fii]
-            gain_curr = np.squeeze(gain_arr[tile_use, fi])
+            gain_curr = np.squeeze(gain_arr[fi, tile_use])
             # Set up data and model arrays of the original and conjugated versions. This
             # provides twice as many equations into the linear least-squares solver.
+            # TODO: Check vis_avg shape
             vis_data2 = np.squeeze(vis_avg[baseline_use, fi])
             vis_data2 = np.array([vis_data2, np.conj(vis_data2)])
+            # TODO: Check vis_model shape
             vis_model2 = np.squeeze(vis_model[baseline_use, fi])
             vis_model2 = np.array([vis_model2, np.conj(vis_model2)])
+            # TODO: Check weight shape
             weight2 = np.squeeze(weight[baseline_use, fi])
             weight2 = np.array([weight2, weight2])
             if calibration_weights:
+                # TODO: check baseline_weights shape
                 baseline_wts2 = np.squeeze(baseline_weights[baseline_use, fi])
                 baseline_wts2 = [baseline_wts2, baseline_wts2]
             
@@ -241,9 +249,9 @@ def vis_calibrate_subroutine(vis_arr: np.ndarray, vis_model_ptr: np.ndarray, vis
                         else:
                             gain_new[tile_i] = np.linalg.lstsq(vis_model_matrix[A_ind_arr[tile_i]], vis_use[A_ind_arr[tile_i]], rcond=None)[0][0][0]
                 
-                gain_old = gain_curr
+                gain_old = gain_curr.copy()
                 if np.sum(np.abs(gain_new)) == 0:
-                    gain_curr = gain_new
+                    gain_curr = gain_new.copy()
                     # Break the loop
                     break
                 if phase_fit_iter - i > 0:
@@ -265,7 +273,7 @@ def vis_calibrate_subroutine(vis_arr: np.ndarray, vis_model_ptr: np.ndarray, vis
                 convergence_strict = np.max(np.abs(gain_curr - gain_old) * weight_invert(np.abs(gain_old)))
                 convergence_loose = np.mean(np.abs(gain_curr - gain_old) * weight_invert(np.abs(gain_old)))
                 convergence_list[i] = convergence_strict
-                conv_test[i, fii] = convergence_strict
+                conv_test[fii, i] = convergence_strict
                 if i > phase_fit_iter + divergence_history:
                     if convergence_strict < conv_thresh:
                         # Stop if the solution has converged to the specified threshold
@@ -279,14 +287,14 @@ def vis_calibrate_subroutine(vis_arr: np.ndarray, vis_model_ptr: np.ndarray, vis
                                 # If the previous solution met the threshold, but the current one did not, then
                                 # back up one iteration and use the previous solution
                                 gain_curr = gain_old
-                                convergence[tile_use, fi] = conv_test[i - 1, fii]
-                                conv_iter_arr[tile_use, fi] = i - 1
+                                convergence[fi, tile_use] = conv_test[fii, i - 1]
+                                conv_iter_arr[fi, tile_use] = i - 1
                             break
                         else:
                             # Halt if the strict convergence is worse than most of the recent iterations
-                            divergence_test_1 = convergence_strict >= np.median(conv_test[i - divergence_history : i, fii])
+                            divergence_test_1 = convergence_strict >= np.median(conv_test[fii, i - divergence_history : i])
                             # Also halt if the convergence gets significantly worse in one iteration
-                            divergence_test_2 = convergence_strict >= np.min(conv_test[0:i, fii]) * divergence_factor
+                            divergence_test_2 = convergence_strict >= np.min(conv_test[fii, 0:i]) * divergence_factor
                             # possible bug fix; should we really test for divergence when only
                             # fitting the phase? Fix below doesn't use the phase-only portion
                             # of fitting when checking for divergence
@@ -294,22 +302,22 @@ def vis_calibrate_subroutine(vis_arr: np.ndarray, vis_model_ptr: np.ndarray, vis
                             if divergence_test_1 or divergence_test_2:
                                 # If both measures of convergence are getting worse, we need to stop.
                                 print("Calibration diverged at iteration: {}\nfor pol_i: {}\nfreq_i:\
-                                    {}\nConvergence was: {}\nthreshold was: {}".format(i, pol_i, fi, conv_test[i - 1, fii], conv_thresh))
+                                    {}\nConvergence was: {}\nthreshold was: {}".format(i, pol_i, fi, conv_test[fii, i - 1], conv_thresh))
                                 divergence_flag = True
                                 break
             if divergence_flag:
                 # If the solution diverged, back up one iteration and use the previous solution
                 gain_curr = gain_old
-                convergence[tile_use, fi] = conv_test[i - 1, fii]
-                conv_iter_arr[tile_use, fi] = i - 1
+                convergence[fi, tile_use] = conv_test[fii, i - 1]
+                conv_iter_arr[fi, tile_use] = i - 1
             else:
-                convergence[tile_use, fi] = np.abs(gain_curr - gain_old) * weight_invert(np.abs(gain_old))
-                conv_iter_arr[tile_use, fi] = i
+                convergence[fi, tile_use] = np.abs(gain_curr - gain_old) * weight_invert(np.abs(gain_old))
+                conv_iter_arr[fi, tile_use] = i
             if i == max_cal_iter:
                 print("Calibration reach max iterations before converging for pol_i: {}\nfreq_i:\
                     {}\nConvergence was: {}\nthreshold was: {}".format(pol_i, fi, conv_test[i - 1, fii], conv_thresh))
             del A_ind_arr
-            gain_arr[tile_use, fi] = gain_curr
+            gain_arr[fi, tile_use] = gain_curr
         nan_i = np.where(np.isnan(gain_curr))[0]
         if nan_i.size > 0:
             # any gains with NANs -> all tiles for that freq will have NANs
@@ -318,11 +326,11 @@ def vis_calibrate_subroutine(vis_arr: np.ndarray, vis_model_ptr: np.ndarray, vis
             vis_weight_ptr_use[pol_i][:, freq_nan_i] = 0
             weight[:, freq_nan_i] = 0
             gain_arr[nan_i] = 0
-        cal_return['gain'][0][pol_i] = gain_arr
-        cal_return['convergence'][0][pol_i] = convergence
-        cal_return['n_converged'][0][pol_i] = n_converged
-        cal_return['conv_iter'][0][pol_i] = conv_iter_arr
+        cal['gain'][pol_i] = gain_arr
+        cal['convergence'][pol_i] = convergence
+        cal['n_converged'][pol_i] = n_converged
+        cal['conv_iter'][pol_i] = conv_iter_arr
 
     n_vis_cal = np.size(np.nonzero(weight)[0])
-    cal_return['n_vis_cal'] = n_vis_cal
-    return cal_return
+    cal['n_vis_cal'] = n_vis_cal
+    return cal

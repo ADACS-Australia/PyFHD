@@ -795,11 +795,11 @@ def vis_cal_polyfit(obs: dict, cal: dict, auto_ratio: np.ndarray | None, pyfhd_c
                             # Find tiles which will *not* be accidently coherent in their cable reflection in order to reduce bias
                             inds = np.where((obs['baseline_info']['tile_use']) & (mode_i_arr[pol_i, :] > 0) & ((np.abs(mode_i_arr[pol_i,:] - mode_i)) > 0.01))
                             # mean over frequency for each tile
-                            freq_mean = np.mean(auto_ratio[pol_i], axis = 1)
+                            freq_mean = np.nanmean(auto_ratio[pol_i], axis = 0)
                             # TODO: check shape, transpose and rebin seem odd together, normalized autos using each tile's freq mean
-                            norm_autos = auto_ratio[pol_i] / rebin(np.transpose(freq_mean), (obs['n_freq'], obs['n_tile']))
+                            norm_autos = auto_ratio[pol_i] / rebin(freq_mean, (obs['n_freq'], obs['n_tile']))
                             # mean over all tiles which *are not* accidently coherent as a func of freq
-                            incoherent_mean = np.mean(norm_autos[:, inds], axis=0)
+                            incoherent_mean = np.nanmean(norm_autos[:, inds], axis=0)
                             # Residual and normalized (using incoherent mean) auto-correlation
                             resautos = (norm_autos[:, tile_i] / incoherent_mean) - np.mean(norm_autos[:, tile_i] / incoherent_mean)
                             gain_temp = rebin(np.transpose(np.squeeze(resautos[freq_use])), (nmodes, freq_use.size))

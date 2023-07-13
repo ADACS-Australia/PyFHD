@@ -46,7 +46,8 @@ calibration-auto-initialize: true
 cal-gain-init: 1
 cal-convergence-threshold: 0.0000001
 cal-adaptive-calibration-gain: false
-cal-base-gain: ~
+cal-base-gain: ~ # This is set to None by default to set the default based on cal-adaptive-calibration-gain as per FHD
+cal-phase-fit-iter: 4
 min-cal-baseline : 50.
 vis-baseline-hist : true
 bandpass-calibrate : true
