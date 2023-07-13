@@ -752,7 +752,7 @@ def vis_cal_polyfit(obs: dict, cal: dict, auto_ratio: np.ndarray | None, pyfhd_c
         # This is currently assuming cal_mode_fit is an integer or number, not an array!
         # If you need an array to fit or exclude cable lengths, then create another option for it
         # in the config and adjust the code accordingly. Ensure every config option only has one purpose.
-        if (auto_ratio == None and cal_mode_fit != 1):
+        if (auto_ratio is None and cal_mode_fit != 1):
             tile_ref_logic = np.zeros(obs['n_tile'])
             if (cal_mode_fit > 0):
                 cable_cut_i = np.where(cable_length != cal_mode_fit)
@@ -791,9 +791,9 @@ def vis_cal_polyfit(obs: dict, cal: dict, auto_ratio: np.ndarray | None, pyfhd_c
                         # reshape for ease of computing
                         modes = rebin(modes, (freq_use.size, nmodes)).T
 
-                        if (auto_ratio):
+                        if (auto_ratio is not None):
                             # Find tiles which will *not* be accidently coherent in their cable reflection in order to reduce bias
-                            inds = np.where((obs['baseline_info']['tile_use']) & (mode_i_arr[pol_i, :] > 0) & (np.abs(mode_i_arr[pol_i,:] - mode_i)) > 0.01)
+                            inds = np.where((obs['baseline_info']['tile_use']) & (mode_i_arr[pol_i, :] > 0) & ((np.abs(mode_i_arr[pol_i,:] - mode_i)) > 0.01))
                             # mean over frequency for each tile
                             freq_mean = np.mean(auto_ratio[pol_i], axis = 1)
                             # TODO: check shape, transpose and rebin seem odd together, normalized autos using each tile's freq mean
@@ -816,11 +816,10 @@ def vis_cal_polyfit(obs: dict, cal: dict, auto_ratio: np.ndarray | None, pyfhd_c
                         mode_ind = np.argmax(np.abs(test_fits))
                         # Phase of said fit
                         phase_use = np.arctan2(test_fits[mode_ind].imag, test_fits[mode_ind].real)
-                        # TODO: check shape and indexing The actual mode
                         mode_i = modes[mode_ind, 0]
 
                         # Using the mode selected from the gains, optionally use the phase to find the amp and phase
-                        if (auto_ratio):
+                        if (auto_ratio is not None):
                             # Find tiles which will not be accidently coherent in their cable reflection in order to reduce bias
                             inds = np.where(
                                 obs['baseline_info']['tile_use'] & 
@@ -845,7 +844,7 @@ def vis_cal_polyfit(obs: dict, cal: dict, auto_ratio: np.ndarray | None, pyfhd_c
                         phase_use = np.arctan2(mode_fit.imag, mode_fit.real)
                     
                     gain_mode_fit = amp_use * np.exp(-1j * 2 * np.pi * (mode_i * np.arange(obs['n_freq']) / obs['n_freq']) + 1j * phase_use)
-                    if (auto_ratio):
+                    if (auto_ratio is not None):
                         # Only fit for the cable reflection in the phases
                         cal['gain'][pol_i, :, tile_i] *= np.exp(1j * gain_mode_fit.imag)
                     else:

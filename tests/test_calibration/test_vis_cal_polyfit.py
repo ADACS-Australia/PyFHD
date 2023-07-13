@@ -73,13 +73,21 @@ def before_file(tag, run, data_dir):
 
     pyfhd_config["cable_reflection_coefficients"] = importlib_resources.files('PyFHD.templates').joinpath('mwa_cable_reflection_coefficients.txt')
     pyfhd_config["cable_lengths"] = importlib_resources.files('PyFHD.templates').joinpath('mwa_cable_length.txt')
-    pyfhd_config['digital_gain_jump_polyfit'] = True
+    if ('digital_gain_jump_polyfit' in sav_dict):
+         pyfhd_config['digital_gain_jump_polyfit'] = sav_dict['digital_gain_jump_polyfit']
+    else:
+        pyfhd_config['digital_gain_jump_polyfit'] = True
+    if ('auto_ratio' in sav_dict):
+        auto_ratio = sav_file_vis_arr_swap_axes(sav_dict['auto_ratio'])
+    else:
+        auto_ratio = None
     
     #super dictionary to save everything in
     h5_save_dict = {}
     h5_save_dict['obs'] = obs
     h5_save_dict['cal'] = cal
     h5_save_dict['pyfhd_config'] = pyfhd_config
+    h5_save_dict['auto_ratio'] = auto_ratio
 
     dd.io.save(before_file, h5_save_dict)
 
@@ -126,14 +134,14 @@ def test_vis_cal_polyfit(before_file, after_file):
 
     obs = h5_before['obs']
     cal = h5_before['cal']
-    
+    auto_ratio = h5_before['auto_ratio']
     pyfhd_config = h5_before['pyfhd_config']
     
     expected_cal_return = h5_after['cal_return']
 
     logger = RootLogger(1)
     
-    cal_polyfit = vis_cal_polyfit(obs, cal, None, pyfhd_config, logger)
+    cal_polyfit = vis_cal_polyfit(obs, cal, auto_ratio, pyfhd_config, logger)
 
     # cal_return keeps amp_params as a pointer array of shape (128, 2)
     # However because digital_gain_jump_polyfit was used each pointer contains a (2,2)
