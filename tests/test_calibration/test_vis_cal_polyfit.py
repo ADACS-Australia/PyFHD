@@ -167,22 +167,9 @@ def test_vis_cal_polyfit(before_file, after_file):
             expected_amp_params[pol_i, tile_i] = np.transpose(expected_cal_return['amp_params'][tile_i, pol_i])
             expected_phase_params[pol_i, tile_i] = np.vstack(expected_cal_return['phase_params'][tile_i, pol_i]).flatten()
     
-    # 6e-8 atol for amp_params due to precision errors, still really close to single_precision
-    npt.assert_allclose(cal_polyfit['amp_params'], expected_amp_params, atol=6e-8)
+    npt.assert_allclose(cal_polyfit['amp_params'], expected_amp_params, atol=1e-8)
     # Only the real data has atol error of 2e-6, simulated has 1e-8 atol error
     npt.assert_allclose(cal_polyfit['phase_params'], expected_phase_params, atol=2e-6)
     # atol due to differences in precision differences in multiple places with multiplication and polyfits
     # of single precision
-    real_not_close = np.where(
-        ((np.abs(cal_polyfit['gain'].real) - np.abs(expected_cal_return['gain'].real)) > 9e-6) & 
-        (np.abs(cal_polyfit['gain'].real) > 0) & 
-        (np.abs(expected_cal_return['gain'].real) > 0)
-    )
-    imag_not_close = np.where(
-        ((np.abs(cal_polyfit['gain'].imag) - np.abs(expected_cal_return['gain'].imag)) > 3e-5) & 
-        (np.abs(cal_polyfit['gain'].imag) > 0) & 
-        (np.abs(expected_cal_return['gain'].imag) > 0)
-    )
-    # Split real and imaginary for debugging the test
-    npt.assert_allclose(cal_polyfit['gain'].real, expected_cal_return['gain'].real, atol=9e-6)
-    npt.assert_allclose(cal_polyfit['gain'].imag, expected_cal_return['gain'].imag, atol=3e-5)
+    npt.assert_allclose(cal_polyfit['gain'], expected_cal_return['gain'], atol=2e-5)

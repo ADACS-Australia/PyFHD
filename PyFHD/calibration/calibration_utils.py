@@ -799,10 +799,10 @@ def vis_cal_polyfit(obs: dict, cal: dict, auto_ratio: np.ndarray | None, pyfhd_c
                             # TODO: check shape, transpose and rebin seem odd together, normalized autos using each tile's freq mean
                             norm_autos = auto_ratio[pol_i] / rebin(freq_mean, (obs['n_freq'], obs['n_tile']))
                             # mean over all tiles which *are not* accidently coherent as a func of freq
-                            incoherent_mean = np.nanmean(norm_autos[:, inds], axis=0)
+                            incoherent_mean = np.nanmean(norm_autos[:, inds[0]], axis=1)
                             # Residual and normalized (using incoherent mean) auto-correlation
-                            resautos = (norm_autos[:, tile_i] / incoherent_mean) - np.mean(norm_autos[:, tile_i] / incoherent_mean)
-                            gain_temp = rebin(np.transpose(np.squeeze(resautos[freq_use])), (nmodes, freq_use.size))
+                            resautos = (norm_autos[:, tile_i] / incoherent_mean) - np.nanmean(norm_autos[:, tile_i] / incoherent_mean)
+                            gain_temp = rebin(resautos[freq_use], (nmodes, freq_use.size))
                         else:
                             # dimension manipulation, add dim for mode fitting
                             # Subtract the mean so aliasing is reduced in the dft cable fitting
@@ -822,15 +822,15 @@ def vis_cal_polyfit(obs: dict, cal: dict, auto_ratio: np.ndarray | None, pyfhd_c
                         if (auto_ratio is not None):
                             # Find tiles which will not be accidently coherent in their cable reflection in order to reduce bias
                             inds = np.where(
-                                obs['baseline_info']['tile_use'] & 
-                                mode_i_arr[pol_i, :] > 0 & 
-                                np.abs(mode_i_arr[pol_i, :] - mode_i) > 0.01
+                                (obs['baseline_info']['tile_use']) & 
+                                (mode_i_arr[pol_i, :] > 0) & 
+                                (np.abs(mode_i_arr[pol_i, :] - mode_i) > 0.01)
                             )
                             residual_phase = np.arctan2(gain_arr[freq_use, :].imag, gain_arr[freq_use, :].real)
-                            incoherent_residual_phase = residual_phase[:, tile_i] - np.mean(residual_phase[inds], axis=1)
+                            incoherent_residual_phase = residual_phase[:, tile_i] - np.nanmean(residual_phase[:, inds[0]], axis=1)
                             test_fits = np.sum(np.exp(1j * 2 * np.pi/ obs['n_freq'] * mode_i * freq_use) * incoherent_residual_phase)
                             # Factor of 2 from fitting just the phase
-                            amp_use = 2 * np.abs(test_fits) / freq_use[0].size
+                            amp_use = 2 * np.abs(test_fits) / freq_use.size
                             # Factor of pi/2 from just fitting the phase
                             phase_use = np.arctan2(test_fits.imag, test_fits.real) + np.pi/2
                     elif (pyfhd_config['cal_reflection_mode_file']):
