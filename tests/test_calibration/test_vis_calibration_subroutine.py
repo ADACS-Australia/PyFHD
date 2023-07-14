@@ -111,7 +111,6 @@ def test_points_around_zenith_and_1088716296(before_file, after_file):
         cal,
         params,
         pyfhd_config,
-        calibration_weights=True
     )
 
     assert expected_cal['n_vis_cal'] == cal_return['n_vis_cal'] 

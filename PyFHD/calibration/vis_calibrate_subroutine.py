@@ -119,8 +119,9 @@ def vis_calibrate_subroutine(vis_arr: np.ndarray, vis_model_ptr: np.ndarray, vis
             ky_arr = params['vv'][0 : n_baselines] / kbinsize
         else:
             # In the case of not using a time_average do the following setup instead for weight and vis_avg
-            vis_weight_use = np.minimum([np.maximum([0, vis_weight_ptr_use[pol_i]]), 1])
-            vis_model = vis_model * vis_weight_use
+            vis_weight_use = np.maximum(0, vis_weight_ptr_use[pol_i])
+            vis_weight_use = np.minimum(vis_weight_use, 1)
+            vis_model = vis_model_ptr[pol_i] * vis_weight_use
             vis_avg = vis_arr[pol_i] * vis_weight_use
             weight = vis_weight_use
 
@@ -129,11 +130,11 @@ def vis_calibrate_subroutine(vis_arr: np.ndarray, vis_model_ptr: np.ndarray, vis
         # Now use the common code from the two possibilities in vis_calibrate_subroutine.pro 
         kr_arr = np.sqrt(kx_arr ** 2 + ky_arr ** 2)
         # When IDL does a matrix multiply on two 1D vectors it does the outer product.
-        dist_arr = np.outer(kr_arr, freq_arr) * kbinsize
-        xcen = np.outer(abs(kx_arr), freq_arr)
-        ycen = np.outer(abs(ky_arr), freq_arr)
+        dist_arr = np.outer(kr_arr, freq_arr).T * kbinsize
+        xcen = np.outer(abs(kx_arr), freq_arr).T
+        ycen = np.outer(abs(ky_arr), freq_arr).T
         if calibration_weights:
-            flag_dist_cut = np.where((dist_arr.flat < min_baseline) | (xcen.flat > (elements / 2)) | (ycen.flat > (dimension / 2)))[0]
+            flag_dist_cut = np.where((dist_arr < min_baseline) | (xcen > (elements / 2)) | (ycen > (dimension / 2)))
             if min_cal_baseline > min_baseline:
                 taper_min = np.max((np.sqrt(2) * min_cal_baseline - dist_arr) / min_cal_baseline, 0)
             else:
@@ -144,20 +145,20 @@ def vis_calibrate_subroutine(vis_arr: np.ndarray, vis_model_ptr: np.ndarray, vis
                 taper_max = 0
             baseline_weights = np.max(1 - (taper_min + taper_max) ** 2, 0)
         else:
-            flag_dist_cut = np.where((dist_arr.flat < min_cal_baseline) | (dist_arr.flat > max_cal_baseline) | (xcen.flat > elements / 2) | (ycen.flat > dimension / 2))[0]
+            flag_dist_cut = np.where((dist_arr < min_cal_baseline) | (dist_arr > max_cal_baseline) | (xcen > elements / 2) | (ycen > dimension / 2))
         # Remove kx_arr, ky_arr and dist_arr from the namespace, allow garbage collector to do its work
         del(kx_arr,ky_arr,dist_arr)
 
         if np.size(flag_dist_cut) > 0:
-            weight.flat[flag_dist_cut] = 0
+            weight[flag_dist_cut] = 0
         vis_avg *= weight_invert(weight)
         vis_model *= weight_invert(weight)
 
         tile_use_flag = obs['baseline_info']['tile_use']
         freq_use_flag = obs['baseline_info']['freq_use']
 
-        freq_weight = np.sum(weight, axis = 0)
-        baseline_weight = np.sum(weight, axis = 1)
+        freq_weight = np.sum(weight, axis = 1)
+        baseline_weight = np.sum(weight, axis = 0)
         freq_use = np.where((freq_weight > 0) & (freq_use_flag > 0))[0]
         baseline_use = np.nonzero(baseline_weight)
         hist_tile_A, _, riA = histogram(tile_A_i[baseline_use], min = 0, max = n_tile - 1)
@@ -179,7 +180,9 @@ def vis_calibrate_subroutine(vis_arr: np.ndarray, vis_model_ptr: np.ndarray, vis
             ref_tile_use = 0
             cal['ref_antenna'] = tile_use[ref_tile_use]
             cal['ref_antenna_name'] = obs['baseline_info']['tile_names'][cal['ref_antenna']]
-        
+        else:
+            # Extract out value to avoid any weird stuff happening
+            ref_tile_use = ref_tile_use[0][0]
         # Replace all NaNs with 0's
         vis_model[np.isnan(vis_model)] = 0
 
