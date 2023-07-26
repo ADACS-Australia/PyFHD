@@ -1,10 +1,11 @@
 import numpy as np
 import warnings
+from logging import RootLogger
 from PyFHD.calibration.calibration_utils import calculate_adaptive_gain
 from PyFHD.pyfhd_tools.pyfhd_utils import weight_invert, histogram
 
 def vis_calibrate_subroutine(vis_arr: np.ndarray, vis_model_ptr: np.ndarray, vis_weight_ptr: np.ndarray, 
-                             obs: dict, cal: dict, params: dict, pyfhd_config: dict, 
+                             obs: dict, cal: dict, params: dict, pyfhd_config: dict, logger: RootLogger, 
                              calibration_weights = False,  no_ref_tile = False):
     """
     TODO:_summary_
@@ -106,14 +107,14 @@ def vis_calibrate_subroutine(vis_arr: np.ndarray, vis_model_ptr: np.ndarray, vis
             # So IDL does reforms as REFORM(x, cols, rows, num_of_col_row_arrays)
             # Python is row-major, so we need to flip that shape that is used in REFORM
             # TODO: Check the reshape to make it in line with the gain shape in cal pol, freq, baseline/tile
-            shape = np.flip(np.array([n_freq, n_baselines, n_time]))
+            shape = np.array([n_freq, n_baselines, n_time])
             vis_weight_use = np.maximum(np.reshape(vis_weight_ptr_use[pol_i], shape), 0)
             vis_weight_use = np.minimum(vis_weight_use, 1)
             vis_model = np.reshape(vis_model_ptr[pol_i], shape)
-            vis_model = np.sum(vis_model * vis_weight_use, axis = 0)
+            vis_model = np.sum(vis_model * vis_weight_use, axis = -1)
             vis_measured = np.reshape(vis_arr[pol_i], shape)
-            vis_avg = np.sum(vis_measured * vis_weight_use, axis = 0)
-            weight = np.sum(vis_weight_use, axis = 0)
+            vis_avg = np.sum(vis_measured * vis_weight_use, axis = -1)
+            weight = np.sum(vis_weight_use, axis = -1)
 
             kx_arr = params['uu'][0 : n_baselines] / kbinsize
             ky_arr = params['vv'][0 : n_baselines] / kbinsize
@@ -145,7 +146,7 @@ def vis_calibrate_subroutine(vis_arr: np.ndarray, vis_model_ptr: np.ndarray, vis
                 taper_max = 0
             baseline_weights = np.max(1 - (taper_min + taper_max) ** 2, 0)
         else:
-            flag_dist_cut = np.where((dist_arr < min_cal_baseline) | (dist_arr > max_cal_baseline) | (xcen > elements / 2) | (ycen > dimension / 2))
+            flag_dist_cut = np.where((dist_arr < min_cal_baseline) | (dist_arr > max_cal_baseline) | (xcen > (elements / 2)) | (ycen > (dimension / 2)))
         # Remove kx_arr, ky_arr and dist_arr from the namespace, allow garbage collector to do its work
         del(kx_arr,ky_arr,dist_arr)
 
@@ -194,17 +195,17 @@ def vis_calibrate_subroutine(vis_arr: np.ndarray, vis_model_ptr: np.ndarray, vis
             # Set up data and model arrays of the original and conjugated versions. This
             # provides twice as many equations into the linear least-squares solver.
             # TODO: Check vis_avg shape
-            vis_data2 = np.squeeze(vis_avg[baseline_use, fi])
+            vis_data2 = np.squeeze(vis_avg[fi, baseline_use])
             vis_data2 = np.array([vis_data2, np.conj(vis_data2)])
             # TODO: Check vis_model shape
-            vis_model2 = np.squeeze(vis_model[baseline_use, fi])
+            vis_model2 = np.squeeze(vis_model[fi, baseline_use])
             vis_model2 = np.array([vis_model2, np.conj(vis_model2)])
             # TODO: Check weight shape
-            weight2 = np.squeeze(weight[baseline_use, fi])
+            weight2 = np.squeeze(weight[fi, baseline_use])
             weight2 = np.array([weight2, weight2])
             if calibration_weights:
                 # TODO: check baseline_weights shape
-                baseline_wts2 = np.squeeze(baseline_weights[baseline_use, fi])
+                baseline_wts2 = np.squeeze(baseline_weights[fi, baseline_use])
                 baseline_wts2 = [baseline_wts2, baseline_wts2]
             
             b_i_use = np.where(weight2 > 0)
@@ -304,8 +305,8 @@ def vis_calibrate_subroutine(vis_arr: np.ndarray, vis_model_ptr: np.ndarray, vis
                             # divergence_test_2 = convergence_strict >= np.min(conv_test[int(phase_fit_iter): i, fii]) * divergence_factor
                             if divergence_test_1 or divergence_test_2:
                                 # If both measures of convergence are getting worse, we need to stop.
-                                print("Calibration diverged at iteration: {}\nfor pol_i: {}\nfreq_i:\
-                                    {}\nConvergence was: {}\nthreshold was: {}".format(i, pol_i, fi, conv_test[fii, i - 1], conv_thresh))
+                                logger.info(f"Calibration diverged at iteration: {i}, for pol_i: {pol_i}, freq_i:\
+                                    {fi}. Convergence was: {conv_test[fii, i - 1]} and the threshold was: {conv_thresh}")
                                 divergence_flag = True
                                 break
             if divergence_flag:
@@ -317,8 +318,8 @@ def vis_calibrate_subroutine(vis_arr: np.ndarray, vis_model_ptr: np.ndarray, vis
                 convergence[fi, tile_use] = np.abs(gain_curr - gain_old) * weight_invert(np.abs(gain_old))
                 conv_iter_arr[fi, tile_use] = i
             if i == max_cal_iter:
-                print("Calibration reach max iterations before converging for pol_i: {}\nfreq_i:\
-                    {}\nConvergence was: {}\nthreshold was: {}".format(pol_i, fi, conv_test[i - 1, fii], conv_thresh))
+                logger.info(f"Calibration reach max iterations before converging for pol_i: {pol_i} and freq_i:\
+                    {fi}. Convergence was: {conv_test[i - 1, fii]} and the threshold was: {conv_thresh}")
             del A_ind_arr
             gain_arr[fi, tile_use] = gain_curr
         nan_i = np.where(np.isnan(gain_curr))[0]
