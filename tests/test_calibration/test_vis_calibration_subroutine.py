@@ -217,8 +217,8 @@ def test_vis_calibration_x(subroutine_before, subroutine_after):
     )
     
     # assert expected_cal['n_vis_cal'] == cal_return['n_vis_cal'] 
-    # expected_cal['gain'] = np.vstack(expected_cal['gain']).astype(np.complex128)
-    # cal_return['gain'] = np.vstack(cal_return['gain']).astype(np.complex128)
+    absolutes = np.abs(cal_return['gain'] - expected_cal['gain'])
+    indexes = np.nonzero(absolutes)
     assert_allclose(cal_return['gain'], expected_cal['gain'], atol = 1.5e-05)
 
 # def test_vis_calibration_two(data_dir):
