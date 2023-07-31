@@ -106,15 +106,21 @@ def vis_calibrate_subroutine(vis_arr: np.ndarray, vis_model_ptr: np.ndarray, vis
             tile_B_i = tile_B_i[0 : n_baselines]
             # So IDL does reforms as REFORM(x, cols, rows, num_of_col_row_arrays)
             # Python is row-major, so we need to flip that shape that is used in REFORM
-            # TODO: Check the reshape to make it in line with the gain shape in cal pol, freq, baseline/tile
-            shape = np.array([n_freq, n_baselines, n_time])
-            vis_weight_use = np.maximum(np.reshape(vis_weight_ptr_use[pol_i], shape), 0)
+            # Although, to get the same results in the shape we want we need to do a few
+            # transposes
+            shape = np.array([n_time, n_baselines, n_freq])
+            # Transpose here so it's in the same shape as IDL when reshaping, then transpose
+            # back to get the shape we need to suit the shape of the rest of the arrays
+            # I suspect this is because the reshape has no guarantee of the memory layout
+            # at the end, which means we swap indexes of values that is not consistent with IDL
+            vis_weight_use_reshaped = np.reshape(vis_weight_ptr_use[pol_i].T, shape).T
+            vis_weight_use = np.maximum(vis_weight_use_reshaped, 0)
             vis_weight_use = np.minimum(vis_weight_use, 1)
-            vis_model = np.reshape(vis_model_ptr[pol_i], shape)
-            vis_model = np.sum(vis_model * vis_weight_use, axis = -1)
-            vis_measured = np.reshape(vis_arr[pol_i], shape)
-            vis_avg = np.sum(vis_measured * vis_weight_use, axis = -1)
-            weight = np.sum(vis_weight_use, axis = -1)
+            vis_model = np.reshape(vis_model_ptr[pol_i].T, shape).T
+            vis_model = np.sum(vis_model * vis_weight_use, axis = 2)
+            vis_measured = np.reshape(vis_arr[pol_i].T, shape).T
+            vis_avg = np.sum(vis_measured * vis_weight_use, axis = 2)
+            weight = np.sum(vis_weight_use, axis = 2)
 
             kx_arr = params['uu'][0 : n_baselines] / kbinsize
             ky_arr = params['vv'][0 : n_baselines] / kbinsize
@@ -137,14 +143,14 @@ def vis_calibrate_subroutine(vis_arr: np.ndarray, vis_model_ptr: np.ndarray, vis
         if calibration_weights:
             flag_dist_cut = np.where((dist_arr < min_baseline) | (xcen > (elements / 2)) | (ycen > (dimension / 2)))
             if min_cal_baseline > min_baseline:
-                taper_min = np.max((np.sqrt(2) * min_cal_baseline - dist_arr) / min_cal_baseline, 0)
+                taper_min = np.maximum((np.sqrt(2) * min_cal_baseline - dist_arr) / min_cal_baseline, 0)
             else:
                 taper_min = 0
             if max_cal_baseline < max_baseline:
-                taper_max = np.max((dist_arr - max_cal_baseline) / min_cal_baseline, 0)
+                taper_max = np.maximum((dist_arr - max_cal_baseline) / min_cal_baseline, 0)
             else:
                 taper_max = 0
-            baseline_weights = np.max(1 - (taper_min + taper_max) ** 2, 0)
+            baseline_weights = np.maximum(1 - (taper_min + taper_max) ** 2, 0)
         else:
             flag_dist_cut = np.where((dist_arr < min_cal_baseline) | (dist_arr > max_cal_baseline) | (xcen > (elements / 2)) | (ycen > (dimension / 2)))
         # Remove kx_arr, ky_arr and dist_arr from the namespace, allow garbage collector to do its work
@@ -194,19 +200,16 @@ def vis_calibrate_subroutine(vis_arr: np.ndarray, vis_model_ptr: np.ndarray, vis
             gain_curr = np.squeeze(gain_arr[fi, tile_use])
             # Set up data and model arrays of the original and conjugated versions. This
             # provides twice as many equations into the linear least-squares solver.
-            # TODO: Check vis_avg shape
             vis_data2 = np.squeeze(vis_avg[fi, baseline_use])
             vis_data2 = np.array([vis_data2, np.conj(vis_data2)])
-            # TODO: Check vis_model shape
             vis_model2 = np.squeeze(vis_model[fi, baseline_use])
             vis_model2 = np.array([vis_model2, np.conj(vis_model2)])
-            # TODO: Check weight shape
             weight2 = np.squeeze(weight[fi, baseline_use])
             weight2 = np.array([weight2, weight2])
             if calibration_weights:
-                # TODO: check baseline_weights shape
                 baseline_wts2 = np.squeeze(baseline_weights[fi, baseline_use])
-                baseline_wts2 = [baseline_wts2, baseline_wts2]
+                # Concatenate two of the same array, why?       
+                baseline_wts2 = np.hstack([baseline_wts2, baseline_wts2])
             
             b_i_use = np.where(weight2 > 0)
             weight2 = weight2[b_i_use]
@@ -248,8 +251,13 @@ def vis_calibrate_subroutine(vis_arr: np.ndarray, vis_model_ptr: np.ndarray, vis
                     if n_arr[tile_i] >= min_cal_solutions:
                         if calibration_weights:
                             xmat = vis_model_matrix[A_ind_arr[tile_i]]
-                            xmat_dag = np.conj(xmat) * baseline_wts2
-                            gain_new[tile_i] = 1 / (np.dot(np.transpose(xmat), xmat_dag) * np.dot(np.transpose(vis_use[A_ind_arr[tile_i]]), xmat_dag))
+                            # For some reason IDL multiplcation just allows two arrays of 
+                            # very dissimilar sizes to be multiplied by just ignoring everything
+                            # after the index of the smallest one!?! Could be worth checking this is
+                            # what this line was meant to do.
+                            xmat = xmat.flatten()
+                            xmat_dag = np.conj(xmat) * baseline_wts2[0:xmat.size]
+                            gain_new[tile_i] = (1 / np.dot(xmat, xmat_dag) * np.dot(np.transpose(vis_use[A_ind_arr[tile_i]]), xmat_dag))[0]
                         else:
                             gain_new[tile_i] = np.linalg.lstsq(vis_model_matrix[A_ind_arr[tile_i]], vis_use[A_ind_arr[tile_i]], rcond=None)[0][0][0]
                 

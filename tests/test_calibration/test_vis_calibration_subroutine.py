@@ -119,6 +119,8 @@ def test_points_around_zenith_and_1088716296(before_file, after_file):
     )
 
     assert expected_cal['n_vis_cal'] == cal_return['n_vis_cal'] 
+    absolutes = np.abs(cal_return['gain'] - expected_cal['gain'])
+    indexes = np.where(absolutes > 4e-5)
     assert_allclose(cal_return['gain'], expected_cal['gain'], atol = 4e-05)
 
 @pytest.fixture(scope="function", params=[1, 2, 3])
@@ -216,55 +218,5 @@ def test_vis_calibration_x(subroutine_before, subroutine_after):
         calibration_weights = calibration_weights
     )
     
-    # assert expected_cal['n_vis_cal'] == cal_return['n_vis_cal'] 
-    absolutes = np.abs(cal_return['gain'] - expected_cal['gain'])
-    indexes = np.nonzero(absolutes)
-    assert_allclose(cal_return['gain'], expected_cal['gain'], atol = 1.5e-05)
-
-# def test_vis_calibration_two(data_dir):
-#     vis_ptr, vis_model_ptr, vis_weight_ptr, obs, cal, expected_cal = get_data_items(
-#         data_dir,
-#         'input_vis_ptr_2.npy',
-#         'input_vis_model_ptr_2.npy',
-#         'input_vis_weight_ptr_2.npy',
-#         'input_obs_2.npy',
-#         'input_cal_2.npy',
-#         'output_cal_return_2.npy'
-#     )
-#     cal_return = vis_calibrate_subroutine(
-#         vis_ptr, 
-#         vis_model_ptr, 
-#         vis_weight_ptr, 
-#         obs, 
-#         cal
-#     )
-#     expected_cal = recarray_to_dict(expected_cal)
-#     cal_return = recarray_to_dict(cal_return)
-#     # assert expected_cal['n_vis_cal'] == cal_return['n_vis_cal']
-#     expected_cal['gain'] = np.vstack(expected_cal['gain']).astype(np.complex128)
-#     cal_return['gain'] = np.vstack(cal_return['gain']).astype(np.complex128)
-#     assert_allclose(cal_return['gain'], expected_cal['gain'], atol = 1e-05)
-
-# def test_vis_calibration_three(data_dir):
-#     vis_ptr, vis_model_ptr, vis_weight_ptr, obs, cal, expected_cal = get_data_items(
-#         data_dir,
-#         'input_vis_ptr_3.npy',
-#         'input_vis_model_ptr_3.npy',
-#         'input_vis_weight_ptr_3.npy',
-#         'input_obs_3.npy',
-#         'input_cal_3.npy',
-#         'output_cal_return_3.npy'
-#     )
-#     cal_return = vis_calibrate_subroutine(
-#         vis_ptr, 
-#         vis_model_ptr, 
-#         vis_weight_ptr, 
-#         obs, 
-#         cal
-#     )
-#     expected_cal = recarray_to_dict(expected_cal)
-#     cal_return = recarray_to_dict(cal_return)
-#     assert expected_cal['n_vis_cal'] == cal_return['n_vis_cal']
-#     expected_cal['gain'] = np.vstack(expected_cal['gain']).astype(np.complex128)
-#     cal_return['gain'] = np.vstack(cal_return['gain']).astype(np.complex128)
-#     assert_allclose(cal_return['gain'], expected_cal['gain'], atol = 1e-05)
+    assert expected_cal['n_vis_cal'] == cal_return['n_vis_cal'] 
+    assert_allclose(cal_return['gain'], expected_cal['gain'], atol = 1.2e-05)
