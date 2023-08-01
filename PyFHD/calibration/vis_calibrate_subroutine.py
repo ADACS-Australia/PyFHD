@@ -2,7 +2,7 @@ import numpy as np
 import warnings
 from logging import RootLogger
 from PyFHD.calibration.calibration_utils import calculate_adaptive_gain
-from PyFHD.pyfhd_tools.pyfhd_utils import weight_invert, histogram
+from PyFHD.pyfhd_tools.pyfhd_utils import weight_invert, histogram, idl_median
 
 def vis_calibrate_subroutine(vis_arr: np.ndarray, vis_model_ptr: np.ndarray, vis_weight_ptr: np.ndarray, 
                              obs: dict, cal: dict, params: dict, pyfhd_config: dict, logger: RootLogger, 
@@ -172,8 +172,9 @@ def vis_calibrate_subroutine(vis_arr: np.ndarray, vis_model_ptr: np.ndarray, vis
         hist_tile_B, _, riB = histogram(tile_B_i[baseline_use], min = 0, max = n_tile - 1)
         tile_use = np.where(((hist_tile_A + hist_tile_B) > 0) & (tile_use_flag > 0))[0]
 
-        tile_A_i_use = np.zeros(np.size(baseline_use))
-        tile_B_i_use = np.zeros(np.size(baseline_use))
+        # Should be able to reduce precision if memory is a concern
+        tile_A_i_use = np.zeros(np.size(baseline_use), dtype = np.int64)
+        tile_B_i_use = np.zeros(np.size(baseline_use), dtype = np.int64)
         for tile_i in range(np.size(tile_use)):
             if hist_tile_A[tile_use[tile_i]] > 0:
                 # Calculate tile contributions for each non-flagged baseline
@@ -201,11 +202,11 @@ def vis_calibrate_subroutine(vis_arr: np.ndarray, vis_model_ptr: np.ndarray, vis
             # Set up data and model arrays of the original and conjugated versions. This
             # provides twice as many equations into the linear least-squares solver.
             vis_data2 = np.squeeze(vis_avg[fi, baseline_use])
-            vis_data2 = np.array([vis_data2, np.conj(vis_data2)])
+            vis_data2 = np.hstack([vis_data2, np.conj(vis_data2)])
             vis_model2 = np.squeeze(vis_model[fi, baseline_use])
-            vis_model2 = np.array([vis_model2, np.conj(vis_model2)])
+            vis_model2 = np.hstack([vis_model2, np.conj(vis_model2)])
             weight2 = np.squeeze(weight[fi, baseline_use])
-            weight2 = np.array([weight2, weight2])
+            weight2 = np.hstack([weight2, weight2])
             if calibration_weights:
                 baseline_wts2 = np.squeeze(baseline_weights[fi, baseline_use])
                 # Concatenate two of the same array, why?       
@@ -216,9 +217,9 @@ def vis_calibrate_subroutine(vis_arr: np.ndarray, vis_model_ptr: np.ndarray, vis
             vis_data2 = vis_data2[b_i_use]
             vis_model2 = vis_model2[b_i_use]
 
-            A_ind = np.array([tile_A_i_use, tile_B_i_use], dtype = np.int64)
+            A_ind = np.hstack([tile_A_i_use, tile_B_i_use])
             A_ind = A_ind[b_i_use]
-            B_ind = np.array([tile_B_i_use, tile_A_i_use], dtype = np.int64)
+            B_ind = np.hstack([tile_B_i_use, tile_A_i_use])
             B_ind = B_ind[b_i_use]
 
             A_ind_arr = []
@@ -231,6 +232,8 @@ def vis_calibrate_subroutine(vis_arr: np.ndarray, vis_model_ptr: np.ndarray, vis
                     A_ind_arr.append(-1)
                 # NEED SOMETHING MORE IN CASE INDIVIDUAL TILES ARE FLAGGED FOR ONLY A FEW FREQUENCIES!!
                 n_arr[tile_i] = inds.size
+            # I suspect a list of lists maybe faster than the object array, check during optimization
+            # Although I doubt it will make a huge difference.
             A_ind_arr = np.array(A_ind_arr, dtype=object)
             # For tiles which don't satisfy the minimum number of solutions, pre-emptively set them to 0
             # in order to prevent certain failure in meeting strict convergence threshold
@@ -287,7 +290,7 @@ def vis_calibrate_subroutine(vis_arr: np.ndarray, vis_model_ptr: np.ndarray, vis
                 convergence_list[i] = convergence_strict
                 conv_test[fii, i] = convergence_strict
                 if i > phase_fit_iter + divergence_history:
-                    if convergence_strict < conv_thresh:
+                    if convergence_strict <= conv_thresh:
                         # Stop if the solution has converged to the specified threshold
                         n_converged += 1
                         break
@@ -298,13 +301,16 @@ def vis_calibrate_subroutine(vis_arr: np.ndarray, vis_model_ptr: np.ndarray, vis
                             if convergence_loose <= conv_thresh:
                                 # If the previous solution met the threshold, but the current one did not, then
                                 # back up one iteration and use the previous solution
-                                gain_curr = gain_old
+                                gain_curr = gain_old.copy()
                                 convergence[fi, tile_use] = conv_test[fii, i - 1]
                                 conv_iter_arr[fi, tile_use] = i - 1
                             break
                         else:
                             # Halt if the strict convergence is worse than most of the recent iterations
-                            divergence_test_1 = convergence_strict >= np.median(conv_test[fii, i - divergence_history : i])
+                            # Needed to use IDL_MEDIAN here as the numpy median was producing values different
+                            # from IDL as the even keyword was not used. This need to may change over time as
+                            # the calibration gets adjusted for double precision
+                            divergence_test_1 = convergence_strict >= idl_median(conv_test[fii, i - divergence_history - 1 : i])
                             # Also halt if the convergence gets significantly worse in one iteration
                             divergence_test_2 = convergence_strict >= np.min(conv_test[fii, 0:i]) * divergence_factor
                             # possible bug fix; should we really test for divergence when only
@@ -317,9 +323,10 @@ def vis_calibrate_subroutine(vis_arr: np.ndarray, vis_model_ptr: np.ndarray, vis
                                     {fi}. Convergence was: {conv_test[fii, i - 1]} and the threshold was: {conv_thresh}")
                                 divergence_flag = True
                                 break
+                test_data = gain_curr[123]
             if divergence_flag:
                 # If the solution diverged, back up one iteration and use the previous solution
-                gain_curr = gain_old
+                gain_curr = gain_old.copy()
                 convergence[fi, tile_use] = conv_test[fii, i - 1]
                 conv_iter_arr[fi, tile_use] = i - 1
             else:

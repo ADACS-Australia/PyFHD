@@ -119,8 +119,6 @@ def test_points_around_zenith_and_1088716296(before_file, after_file):
     )
 
     assert expected_cal['n_vis_cal'] == cal_return['n_vis_cal'] 
-    absolutes = np.abs(cal_return['gain'] - expected_cal['gain'])
-    indexes = np.where(absolutes > 4e-5)
     assert_allclose(cal_return['gain'], expected_cal['gain'], atol = 4e-05)
 
 @pytest.fixture(scope="function", params=[1, 2, 3])
@@ -219,4 +217,6 @@ def test_vis_calibration_x(subroutine_before, subroutine_after):
     )
     
     assert expected_cal['n_vis_cal'] == cal_return['n_vis_cal'] 
+    absolutes = np.abs(cal_return['gain'] - expected_cal['gain'])
+    indexes = np.where(absolutes > 0.001)
     assert_allclose(cal_return['gain'], expected_cal['gain'], atol = 1.2e-05)
