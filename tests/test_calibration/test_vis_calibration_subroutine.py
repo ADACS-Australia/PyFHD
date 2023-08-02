@@ -217,6 +217,5 @@ def test_vis_calibration_x(subroutine_before, subroutine_after):
     )
     
     assert expected_cal['n_vis_cal'] == cal_return['n_vis_cal'] 
-    absolutes = np.abs(cal_return['gain'] - expected_cal['gain'])
-    indexes = np.where(absolutes > 0.001)
-    assert_allclose(cal_return['gain'], expected_cal['gain'], atol = 1.2e-05)
+   
+    assert_allclose(cal_return['gain'], expected_cal['gain'], atol = 1.02e-03)

@@ -323,7 +323,6 @@ def vis_calibrate_subroutine(vis_arr: np.ndarray, vis_model_ptr: np.ndarray, vis
                                     {fi}. Convergence was: {conv_test[fii, i - 1]} and the threshold was: {conv_thresh}")
                                 divergence_flag = True
                                 break
-                test_data = gain_curr[123]
             if divergence_flag:
                 # If the solution diverged, back up one iteration and use the previous solution
                 gain_curr = gain_old.copy()
