@@ -31,6 +31,12 @@ Beam Setup
 Calibration
 ===========
 
+calibrate
+---------
+
+.. automodule:: PyFHD.calibration.calibrate
+   :members:
+
 calibration_utils
 -----------------
 
@@ -98,16 +104,10 @@ Tools & Utilities
 .. automodule:: PyFHD.pyfhd_tools.pyfhd_utils
    :members:
 
+.. automodule:: PyFHD.pyfhd_tools.unit_conv
+
 Testing Utilities
 =================
 
 .. automodule:: PyFHD.pyfhd_tools.test_utils
    :members:
-
-Version History
-===============
-
-1.0
----
-
-This repository is currently in development.

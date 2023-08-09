@@ -31,6 +31,7 @@ Contents
    installation/installation
    documentation/documentation
    examples/examples
+   changelog/changelog
    
 Browse
 -----------------
