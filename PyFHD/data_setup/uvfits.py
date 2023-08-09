@@ -90,15 +90,16 @@ def extract_header(pyfhd_config : dict, logger : logging.RootLogger, data_uvfits
         logger.warning("OBSDEC not found in UVFITS file")
         pyfhd_header['obsdec'] = params_header['dec']
     # Put in locations of instrument from FITS file or from Astropy site data
+    # If you want to see the list of current site names using EarthLocation.get_site_names()
+    # If you want to use PyFHD with HERA in the future 
+    # and make it compatible you might have to put in the lat/lon/alt yourself
     try:
         location = EarthLocation.of_site(pyfhd_config['instrument'])
     except astropy.coordinates.errors.UnknownSiteException:
-        #TODO fix this MWA location thing, have some kind of built in
-        #locations in the repo?
+        # If the site isn't known then select MWA, which no longer uses inbuilt corrdinates from the FHD repo.
         logger.info(f"Failed to load in the {pyfhd_config['instrument']} instrument location from astropy. If lon/lat/alt are not in the UVFITS things will fail.")
-
-        location = EarthLocation(lat=-26.7033194*u.deg, lon=116.67081524*u.deg,
-                                 height=377.8299999991432)
+        # Can also do MWA or Murchison Widefield Array
+        location = EarthLocation('mwa')
 
     try: 
         pyfhd_header['lon'] = params_header['lon']

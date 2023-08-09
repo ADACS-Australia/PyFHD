@@ -10,6 +10,7 @@ from typing import Tuple
 import importlib_resources
 import os
 from PyFHD.pyfhd_tools.git_helper import retrieve_gitdict
+from importlib.metadata import version
 
 def pyfhd_parser():
     """
@@ -20,6 +21,7 @@ def pyfhd_parser():
     configargparse.ArgumentParser
         The parser for PyFHD which contains the help strings for the terminal and Usage section of the docs.
     """
+    # TODO: Cleanup all the options at some point remove unused options
 
     parser = configargparse.ArgumentParser(
         default_config_files = ["./pyfhd.yaml"], 
@@ -40,6 +42,44 @@ def pyfhd_parser():
     sim = parser.add_argument_group('Simulation', 'Turn On Simulation and Tune the simulation')
     healpix = parser.add_argument_group('HEALPIX', 'Adjust the HEALPIX output')
     pyIDL = parser.add_argument_group('PyIDL', 'Keywords for running hybrid python and IDL pipeline. As the conversion from IDL into python progresses, these options should shrink and eventually disappear. Using ANY of these options sidesteps the regular python-only pipeline to run sections on the hybrid pipeline')
+
+    # Version Argument
+    commit = 'Could not find git info'
+    #Try and get git_information from the pip install method
+    git_dict = retrieve_gitdict()
+    if git_dict:
+        commit = git_dict['describe']
+    #If that doesn't exist, try directly find the information (we might be
+    # running from within the git repo)
+    else:
+        commit = subprocess.run(["git", "rev-parse", "HEAD"], stdout=subprocess.PIPE, text = True).stdout
+        commit.replace('\n','')
+    version_string=f"""\
+    ________________________________________________________________________
+    |    ooooooooo.               oooooooooooo ooooo   ooooo oooooooooo.    |
+    |    8888   `Y88.             8888       8 8888    888   888     Y8b    |
+    |    888   .d88' oooo    ooo  888          888     888   888      888   |
+    |    888ooo88P'   `88.  .8'   888oooo8     888ooooo888   888      888   |
+    |    888           `88..8'    888          888     888   888      888   |
+    |    888            `888'     888          888     888   888     d88'   |
+    |    o888o            .8'     o888o        o888o   o888o o888bood8P'    |
+    |                 .o..P'                                                |
+    |                `Y8P'                                                  |
+    |_______________________________________________________________________|
+    
+    Python Fast Holographic Deconvolution 
+
+    Translated from IDL to Python as a collaboration between Astronomy Data and Computing Services (ADACS) and the Epoch of Reionisation (EoR) Team.
+
+    Repository: https://github.com/ADACS-Australia/PyFHD
+
+    Documentation: https://pyfhd.readthedocs.io/en/latest/
+
+    Version: {version('PyFHD')}
+
+    Git Commit Hash: {commit}
+    """
+    parser.add_argument('-v', '--version', action='version', version=version_string)
 
     # General Defaults
     parser.add_argument('obs_id', help="The Observation ID as per the MWA file naming standards. Assumes the fits files for this observation is in the uvfits-path. obs_id and uvfits replace file_path_vis from FHD")
@@ -93,7 +133,7 @@ def pyfhd_parser():
     calibration.add_argument('--digital-gain-jump-polyfit', default=False, action='store_true', help = 'Perform polynomial fitting for the amplitude separately before and after the highband digital gain jump at 187.515E6.')
     calibration.add_argument('--calibration-flag-iterate', default = 0, type = int, help = 'Number of times to repeat calibration in order to better identify and flag bad antennas so as to exclude them from the final result.')
     calibration.add_argument('--cal-phase-fit-iter', default = 4, type = int, help = 'Set the iteration number to begin phase calibration. Before this, phase is held fixed and only amplitude is being calibrated.')
-    calibration.add_argument('--import_model_uvfits', default = False, help = 'Use an existing `uvfits` file (typically a simulation) as model visibilities. The phase centre of model data must match the "RA" and "DEC" values in the metafits file (NOT the "RAPHASE" and "DECPHASE").')
+    calibration.add_argument('--import-model-uvfits', default = None, help = 'Use an existing `uvfits` file (typically a simulation) as model visibilities. The phase centre of model data must match the "RA" and "DEC" values in the metafits file (NOT the "RAPHASE" and "DECPHASE").')
 
     # Flagging Group
     flag.add_argument('-fv', '--flag-visibilities', default = False, action = 'store_true', help = 'Flag visibilities based on calculations in vis_flag')

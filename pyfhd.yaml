@@ -59,6 +59,8 @@ calibration-catalog-file-path  :  ~ # 'GLEAM_v2_plus_rlb2019.sav' (FHD Default)
 transfer-calibration : ~
 cal-stop : false
 transfer-model-uv : ~
+# You should put this here, we may make it a part of the parser defaults and a required argument
+import-model-uvfits: ~
 
 # Flagging
 flag-visibilities : false
