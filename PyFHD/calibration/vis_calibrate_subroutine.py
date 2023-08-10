@@ -47,11 +47,8 @@ def vis_calibrate_subroutine(vis_arr: np.ndarray, vis_model_ptr: np.ndarray, vis
     max_baseline = obs['max_baseline']
     dimension = obs['dimension']
     elements = obs['elements']
-    min_cal_baseline = pyfhd_config['min_cal_baseline'] if pyfhd_config['min_cal_baseline'] else obs['min_baseline']
-    if pyfhd_config['min_cal_baseline'] != None and obs['max_baseline'] > pyfhd_config['max_cal_baseline']:
-        max_cal_baseline = pyfhd_config['max_cal_baseline']  
-    else: 
-        max_cal_baseline = obs['max_baseline']
+    min_cal_baseline = max(pyfhd_config['min_cal_baseline'], obs['min_baseline']) if pyfhd_config['min_cal_baseline'] else obs['min_baseline']
+    max_cal_baseline = min(pyfhd_config['max_cal_baseline'], obs['max_baseline']) if pyfhd_config['max_cal_baseline'] else obs['max_baseline']
     # minimum number of calibration equations needed to solve for the gain of one baseline
     min_cal_solutions = 5
     # average the visibilities across time steps before solving for the gains
@@ -65,7 +62,7 @@ def vis_calibrate_subroutine(vis_arr: np.ndarray, vis_model_ptr: np.ndarray, vis
         raise ValueError("max_cal_iter should be 1 or more. A max_cal_iter of 5 or more is recommended")
     conv_thresh = pyfhd_config['cal_convergence_threshold']
     use_adaptive_gain = pyfhd_config['cal_adaptive_calibration_gain']
-    base_gain = pyfhd_config['base_gain']
+    base_gain = pyfhd_config['cal_base_gain']
     # halt if the strict convergence is worse than most of the last x iterations
     divergence_history = 3
     # halt if the convergence gets significantly worse by a factor of x in one iteration

@@ -2,6 +2,8 @@ import numpy as np
 from astropy.io import fits
 from astropy.time import Time
 from astropy.io.fits.hdu.table import BinTableHDU
+from astropy.io.fits.fitsrec import FITS_rec
+from astropy.io.fits.header import Header
 from pathlib import Path
 import logging
 from typing import Tuple
@@ -10,7 +12,7 @@ import astropy
 from astropy import units as u
 
 
-def extract_header(pyfhd_config : dict, logger : logging.RootLogger, data_uvfits = True) -> Tuple[dict, np.recarray]:
+def extract_header(pyfhd_config : dict, logger : logging.RootLogger, data_uvfits = True) -> Tuple[dict, np.recarray, FITS_rec, Header]:
     """
     TODO:_summary_
 
@@ -31,8 +33,10 @@ def extract_header(pyfhd_config : dict, logger : logging.RootLogger, data_uvfits
         The result from the extraction of the header of the UVFITS file
     params_data : np.recarray
         The data from the UVFITS file.
-    antenna_table : astropy.io.fits.hdu.table.BinTableHDU
-        The layout header and data which will be used in the create_layout function
+    antenna_data : astropy.io.fits.fitsrec.FITS_rec
+        The layout data which will be used in the create_layout function
+    antenna_header : astropy.io.fits.header.Header
+        The layout data which will be used in the create_layout function
 
     Raises
     ------
@@ -54,7 +58,8 @@ def extract_header(pyfhd_config : dict, logger : logging.RootLogger, data_uvfits
         params_data = observation[0].data
         
         # Keep the layout header and data for the create_layout function
-        antenna_table = observation[1]
+        antenna_data = observation[1].data
+        antenna_header = observation[1].header
 
     pyfhd_header = {}
     # Retrieve data from the params_header
@@ -180,9 +185,7 @@ def extract_header(pyfhd_config : dict, logger : logging.RootLogger, data_uvfits
         fits_time.format = 'jd'
         pyfhd_header['jd0'] = fits_time.value
 
-    
-
-    return pyfhd_header, params_data, antenna_table
+    return pyfhd_header, params_data, antenna_header, antenna_data
 
 def create_params(pyfhd_header : dict, params_data : np.recarray, logger : logging.RootLogger) -> dict:
     """_summary_
@@ -324,25 +327,28 @@ def _check_layout_valid(layout : dict, key : str, logger : logging.RootLogger, c
         logger.error(f"The layout[{key}] array set is not the same size of the number of antennas. Check the UVFITS file for errors.")
     
 
-def create_layout(antenna_table : BinTableHDU, logger : logging.RootLogger) -> dict:
+def create_layout(antenna_header: Header, antenna_data: FITS_rec, logger : logging.RootLogger) -> dict:
     """_summary_
 
     Parameters
     ----------
-    antenna_table : BinTableHDU
-        The second table 
+    antenna_header : Header
+        The header from the second table of the observation
+    antenna_data : FITS_rec
+        The data from the second table of the observation
+    logger : logging.RootLogger
+        PyFHD's logger
 
     Returns
     -------
-    layout : dict
-        The layout dictionary which wil enable compatibility with pyuvdata
+    layout: dict
+        The antenna layout dictionary compatible with pyuvdata
 
     See Also
     ---------
-    extract_header : Opens the UVFITS file and extracts the header and data, including the antenna_table.
-    """
-    antenna_data = antenna_table.data
-    antenna_header = antenna_table.header
+    extract_header : Opens the UVFITS file and extracts the header and data, including the antenna_header and antenna_data.
+    """    
+
     layout = {}
 
     # Extract data from the header

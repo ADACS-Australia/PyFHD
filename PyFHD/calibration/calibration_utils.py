@@ -33,6 +33,8 @@ def vis_extract_autocorr(obs: dict, vis_arr: np.array, pyfhd_config: dict, auto_
     autocorr_i = np.where(obs["baseline_info"]["tile_a"] == obs["baseline_info"]["tile_b"])[0]
     if (autocorr_i.size > 0):
         auto_tile_i = obs["baseline_info"]["tile_a"][autocorr_i] - 1
+        # As auto_tile_i is used for indexing we need to make it an integer array
+        auto_tile_i = auto_tile_i.astype(np.int_)
         auto_tile_i_single = np.unique(auto_tile_i)
         #TODO this is now explicitly a 3D array; parts of the code potentially
         # expect it as a list of 2D arrays, so there might be trouble

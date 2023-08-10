@@ -1,5 +1,3 @@
-from typing import Tuple
-from astropy.io import fits
 import numpy as np
 from PyFHD.data_setup.uvfits import extract_visibilities, create_params, extract_header
 import logging
@@ -8,6 +6,7 @@ import importlib_resources
 import os
 import shutil
 import h5py
+from scipy.io import readsav
 
 def vis_model_transfer(obs : dict) -> np.array:
     """Placeholder incase we decide to add functionality to read in IDL .sav
@@ -31,8 +30,33 @@ def vis_model_transfer(obs : dict) -> np.array:
     # end
     pass
 
+def import_vis_model_from_sav(pyfhd_config : dict, obs : dict, logger : logging.RootLogger) -> tuple[np.ndarray, dict]:
+    """Read a model visibility array in from multiple IDL sav files which are in a directory
+    given by pyfhd_config['import_model_uvfits']. The data is assumed to be in the format of
+    <obs_id>_params.sav, <obs_id>_vis_model_<pol_name>.sav. The pol_name follows the pol_names
+    in the obs dictionary which are ['XX','YY','XY','YX','I','Q','U','V'].
+
+    Parameters
+    ----------
+    pyfhd_config : dict
+        The PyFHD config dictionary
+    obs : dict
+        The dictionary containing observation data and metadata
+    logger : logging.RootLogger
+        PyFHD's logger
+
+    Returns
+    -------
+    tuple[vis_model_arr: np.ndarray, params_model: dict]
+       A tuple containing the vis_model_arr and params_model (which is used for flagging)
+    """
+    
+    params_model = readsav()
+
+
+
 def import_vis_model_from_uvfits(pyfhd_config : dict, obs : dict,
-                                 logger : logging.RootLogger) -> Tuple[np.ndarray, dict]:
+                                 logger : logging.RootLogger) -> tuple[np.ndarray, dict]:
     """Read a model visibility array in from a `uvfits` with filepath given
     by pyfhd_config['import_model_uvfits']. Reads data in via 
     `PyFHD.data_setup.uvfits import extract_visibilities`.
@@ -55,8 +79,7 @@ def import_vis_model_from_uvfits(pyfhd_config : dict, obs : dict,
     #TODO WORRY about order of baselines comparing WODEN sims and real data
     #TODO WORRY about weights
     
-    header_model, params_data_model, _ = extract_header(pyfhd_config, logger,
-                                                        data_uvfits=False)
+    header_model, params_data_model, _, _ = extract_header(pyfhd_config, logger, data_uvfits=False)
 
     if header_model['n_freq'] != obs['n_freq']:
         model_path = pyfhd_config['import_model_uvfits']
@@ -187,7 +210,6 @@ def flag_model_visibilities(vis_model_arr : np.ndarray,
     if rounded_offset >= min_integration / 2.0 and rounded_offset <= obs['time_res'] / 2.0:
         flaginfo_model.unique_times += rounded_offset / (24.0*60*60)
 
-    print(f"Model time stamps are offset from data by an average of {rounded_offset}. Accounting for this to match time steps")
     logger.warning(f"Model time stamps are offset from data by an average of {rounded_offset}. Accounting for this to match model time steps to data")
 
     model_times_to_use = []

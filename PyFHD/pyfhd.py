@@ -6,6 +6,7 @@ from PyFHD.pyfhd_tools.pyfhd_setup import pyfhd_parser, pyfhd_setup
 from PyFHD.data_setup.obs import create_obs
 from PyFHD.data_setup.uvfits import extract_header, create_params, extract_visibilities, create_layout
 from PyFHD.pyfhd_tools.pyfhd_utils import simple_deproject_w_term, vis_weights_update, vis_noise_calc
+from PyFHD.source_modeling.vis_model_transfer import import_vis_model_from_uvfits, flag_model_visibilities
 from PyFHD.calibration.calibrate import calibrate, calibrate_qu_mixing
 from PyFHD.use_idl_fhd.run_idl_fhd import run_IDL_calibration_only, run_IDL_convert_gridding_to_healpix_images
 from PyFHD.use_idl_fhd.use_idl_outputs import run_gridding_on_IDL_outputs
@@ -47,7 +48,7 @@ def main_python_only(pyfhd_config : dict, logger : logging.RootLogger):
 
     header_start = time.time()
     # Get the header
-    pyfhd_header, params_data, antenna_table = extract_header(pyfhd_config, logger)
+    pyfhd_header, params_data, antenna_header, antenna_data = extract_header(pyfhd_config, logger)
     header_end = time.time()
     _print_time_diff(header_start, header_end, 'PyFHD Header Created', logger)
 
@@ -66,7 +67,7 @@ def main_python_only(pyfhd_config : dict, logger : logging.RootLogger):
     # If you wish to average your fits data by time or frequency, insert your functions to do that here
 
     layout_start = time.time()
-    layout = create_layout(antenna_table, logger)
+    layout = create_layout(antenna_header, antenna_data, logger)
     layout_end = time.time()
     _print_time_diff(layout_start, layout_end, 'Layout Dictionary Extracted', logger)
 
@@ -87,22 +88,49 @@ def main_python_only(pyfhd_config : dict, logger : logging.RootLogger):
         w_term_end = time.time()
         _print_time_diff(w_term_start, w_term_end, 'Simple W-Term Deprojection Applied', logger)
 
+    # Get the vis_model_arr from a UVFITS file and flag any issues
+    vis_model_arr_start = time.time()
+    vis_model_arr, params_model = import_vis_model_from_uvfits(pyfhd_config, obs, logger)
+    vis_model_arr = flag_model_visibilities(vis_model_arr, params, params_model, obs, pyfhd_config, logger)
+    vis_model_arr_end = time.time()
+    _print_time_diff(vis_model_arr_start, vis_model_arr_end, 'Model Imported and Flagged From UVFITS', logger)
+
     # Skipped initializing the cal structure as it mostly just copies values from the obs, params, config and the skymodel from FHD
-    # However, there may be a resulting cal structure for logging and output purposes depending on calibration translation.
-    vis_arr, vis_model_arr, cal = calibrate(obs, params, vis_arr, vis_weights, pyfhd_config, logger)
+    # However, there is resulting cal structure for logging and output purposes to store the resulting gain and any other associated
+    # arrays
+    cal_start = time.time()
+    vis_arr, cal = calibrate(obs, params, vis_arr, vis_weights, vis_model_arr, pyfhd_config, logger)
+    cal_end = time.time()
+    _print_time_diff(cal_start, cal_end, 'Visibilities calibrated and cal dictionary with gains created', logger)
 
     if (obs['n_pol'] >= 4):
         cal["stokes_mix_phase"] = calibrate_qu_mixing(vis_arr, vis_model_arr, vis_weights, obs)
 
+    weight_start = time.time()
     vis_weights, obs = vis_weights_update(vis_weights, obs, params, pyfhd_config)
+    weight_end = time.time()
+    _print_time_diff(weight_start, weight_end, 'Visibilities Weights Updated', logger)
 
+    flag_start = time.time()
     vis_weights, obs = vis_flag(vis_arr, vis_weights, obs, params)
+    flag_end = time.time()
+    _print_time_diff(flag_start, flag_end, 'Visibilities Flagged', logger)
 
+    noise_start = time.time()
     obs['vis_noise'] = vis_noise_calc(obs, vis_arr, vis_weights)
+    noise_end = time.time()
+    _print_time_diff(noise_start, noise_end, 'Noise Calculated and added to obs', logger)
 
-    # TODO: add the gridding function after calibration testing is finished
 
-    # np.save('../notebooks/pyfhd_config.npy', pyfhd_config, allow_pickle=True)
+    grid_start = time.time()
+    # TODO: add the fully python compatible gridding function after calibration testing is finished
+    grid_end = time.time()
+    _print_time_diff(grid_start, grid_end, 'Visibilities gridded', logger)
+
+    # TODO: Translate fhd_quickview and add it here
+
+    # TODO: Translate snapshot_healpix_export and add it here
+    
 
 def main():
 

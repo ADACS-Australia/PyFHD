@@ -60,7 +60,7 @@ def before_file(tag, run, data_dir):
     pyfhd_config['cal_time_average'] = h5_save_dict['cal']['time_avg']
     pyfhd_config['cal_adaptive_calibration_gain'] = h5_save_dict['cal']['adaptive_gain']
     pyfhd_config['cal_convergence_threshold'] = h5_save_dict['cal']['conv_thresh']
-    pyfhd_config['base_gain'] = h5_save_dict['cal']['base_gain']
+    pyfhd_config['cal_base_gain'] = h5_save_dict['cal']['base_gain']
     pyfhd_config['cal_phase_fit_iter'] = h5_save_dict['cal']['phase_iter']
     h5_save_dict['pyfhd_config'] = pyfhd_config
 
@@ -163,7 +163,7 @@ def subroutine_before(data_dir, subroutine_test):
     pyfhd_config['cal_time_average'] = h5_save_dict['cal']['time_avg']
     pyfhd_config['cal_adaptive_calibration_gain'] = h5_save_dict['cal']['adaptive_gain']
     pyfhd_config['cal_convergence_threshold'] = h5_save_dict['cal']['conv_thresh']
-    pyfhd_config['base_gain'] = h5_save_dict['cal']['base_gain']
+    pyfhd_config['cal_base_gain'] = h5_save_dict['cal']['base_gain']
     pyfhd_config['cal_phase_fit_iter'] = h5_save_dict['cal']['phase_iter']
     h5_save_dict['pyfhd_config'] = pyfhd_config
    

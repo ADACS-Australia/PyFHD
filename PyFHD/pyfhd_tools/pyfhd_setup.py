@@ -133,7 +133,7 @@ def pyfhd_parser():
     calibration.add_argument('--digital-gain-jump-polyfit', default=False, action='store_true', help = 'Perform polynomial fitting for the amplitude separately before and after the highband digital gain jump at 187.515E6.')
     calibration.add_argument('--calibration-flag-iterate', default = 0, type = int, help = 'Number of times to repeat calibration in order to better identify and flag bad antennas so as to exclude them from the final result.')
     calibration.add_argument('--cal-phase-fit-iter', default = 4, type = int, help = 'Set the iteration number to begin phase calibration. Before this, phase is held fixed and only amplitude is being calibrated.')
-    calibration.add_argument('--import-model-uvfits', default = None, help = 'Use an existing `uvfits` file (typically a simulation) as model visibilities. The phase centre of model data must match the "RA" and "DEC" values in the metafits file (NOT the "RAPHASE" and "DECPHASE").')
+    calibration.add_argument('--import-model-uvfits', default = None, type=Path, help = 'Use an existing `uvfits` file (typically a simulation) as model visibilities. The phase centre of model data must match the "RA" and "DEC" values in the metafits file (NOT the "RAPHASE" and "DECPHASE").')
 
     # Flagging Group
     flag.add_argument('-fv', '--flag-visibilities', default = False, action = 'store_true', help = 'Flag visibilities based on calculations in vis_flag')
@@ -281,12 +281,13 @@ def _write_collated_yaml_config(pyfhd_config: dict, output_dir : str):
             if key in ['top_level_dir', 'log_name', 'log_time', 'commit', 'obs_id', 'config_file', 'grid_psf_file_sav', 'grid_psf_file_npz']:
                 pass
             else:
+                yaml_key = key.replace('_','-')
                 if pyfhd_config[key] == None:
-                    outfile.write(f"{key} : ~\n")
+                    outfile.write(f"{yaml_key} : ~\n")
                 elif type(pyfhd_config[key]) == float or type(pyfhd_config[key]) == int:
-                    outfile.write(f"{key} : {pyfhd_config[key]}\n")
+                    outfile.write(f"{yaml_key} : {pyfhd_config[key]}\n")
                 elif type(pyfhd_config[key]) == bool:
-                    outfile.write(f"{key} : {pyfhd_config[key]}\n")
+                    outfile.write(f"{yaml_key} : {pyfhd_config[key]}\n")
                 #If it's a list, write it out as a list of strings
                 #(Unless it's empty)
                 elif type(pyfhd_config[key]) == list:
@@ -302,7 +303,7 @@ def _write_collated_yaml_config(pyfhd_config: dict, output_dir : str):
                         #     outfile.write(f"{key} : {item}\n")
                         outfile.write(line)
                 else:
-                    outfile.write(f"{key} : '{pyfhd_config[key]}'\n")
+                    outfile.write(f"{yaml_key} : '{pyfhd_config[key]}'\n")
 
 
 

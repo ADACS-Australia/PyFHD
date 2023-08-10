@@ -16,7 +16,7 @@ from PyFHD.calibration.calibration_utils import (
 from PyFHD.calibration.vis_calibrate_subroutine import vis_calibrate_subroutine
 from PyFHD.pyfhd_tools.pyfhd_utils import resistant_mean, reshape_and_average_in_time
 
-def calibrate(obs: dict, params: dict, vis_arr: np.array, vis_weights: np.array, pyfhd_config: dict, logger: RootLogger) -> Tuple[np.array, np.array, dict] :
+def calibrate(obs: dict, params: dict, vis_arr: np.array, vis_weights: np.array, vis_model_arr: np.ndarray, pyfhd_config: dict, logger: RootLogger) -> Tuple[np.array, np.array, dict] :
     """
     TODO: Docstring
 
@@ -29,6 +29,8 @@ def calibrate(obs: dict, params: dict, vis_arr: np.array, vis_weights: np.array,
     vis_arr : np.array
         _description_
     vis_weights : np.array
+        _description_
+    vis_model_arr : np.array
         _description_
     pyfhd_config : dict
         _description_
@@ -45,9 +47,6 @@ def calibrate(obs: dict, params: dict, vis_arr: np.array, vis_weights: np.array,
     # Calculate this here as it's used throughout the calibration process
     cal["n_pol"] = min(obs["n_pol"], 2)
     cal["conv_thresh"] = 1e-7
-    
-    # TODO: Get the vis_model_arr from sources, This will be the code from the branch model_transfer, add a placeholder for now
-    vis_model_arr = np.array([])
 
     # Calculate auto-correlation visibilities, optionally use them for initial calibration estimates
     vis_auto, auto_tile_i = vis_extract_autocorr(obs, vis_arr, pyfhd_config);
@@ -138,7 +137,7 @@ def calibrate(obs: dict, params: dict, vis_arr: np.array, vis_weights: np.array,
 
 
     # Return the calibrated visibility array
-    return vis_cal, vis_model_arr, cal
+    return vis_cal, cal
 
 def calibrate_qu_mixing(vis_arr: np.ndarray, vis_model_arr : np.ndarray, vis_weights: np.ndarray, obs : dict) -> float:
     """
