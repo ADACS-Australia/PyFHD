@@ -1,16 +1,15 @@
-import numpy as np
 from pathlib import Path
 import configargparse
 import argparse
 import time
 import subprocess
 import logging
-import shutil
 from typing import Tuple
-import importlib_resources
 import os
 from PyFHD.pyfhd_tools.git_helper import retrieve_gitdict
 from importlib.metadata import version
+from glob import glob
+import re
 
 def pyfhd_parser():
     """
@@ -133,7 +132,6 @@ def pyfhd_parser():
     calibration.add_argument('--digital-gain-jump-polyfit', default=False, action='store_true', help = 'Perform polynomial fitting for the amplitude separately before and after the highband digital gain jump at 187.515E6.')
     calibration.add_argument('--calibration-flag-iterate', default = 0, type = int, help = 'Number of times to repeat calibration in order to better identify and flag bad antennas so as to exclude them from the final result.')
     calibration.add_argument('--cal-phase-fit-iter', default = 4, type = int, help = 'Set the iteration number to begin phase calibration. Before this, phase is held fixed and only amplitude is being calibrated.')
-    calibration.add_argument('--import-model-uvfits', default = None, type=Path, help = 'Use an existing `uvfits` file (typically a simulation) as model visibilities. The phase centre of model data must match the "RA" and "DEC" values in the metafits file (NOT the "RAPHASE" and "DECPHASE").')
 
     # Flagging Group
     flag.add_argument('-fv', '--flag-visibilities', default = False, action = 'store_true', help = 'Flag visibilities based on calculations in vis_flag')
@@ -181,7 +179,8 @@ def pyfhd_parser():
     export.add_argument('--ring-radius-multi', type = float, default = 10, help = 'Sets the multiplier for the size of the rings around sources in the restored images.\nRing Radius will equal pad-uv-image * ring-radius-multi.\nTo generate restored images without rings, set ring_radius = 0.')
 
     # Model Group
-    model.add_argument('-m', '--model-visibilities', default = False, action = 'store_true', help = 'Make visibilities for the subtraction model separately from the model used in calibration.\nThis is useful if the user sets parameters to make the subtraction model different from the model used in calibration.\nIf not set, the model used for calibration is the same as the subtraction model.')
+    model.add_argument('-m', '--model-file-type', default = 'sav', choices = ['sav', 'uvfits'], help = 'Set the file type of the model, by default it looks for sav files of format <obs_id>_params.sav and <obs_id>_vis_model_<pol_name>.sav.\nIf you set uvfits you must put set path using --import-model-uvfits.\nThis argument is required as PyFHD currently cannot produce a model.')
+    model.add_argument('--model-file-path', default='./input', type = Path, help = 'In the case you chose sav for model-file-type then this will be a directory containing all the <obs_id>_params and <obs_id>_vis_model_<pol_name> sav files.\nIn the case you chose uvfits, then the path is to a uvfits file, in which case make sure the phase centre of model data must match the "RA" and "DEC" values in the metafits file (NOT the "RAPHASE" and "DECPHASE").')
     model.add_argument('--diffuse-model', type = Path, help = """File path to the diffuse model file.The file should contain the following: \nMODEL_ARR = A healpix map with the diffuse model. Diffuse model has units Jy/pixel unless keyword diffuse_units_kelvin is set.\n            The model can be an array of pixels, a pointer to an array of pixels, or an array of four pointers corresponding to I, Q, U, and V Stokes polarized maps.\n    NSIDE = The corresponding NSIDE parameter of the healpix map.\n HPX_INDS = The corresponding healpix indices of the model_arr.\nCOORD_SYS = (Optional) 'galactic' or 'celestial'. Specifies the coordinate system of the healpix map. GSM is in galactic coordinates, for instance. If missing, defaults to equatorial.""")
     model.add_argument('--model-catalog-file-path', type = Path, default = None, help = 'A file containing a catalog of sources to be used to make model visibilities for subtraction.')
     model.add_argument('--allow-sidelobe-model-sources', default = False, action = 'store_true', help = 'Allows PyFHD to model sources in the sidelobes for subtraction.\nForces the beam_threshold to 0.01 in order to go down to 1%% of the beam to capture sidelobe sources during the generation of a model calibration source catalog for the particular observation.')
@@ -448,8 +447,30 @@ def pyfhd_setup(options : argparse.Namespace) -> Tuple[dict, logging.RootLogger]
         
     # if importing model visiblities from a uvfits file, check that file 
     # exists
-    if pyfhd_config['import_model_uvfits']:
-        errors += _check_file_exists(pyfhd_config, 'import_model_uvfits')
+    if pyfhd_config['model-file-path']:
+        errors += _check_file_exists(pyfhd_config, 'model-file-path')
+
+    if pyfhd_config['model-file-path'] == 'sav':
+        # We're expecting to find a params file, then a vis_model_XX and vis_model_YY at the very least
+        if not Path.exists(Path(pyfhd_config['model-file-path'], f"{pyfhd_config['obs_id']}_params.sav")):
+            errors += 1
+            logger.error("You selected the model-file-path and sav, but PyFHD can't find the sav file for the model params")
+        files_in_model_path = glob(f"{pyfhd_config['model-file-path']}/*")
+        pattern = rf".*{re.escape(pyfhd_config['obs_id'])}.*\.sav$"
+        regex = re.compile(pattern)
+        matching_files = [file_path for file_path in files_in_model_path if regex.match(file_path)]
+        if len(matching_files) <= 2:
+            errors +1
+            logger.error(f"You are missing some required files to read in the model visibilities from sav files, here is the list of found sav files: {matching_files}.")
+        elif pyfhd_config['n_pol'] and len(matching_files) < pyfhd_config['n_pol'] + 1:
+            errors += 1
+            logger.error(f"You are missing files based on the number of polarizations you have set, you should have a params file then {pyfhd_config['n_pol']} polarization files. Here is the list of found sav files: {matching_files}.")
+        elif pyfhd_config['n_pol'] and len(matching_files) > pyfhd_config['n_pol'] + 1:
+            warnings += 1
+            logger.warning(f"You have more files than expected for the number of polarizations you set, you set {pyfhd_config['n_pol']} polarizations but found {len(matching_files)- 1} polarization files. You can most likely ignore this warning. Here is the list of found sav files: {matching_files}.")
+        elif not pyfhd_config['n_pol']:
+            warnings += 1
+            logger.warning(f"Since you have told PyFHD before hand you are using 0 polarizations and letting the uvfits header set the number of polarizations PyFHD have no way to validate if the number of savs is correct, check the list of found files carefully: {matching_files}. If you're sure this is fine, ignore this warning.")
 
     # Entirety of Simulation Group depends on run-simulation (Error)
     if not pyfhd_config['run_simulation'] and \
@@ -505,7 +526,7 @@ def pyfhd_setup(options : argparse.Namespace) -> Tuple[dict, logging.RootLogger]
         pyfhd_config['elements'] = dimension_use
 
     #--------------------------------------------------------------------------
-    #Checks are finished, report any errors or warings
+    # Checks are finished, report any errors or warings
     #--------------------------------------------------------------------------
     # If there are any errors exit the program.
     if errors:
@@ -516,7 +537,7 @@ def pyfhd_setup(options : argparse.Namespace) -> Tuple[dict, logging.RootLogger]
         exit()
 
     if warnings:
-        logger.warning('{} warnings detected, check the log above, these cause some weird behavior'.format(warnings))
+        logger.warning('{} warnings detected, check the log above, these may cause some weird behavior'.format(warnings))
 
     logger.info('Input validated, starting PyFHD run now')
 

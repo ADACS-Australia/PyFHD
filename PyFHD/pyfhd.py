@@ -6,7 +6,7 @@ from PyFHD.pyfhd_tools.pyfhd_setup import pyfhd_parser, pyfhd_setup
 from PyFHD.data_setup.obs import create_obs
 from PyFHD.data_setup.uvfits import extract_header, create_params, extract_visibilities, create_layout
 from PyFHD.pyfhd_tools.pyfhd_utils import simple_deproject_w_term, vis_weights_update, vis_noise_calc
-from PyFHD.source_modeling.vis_model_transfer import import_vis_model_from_uvfits, flag_model_visibilities
+from PyFHD.source_modeling.vis_model_transfer import vis_model_transfer, flag_model_visibilities
 from PyFHD.calibration.calibrate import calibrate, calibrate_qu_mixing
 from PyFHD.use_idl_fhd.run_idl_fhd import run_IDL_calibration_only, run_IDL_convert_gridding_to_healpix_images
 from PyFHD.use_idl_fhd.use_idl_outputs import run_gridding_on_IDL_outputs
@@ -90,7 +90,7 @@ def main_python_only(pyfhd_config : dict, logger : logging.RootLogger):
 
     # Get the vis_model_arr from a UVFITS file and flag any issues
     vis_model_arr_start = time.time()
-    vis_model_arr, params_model = import_vis_model_from_uvfits(pyfhd_config, obs, logger)
+    vis_model_arr, params_model = vis_model_transfer(pyfhd_config, obs, logger)
     vis_model_arr = flag_model_visibilities(vis_model_arr, params, params_model, obs, pyfhd_config, logger)
     vis_model_arr_end = time.time()
     _print_time_diff(vis_model_arr_start, vis_model_arr_end, 'Model Imported and Flagged From UVFITS', logger)

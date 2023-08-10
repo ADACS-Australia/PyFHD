@@ -12,7 +12,7 @@ import astropy
 from astropy import units as u
 
 
-def extract_header(pyfhd_config : dict, logger : logging.RootLogger, data_uvfits = True) -> Tuple[dict, np.recarray, FITS_rec, Header]:
+def extract_header(pyfhd_config : dict, logger : logging.RootLogger, model_uvfits = False) -> Tuple[dict, np.recarray, FITS_rec, Header]:
     """
     TODO:_summary_
 
@@ -21,11 +21,11 @@ def extract_header(pyfhd_config : dict, logger : logging.RootLogger, data_uvfits
     uvfits_path : str
         Path to the uvfits to open (either the data or the model)
     pyfhd_config : dict
-        This is the config created from the argprase
+        This is the config created from the argparse
     logger : logging.RootLogger
         The PyFHD logger
-    data_uvfits : bool
-        If True, load in the data uvfits. If False, load in a model uvfits file.
+    model_uvfits : bool
+        If True, load in the model uvfits. If False, load in a data uvfits file, by default False
 
     Returns
     -------
@@ -44,12 +44,12 @@ def extract_header(pyfhd_config : dict, logger : logging.RootLogger, data_uvfits
         If the UVFITS file doesn't contain all the data then a KeyError will be raised
     """
 
-    if data_uvfits:
-        uvfits_path = Path(pyfhd_config['input_path'], pyfhd_config['obs_id'] + '.uvfits')
+    if model_uvfits:
+        uvfits_path = Path(pyfhd_config['model_file_path'])
+        logger.info(f"Reading in model visibilities from: {uvfits_path}")
     else:
-        uvfits_path = Path(pyfhd_config['import_model_uvfits'])
-
-    logger.info(f"uvfits_path: {uvfits_path}")
+        uvfits_path = Path(pyfhd_config['input_path'], pyfhd_config['obs_id'] + '.uvfits')
+        logger.info(f"Reading in visibilities from: {uvfits_path}")
 
     # Retrieve all data from the observation
     with fits.open(uvfits_path) as observation:
@@ -71,7 +71,7 @@ def extract_header(pyfhd_config : dict, logger : logging.RootLogger, data_uvfits
     pyfhd_header['n_tile'] = 128
     pyfhd_header['naxis'] = params_header['naxis']
     pyfhd_header['n_params'] = params_header['pcount']
-    pyfhd_header['nbaselines'] = params_header['gcount']
+    pyfhd_header['n_baselines'] = params_header['gcount']
     pyfhd_header['n_complex'] = params_header['naxis2']
     pyfhd_header['n_pol'] = params_header['naxis3']
     pyfhd_header['n_freq'] = params_header['naxis4']

@@ -164,7 +164,7 @@ def calibrate_qu_mixing(vis_arr: np.ndarray, vis_model_arr : np.ndarray, vis_wei
     # n_tile = obs['n_tile']
     n_time = obs['n_time']
     #This should be number of baselines for one time step
-    n_baselines = obs['nbaselines']
+    n_baselines = obs['n_baselines']
 
     # reshape from (n_freq, n_baselines*n_times) to (n_freq, n_times, n_baselines). Turns out due to the row major vs col major difference
     # between IDL and python, this shape also changes

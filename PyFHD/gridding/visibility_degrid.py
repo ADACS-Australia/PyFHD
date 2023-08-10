@@ -78,7 +78,7 @@ def visibility_degrid(image_uv, vis_weights, obs, psf, params, polarization = 0,
     psf_dim = psf['dim'][0]
     psf_resolution = psf['resolution'][0]
     psf_dim3 = int(psf_dim ** 2)
-    nbaselines = obs['nbaselines'][0]
+    n_baselines = obs['n_baselines'][0]
     n_samples = obs['n_time'][0]
     n_freq_use = frequency_array.size
     n_freq = obs['n_freq'][0]
@@ -117,7 +117,7 @@ def visibility_degrid(image_uv, vis_weights, obs, psf, params, polarization = 0,
             ww[conj_i] = -ww[conj_i]
     
     # Create the correct size visibility array
-    vis_dimension = nbaselines * n_samples
+    vis_dimension = n_baselines * n_samples
     visibility_array = np.zeros((vis_dimension, n_freq), dtype = np.cdouble)
     
     ind_ref = np.arange(max(bin_n))
@@ -175,7 +175,7 @@ def visibility_degrid(image_uv, vis_weights, obs, psf, params, polarization = 0,
             ymin_use = ymin.flat[inds[0]]
             freq_i = inds % n_freq_use
             fbin = freq_bin_i[freq_i]
-            baseline_inds = (inds / n_freq_use).astype(int) % nbaselines
+            baseline_inds = (inds / n_freq_use).astype(int) % n_baselines
 
             box_matrix = np.zeros((vis_n, psf_dim3), dtype = arr_type)
             box_arr = image_uv[ymin_use : ymin_use + psf_dim, xmin_use : xmin_use + psf_dim].flatten()

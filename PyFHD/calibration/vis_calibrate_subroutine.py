@@ -77,7 +77,7 @@ def vis_calibrate_subroutine(vis_arr: np.ndarray, vis_model_ptr: np.ndarray, vis
     tile_A_i = obs['baseline_info']['tile_a'] - 1
     tile_B_i = obs['baseline_info']['tile_b'] - 1
     freq_arr = obs['baseline_info']['freq']
-    n_baselines = obs['nbaselines']
+    n_baselines = obs['n_baselines']
     if pyfhd_config['cal_phase_fit_iter']:
         phase_fit_iter = pyfhd_config['cal_phase_fit_iter']
     else:

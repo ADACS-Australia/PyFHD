@@ -2,37 +2,38 @@ import numpy as np
 from PyFHD.data_setup.uvfits import extract_visibilities, create_params, extract_header
 import logging
 from PyFHD.pyfhd_tools.pyfhd_utils import run_command
+from PyFHD.pyfhd_tools.test_utils import recarray_to_dict
 import importlib_resources
 import os
 import shutil
 import h5py
 from scipy.io import readsav
+from pathlib import Path
 
-def vis_model_transfer(obs : dict) -> np.array:
-    """Placeholder incase we decide to add functionality to read in IDL .sav
-    model visibilities"""
+def vis_model_transfer(pyfhd_config: dict, obs : dict, logger: logging.RootLogger) -> tuple[np.array, dict]:
+    """_summary_
+
+    Parameters
+    ----------
+    pyfhd_config : dict
+        _description_
+    obs : dict
+        _description_
+
+    Returns
+    -------
+    tuple[np.array, dict]
+        _description_
+    """
+    if (pyfhd_config['model_file_type'] == 'sav'):
+        return import_vis_model_from_sav(pyfhd_config, obs, logger)
+    elif (pyfhd_config['model_file_type'] == 'uvfits'):
+        return import_vis_model_from_uvfits(pyfhd_config, obs, logger)
     
-    # function vis_model_transfer,obs,model_transfer
-
-    #   ;; Option to transfer pre-made and unflagged model visbilities
-    #   vis_model_arr=PTRARR(obs.n_pol,/allocate)
-
-    #   for pol_i=0, obs.n_pol-1 do begin
-    #     transfer_name = model_transfer + '/' + obs.obsname + '_vis_model_'+obs.pol_names[pol_i]+'.sav'
-    #     if ~file_test(transfer_name) then $
-    #       message, transfer_name + ' not found during model transfer.'
-    #     vis_model_arr[pol_i] = getvar_savefile(transfer_name,'vis_model_ptr')
-    #     print, "Model visibilities transferred from " + transfer_name
-    #   endfor
-
-    #   return, vis_model_arr
-
-    # end
-    pass
 
 def import_vis_model_from_sav(pyfhd_config : dict, obs : dict, logger : logging.RootLogger) -> tuple[np.ndarray, dict]:
     """Read a model visibility array in from multiple IDL sav files which are in a directory
-    given by pyfhd_config['import_model_uvfits']. The data is assumed to be in the format of
+    given by pyfhd_config['model-file-path']. The data is assumed to be in the format of
     <obs_id>_params.sav, <obs_id>_vis_model_<pol_name>.sav. The pol_name follows the pol_names
     in the obs dictionary which are ['XX','YY','XY','YX','I','Q','U','V'].
 
@@ -50,15 +51,27 @@ def import_vis_model_from_sav(pyfhd_config : dict, obs : dict, logger : logging.
     tuple[vis_model_arr: np.ndarray, params_model: dict]
        A tuple containing the vis_model_arr and params_model (which is used for flagging)
     """
-    
-    params_model = readsav()
+    params_model = readsav(Path(pyfhd_config['model_file_path'], f"{pyfhd_config['obs_id']}_params.sav"))
+    params_model = recarray_to_dict(params_model.params)
+    vis_model_arr = np.empty(obs['n_pol'], obs['n_freq'], obs['n_time'] * obs['n_baselines'], dtype=np.complex128)
+    for pol_i in range(obs['n_pol']):
+        try: 
+            curr_vis_model = readsav(Path(pyfhd_config['model_file_path'], f"{pyfhd_config['obs_id']}_vis_model_{obs['pol_names'][pol_i]}.sav"))
+            # Should be a rec array containing one item vis_model_ptr
+            curr_vis_model = curr_vis_model.vis_model_ptr
+            vis_model_arr[pol_i] = curr_vis_model.transpose().astype(np.complex128)
+        except FileNotFoundError as e:
+            path = Path(pyfhd_config['model_file_path'], f"{pyfhd_config['obs_id']}_vis_model_{obs['pol_names'][pol_i]}.sav")
+            logger.error(f"PyFHD failed to load in the model visibilities while trying to transfer in file: {path} as the file wasn't found. PyFHD is exiting execution")
+            exit()
+    return vis_model_arr, params_model
 
 
 
 def import_vis_model_from_uvfits(pyfhd_config : dict, obs : dict,
                                  logger : logging.RootLogger) -> tuple[np.ndarray, dict]:
     """Read a model visibility array in from a `uvfits` with filepath given
-    by pyfhd_config['import_model_uvfits']. Reads data in via 
+    by pyfhd_config['model_file_path']. Reads data in via 
     `PyFHD.data_setup.uvfits import extract_visibilities`.
 
     Parameters
@@ -79,10 +92,10 @@ def import_vis_model_from_uvfits(pyfhd_config : dict, obs : dict,
     #TODO WORRY about order of baselines comparing WODEN sims and real data
     #TODO WORRY about weights
     
-    header_model, params_data_model, _, _ = extract_header(pyfhd_config, logger, data_uvfits=False)
+    header_model, params_data_model, _, _ = extract_header(pyfhd_config, logger, model_uvfits=True)
 
     if header_model['n_freq'] != obs['n_freq']:
-        model_path = pyfhd_config['import_model_uvfits']
+        model_path = pyfhd_config['model_file_path']
         logger.error(f"The obs was expecting {obs['n_freq']} frequencies, "
                      f"but the model visibilities read in from {model_path} "
                      f"contain {header_model['n_freq']} freqs. Please supply "

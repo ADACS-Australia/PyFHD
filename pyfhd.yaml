@@ -59,8 +59,6 @@ calibration-catalog-file-path  :  ~ # 'GLEAM_v2_plus_rlb2019.sav' (FHD Default)
 transfer-calibration : ~
 cal-stop : false
 transfer-model-uv : ~
-# You should put this here, we may make it a part of the parser defaults and a required argument
-import-model-uvfits: ~
 
 # Flagging
 flag-visibilities : false
@@ -95,7 +93,11 @@ ring-radius-multi : 10.
 description : ~
 
 # Model
-model-visibilities : false
+# Current choices of model-file-type are sav and uvfits
+model-file-type : 'sav'
+# If you set model-file-type to uvfits, set import-model-uvfits to the (ideally absolute) path of the fits file
+# If model-file-type is set to sav then it will look for the sav files as said in the function import_vis_model_from_sav
+model-file-path: './input'
 diffuse-model : ~
 model-catalog-file-path  :  ~ # 'GLEAM_v2_plus_rlb2019.sav' (FHD Default)
 allow-sidelobe-model-sources : false

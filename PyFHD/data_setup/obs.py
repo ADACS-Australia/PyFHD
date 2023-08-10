@@ -56,7 +56,7 @@ def create_obs(pyfhd_header : dict, params : dict, pyfhd_config : dict, logger :
     if obs['n_time'] > 1:
         baseline_info['bin_offset'][1:] = np.cumsum(bin_width[: obs['n_time'] - 1])
     # Deal with the number of visibilities
-    obs['nbaselines'] = int(bin_width[0])
+    obs['n_baselines'] = int(bin_width[0])
     obs['n_vis'] = time.size * obs['n_freq']
     obs['n_vis_raw'] = obs['n_vis_in'] = obs['n_vis']
     obs['nf_vis'] = np.zeros(obs['n_freq'], dtype = np.int64)

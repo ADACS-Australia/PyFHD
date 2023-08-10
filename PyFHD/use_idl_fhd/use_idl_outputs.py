@@ -242,7 +242,7 @@ def run_gridding_on_IDL_outputs(pyfhd_config : dict, IDL_output_dir : str,
     #MUST change dimension of psf ID or things will crash
     #Has to do with flagging of the real data no being applied
     #to the perfect beam model
-    psf.id[0] = psf.id[0][:obs.nbaselines[0], :, :]
+    psf.id[0] = psf.id[0][:obs.n_baselines[0], :, :]
 
     freq_use = obs['baseline_info'][0]['freq_use'][0]
     #TODO how do we remove this hardcording
