@@ -447,15 +447,15 @@ def pyfhd_setup(options : argparse.Namespace) -> Tuple[dict, logging.RootLogger]
         
     # if importing model visiblities from a uvfits file, check that file 
     # exists
-    if pyfhd_config['model-file-path']:
-        errors += _check_file_exists(pyfhd_config, 'model-file-path')
+    if pyfhd_config['model_file_path']:
+        errors += _check_file_exists(pyfhd_config, 'model_file_path')
 
-    if pyfhd_config['model-file-path'] == 'sav':
+    if pyfhd_config['model_file_path'] == 'sav':
         # We're expecting to find a params file, then a vis_model_XX and vis_model_YY at the very least
-        if not Path.exists(Path(pyfhd_config['model-file-path'], f"{pyfhd_config['obs_id']}_params.sav")):
+        if not Path.exists(Path(pyfhd_config['model_file_path'], f"{pyfhd_config['obs_id']}_params.sav")):
             errors += 1
             logger.error("You selected the model-file-path and sav, but PyFHD can't find the sav file for the model params")
-        files_in_model_path = glob(f"{pyfhd_config['model-file-path']}/*")
+        files_in_model_path = glob(f"{pyfhd_config['model_file_path']}/*")
         pattern = rf".*{re.escape(pyfhd_config['obs_id'])}.*\.sav$"
         regex = re.compile(pattern)
         matching_files = [file_path for file_path in files_in_model_path if regex.match(file_path)]

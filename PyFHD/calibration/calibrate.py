@@ -73,7 +73,7 @@ def calibrate(obs: dict, params: dict, vis_arr: np.array, vis_weights: np.array,
             auto_ratio = None
         cal_bandpass, cal_remainder = vis_cal_bandpass(obs, cal, params, pyfhd_config, logger)
 
-        if (pyfhd_config["calibration-polyfit"]):
+        if (pyfhd_config["calibration_polyfit"]):
             cal_polyfit = vis_cal_polyfit(cal_remainder, obs, auto_ratio, pyfhd_config, logger)
             # Replace vis_cal_combine with this line as the gain is the same size for polyfit and bandpass
             cal['gain'] = cal_polyfit['gain'] * cal_bandpass['gain']
@@ -82,7 +82,7 @@ def calibrate(obs: dict, params: dict, vis_arr: np.array, vis_weights: np.array,
         
         if(pyfhd_config['auto_ratio_calibration']):
             cal = cal_auto_ratio_remultiply(obs, cal, auto_tile_i)
-    elif (pyfhd_config["calibration-polyfit"]):
+    elif (pyfhd_config["calibration_polyfit"]):
         cal = vis_cal_polyfit(cal, obs)
 
     # Get the gain residuals

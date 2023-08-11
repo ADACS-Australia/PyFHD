@@ -51,17 +51,26 @@ def import_vis_model_from_sav(pyfhd_config : dict, obs : dict, logger : logging.
     tuple[vis_model_arr: np.ndarray, params_model: dict]
        A tuple containing the vis_model_arr and params_model (which is used for flagging)
     """
-    params_model = readsav(Path(pyfhd_config['model_file_path'], f"{pyfhd_config['obs_id']}_params.sav"))
-    params_model = recarray_to_dict(params_model.params)
-    vis_model_arr = np.empty(obs['n_pol'], obs['n_freq'], obs['n_time'] * obs['n_baselines'], dtype=np.complex128)
-    for pol_i in range(obs['n_pol']):
-        try: 
-            curr_vis_model = readsav(Path(pyfhd_config['model_file_path'], f"{pyfhd_config['obs_id']}_vis_model_{obs['pol_names'][pol_i]}.sav"))
+    try: 
+        path = Path(pyfhd_config['model_file_path'], f"{pyfhd_config['obs_id']}_params.sav")
+        params_model = readsav(path)
+        params_model = recarray_to_dict(params_model.params)
+        # Read in the first polarization from pol_names
+        pol_i = 0
+        path = Path(pyfhd_config['model_file_path'], f"{pyfhd_config['obs_id']}_vis_model_{obs['pol_names'][pol_i]}.sav")
+        curr_vis_model = readsav(path)
+        curr_vis_model = curr_vis_model.vis_model_ptr.transpose().astype(np.complex128)
+        # The shape should be n_pol, n_freq, n_time * n_baselines
+        vis_model_shape = [obs['n_pol']] + list(curr_vis_model.shape)
+        vis_model_arr = np.empty(vis_model_shape, dtype=np.complex128)
+        vis_model_arr[pol_i] = curr_vis_model
+        for pol_i in range(1, obs['n_pol']):
+            path = Path(pyfhd_config['model_file_path'], f"{pyfhd_config['obs_id']}_vis_model_{obs['pol_names'][pol_i]}.sav")
+            curr_vis_model = readsav(path)
             # Should be a rec array containing one item vis_model_ptr
             curr_vis_model = curr_vis_model.vis_model_ptr
             vis_model_arr[pol_i] = curr_vis_model.transpose().astype(np.complex128)
-        except FileNotFoundError as e:
-            path = Path(pyfhd_config['model_file_path'], f"{pyfhd_config['obs_id']}_vis_model_{obs['pol_names'][pol_i]}.sav")
+    except FileNotFoundError as e:
             logger.error(f"PyFHD failed to load in the model visibilities while trying to transfer in file: {path} as the file wasn't found. PyFHD is exiting execution")
             exit()
     return vis_model_arr, params_model

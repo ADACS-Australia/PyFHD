@@ -78,7 +78,7 @@ def main_python_only(pyfhd_config : dict, logger : logging.RootLogger):
     
     # Get obs
     obs_start = time.time()
-    obs = create_obs(pyfhd_header, params, pyfhd_config, logger)
+    obs = create_obs(pyfhd_header, params, layout, pyfhd_config, logger)
     obs_end = time.time()
     _print_time_diff(obs_start, obs_end, 'Obs Dictionary Created', logger)
 

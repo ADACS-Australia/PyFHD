@@ -8,7 +8,7 @@ from astropy.io import fits
 from astropy.table import Table
 from astropy.time import Time
 
-def create_obs(pyfhd_header : dict, params : dict, pyfhd_config : dict, logger : logging.RootLogger) -> dict:
+def create_obs(pyfhd_header : dict, params : dict, layout: dict, pyfhd_config : dict, logger : logging.RootLogger) -> dict:
     """
     create_obs takes all the data that has been read in and creates the obs data structure which holds data
     and metadata of the observation we're doing a PyFHD run on. Inside this function the metafits file will
@@ -20,6 +20,8 @@ def create_obs(pyfhd_header : dict, params : dict, pyfhd_config : dict, logger :
         The data from the UVFITS header
     params : dict
         The data from the UVFITS file
+    layout : dict
+        The data dictionary containing data and metadata about the antennas
     pyfhd_config : dict
         PyFHD's configuration dictionary
     logger : logging.RootLogger
@@ -99,6 +101,29 @@ def create_obs(pyfhd_header : dict, params : dict, pyfhd_config : dict, logger :
             obs['n_tile'] = max(np.max(baseline_info['tile_a']), np.max(baseline_info['tile_b']))
         params['antenna1'] = baseline_info['tile_a']
         params['antenna2'] = baseline_info['tile_b']
+
+    # check that all elements in the antenna1 and antenna2 array exist in the antenna numbers
+    # from the uvfits antenna table
+    all_ants = np.hstack([params['antenna1'], params['antenna2']])
+    all_ants = np.unique(all_ants)
+    if not (np.all(np.in1d(all_ants, layout['antenna_numbers']))):
+        logger.warning("Antenna arrays contain number(s) not found in antenna table")
+
+    # fhd expects antenna1 and antenna2 arrays containing indices that are one-indexed. 
+    # Some uvfits files contain actual antenna numbers in these fields, while others  
+    # (particularly, those written by cotter or birli) contain indices.
+    # To account for this, all antenna numbers from the uvfits header are mapped to indices 
+    # using the antenna numbers from the uvfits antenna table.
+    # If the antenna numbers were written into the file as indices, they will be mapped to themselves.
+    for tile_i in range(obs['n_tile']):
+        tile_a_antennas = np.where(layout['antenna_numbers'][tile_i] == params['antenna1'])
+        if (np.size(tile_a_antennas) > 0):
+            baseline_info['tile_a'][tile_a_antennas] = tile_i + 1
+        tile_b_antennas = np.where(layout['antenna_numbers'][tile_i] == params['antenna2'])
+        if(np.size(tile_b_antennas) > 0):
+            baseline_info['tile_b'][tile_b_antennas] = tile_i + 1
+    params['antenna1'] = baseline_info['tile_a']
+    params['antenna2'] = baseline_info['tile_b']
     
     baseline_info['freq_use'] = np.ones(obs['n_freq'], dtype = np.int64)
 
@@ -163,7 +188,9 @@ def create_obs(pyfhd_header : dict, params : dict, pyfhd_config : dict, logger :
     obs['n_time_flag'] = obs['n_time'] - np.sum(baseline_info['time_use'])
 
     # Where metadata has tiles flagged, ensure they don't get used in obs.
-    baseline_info['tile_use'] = 1 - meta['tile_flag']
+    # The meta tile_flag is of size 256 on some files, likely put in there for prep
+    # for MWA phase 2 before it begun?  
+    baseline_info['tile_use'] = 1 - meta['tile_flag'][:obs['n_tile']]
     obs['n_tile_flag'] = np.count_nonzero(baseline_info['tile_use'])
     
     # Set the last of obs values
