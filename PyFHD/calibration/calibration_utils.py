@@ -100,24 +100,21 @@ def vis_cal_auto_init(obs : dict, cal : dict, vis_arr: np.array, vis_model_arr: 
     auto_gain : np.array
         _description_
     """
-    auto_scale = np.zeros(cal["n_pol"])
+    # Set out the 
+    auto_scale = np.zeros((cal["n_pol"], obs["n_freq"], obs["n_tile"]))
+    auto_gain = np.ones((cal["n_pol"], obs["n_freq"], obs["n_tile"]), dtype=np.complex128)
     freq_i_use = np.where(obs["baseline_info"]["freq_use"])[0]
     for pol_i in range(cal["n_pol"]):
         res_mean_data = resistant_mean(np.abs(vis_arr[pol_i, freq_i_use, :]), 2)
         res_mean_model = resistant_mean(np.abs(vis_model_arr[pol_i, freq_i_use, :]), 2)
         auto_scale[pol_i] = np.sqrt(res_mean_data / res_mean_model)
-    # TODO: Vectorize below loops
-    auto_gain = np.zeros((cal["n_pol"], obs["n_freq"], obs["n_tile"]), dtype=np.complex128)
+    auto_gain = np.ones((cal["n_pol"], obs["n_freq"], obs["n_tile"]), dtype=np.complex128)
+    # Would love to get rid of the loop altogether, haven't figurted it out yet
     for pol_i in range(cal["n_pol"]):
-        gain_arr = np.ones((obs["n_freq"], obs["n_tile"]), dtype=np.complex128)
-        for freq_i in range(obs["n_freq"]):
-            for tile_i in range(auto_tile_i.size):
-                gain_single = np.sqrt(vis_auto[pol_i, freq_i, tile_i] * weight_invert(vis_auto_model[pol_i, freq_i, tile_i]))
-                gain_arr[freq_i, auto_tile_i[tile_i]] = np.sqrt(vis_auto[pol_i, freq_i, tile_i] * weight_invert(vis_auto_model[pol_i, freq_i, tile_i]))
-        gain_arr *= auto_scale[pol_i] * weight_invert(np.mean(gain_arr))
-        gain_arr[np.isnan(gain_arr)] = 1
-        gain_arr[gain_arr <= 0] = 1
-        auto_gain[pol_i, :, :] = gain_arr
+        auto_gain[pol_i, :, :][:, auto_tile_i] = np.sqrt(vis_auto[pol_i, :, :] * weight_invert(vis_auto_model[pol_i, :, :]))
+        auto_gain[pol_i, :, :] *= auto_scale[pol_i] * weight_invert(np.mean(auto_gain[pol_i, :, :]))
+        auto_gain[pol_i, :, :][np.isnan(auto_gain[pol_i, :, :])] = 1
+        auto_gain[pol_i, :, :][auto_gain[pol_i, :, :] <= 0] = 1
     return auto_gain
 
 def vis_calibration_flag(obs: dict, cal: dict, pyfhd_config: dict, logger: RootLogger) -> dict:
@@ -171,7 +168,7 @@ def vis_calibration_flag(obs: dict, cal: dict, pyfhd_config: dict, logger: RootL
         freq_cut_i = np.where(gain_freq_fom == 0)
         freq_uncut_i = np.nonzero(gain_freq_fom)[0]
         if (freq_cut_i[0].size > 0):
-            obs["baseline_info"]["freq_use"][freq_use_i][0][freq_cut_i] = 0
+            obs["baseline_info"]["freq_use"][freq_use_i][freq_cut_i] = 0
         tile_cut_i = np.where(gain_tile_fom == 0)
         tile_uncut_i = np.nonzero(gain_tile_fom)[0]
         if (tile_cut_i[0].size > 0):
@@ -205,20 +202,21 @@ def vis_calibration_flag(obs: dict, cal: dict, pyfhd_config: dict, logger: RootL
             obs["baseline_info"]["tile_use"][tile_use_i[0][tile_cut_i]] = 0
 
         # Reset freq_use_i and tile_use_i for flagging based on phase
-        tile_use_i = np.nonzero(obs["baseline_info"]["tile_use"])
-        freq_use_i = np.nonzero(obs["baseline_info"]["freq_use"])
+        tile_use_i = np.nonzero(obs["baseline_info"]["tile_use"])[0]
+        freq_use_i = np.nonzero(obs["baseline_info"]["freq_use"])[0]
 
         # Start flagging based on phase
-        phase_sub = phase[:, tile_use_i[0]][freq_use_i[0], :]
-        phase_slope_arr = np.empty(tile_use_i[0].size)
-        phase_sigma_arr = np.empty(tile_use_i[0].size)
-        for tile_i in range(tile_use_i[0].size):
+        phase_sub = phase[:, tile_use_i][freq_use_i, :]
+        phase_slope_arr = np.empty(tile_use_i.size)
+        phase_sigma_arr = np.empty(tile_use_i.size)
+        for tile_i in range(tile_use_i.size):
             phase_use = np.unwrap(phase_sub[:, tile_i])
-            phase_params = np.polynomial.polynomial.Polynomial.fit(freq_use_i[0], phase_use, deg=pyfhd_config["cal_phase_degree_fit"])
+            phase_params = np.polynomial.polynomial.Polynomial.fit(freq_use_i, phase_use, deg=pyfhd_config["cal_phase_degree_fit"])
             phase_params = phase_params.convert().coef
-            phase_fit = np.polynomial.polynomial.polyval(freq_use_i[0], phase_params)
+            phase_fit = np.polynomial.polynomial.polyval(freq_use_i, phase_params)
             phase_sigma2 = np.std(phase_use - phase_fit)
-            phase_slope_arr[tile_i] = phase_params[1]
+            # In an unusual scenario sometimes you'll get an all 0 array to fit on, which gives only a zero back for the fit
+            phase_slope_arr[tile_i] = phase_params[1] if phase_params.size > 1 else phase_params[0]
             phase_sigma_arr[tile_i] = phase_sigma2
         iter = 0
         n_addl_cut = 1
@@ -233,7 +231,7 @@ def vis_calibration_flag(obs: dict, cal: dict, pyfhd_config: dict, logger: RootL
             n_cut = tile_cut_i[0].size
             iter += 1
         if (tile_cut_i[0].size > 0):
-            obs["baseline_info"]["tile_use"][tile_use_i[0][tile_cut_i]] = 0
+            obs["baseline_info"]["tile_use"][tile_use_i[tile_cut_i]] = 0
     # Return the obs with an updated baseline_info on the use of tiles and frequency
     return obs
 
@@ -517,7 +515,7 @@ def vis_cal_bandpass(obs: dict, cal: dict, params: dict, pyfhd_config: dict, log
                 global_bandpass = True
         # n_freq x 13 array. columns are frequency, 90m xx, 90m yy, 150m xx, 150m yy, 230m xx, 230m yy, 320m xx, 320m yy, 400m xx, 400m yy, 524m xx, 524m yy
         bandpass_arr = np.zeros((obs["n_freq"], cal["n_pol"] * cable_length_ref.size + 1))
-        bandpass_arr[:, 0] = cal["freq"]
+        bandpass_arr[:, 0] = obs["baseline_info"]["freq"]
         bandpass_col_count = 1
         if (pyfhd_config['auto_ratio_calibration']):
             logger.info('auto_ratio_calibration is set, using global bandpass')
@@ -575,7 +573,7 @@ def vis_cal_bandpass(obs: dict, cal: dict, params: dict, pyfhd_config: dict, log
         # Add Levine Memo bandpass to the gain solutions here if you wish
     else:
         bandpass_arr = np.zeros((obs["n_freq"], cal["n_pol"] + 1))
-        bandpass_arr[:, 0] = cal["freq"]
+        bandpass_arr[:, 0] = obs["baseline_info"]["freq"]
         for pol_i in range(cal["n_pol"]):
             gain = cal["gain"][pol_i]
             gain_use = gain[freq_use, :][:, tile_use]
@@ -691,7 +689,8 @@ def vis_cal_polyfit(obs: dict, cal: dict, auto_ratio: np.ndarray | None, pyfhd_c
     if (cal_mode_fit):
         if (pyfhd_config['cal_reflection_mode_file']):
             logger.info('Using mwa calibration reflections fits from instrument_config/mwa_cable_reflection_coefficients.txt.')
-            cable_reflections = np.loadtxt(Path(pyfhd_config['input-path'], 'instrument_config', 'mwa_cable_reflection_coefficients.txt'), skiprows=1).transpose()
+            cable_len_filepath = importlib_resources.files('PyFHD.templates').joinpath(f"{pyfhd_config['instrument']}_cable_reflection_coefficients.txt")
+            cable_reflections = np.loadtxt(cable_len_filepath, skiprows=1).transpose()
             cable_length = cable_reflections[2]
             tile_ref_flag = np.minimum(np.maximum(np.zeros_like(cable_reflections[4]), cable_reflections[4]), np.ones_like(cable_reflections[4]))
             tile_mode_X = cable_reflections[5]
@@ -712,7 +711,8 @@ def vis_cal_polyfit(obs: dict, cal: dict, auto_ratio: np.ndarray | None, pyfhd_c
         elif (pyfhd_config['cal_reflection_mode_theory']):
             logger.info('Using theory calculation in nominal reflection mode calibration.')
             # Get the nominal tile lengths and velocity factors
-            cable_length_data = np.loadtxt(pyfhd_config["cable_lengths"], skiprows=1).transpose()
+            cable_len_filepath = importlib_resources.files('PyFHD.templates').joinpath(f"{pyfhd_config['instrument']}_cable_length.txt")
+            cable_length_data = np.loadtxt(cable_len_filepath, skiprows=1).transpose()
             cable_length = cable_length_data[2]
             cable_vf = cable_length_data[3]
             tile_ref_flag = np.minimum(np.maximum(0, cable_length_data[4]), 1)

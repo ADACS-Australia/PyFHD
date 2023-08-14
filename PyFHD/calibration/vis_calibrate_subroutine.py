@@ -316,8 +316,7 @@ def vis_calibrate_subroutine(vis_arr: np.ndarray, vis_model_ptr: np.ndarray, vis
                             # divergence_test_2 = convergence_strict >= np.min(conv_test[int(phase_fit_iter): i, fii]) * divergence_factor
                             if divergence_test_1 or divergence_test_2:
                                 # If both measures of convergence are getting worse, we need to stop.
-                                logger.info(f"Calibration diverged at iteration: {i}, for pol_i: {pol_i}, freq_i:\
-                                    {fi}. Convergence was: {conv_test[fii, i - 1]} and the threshold was: {conv_thresh}")
+                                logger.info(f"Calibration diverged at iteration: {i}, for pol_i: {pol_i}, freq_i: {fi}. Convergence was: {conv_test[fii, i - 1]} and the threshold was: {conv_thresh}")
                                 divergence_flag = True
                                 break
             if divergence_flag:
@@ -329,8 +328,7 @@ def vis_calibrate_subroutine(vis_arr: np.ndarray, vis_model_ptr: np.ndarray, vis
                 convergence[fi, tile_use] = np.abs(gain_curr - gain_old) * weight_invert(np.abs(gain_old))
                 conv_iter_arr[fi, tile_use] = i
             if i == max_cal_iter:
-                logger.info(f"Calibration reach max iterations before converging for pol_i: {pol_i} and freq_i:\
-                    {fi}. Convergence was: {conv_test[i - 1, fii]} and the threshold was: {conv_thresh}")
+                logger.info(f"Calibration reach max iterations before converging for pol_i: {pol_i} and freq_i: {fi}. Convergence was: {conv_test[i - 1, fii]} and the threshold was: {conv_thresh}")
             del A_ind_arr
             gain_arr[fi, tile_use] = gain_curr
         nan_i = np.where(np.isnan(gain_curr))[0]

@@ -136,6 +136,7 @@ def test_vis_cal_polyfit(before_file, after_file):
     cal = h5_before['cal']
     auto_ratio = h5_before['auto_ratio']
     pyfhd_config = h5_before['pyfhd_config']
+    pyfhd_config['instrument'] = 'mwa'
     
     expected_cal_return = h5_after['cal_return']
 

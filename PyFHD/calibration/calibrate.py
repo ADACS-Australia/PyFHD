@@ -44,9 +44,11 @@ def calibrate(obs: dict, params: dict, vis_arr: np.array, vis_weights: np.array,
     """
     # Initialize cal dict
     cal = {}
-    # Calculate this here as it's used throughout the calibration process
+    # Add any default values to calibration here
     cal["n_pol"] = min(obs["n_pol"], 2)
     cal["conv_thresh"] = 1e-7
+    cal['ref_antenna'] = 1
+    cal['ref_antenna_name'] = obs['baseline_info']['tile_names'][cal['ref_antenna']]
 
     # Calculate auto-correlation visibilities, optionally use them for initial calibration estimates
     vis_auto, auto_tile_i = vis_extract_autocorr(obs, vis_arr, pyfhd_config);
@@ -58,15 +60,18 @@ def calibrate(obs: dict, params: dict, vis_arr: np.array, vis_weights: np.array,
     else:
         cal["gain"] = np.full((cal['n_pol'], obs['n_freq'], obs['n_tile']), pyfhd_config['cal_gain_init'])
 
-    # Do the calibration with vis_calibrate_subroutine 
-    # TODO: vis_calibrate_subroutine outputs cal structure in FHD, likely will need to change here, or for the cal dictionary to be passed in and edited
+    # Do the calibration with vis_calibrate_subroutine
+    logger.info("Gain initialized beginning vis_calibrate subroutine")
     cal = vis_calibrate_subroutine(vis_arr, vis_model_arr, vis_weights, obs, cal, params, pyfhd_config, logger)
+    logger.info("Function vis_calibrate_subroutine has completed.")
     if (pyfhd_config['flag_calibration']):
+        logger.info("Flagging Calibration has been activated and calibration will now be flagged")
         obs = vis_calibration_flag(obs, cal, pyfhd_config, logger)
     cal_base = cal.copy()
 
     # Perform bandpass (amp + phase per fine freq) and polynomial fitting (low order amp + phase fit plus cable reflection fit)
-    if (pyfhd_config["bandpass-calibrate"]):
+    if (pyfhd_config["bandpass_calibrate"]):
+        logger.info("You have chosen to perform a bandpass calculation and calibration")
         if (pyfhd_config['auto_ratio_calibration']):
             cal, auto_ratio = cal_auto_ratio_divide(obs, cal, vis_auto, auto_tile_i)
         else:
@@ -74,14 +79,15 @@ def calibrate(obs: dict, params: dict, vis_arr: np.array, vis_weights: np.array,
         cal_bandpass, cal_remainder = vis_cal_bandpass(obs, cal, params, pyfhd_config, logger)
 
         if (pyfhd_config["calibration_polyfit"]):
-            cal_polyfit = vis_cal_polyfit(cal_remainder, obs, auto_ratio, pyfhd_config, logger)
+            logger.info("You have selected to calculate a polynomial fit allowing the cable reflections to be fit")
+            cal_polyfit = vis_cal_polyfit(obs, cal_remainder, auto_ratio, pyfhd_config, logger)
             # Replace vis_cal_combine with this line as the gain is the same size for polyfit and bandpass
             cal['gain'] = cal_polyfit['gain'] * cal_bandpass['gain']
         else:
             cal = cal_bandpass
         
         if(pyfhd_config['auto_ratio_calibration']):
-            cal = cal_auto_ratio_remultiply(obs, cal, auto_tile_i)
+            cal = cal_auto_ratio_remultiply(cal, auto_ratio, auto_tile_i)
     elif (pyfhd_config["calibration_polyfit"]):
         cal = vis_cal_polyfit(cal, obs)
 
@@ -90,8 +96,10 @@ def calibrate(obs: dict, params: dict, vis_arr: np.array, vis_weights: np.array,
     if (pyfhd_config['calibration_auto_fit']):
         # Get amp from auto-correlation visibilities for plotting (or optionally for the calibration solution itself)
         cal_auto = vis_cal_auto_fit(obs, cal, vis_auto, vis_auto_model, auto_tile_i)
+        # These subtractions replace vis_cal_subtract
         cal_res = cal_base['gain'] - cal_auto['gain']
     else:
+        # These subtractions replace vis_cal_subtract
         cal_res = cal_base['gain'] - cal['gain']
 
     # Add plotting later here, plot_cals was the function in IDL if you wish to translate
@@ -100,13 +108,16 @@ def calibrate(obs: dict, params: dict, vis_arr: np.array, vis_weights: np.array,
     if (pyfhd_config['calibration_auto_fit']):
         cal = cal_auto
     # Apply Calibration
-    vis_cal, cal = vis_calibration_apply(vis_arr, obs, cal, vis_model_arr, vis_weights)
+    logger.info("Applying the calibration")
+    vis_cal, cal = vis_calibration_apply(vis_arr, obs, cal, vis_model_arr, vis_weights, logger)
     cal["gain_resolution"] = cal_res["gain"]
 
     # Save the ratio and sigma average variance related to vis_cal
+    logger.info("Saving the ratio and sigma average variance")
     cal['vis_baseline_hist'] = vis_baseline_hist(obs, params, vis_cal, vis_model_arr)
 
     # Calculate statistics to put into the calibration dictionary for output purposes
+    logger.info("Calculating statistics from calibration")
     nc_pol = min(obs["n_pol"], 2)
     cal_gain_avg = np.zeros(nc_pol)
     cal_res_avg = np.zeros(nc_pol)

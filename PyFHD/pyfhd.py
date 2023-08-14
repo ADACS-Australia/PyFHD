@@ -98,6 +98,7 @@ def main_python_only(pyfhd_config : dict, logger : logging.RootLogger):
     # Skipped initializing the cal structure as it mostly just copies values from the obs, params, config and the skymodel from FHD
     # However, there is resulting cal structure for logging and output purposes to store the resulting gain and any other associated
     # arrays
+    logger.info("Beginning Calibration")
     cal_start = time.time()
     vis_arr, cal = calibrate(obs, params, vis_arr, vis_weights, vis_model_arr, pyfhd_config, logger)
     cal_end = time.time()
@@ -111,10 +112,11 @@ def main_python_only(pyfhd_config : dict, logger : logging.RootLogger):
     weight_end = time.time()
     _print_time_diff(weight_start, weight_end, 'Visibilities Weights Updated', logger)
 
-    flag_start = time.time()
-    vis_weights, obs = vis_flag(vis_arr, vis_weights, obs, params)
-    flag_end = time.time()
-    _print_time_diff(flag_start, flag_end, 'Visibilities Flagged', logger)
+    if (pyfhd_config['flag_visibilities']):
+        flag_start = time.time()
+        vis_weights, obs = vis_flag(vis_arr, vis_weights, obs, params)
+        flag_end = time.time()
+        _print_time_diff(flag_start, flag_end, 'Visibilities Flagged', logger)
 
     noise_start = time.time()
     obs['vis_noise'] = vis_noise_calc(obs, vis_arr, vis_weights)
