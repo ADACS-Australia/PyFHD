@@ -88,6 +88,19 @@ def main_python_only(pyfhd_config : dict, logger : logging.RootLogger):
         w_term_end = time.time()
         _print_time_diff(w_term_start, w_term_end, 'Simple W-Term Deprojection Applied', logger)
 
+    # Peform basic flagging
+    if (pyfhd_config['flag_basic']):
+        basic_flag_start = time.time()
+        # TODO: Add vis_flag_basic here
+        basic_flag_end = time.time()
+        _print_time_diff(basic_flag_start, basic_flag_end, 'Basic Flagging Completed', logger)
+
+    # Update the visibility weights
+    weight_start = time.time()
+    vis_weights, obs = vis_weights_update(vis_weights, obs, params, pyfhd_config)
+    weight_end = time.time()
+    _print_time_diff(weight_start, weight_end, 'Visibilities Weights Updated After Basic Flagging', logger)
+
     # Get the vis_model_arr from a UVFITS file and flag any issues
     vis_model_arr_start = time.time()
     vis_model_arr, params_model = vis_model_transfer(pyfhd_config, obs, logger)
@@ -98,19 +111,23 @@ def main_python_only(pyfhd_config : dict, logger : logging.RootLogger):
     # Skipped initializing the cal structure as it mostly just copies values from the obs, params, config and the skymodel from FHD
     # However, there is resulting cal structure for logging and output purposes to store the resulting gain and any other associated
     # arrays
-    logger.info("Beginning Calibration")
-    cal_start = time.time()
-    vis_arr, cal = calibrate(obs, params, vis_arr, vis_weights, vis_model_arr, pyfhd_config, logger)
-    cal_end = time.time()
-    _print_time_diff(cal_start, cal_end, 'Visibilities calibrated and cal dictionary with gains created', logger)
+    if (pyfhd_config['calibrate_visibilities']):
+        logger.info("Beginning Calibration")
+        cal_start = time.time()
+        vis_arr, cal = calibrate(obs, params, vis_arr, vis_weights, vis_model_arr, pyfhd_config, logger)
+        cal_end = time.time()
+        _print_time_diff(cal_start, cal_end, 'Visibilities calibrated and cal dictionary with gains created', logger)
 
-    if (obs['n_pol'] >= 4):
-        cal["stokes_mix_phase"] = calibrate_qu_mixing(vis_arr, vis_model_arr, vis_weights, obs)
+        if (obs['n_pol'] >= 4):
+            qu_mixing_start = time.time()
+            cal["stokes_mix_phase"] = calibrate_qu_mixing(vis_arr, vis_model_arr, vis_weights, obs)
+            qu_mixing_end = time.time()
+            _print_time_diff(qu_mixing_start, qu_mixing_end, 'Calibrate QU-Mixing has finished, result in cal["stokes_mix_phase"]', logger)
 
-    weight_start = time.time()
-    vis_weights, obs = vis_weights_update(vis_weights, obs, params, pyfhd_config)
-    weight_end = time.time()
-    _print_time_diff(weight_start, weight_end, 'Visibilities Weights Updated', logger)
+        weight_start = time.time()
+        vis_weights, obs = vis_weights_update(vis_weights, obs, params, pyfhd_config)
+        weight_end = time.time()
+        _print_time_diff(weight_start, weight_end, 'Visibilities Weights Updated After Calibration', logger)
 
     if (pyfhd_config['flag_visibilities']):
         flag_start = time.time()

@@ -3,6 +3,55 @@ from scipy.ndimage import median_filter
 from logging import RootLogger
 from PyFHD.pyfhd_tools.pyfhd_utils import idl_median
 
+def vis_flag_basic(vis_weight_arr: np.ndarray, obs: dict, params: dict, pyfhd_config: dict, logger: RootLogger) -> tuple[np.ndarray, dict]:
+    """
+    Do some basic flagging on frequencies and tiles based on the confgiruation given by pyfhd_config 
+    such as `flag_freq_start`, `flag_freq_end`, `instrument` and `flag_tile_names`. To flag the frequencies and
+    tiles, the arrays in `obs['baseline_info']`, *`freq_use`* and *`tile_use`* will be adjusted to 0's where 
+    the tile or frequency is flagged. The `vis_weight_arr` will be turned to 0's in the associated frequencies
+    and tiles that have been flagged.
+
+    Parameters
+    ----------
+    vis_weight_arr : np.ndarray
+        The visibility weights array
+    obs : dict
+        The observation dictionary containing the frequency and tile flag arrays
+    params : dict
+        _description_
+    pyfhd_config : dict
+        PyFHD's configuration dictionary
+    logger : RootLogger
+        PyFHD's logger
+
+    Returns
+    -------
+    tuple[vis_weight_arr: np.ndarray, obs: dict]
+        A tuple of the updated vis_weight_arr and the obs dict containing updated frequency 
+        and tile flags
+    """
+    freq_arr = obs['baseline_info']['freq'].copy()
+
+    # If you wish to adjust things based on the configuration option mask_mirror_indices do that here
+    # and add the config the pyfhd_setup. There was no description for it in FHD.
+
+    if (pyfhd_config['flag_freq_start']):
+        logger.info(f'Flagging frequencies less than {pyfhd_config["flag_freq_start"]}MHz')
+        frequency_MHz = freq_arr / 1e6
+        freq_start_cut = np.where(frequency_MHz < pyfhd_config['flag_freq_start'])
+        if (np.size(freq_start_cut) > 0):
+            vis_weight_arr[:, freq_start_cut, :] = 0
+    if (pyfhd_config['flag_freq_end']):
+        logger.info(f'Flagging frequencies more than {pyfhd_config["flag_freq_end"]}MHz')
+        frequency_MHz = freq_arr / 1e6
+        freq_end_cut = np.where(frequency_MHz > pyfhd_config['flag_freq_end'])
+        if (np.size(freq_end_cut) > 0):
+            vis_weight_arr[:, freq_end_cut, :] = 0
+    if (len(pyfhd_config['flag_tiles']) > 0):
+        pass
+
+    pass
+
 def vis_flag(vis_arr : np.ndarray, vis_weights: np.ndarray, obs: dict, params: dict, logger: RootLogger) -> tuple[np.ndarray, dict] :
     """
     TODO: __summary__

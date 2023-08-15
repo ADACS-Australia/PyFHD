@@ -62,9 +62,11 @@ transfer-model-uv : ~
 
 # Flagging
 flag-visibilities : false
+flag-basic: true
 flag-calibration : true
 flag-freq-start : ~
 flag-freq-end : ~
+flag-tiles: []
 transfer-weights : ~
 time-cut: ~
 
