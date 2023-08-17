@@ -1,7 +1,6 @@
 import numpy as np
-from scipy.ndimage import median_filter
 from logging import RootLogger
-from PyFHD.pyfhd_tools.pyfhd_utils import idl_median
+from PyFHD.pyfhd_tools.pyfhd_utils import idl_median, histogram
 
 def vis_flag_basic(vis_weight_arr: np.ndarray, obs: dict, params: dict, pyfhd_config: dict, logger: RootLogger) -> tuple[np.ndarray, dict]:
     """
@@ -47,10 +46,81 @@ def vis_flag_basic(vis_weight_arr: np.ndarray, obs: dict, params: dict, pyfhd_co
         freq_end_cut = np.where(frequency_MHz > pyfhd_config['flag_freq_end'])
         if (np.size(freq_end_cut) > 0):
             vis_weight_arr[:, freq_end_cut, :] = 0
+    # This section replaces the function vis_flag_tile
     if (len(pyfhd_config['flag_tiles']) > 0):
-        pass
+        tile_flag_list_use = np.array([], dtype=np.int64)
+        for flag in pyfhd_config['flag_tiles']:
+            if type(flag) == str and flag.strip() in obs['baseline_info']['tile_names']:
+                logger.info(f"Manually flagging tile {flag}")
+                flag_idx = np.where(obs['baseline_info']['tile_names'] == flag.strip())[0][0]
+                tile_flag_list_use.append(flag_idx + 1)
+            else:
+                logger.warning(f"{flag} wasn't found in obs['baseline_info']['tile_names'], skipping it")
+        hist_a, _, ra = histogram(obs['baseline_info']['tile_a'], min=1)
+        hist_b, _, rb = histogram(obs['baseline_info']['tile_b'], min=1)
+        hist_c, _, _ = histogram(tile_flag_list_use, min=1)
+        # hist_A and hist_b should be the same size
+        hist_ab = hist_a + hist_b
+        n_bin = min(np.size(hist_ab), np.size(hist_c))
+        tile_cut_i = np.where((hist_ab[0:n_bin] > 0) | (hist_c[0:n_bin] > 0))[0]
+        if (np.size(tile_cut_i) > 0):
+            for cut_idx in range(np.size(tile_cut_i)):
+                ti = tile_cut_i[cut_idx]
+                na = ra[ra[ti + 1] - 1] - ra[ra[ti]]
+                if na > 0:
+                    vis_weight_arr[:, :, ra[ra[ti] : ra[ti + 1] - 1]] = 0
+                nb = rb[rb[ti + 1] - 1] - rb[rb[ti]]
+                if nb > 0:
+                    vis_weight_arr[:, :, rb[rb[ti] : rb[ti + 1] - 1]] = 0
+    # Here I'm going to assume the mwa data you're using is more than 32 tiles
+    # If you wish to implement flagging for mwa when it had 32 tiles, do that here
+    # Flagging based on channel width
+    freq_avg = 768 // obs['n_freq']
+    channel_edge_flag_width = np.ceil(2 / freq_avg)
+    coarse_channel_width = 32 // freq_avg
+    fine_channel_i = np.arange(obs['n_freq']) % coarse_channel_width
+    channel_edge_flag = np.where(np.minimum(fine_channel_i, (coarse_channel_width - 1) - fine_channel_i) < channel_edge_flag_width)
+    if (np.size(channel_edge_flag) > 0):
+        vis_weight_arr[:, channel_edge_flag, :] = 0
 
-    pass
+    tile_a_i = obs["baseline_info"]['tile_a'] - 1
+    tile_b_i = obs["baseline_info"]["tile_b"] - 1
+    freq_use = np.ones(obs["n_freq"], dtype = np.int64)
+    tile_use = np.ones(obs["n_tile"], dtype = np.int64)
+    for pol_i in range(obs["n_pol"]):
+        baseline_flag = np.max(vis_weight_arr[pol_i], axis = 1)
+        freq_flag = np.max(vis_weight_arr[pol_i], axis = 0)
+        fi_use = np.where(freq_flag > 0)
+        bi_use = np.where(baseline_flag > 0)
+        
+        freq_use_temp = np.zeros(obs["n_freq"], dtype = np.int64)
+        if (np.size(fi_use) > 0):
+            freq_use_temp[fi_use] = 1
+        freq_use *= freq_use_temp
+
+        tile_use_temp = np.zeros(obs["n_tile"], dtype = np.int64)
+        if (np.size(bi_use) > 0):
+            tile_use_temp[tile_a_i[bi_use]] = 1
+            tile_use_temp[tile_b_i[bi_use]] = 1
+        tile_use *= tile_use_temp
+
+    # Time based flagging
+    if (np.min(obs['baseline_info']['time_use']) <= 0):
+        bin_offset = obs['baseline_info']['bin_offset']
+        bin_offset = np.hstack([bin_offset, np.size(obs['baseline_info']['tile_a'])])
+        time_bin = np.zeros(np.size(obs['baseline_info']['tile_a']))
+        for ti in range(obs["n_time"]):
+            if obs['baseline_info']['time_use'][ti] <= 0:
+                vis_weight_arr[:, :, bin_offset[ti] : bin_offset[ti + 1] - 1] = 0
+
+    obs['baseline_info']['tile_use'] = np.where((tile_use) & (obs['baseline_info']['tile_use']))[0]
+    obs['baseline_info']['freq_use'] = np.where((freq_use) & (obs['baseline_info']['freq_use']))[0]
+
+    obs["n_time_flag"] = np.sum(obs['baseline_info']['time_use'])
+    obs["n_tile_flag"] = np.sum(obs["baseline_info"]["tile_use"])
+    obs["n_freq_flag"] = np.sum(obs["baseline_info"]["freq_use"])
+
+    return vis_weight_arr, obs
 
 def vis_flag(vis_arr : np.ndarray, vis_weights: np.ndarray, obs: dict, params: dict, logger: RootLogger) -> tuple[np.ndarray, dict] :
     """
