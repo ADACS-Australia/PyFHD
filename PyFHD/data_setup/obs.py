@@ -187,11 +187,9 @@ def create_obs(pyfhd_header : dict, params : dict, layout: dict, pyfhd_config : 
                 baseline_info['time_use'][ti_start:ti_end + 1] = 0
     obs['n_time_flag'] = obs['n_time'] - np.sum(baseline_info['time_use'])
 
-    # Where metadata has tiles flagged, ensure they don't get used in obs.
-    # The meta tile_flag is of size 256 on some files, likely put in there for prep
-    # for MWA phase 2 before it begun?  
-    baseline_info['tile_use'] = 1 - meta['tile_flag'][:obs['n_tile']]
-    obs['n_tile_flag'] = np.count_nonzero(baseline_info['tile_use'])
+    # Flag tiles based on meta data
+    baseline_info['tile_use'] = 1 - meta['tile_flag']
+    obs['n_tile_flag'] = np.count_nonzero(baseline_info['tile_use'] == 0)
     
     # Set the last of obs values
     if pyfhd_config['dft_threshold']:
@@ -272,7 +270,7 @@ def read_metafits(obs : dict, pyfhd_header : dict, params : dict, pyfhd_config :
         single_i = np.where(data['pol'] == data['pol'][0])
         meta['tile_names'] = data['tile'][single_i]
         meta['tile_height'] = data['height'][single_i] - pyfhd_header['alt']
-        meta['tile_flag'] = data['flag']
+        meta['tile_flag'] = data['flag'][single_i]
         if np.sum(meta['tile_flag']) == meta['tile_flag'].size - 1:
             if pyfhd_config['run_simulation']:
                 logger.warning("All tiles flagged in metadata")
