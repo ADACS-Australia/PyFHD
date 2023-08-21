@@ -128,7 +128,7 @@ def create_obs(pyfhd_header : dict, params : dict, layout: dict, pyfhd_config : 
     baseline_info['freq_use'] = np.ones(obs['n_freq'], dtype = np.int64)
 
     # Calculate kx and ky for each baseline at high precision to get most accurate observation information
-    kx_arr = np.outer(baseline_info['freq'] ,params['uu'])
+    kx_arr = np.outer(baseline_info['freq'], params['uu'])
     ky_arr = np.outer(baseline_info['freq'], params['vv'])
     kr_arr = np.sqrt(kx_arr ** 2 + ky_arr ** 2)
     max_baseline = max(np.max(np.abs(kx_arr)), np.max(np.abs(ky_arr)))
@@ -161,7 +161,7 @@ def create_obs(pyfhd_header : dict, params : dict, layout: dict, pyfhd_config : 
 
     # Set the max and min baseline
     max_baseline_inds = np.where((np.abs(kx_arr) / obs['kpix'] < obs['dimension'] / 2) & (np.abs(ky_arr) / obs['kpix'] < obs['elements']/2))
-    obs['max_baseline'] = np.max(np.abs(kx_arr[max_baseline_inds]))
+    obs['max_baseline'] = np.max(np.abs(kr_arr[max_baseline_inds]))
     if pyfhd_config['min_baseline'] is None:
         obs['min_baseline'] = np.min(kr_arr[np.nonzero(kr_arr)])
     else:
@@ -171,7 +171,7 @@ def create_obs(pyfhd_header : dict, params : dict, layout: dict, pyfhd_config : 
 
     # TODO: antenna indices rewrite PR goes here
 
-    baseline_info['time_use'] = np.ones(obs['n_tile'], dtype = np.int8)
+    baseline_info['time_use'] = np.ones(obs['n_time'], dtype = np.int8)
     # time cut is specified in seconds to cut (rounded up to next time integration point).
     # Specify negative time_cut to cut time off the end. Specify a vector to cut at both the start and end
     if pyfhd_config['time_cut'] is not None:

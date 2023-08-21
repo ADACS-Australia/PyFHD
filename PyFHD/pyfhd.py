@@ -72,9 +72,6 @@ def main_python_only(pyfhd_config : dict, logger : logging.RootLogger):
     _print_time_diff(layout_start, layout_end, 'Layout Dictionary Extracted', logger)
 
     # TODO: Save the layout here later
-
-    # if pyfhd_config['run_simulation']:
-        # TODO: in_situ_sim_input()
     
     # Get obs
     obs_start = time.time()
