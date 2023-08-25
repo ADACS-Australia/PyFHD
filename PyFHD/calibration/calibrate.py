@@ -92,15 +92,14 @@ def calibrate(obs: dict, params: dict, vis_arr: np.array, vis_weights: np.array,
         cal = vis_cal_polyfit(cal, obs)
 
     # Get the gain residuals
-    cal_res = cal_base
     if (pyfhd_config['calibration_auto_fit']):
         # Get amp from auto-correlation visibilities for plotting (or optionally for the calibration solution itself)
         cal_auto = vis_cal_auto_fit(obs, cal, vis_auto, vis_auto_model, auto_tile_i)
         # These subtractions replace vis_cal_subtract
-        cal_res = cal_base['gain'] - cal_auto['gain']
+        cal_res_gain = cal_base['gain'] - cal_auto['gain']
     else:
         # These subtractions replace vis_cal_subtract
-        cal_res = cal_base['gain'] - cal['gain']
+        cal_res_gain = cal_base['gain'] - cal['gain']
 
     # Add plotting later here, plot_cals was the function in IDL if you wish to translate
 
@@ -110,7 +109,7 @@ def calibrate(obs: dict, params: dict, vis_arr: np.array, vis_weights: np.array,
     # Apply Calibration
     logger.info("Applying the calibration")
     vis_cal, cal = vis_calibration_apply(vis_arr, obs, cal, vis_model_arr, vis_weights, logger)
-    cal["gain_resolution"] = cal_res["gain"]
+    cal["gain_resolution"] = cal_res_gain.copy()
 
     # Save the ratio and sigma average variance related to vis_cal
     logger.info("Saving the ratio and sigma average variance")
@@ -129,8 +128,8 @@ def calibrate(obs: dict, params: dict, vis_arr: np.array, vis_weights: np.array,
         if (tile_use_i.size == 0 or freq_use_i.size == 0):
             continue
         # Replaced extract_subarray with just the proper indexing
-        gain_ref = cal["gain"][pol_i, tile_use_i, freq_use_i]
-        gain_res = cal_res["gain"][pol_i, tile_use_i, freq_use_i]
+        gain_ref = cal["gain"][pol_i, freq_use_i, :][:, tile_use_i]
+        gain_res = cal_res_gain[pol_i, freq_use_i][:, tile_use_i]
         cal_gain_avg[pol_i] = np.mean(np.abs(gain_ref))
         cal_res_avg[pol_i] = np.mean(np.abs(gain_res))
         res_mean = resistant_mean(np.abs(gain_res), 2)

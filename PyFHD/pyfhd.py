@@ -10,7 +10,7 @@ from PyFHD.source_modeling.vis_model_transfer import vis_model_transfer, flag_mo
 from PyFHD.calibration.calibrate import calibrate, calibrate_qu_mixing
 from PyFHD.use_idl_fhd.run_idl_fhd import run_IDL_calibration_only, run_IDL_convert_gridding_to_healpix_images
 from PyFHD.use_idl_fhd.use_idl_outputs import run_gridding_on_IDL_outputs
-from PyFHD.flagging.flagging import vis_flag
+from PyFHD.flagging.flagging import vis_flag, vis_flag_basic
 import logging
 
 def _print_time_diff(start : float, end : float, description : str, logger : RootLogger):
@@ -88,7 +88,7 @@ def main_python_only(pyfhd_config : dict, logger : logging.RootLogger):
     # Peform basic flagging
     if (pyfhd_config['flag_basic']):
         basic_flag_start = time.time()
-        # TODO: Add vis_flag_basic here
+        vis_weights, obs = vis_flag_basic(vis_weights, obs, pyfhd_config, logger)
         basic_flag_end = time.time()
         _print_time_diff(basic_flag_start, basic_flag_end, 'Basic Flagging Completed', logger)
 
@@ -98,7 +98,7 @@ def main_python_only(pyfhd_config : dict, logger : logging.RootLogger):
     weight_end = time.time()
     _print_time_diff(weight_start, weight_end, 'Visibilities Weights Updated After Basic Flagging', logger)
 
-    # Get the vis_model_arr from a UVFITS file and flag any issues
+    # Get the vis_model_arr from a UVFITS file or SAV files and flag any issues
     vis_model_arr_start = time.time()
     vis_model_arr, params_model = vis_model_transfer(pyfhd_config, obs, logger)
     vis_model_arr = flag_model_visibilities(vis_model_arr, params, params_model, obs, pyfhd_config, logger)

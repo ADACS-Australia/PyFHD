@@ -141,8 +141,8 @@ def vis_calibration_flag(obs: dict, cal: dict, pyfhd_config: dict, logger: RootL
     amp_threshold = 2
     phase_sigma_threshold = 5
     for pol_i in range(cal["n_pol"]):
-        tile_use_i = np.nonzero(obs["baseline_info"]["tile_use"])
-        freq_use_i = np.nonzero(obs["baseline_info"]["freq_use"])
+        tile_use_i = np.nonzero(obs["baseline_info"]["tile_use"])[0]
+        freq_use_i = np.nonzero(obs["baseline_info"]["freq_use"])[0]
         # TODO: adjust depending on size given by vis_cal_auto_init
         gain = cal["gain"][pol_i]
         phase = np.arctan2(gain.imag, gain.real)
@@ -152,54 +152,51 @@ def vis_calibration_flag(obs: dict, cal: dict, pyfhd_config: dict, logger: RootL
         # extract_subarray is not being used as it was FHD's way of taking the fact that
         # IDL's indexing can be weird and won't allow to index the result
         # TODO: May need to adjust the indexing to match IDL as tile_use_i and freq_use_i use np.where on gain, which will be multidimensional as well
-        amp_sub = amp[: , tile_use_i[0]][freq_use_i[0], :]
+        amp_sub = amp[: , tile_use_i][freq_use_i, :]
         gain_freq_fom = np.std(amp_sub, axis = 1)
         # Calculate the y values from a polynomial fit and keep the standard deviation of the error in gain_tile_fom
         amp_sub_fit = np.zeros_like(amp_sub)
         # Polynomial polyval can only take 1d arrays and doesn't vectorize across a 2d array.
-        for tile_i in range(tile_use_i[0].size):
-            amp_sub_fit[:, tile_i] = np.polynomial.polynomial.polyval(freq_use_i[0],np.polynomial.Polynomial.fit(freq_use_i[0], amp_sub[:, tile_i], deg = pyfhd_config["cal_amp_degree_fit"]).convert().coef)
+        for tile_i in range(tile_use_i.size):
+            amp_sub_fit[:, tile_i] = np.polynomial.polynomial.polyval(freq_use_i,np.polynomial.Polynomial.fit(freq_use_i, amp_sub[:, tile_i], deg = pyfhd_config["cal_amp_degree_fit"]).convert().coef)
         # Get standard deviation of the residuals on a per tile basis
         gain_tile_fom = np.std(amp_sub - amp_sub_fit, axis = 0)
         # Get the median of every tile, why is it call avg?
         gain_tile_avg = np.median(amp_sub, axis = 0)
         gain_freq_fom[np.isnan(gain_freq_fom)] = 0
         gain_tile_fom[np.isnan(gain_tile_fom)] = 0
-        freq_cut_i = np.where(gain_freq_fom == 0)
+        freq_cut_i = np.where(gain_freq_fom == 0)[0]
         freq_uncut_i = np.nonzero(gain_freq_fom)[0]
-        if (freq_cut_i[0].size > 0):
+        if (freq_cut_i.size > 0):
             obs["baseline_info"]["freq_use"][freq_use_i][freq_cut_i] = 0
-        tile_cut_i = np.where(gain_tile_fom == 0)
+        tile_cut_i = np.where(gain_tile_fom == 0)[0]
         tile_uncut_i = np.nonzero(gain_tile_fom)[0]
-        if (tile_cut_i[0].size > 0):
-            obs["baseline_info"]["tile_use"][tile_use_i][0][tile_cut_i] = 0
+        if (tile_cut_i.size > 0):
+            obs["baseline_info"]["tile_use"][tile_use_i][tile_cut_i] = 0
         if (freq_uncut_i.size == 0 or tile_uncut_i.size == 0):
             logger.error("The frequency and tile flagging inside calibration found some values not detected in previous flagging or calibration")
         
-        n_addl_cut = max(freq_cut_i[0].size + tile_cut_i[0].size, 1)
-        n_cut = freq_cut_i[0].size + tile_cut_i[0].size
+        n_addl_cut = max(freq_cut_i.size + tile_cut_i.size, 1)
+        n_cut = freq_cut_i.size + tile_cut_i.size
         iter = 0
         while n_addl_cut > 0 and iter < 3:
             gain_freq_sigma = np.std(gain_freq_fom[freq_uncut_i])
             gain_tile_sigma = np.std(gain_tile_fom[tile_uncut_i])
-            freq_cut_i = np.where((gain_freq_fom - np.median(gain_freq_fom[freq_uncut_i]) - amp_sigma_threshold * gain_freq_sigma) > 0)
+            freq_cut_i = np.where((gain_freq_fom - np.median(gain_freq_fom[freq_uncut_i]) - amp_sigma_threshold * gain_freq_sigma) > 0)[0]
             # Update the complement of freq_cut_i (the NOT) i.e. freq_uncut_i
             freq_uncut_i = freq_uncut_i[~np.isin(freq_uncut_i, freq_cut_i)]
-            test1_values = gain_tile_fom - np.median(gain_tile_fom[tile_uncut_i]) - amp_sigma_threshold * gain_tile_sigma
-            test2_values1 = np.median(gain_tile_avg) / amp_threshold
-            test2_values2 = np.median(gain_tile_avg) * amp_threshold
             tile_cut_test1 = (gain_tile_fom - np.median(gain_tile_fom[tile_uncut_i]) - amp_sigma_threshold * gain_tile_sigma) > 0
             tile_cut_test2 = (gain_tile_avg < np.median(gain_tile_avg) / amp_threshold) | (gain_tile_avg > np.median(gain_tile_avg) * amp_threshold)
-            tile_cut_i = np.where(tile_cut_test1 | tile_cut_test2)
+            tile_cut_i = np.where(tile_cut_test1 | tile_cut_test2)[0]
             # Update the complement of tile_cut_i (the NOT) i.e. tile_uncut_i
             tile_uncut_i = tile_uncut_i[~np.isin(tile_uncut_i, tile_cut_i)]
-            n_addl_cut = (freq_cut_i[0].size + tile_cut_i[0].size) - n_cut
-            n_cut = freq_cut_i[0].size + tile_cut_i[0].size
+            n_addl_cut = (freq_cut_i.size + tile_cut_i.size) - n_cut
+            n_cut = freq_cut_i.size + tile_cut_i.size
             iter+=1
-        if (freq_cut_i[0].size) > 0:
-            obs["baseline_info"]["freq_use"][freq_use_i[0][freq_cut_i]] = 0
-        if (tile_cut_i[0].size) > 0:
-            obs["baseline_info"]["tile_use"][tile_use_i[0][tile_cut_i]] = 0
+        if (freq_cut_i.size) > 0:
+            obs["baseline_info"]["freq_use"][freq_use_i[freq_cut_i]] = 0
+        if (tile_cut_i.size) > 0:
+            obs["baseline_info"]["tile_use"][tile_use_i[tile_cut_i]] = 0
 
         # Reset freq_use_i and tile_use_i for flagging based on phase
         tile_use_i = np.nonzero(obs["baseline_info"]["tile_use"])[0]
@@ -226,11 +223,11 @@ def vis_calibration_flag(obs: dict, cal: dict, pyfhd_config: dict, logger: RootL
             tile_cut_i = np.where(
                 ((np.abs(phase_slope_arr) - np.median(np.abs(phase_slope_arr))) > phase_sigma_threshold * slope_sigma) | 
                 ((phase_sigma_arr - np.median(phase_sigma_arr)) > phase_sigma_threshold * np.std(phase_sigma_arr))
-            )
-            n_addl_cut = tile_cut_i[0].size - n_cut
-            n_cut = tile_cut_i[0].size
+            )[0]
+            n_addl_cut = tile_cut_i.size - n_cut
+            n_cut = tile_cut_i.size
             iter += 1
-        if (tile_cut_i[0].size > 0):
+        if (tile_cut_i.size > 0):
             obs["baseline_info"]["tile_use"][tile_use_i[tile_cut_i]] = 0
     # Return the obs with an updated baseline_info on the use of tiles and frequency
     return obs

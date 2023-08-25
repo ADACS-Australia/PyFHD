@@ -122,6 +122,9 @@ def create_obs(pyfhd_header : dict, params : dict, layout: dict, pyfhd_config : 
         tile_b_antennas = np.where(layout['antenna_numbers'][tile_i] == params['antenna2'])
         if(np.size(tile_b_antennas) > 0):
             baseline_info['tile_b'][tile_b_antennas] = tile_i + 1
+    # Change the type to int to avoid issues with numba
+    baseline_info['tile_a'] = baseline_info['tile_a'].astype(np.int64)
+    baseline_info['tile_b'] = baseline_info['tile_b'].astype(np.int64)
     params['antenna1'] = baseline_info['tile_a']
     params['antenna2'] = baseline_info['tile_b']
     
