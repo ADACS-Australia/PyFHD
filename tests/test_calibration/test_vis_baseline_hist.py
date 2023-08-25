@@ -23,7 +23,7 @@ def tag(request):
 def run(request):
     return request.param
 
-skip_tests = [['1088716296', "run3"]]
+skip_tests = []
 
 @pytest.fixture()
 def before_file(tag, run, data_dir):
@@ -69,6 +69,8 @@ def after_file(tag, run, data_dir):
     #super dictionary to save everything in
     h5_save_dict = {}
     h5_save_dict['vis_baseline_hist'] = recarray_to_dict(sav_dict['vis_baseline_hist'])
+    h5_save_dict['vis_baseline_hist']['vis_res_ratio_mean'] = h5_save_dict['vis_baseline_hist']['vis_res_ratio_mean'].transpose()
+    h5_save_dict['vis_baseline_hist']['vis_res_sigma'] = h5_save_dict['vis_baseline_hist']['vis_res_sigma'].transpose()
 
     dd.io.save(after_file, h5_save_dict)
 
@@ -99,57 +101,39 @@ def test_vis_baseline_hist(before_file: Path, after_file: Path):
     expec_vis_res_ratio_mean = expec_vis_baseline_hist['vis_res_ratio_mean']
     expec_vis_res_sigma = expec_vis_baseline_hist['vis_res_sigma']
 
-    # There is an indexing error in the original FHD code, which means only
-    # the first num_bins of the `vis_res_ratio_mean` array are indexed. This means
-    # that only results from the last polarisation and saved, and spread over
-    # the first half of the bin indexes between each pol. We can recover what
-    # the second polaristaion should be at least for testing
-    # The below code was changed to also allow for 4 polarizations
-    # Flattening the results from the first num_bins / obs['n_pol'] rows takes out what we need
-    fixed_vis_res_ratio_mean = expec_vis_res_ratio_mean[:num_bins // obs['n_pol'], :].flatten()
-    fixed_vis_res_sigma = expec_vis_res_sigma[:num_bins // obs['n_pol'], :].flatten()
-
-    rtol = 1e-5
     atol = 4e-4
 
     #Can test that the fixed final polarisation is close to PyFHD result
     #Out results are ordered by pol, bin so need to do a transpose
-    npt.assert_allclose(fixed_vis_res_ratio_mean,
-                        result_vis_baseline_hist['vis_res_ratio_mean'].transpose()[:, -1],
-                        atol=atol, rtol=rtol)
+    npt.assert_allclose(result_vis_baseline_hist['vis_res_ratio_mean'], 
+                        expec_vis_res_ratio_mean, atol=atol)
     
-    npt.assert_allclose(fixed_vis_res_sigma,
-                        result_vis_baseline_hist['vis_res_sigma'].transpose()[:, -1],
-                        atol=atol, rtol=rtol)
+    npt.assert_allclose(result_vis_baseline_hist['vis_res_sigma'],
+                        expec_vis_res_sigma, atol=atol)
     
+    npt.assert_allclose(result_vis_baseline_hist['baseline_length'], num_bins)
 
-    fig, axs = plt.subplots(1, 3, figsize=(10, 5))
+    fig, axs = plt.subplots(1, 2, figsize=(10, 5))
 
     extent = [-0.5, 1.5, -0.5, num_bins - 0.5]
 
-    im = axs[0].imshow(expec_vis_res_ratio_mean, aspect='auto',
+    im = axs[0].imshow(expec_vis_res_ratio_mean.transpose(), aspect='auto',
                        extent=extent, origin='lower')
     plt.colorbar(im)
     axs[0].set_xticks([0, 1])
 
 
     vis_res_ratio_mean_plt = np.zeros([num_bins, 2])
-    vis_res_ratio_mean_plt[:,1] = fixed_vis_res_ratio_mean
-    im = axs[1].imshow(vis_res_ratio_mean_plt, aspect='auto',
-                       extent=extent, origin='lower',
-                       vmin=result_vis_baseline_hist['vis_res_ratio_mean'].min(),
-                       vmax=result_vis_baseline_hist['vis_res_ratio_mean'].max())
+    vis_res_ratio_mean_plt[:,1] = expec_vis_res_ratio_mean[1]
+
+    im = axs[1].imshow(result_vis_baseline_hist['vis_res_ratio_mean'].transpose(), aspect='auto',
+                       extent=extent, origin='lower')
     plt.colorbar(im)
     axs[1].set_xticks([0, 1])
 
-    im = axs[2].imshow(result_vis_baseline_hist['vis_res_ratio_mean'].transpose(), aspect='auto',
-                       extent=extent, origin='lower')
-    plt.colorbar(im)
-    axs[2].set_xticks([0, 1])
-
     axs[0].set_title('FHD')
-    axs[1].set_title('FHD (fixed)')
-    axs[2].set_title('PyFHD')
+  
+    axs[1].set_title('PyFHD')
 
     for ax in axs.flatten():
         ax.set_xlabel('Polarisation')
@@ -164,5 +148,6 @@ def test_vis_baseline_hist(before_file: Path, after_file: Path):
     else:
         tag = f"{name_split[0]}"
         run = f"{name_split[1]}"
-    fig.savefig(f"test_vis_baseline_hist_{tag}_{run}.png", bbox_inches='tight', dpi=300)
+    fig.savefig(f"test_vis_baseline_hist_{tag}_{run}_after_fix.png", bbox_inches='tight', dpi=300)
     plt.close()
+    

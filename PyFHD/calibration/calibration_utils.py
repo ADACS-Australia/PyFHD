@@ -1088,12 +1088,6 @@ def vis_baseline_hist(obs: dict, params: dict, vis_cal: np.ndarray, vis_model_ar
 
             else:
                 continue
-    # In a change from FHD, the baseline_length is saved as dist_locs the array,
-    # but dist_locs is only used for it's length, so I decided to take the length
-    # of the bins array (which I used instead of dist_locs) and store this. This dict
-    # will then get stored in the calibration dictionary when that gets saved.
-    # If you wish to save it separately a call to h5py or deepdish and saving it separately
-    # will work just fine
     return {
         'baseline_length' : bins.size,
         'vis_res_ratio_mean' : vis_res_ratio_mean,
