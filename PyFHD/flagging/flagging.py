@@ -2,7 +2,7 @@ import numpy as np
 from logging import RootLogger
 from PyFHD.pyfhd_tools.pyfhd_utils import idl_median, histogram
 
-def vis_flag_basic(vis_weight_arr: np.ndarray, obs: dict, params: dict, pyfhd_config: dict, logger: RootLogger) -> tuple[np.ndarray, dict]:
+def vis_flag_basic(vis_weight_arr: np.ndarray, obs: dict, pyfhd_config: dict, logger: RootLogger) -> tuple[np.ndarray, dict]:
     """
     Do some basic flagging on frequencies and tiles based on the confgiruation given by pyfhd_config 
     such as `flag_freq_start`, `flag_freq_end`, `instrument` and `flag_tile_names`. To flag the frequencies and
@@ -88,8 +88,8 @@ def vis_flag_basic(vis_weight_arr: np.ndarray, obs: dict, params: dict, pyfhd_co
     freq_use = np.ones(obs["n_freq"], dtype = np.int64)
     tile_use = np.ones(obs["n_tile"], dtype = np.int64)
     for pol_i in range(obs["n_pol"]):
-        baseline_flag = np.max(vis_weight_arr[pol_i], axis = 1)
-        freq_flag = np.max(vis_weight_arr[pol_i], axis = 0)
+        baseline_flag = np.max(vis_weight_arr[pol_i], axis = 0)
+        freq_flag = np.max(vis_weight_arr[pol_i], axis = 1)
         fi_use = np.where(freq_flag > 0)
         bi_use = np.where(baseline_flag > 0)
         
@@ -112,13 +112,19 @@ def vis_flag_basic(vis_weight_arr: np.ndarray, obs: dict, params: dict, pyfhd_co
         for ti in range(obs["n_time"]):
             if obs['baseline_info']['time_use'][ti] <= 0:
                 vis_weight_arr[:, :, bin_offset[ti] : bin_offset[ti + 1] - 1] = 0
+                
+    tile_use_indexes = np.where((tile_use) & (obs['baseline_info']['tile_use']))[0]
+    tile_use_zeros = np.zeros_like(obs['baseline_info']['tile_use'])
+    tile_use_zeros[tile_use_indexes] = 1
+    obs['baseline_info']['tile_use'] = tile_use_zeros
+    freq_use_indexes = np.where((freq_use) & (obs['baseline_info']['freq_use']))[0]
+    freq_use_zeros = np.zeros_like(obs['baseline_info']['freq_use'])
+    freq_use_zeros[freq_use_indexes] = 1
+    obs['baseline_info']['freq_use'] = freq_use_zeros
 
-    obs['baseline_info']['tile_use'] = np.where((tile_use) & (obs['baseline_info']['tile_use']))[0]
-    obs['baseline_info']['freq_use'] = np.where((freq_use) & (obs['baseline_info']['freq_use']))[0]
-
-    obs["n_time_flag"] = np.sum(obs['baseline_info']['time_use'])
-    obs["n_tile_flag"] = np.sum(obs["baseline_info"]["tile_use"])
-    obs["n_freq_flag"] = np.sum(obs["baseline_info"]["freq_use"])
+    obs["n_time_flag"] = np.count_nonzero(obs['baseline_info']['time_use'] == 0)
+    obs["n_tile_flag"] = np.count_nonzero(obs["baseline_info"]["tile_use"] == 0)
+    obs["n_freq_flag"] = np.count_nonzero(obs["baseline_info"]["freq_use"] == 0)
 
     return vis_weight_arr, obs
 
@@ -129,20 +135,20 @@ def vis_flag(vis_arr : np.ndarray, vis_weights: np.ndarray, obs: dict, params: d
     Parameters
     ----------
     vis_arr : np.ndarray
-        _description_
+        The visibility array
     vis_weights : np.ndarray
-        _description_
+        The visibility weights array
     obs : dict
-        _description_
+        The observation dictionary
     params : dict
-        _description_
+        The dictionary containing uu, vv, ww
     logger : RootLogger
-        _description_
+        PyFHD's Logger
 
     Returns
     -------
-    tuple[np.ndarray, dict]
-        _description_
+    tuple[vis_weights: np.ndarray, obs: dict]
+        Flagged vis_weights and flagged tiles and frequencies inside obs
     """
     flag_nsigma = 3
     data_abs = np.abs(vis_arr[0])
@@ -150,7 +156,6 @@ def vis_flag(vis_arr : np.ndarray, vis_weights: np.ndarray, obs: dict, params: d
         data_abs = np.sqrt(data_abs ** 2 + np.abs(vis_arr[1]) ** 2)
     n_tiles_use = max(np.max(obs["baseline_info"]["tile_a"]), np.max(obs["baseline_info"]["tile_b"]))
     uv_dist = np.sqrt(params["uu"] ** 2 + params["vv"] ** 2) * idl_median(obs["baseline_info"]["freq"])
-    freq = obs["baseline_info"]["freq"]
     cut_baselines_i = np.where((uv_dist < obs["min_baseline"]) | (uv_dist > obs["max_baseline"]))[0]
     if (cut_baselines_i.size > 0):
         vis_weights[:obs["n_pol"], :, cut_baselines_i] = 0

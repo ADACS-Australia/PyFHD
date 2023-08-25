@@ -944,18 +944,16 @@ def vis_weights_update(vis_weights : np.ndarray, obs: dict, params: dict, pyfhd_
     kx_arr = params['uu'] / obs['kpix']
     ky_arr = params['vv'] / obs['kpix']
     dist_test = np.sqrt(kx_arr ** 2 + ky_arr ** 2) * obs['kpix']
-    # TODO: Check if its a outer or dot needed
-    dist_test = np.outer(dist_test, obs['baseline_info']['freq'])
+    dist_test = np.outer(obs['baseline_info']['freq'], dist_test)
     flag_dist_i = np.where((dist_test < obs['min_baseline']) | (dist_test > obs['max_baseline']))
     conj_i = np.where(ky_arr > 0)
     if (conj_i[0].size > 0):
         kx_arr[conj_i] = -kx_arr[conj_i]
         ky_arr[conj_i] = -ky_arr[conj_i]
 
-    # TODO: check if it needs to be outer or dot
-    xcen = np.outer(kx_arr, obs['baseline_info']['freq'])
+    xcen = np.outer(obs['baseline_info']['freq'], kx_arr)
     xmin = np.floor(xcen) + obs['dimension'] / 2 - (pyfhd_config['psf_dim'] / 2 - 1)
-    ycen = np.outer(ky_arr, obs['baseline_info']['freq'])
+    ycen = np.outer(obs['baseline_info']['freq'], ky_arr)
     ymin = np.floor(ycen) + obs['elements'] / 2 - (pyfhd_config['psf_dim'] / 2 - 1)
 
     range_test_x_i = np.where((xmin <= 0) | ((xmin + pyfhd_config['psf_dim'] - 1) >= obs['dimension'] - 1))
@@ -976,14 +974,12 @@ def vis_weights_update(vis_weights : np.ndarray, obs: dict, params: dict, pyfhd_
     # no_frequency_flagging isn't set in FHD from what I can see, begin frequency and tile flagging
     freq_cut_i = np.where(obs['baseline_info']['freq_use'] == 0)
     if (freq_cut_i[0].size > 0):
-        # TODO: check shape of vis_weights
-        vis_weights[0: range(obs['n_pol']), freq_cut_i, :, :] = 0
-    tile_cut_i = np.where(obs['baseline_info']['tile_use'])
+        vis_weights[0 : obs['n_pol'], freq_cut_i[0], :] = 0
+    tile_cut_i = np.where(obs['baseline_info']['tile_use'] == 0)
     if (tile_cut_i[0].size > 0):
-        bi_cut = array_match(obs['baseline_info']['tile_a'], tile_cut_i + 1, obs['baseline_info']['tile_b'])
-        if (bi_cut.size > 0):
-            # TODO: Check shape of vis_weights
-            vis_weights[0: obs['n_pol'], : , bi_cut, :] = 0
+        bi_cut = array_match(obs['baseline_info']['tile_a'], tile_cut_i[0] + 1, obs['baseline_info']['tile_b'])
+        if (np.size(bi_cut) > 0):
+            vis_weights[0 : obs['n_pol'], : , bi_cut] = 0
     
     time_cut_i = np.where(obs['baseline_info']['time_use'] == 0)[0]
     bin_offset = np.append(obs['baseline_info']['bin_offset'], kx_arr.size)
@@ -993,12 +989,12 @@ def vis_weights_update(vis_weights : np.ndarray, obs: dict, params: dict, pyfhd_
     for ti in range(time_cut_i.size):
         ti_cut = np.where(time_bin == time_cut_i[ti])
         if (ti_cut[0].size > 0):
-            vis_weights[0: obs['n_pol'], : , :, ti_cut] = 0
+            vis_weights[0: obs['n_pol'], : , ti_cut] = 0
     
     flag_i = np.where(vis_weights[0] <= 0)
     flag_i_new = np.where(xmin < 0)
     if (flag_i_new[0].size > 0):
-        vis_weights[0: obs['n_pol'], flag_i_new[0], flag_i_new[1], flag_i_new[2]] = 0
+        vis_weights[0 : obs['n_pol'], flag_i_new[0], flag_i_new[1]] = 0
     if (flag_i[0].size > 0):
         xmin[flag_i] = -1
         ymin[flag_i] = -1
@@ -1008,7 +1004,6 @@ def vis_weights_update(vis_weights : np.ndarray, obs: dict, params: dict, pyfhd_
         return vis_weights, obs
     
     bin_n, _, _ = histogram(xmin + ymin * obs['dimension'], min = 0)
-    bin_i = np.nonzero(bin_n)
     obs['n_vis'] = np.sum(bin_n)
 
     obs['n_time_flag'] = np.sum(1 - obs['baseline_info']['time_use'])
