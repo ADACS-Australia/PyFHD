@@ -638,7 +638,7 @@ def array_match(array_1, value_match, array_2 = None) :
     n_match = vals.size
 
     if n_match == 0:
-        return -1, n_match
+        return -1
     
     ind_arr = np.zeros_like(array_1)
     for vi in range(n_match):
