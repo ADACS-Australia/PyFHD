@@ -3,8 +3,8 @@ import warnings
 from PyFHD.gridding.gridding_utils import interpolate_kernel, baseline_grid_locations, grid_beam_per_baseline, conjugate_mirror, holo_mapfn_convert
 from PyFHD.pyfhd_tools.pyfhd_utils import weight_invert, rebin, l_m_n, idl_argunique
 
-def visibility_grid(visibility, vis_weights, obs, status_str, psf, params,
-                    file_path_fhd= "/.", weights_flag = False, variance_flag = False, polarization = 0,
+def visibility_grid(visibility, vis_weights, obs, psf, params, 
+                    weights_flag = False, variance_flag = False, polarization = 0,
                     map_flag = False, uniform_flag = False, grid_uniform = False, fi_use = None, bi_use = None, 
                     no_conjugate = False, mask_mirror_indices = False, model = None, grid_spectral = False, 
                     beam_per_baseline = False, uv_grid_phase_only = True) :

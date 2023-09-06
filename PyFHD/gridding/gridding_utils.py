@@ -272,8 +272,7 @@ def baseline_grid_locations(obs, psf, params, vis_weights, bi_use = None, fi_use
 def dirty_image_generate(dirty_image_uv, mask = None, baseline_threshold = 0, normalization = None,
                          resize = None, width_smooth = None, degpix = None, not_real = False,
                          image_filter_fn = 'filter_uv_uniform', pad_uv_image = None, filter = None,
-                         vis_count = None, weights = None, beam_ptr = None, obs = None, psf = None, params = None, 
-                         fi_use = None, bi_use = None, mask_mirror_indices = False):
+                         beam_ptr = None):
     """
     TODO: Docstring
     [summary]
@@ -302,21 +301,7 @@ def dirty_image_generate(dirty_image_uv, mask = None, baseline_threshold = 0, no
         [description], by default None
     filter : [type], optional
         [description], by default None
-    vis_count : [type], optional
-        [description], by default None
-    weights : [type], optional
-        [description], by default None
     beam_ptr : [type], optional
-        [description], by default None
-    obs : [type], optional
-        [description], by default None
-    psf : [type], optional
-        [description], by default None
-    params : [type], optional
-        [description], by default None
-    fi_use : [type], optional
-        [description], by default None
-    bi_use : [type], optional
         [description], by default None
 
     Returns
@@ -420,7 +405,6 @@ def dirty_image_generate(dirty_image_uv, mask = None, baseline_threshold = 0, no
         return dirty_image, normalization
     #Return
     return dirty_image  
-
 
 def grid_beam_per_baseline(psf, uu, vv, ww, l_mode, m_mode, n_tracked, frequency_array, x, y,
                            xmin_use, ymin_use, freq_i, bt_index, polarization, fbin, image_bot, 
