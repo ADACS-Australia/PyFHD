@@ -9,6 +9,24 @@ from PyFHD.gridding.gridding_utils import visibility_count
 def data_dir():
     return Path(env.get('PYFHD_TEST_PATH'), 'visibility_count')
 
+@pytest.fixture(scope="function", params=[1, 2, 3])
+def number(request):
+    return request.param
+
+@pytest.fixture
+def vis_count_before(data_dir, number):
+    vis_count_before = Path(data_dir, f"test_{number}_before_{data_dir.name}.h5")
+
+    if vis_count_before.exists():
+        return vis_count_before
+    
+@pytest.fixture
+def vis_count_after(data_dir, number):
+    vis_count_after = Path(data_dir, f"test_{number}_after_{data_dir.name}.h5")
+
+    if vis_count_after.exists():
+        return vis_count_after
+
 def test_vis_count_one(data_dir):
     # Get the inputs
     psf = get_data(

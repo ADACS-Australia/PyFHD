@@ -122,12 +122,14 @@ def visibility_grid(visibility, vis_weights, obs, psf, params,
         bi_use = baselines_dict['bi_use']
 
     # Instead of checking the visibilitity pointer we just take the vis_inds_use from visibility
+    # TODO: replace vis_inds_use with fi_use and bi_use
     vis_arr_use = visibility.flat[vis_inds_use]
     # Model_flag has been removed in favor of just the model taking advantage that the model default is None
     # If it has been specified at all with anything other than None or False, then it should be a numpy array
     # if it isn't exit
     if model is not None:
         if isinstance(model, np.ndarray):
+            # TODO: replace vis_inds_use with fi_use and bi_use
             model_use = model.flat[vis_inds_use]
             model_return = np.zeros((elements, dimension), dtype = np.complex128)
         else:

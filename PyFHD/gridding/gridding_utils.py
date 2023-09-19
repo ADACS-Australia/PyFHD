@@ -4,33 +4,35 @@ from PyFHD.pyfhd_tools.pyfhd_utils import rebin, histogram, array_match, meshgri
 from scipy.signal import convolve
 from astropy.convolution import Box2DKernel
 from math import pi
+from logging import RootLogger
 
-def interpolate_kernel(kernel_arr, x_offset, y_offset, dx0dy0, dx1dy0, dx0dy1, dx1dy1):
+def interpolate_kernel(kernel_arr: np.ndarray, x_offset: np.ndarray, y_offset: np.ndarray, 
+                       dx0dy0: np.ndarray, dx1dy0: np.ndarray, dx0dy1: np.ndarray, dx1dy1: np.ndarray):
     """
     TODO: Description
 
     Parameters
     ----------
-    kernel_arr: np.array
+    kernel_arr: np.ndarray
         The array we are applying the kernel too
-    x_offset: np.array
+    x_offset: np.ndarray
         x_offset array, which will now technically do the y.
         Will likely change the name of this
-    y_offset: np.array
+    y_offset: np.ndarray
         y_offset array, which will now technically do the x
         Will likely change the name of this
-    dx0dy0: np.array
+    dx0dy0: np.ndarray
         TODO: description
-    dx1dy0: np.array
+    dx1dy0: np.ndarray
         TODO: Description
-    dx0dy1: np.array
+    dx0dy1: np.ndarray
         TODO: Description
-    dx1dy1: np.array
+    dx1dy1: np.ndarray
         TODO: Description
 
     Returns
     -------
-    kernel: np.array
+    kernel: np.ndarray
         TODO: Description
     """
     # x_offset and y_offset needed to be swapped around as IDL is column-major, while Python is row-major
@@ -41,7 +43,7 @@ def interpolate_kernel(kernel_arr, x_offset, y_offset, dx0dy0, dx1dy0, dx0dy1, d
 
     return kernel
 
-def conjugate_mirror(image):
+def conjugate_mirror(image: np.ndarray):
     """
     This takes a 2D array and mirrors it, shifts it and
     its an array of complex numbers its get the conjugates
@@ -49,12 +51,12 @@ def conjugate_mirror(image):
 
     Parameters
     ----------
-    image: array
+    image: np.ndarray
         A 2D array of real or complex numbers
     
     Returns
     -------
-    conj_mirror_image: array
+    conj_mirror_image: np.ndarray
         The mirrored and shifted image array
     """
     # Flip image left to right (i.e. flips columns) & Flip image up to down (i.e. flips rows)
@@ -66,8 +68,9 @@ def conjugate_mirror(image):
         conj_mirror_image = np.conjugate(conj_mirror_image)
     return conj_mirror_image
 
-def baseline_grid_locations(obs, psf, params, vis_weights, bi_use = None, fi_use = None, 
-                            fill_model_visibilities = False, interp_flag = False, mask_mirror_indices = False):
+def baseline_grid_locations(obs: dict, params: dict, vis_weights: np.ndarray, pyfhd_config: dict, logger: RootLogger, 
+                            bi_use: np.ndarray|None = None, fi_use: np.ndarray|None = None, fill_model_visibilities: bool = False, 
+                            interp_flag: bool = False, mask_mirror_indices: bool = False):
     """
     TODO: Docstring
     [summary]
@@ -106,10 +109,6 @@ def baseline_grid_locations(obs, psf, params, vis_weights, bi_use = None, fi_use
         obs, psf, params and vis_weights.
     """
 
-    #Check if obs, psf, params or vis_weights None, if so raise TypeError
-    if obs is None or psf is None or params is None or vis_weights is None:
-        raise TypeError("obs, psf, params and vis_weights must not be None")
-
     # Set up the return dictionary
     baselines_dict = {}
 
@@ -122,22 +121,16 @@ def baseline_grid_locations(obs, psf, params, vis_weights, bi_use = None, fi_use
     min_baseline = obs['min_baseline']
     max_baseline = obs['max_baseline']
     b_info = obs['baseline_info']
-    psf_dim = psf['dim'][0]
-    psf_resolution = psf['resolution'][0]
+    psf_dim = pyfhd_config['psf_dim']
+    psf_resolution = pyfhd_config['psf_resolution']
 
     # Frequency information of the visibilities
     if fill_model_visibilities:
         fi_use = np.arange(n_freq)
     elif fi_use is None:
-        fi_use = np.nonzero(b_info[0]['freq_use'][0])[0]
-    frequency_array = b_info[0]['freq'][0]
+        fi_use = np.nonzero(b_info['freq_use'])[0]
+    frequency_array = b_info['freq']
     frequency_array = frequency_array[fi_use]
-
-    # At this point the vis_weight_switch is configured, 
-    # but there's no point to us doing that because its never a pointer!
-    # Is there something we ought to do instead?
-    # What defines vis_weights as valid?
-    # Do we bother with vis_weight_switch?
 
     # Set the bi_use_flag, if we set it here, we need to return it
     bi_use_flag = False
@@ -147,32 +140,26 @@ def baseline_grid_locations(obs, psf, params, vis_weights, bi_use = None, fi_use
         # if the data is being gridded separately for the even/odd time samples
         # then force flagging to be consistent across even/odd sets
         if not fill_model_visibilities:
-            flag_test = np.sum(vis_weights, axis = -1)
-            bi_use = np.where(flag_test > 0)[0]
+            flag_test = np.sum(np.maximum(vis_weights, 0), axis = 0)
+            bi_use = np.nonzero(flag_test)[0]
         else:
             tile_use = np.arange(n_tile) + 1
-            bi_use = array_match(b_info[0]['tile_a'][0].astype(int), tile_use, array_2 = b_info[0]['tile_b'][0].astype(int))
+            bi_use = array_match(b_info['tile_a'].astype(int), tile_use, array_2 = b_info['tile_b'].astype(int))
     
-    # Calculate indices of visibilities to grid during this call (i.e. specific freqs, time sets)
-    # and initialize output arrays
-    n_b_use = bi_use.size
-    n_f_use = fi_use.size
-    # matrix_multiply is not what it seems for 1D arrays, had to do this to replicate!
-    vis_inds_use = (np.outer(np.ones(n_b_use), fi_use) + np.outer(bi_use, np.ones(n_f_use)) * n_freq).astype(np.int64)
-    
-    # Since the indices in vis_inds_use apply to a flattened array, flatten. Leave vis_inds_use as it to have the shape go back to the right shape.
-    vis_weights = vis_weights.flatten()[vis_inds_use]
+    # Rather than calculating the flat indexes we want, lets just index the array
+    # by the frequency use and baseline_use indexes
+    vis_weights = vis_weights[fi_use, :][:, bi_use]
 
     # Units in pixel/Hz
-    kx_arr = params['uu'][0][bi_use] / kbinsize
-    ky_arr = params['vv'][0][bi_use] / kbinsize
+    kx_arr = params['uu'][bi_use] / kbinsize
+    ky_arr = params['vv'][bi_use] / kbinsize
 
     if not fill_model_visibilities:
         # Flag baselines on their maximum and minimum extent in the full frequency range of the observation
         # This prevents the sudden dissapearance of baselines along frequency
         dist_test = np.sqrt(kx_arr ** 2 + ky_arr ** 2) * kbinsize
-        dist_test_max = np.max(obs['baseline_info'][0]['freq'][0]) * dist_test
-        dist_test_min = np.min(obs['baseline_info'][0]['freq'][0]) * dist_test
+        dist_test_max = np.max(obs['baseline_info']['freq']) * dist_test
+        dist_test_min = np.min(obs['baseline_info']['freq']) * dist_test
         flag_dist_baseline = np.where((dist_test_min < min_baseline) | (dist_test_max > max_baseline))
         del(dist_test, dist_test_max, dist_test_min)
     
@@ -183,8 +170,8 @@ def baseline_grid_locations(obs, psf, params, vis_weights, bi_use = None, fi_use
         ky_arr[conj_i] = -ky_arr[conj_i]
 
     # Center of baselines for x and y in units of pixels
-    xcen = np.outer(kx_arr, frequency_array)
-    ycen = np.outer(ky_arr, frequency_array)
+    xcen = np.outer(frequency_array, kx_arr)
+    ycen = np.outer(frequency_array, ky_arr)
 
     # Pixel number offset per baseline for each uv-box subset
     x_offset = np.fix(np.floor((xcen - np.floor(xcen)) * psf_resolution) % psf_resolution).astype(np.int64)
@@ -215,11 +202,11 @@ def baseline_grid_locations(obs, psf, params, vis_weights, bi_use = None, fi_use
 
     # Flag baselines which fall outside the uv plane
     if not fill_model_visibilities:
-        if flag_dist_baseline[0].size > 0:
+        if np.size(flag_dist_baseline) > 0:
             # If baselines fall outside the desired min/max baseline range at all during the frequency range
             # then set their maximum pixel value to -1 to exclude them
-            xmin[flag_dist_baseline, :] = -1
-            ymin[flag_dist_baseline, :] = -1
+            xmin[:, flag_dist_baseline] = -1
+            ymin[:, flag_dist_baseline] = -1
             del(flag_dist_baseline)
     
     # Normally we check vis_weight_switch, but its always true here so... do this
@@ -227,7 +214,7 @@ def baseline_grid_locations(obs, psf, params, vis_weights, bi_use = None, fi_use
     if fill_model_visibilities:
         n_flag = 0
     else:
-        n_flag = flag_i[0].size
+        n_flag = np.size(flag_i)
     if n_flag > 0:
         xmin[flag_i] = -1
         ymin[flag_i] = -1
@@ -235,12 +222,12 @@ def baseline_grid_locations(obs, psf, params, vis_weights, bi_use = None, fi_use
     if mask_mirror_indices:
         # Option to exclude v-axis mirrored baselines
         if conj_i.size > 0:
-            xmin[conj_i, :] = -1
-            ymin[conj_i, :] = -1
+            xmin[:, conj_i] = -1
+            ymin[:, conj_i] = -1
 
     # If xmin or ymin is invalid then adjust the baselines dict as necessary
     if xmin.size == 0 or ymin.size == 0 or np.max([np.max(xmin), np.max(ymin)]) < 0:
-        print('WARNING: All data flagged or cut!')
+        logger.warning('All data flagged or cut!')
         baselines_dict['bin_n'] = 0
         baselines_dict['n_bin_use'] = 0
         baselines_dict['bin_i'] = -1
@@ -260,7 +247,6 @@ def baseline_grid_locations(obs, psf, params, vis_weights, bi_use = None, fi_use
     # Add values to baselines dict
     baselines_dict['xmin'] = xmin
     baselines_dict['ymin'] = ymin
-    baselines_dict['vis_inds_use'] = vis_inds_use
     baselines_dict['x_offset'] = x_offset
     baselines_dict['y_offset'] = y_offset
     if bi_use_flag:
@@ -562,8 +548,9 @@ def grid_beam_per_baseline(psf, uu, vv, ww, l_mode, m_mode, n_tracked, frequency
     
     return box_matrix
 
-def visibility_count(obs, psf, params, vis_weights, fi_use = None, bi_use = None, mask_mirror_indices = False,
-                     file_path_fhd = None, no_conjugate = False, fill_model_visibilities = False):
+def visibility_count(obs :dict, params:dict, vis_weights: np.ndarray, pyfhd_config: dict, logger: RootLogger, 
+                     fi_use: np.ndarray|None = None, bi_use: np.ndarray|None = None, 
+                     mask_mirror_indices: bool = False, no_conjugate: bool = False, fill_model_visibilities: bool = False):
     """
     TODO: Docstring
     [summary]
@@ -590,8 +577,6 @@ def visibility_count(obs, psf, params, vis_weights, fi_use = None, bi_use = None
         [description]
     mask_miiror_indices : [type]
         [description]
-    file_path_fhd : [type], optional
-        [description], by default None
     no_conjugate : bool, optional
         [description], by default True
     fill_model_vis : bool, optional
@@ -608,16 +593,22 @@ def visibility_count(obs, psf, params, vis_weights, fi_use = None, bi_use = None
         [description]
     """
     
-    if obs is None or psf is None or params is None or vis_weights is None:
-        raise TypeError("obs, psf, params or vis_weights should not be None")
-    
     #Retrieve info from the data structures
-    dimension = int(obs['dimension'][0])
-    elements = int(obs['elements'][0])
-    psf_dim = psf['dim'][0]
+    dimension = int(obs['dimension'])
+    elements = int(obs['elements'])
+    psf_dim = pyfhd_config['psf_dim']
 
-    baselines_dict = baseline_grid_locations(obs, psf, params, vis_weights, bi_use = bi_use, fi_use = fi_use,
-                                             mask_mirror_indices = mask_mirror_indices, fill_model_visibilities = fill_model_visibilities)
+    baselines_dict = baseline_grid_locations(
+        obs, 
+        params, 
+        vis_weights, 
+        pyfhd_config, 
+        logger, 
+        bi_use = bi_use, 
+        fi_use = fi_use,
+        mask_mirror_indices = mask_mirror_indices, 
+        fill_model_visibilities = fill_model_visibilities
+    )
     # Retrieve the data we need from baselines_dict
     bin_n = baselines_dict['bin_n']
     bin_i = baselines_dict['bin_i']
