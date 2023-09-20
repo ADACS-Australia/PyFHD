@@ -341,6 +341,9 @@ def dirty_image_generate(dirty_image_uv, mask = None, baseline_threshold = 0, no
                 di_uv_use *= filter
             # Otherwise use a filter function
             else:
+                # TODO: Add if, elif, else block for pyfhd_config["image_filter"] which can have 
+                # 'filter_uv_uniform', 'filter_uv_hanning', 'filter_uv_natural', 'filter_uv_radial', 
+                # 'filter_uv_tapered_uniform', 'filter_uv_optimal'
                 di_uv_use, _ = eval("filters.{}(di_uv_use, vis_count = vis_count, obs = obs, psf = psf, params = params, weights = weights, fi_use = fi_use, bi_use = bi_use, mask_mirror_indices = mask_mirror_indices)".format(image_filter_fn))
     
     # Resize the dirty image by the factor resize    
