@@ -140,6 +140,9 @@ def main_python_only(pyfhd_config : dict, logger : logging.RootLogger):
 
     grid_start = time.time()
     # TODO: add the fully python compatible gridding function after calibration testing is finished
+    for pol_i in range(obs["n_pol"]):
+        logger.info(f"Visibility Grid has begun for polarization {pol_i}")
+        logger.info(f"Visibility Grid has finished for polarization {pol_i}")
     grid_end = time.time()
     _print_time_diff(grid_start, grid_end, 'Visibilities gridded', logger)
 

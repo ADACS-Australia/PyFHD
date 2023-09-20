@@ -4,28 +4,37 @@ from os import environ as env
 from pathlib import Path
 from PyFHD.gridding.gridding_utils import conjugate_mirror
 from PyFHD.pyfhd_tools.test_utils import get_data_items
+import deepdish as dd
 
 @pytest.fixture
 def data_dir():
     return Path(env.get('PYFHD_TEST_PATH'), "conjugate_mirror")
 
-def test_conj_mirror_one(data_dir):
-    input, expected_image = get_data_items(data_dir, 
-                                     'visibility_grid_input_1.npy',
-                                     'visibility_grid_output_1.npy')
-    image = conjugate_mirror(input)
-    assert np.array_equal(image, expected_image)
+@pytest.fixture(scope="function", params=[1,2,3])
+def number(request):
+    return request.param
 
-def test_conj_mirror_two(data_dir):
-    input, expected_image = get_data_items(data_dir, 
-                                     'visibility_grid_input_2.npy',
-                                     'visibility_grid_output_2.npy')
-    image = conjugate_mirror(input)
-    assert np.array_equal(image, expected_image)
+@pytest.fixture
+def conjugate_file(data_dir, number):
+    conjugate_file = Path(data_dir, f"test_{number}_{data_dir.name}.h5")
 
-def test_conj_mirror_three(data_dir):
-    input, expected_image = get_data_items(data_dir, 
-                                     'visibility_grid_input_3.npy',
-                                     'visibility_grid_output_3.npy')
-    image = conjugate_mirror(input)
-    assert np.array_equal(image, expected_image)
+    if conjugate_file.exists():
+        return conjugate_file
+    
+    input, conj_mirror_image = get_data_items(data_dir, 
+                                     f'visibility_grid_input_{number}.npy',
+                                     f'visibility_grid_output_{number}.npy')
+    
+    h5_save_dict = {
+        "input": input,
+        "conj_mirror_image": conj_mirror_image
+    }
+
+    dd.io.save(conjugate_file, h5_save_dict)
+
+    return conjugate_file
+
+def test_conjugate_mirror(conjugate_file: Path):
+    h5 = dd.io.load(conjugate_file)
+    image = conjugate_mirror(h5["input"])
+    assert np.array_equal(image, h5["conj_mirror_image"])

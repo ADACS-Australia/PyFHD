@@ -16,11 +16,9 @@ def interpolate_kernel(kernel_arr: np.ndarray, x_offset: np.ndarray, y_offset: n
     kernel_arr: np.ndarray
         The array we are applying the kernel too
     x_offset: np.ndarray
-        x_offset array, which will now technically do the y.
-        Will likely change the name of this
+        x_offset array
     y_offset: np.ndarray
-        y_offset array, which will now technically do the x
-        Will likely change the name of this
+        y_offset array
     dx0dy0: np.ndarray
         TODO: description
     dx1dy0: np.ndarray
@@ -548,7 +546,7 @@ def grid_beam_per_baseline(psf, uu, vv, ww, l_mode, m_mode, n_tracked, frequency
     
     return box_matrix
 
-def visibility_count(obs :dict, params:dict, vis_weights: np.ndarray, pyfhd_config: dict, logger: RootLogger, 
+def visibility_count(obs: dict, params: dict, vis_weights: np.ndarray, pyfhd_config: dict, logger: RootLogger, 
                      fi_use: np.ndarray|None = None, bi_use: np.ndarray|None = None, 
                      mask_mirror_indices: bool = False, no_conjugate: bool = False, fill_model_visibilities: bool = False):
     """
