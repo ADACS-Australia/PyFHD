@@ -1,5 +1,5 @@
 import numpy as np
-import PyFHD.gridding.filters
+import PyFHD.gridding.filters as filters
 from PyFHD.pyfhd_tools.pyfhd_utils import rebin, histogram, array_match, meshgrid
 from scipy.signal import convolve
 from astropy.convolution import Box2DKernel
@@ -20,13 +20,13 @@ def interpolate_kernel(kernel_arr: np.ndarray, x_offset: np.ndarray, y_offset: n
     y_offset: np.ndarray
         y_offset array
     dx0dy0: np.ndarray
-        TODO: description
+        TODO: description, derivative I assume?
     dx1dy0: np.ndarray
-        TODO: Description
+        TODO: Description, derivative I assume?
     dx0dy1: np.ndarray
-        TODO: Description
+        TODO: Description, derivative I assume?
     dx1dy1: np.ndarray
-        TODO: Description
+        TODO: Description, derivative I assume?
 
     Returns
     -------
@@ -253,45 +253,60 @@ def baseline_grid_locations(obs: dict, params: dict, vis_weights: np.ndarray, py
     # Return the dictionary
     return baselines_dict
 
-def dirty_image_generate(dirty_image_uv, mask = None, baseline_threshold = 0, normalization = None,
-                         resize = None, width_smooth = None, degpix = None, not_real = False,
-                         image_filter_fn = 'filter_uv_uniform', pad_uv_image = None, filter = None,
-                         beam_ptr = None):
+def dirty_image_generate(
+        dirty_image_uv: np.ndarray,
+        pyfhd_config: dict,
+        logger: RootLogger,
+        mask: float|np.ndarray|None = None,
+        baseline_threshold: int|float = 0,
+        normalization: np.ndarray|None = None,
+        resize: int|None = None,
+        width_smooth: int|float|None = None,
+        degpix: float|None = None,
+        not_real: bool = False,
+        pad_uv_image: int|float|None = None,
+        weights: np.ndarray|None = None,
+        filter: np.ndarray|None = None,
+        beam_ptr: np.ndarray|None = None
+):
     """
-    TODO: Docstring
-    [summary]
+    TODO: _summary_
 
     Parameters
     ----------
-    dirty_image_uv : [type]
-        [description]
-    mask : [type], optional
-        [description], by default None
-    baseline_threshold : int, optional
-        [description], by default 0
-    normalization : [type], optional
-        [description], by default None
-    resize : [type], optional
-        [description], by default None
-    width_smooth : [type], optional
-        [description], by default None
-    degpix : [type], optional
-        [description], by default None
-    real : bool, optional
-        [description], by default False
-    image_filter_fn : str, optional
-        [description], by default 'filter_uv_uniform'
-    pad_uv_image : [type], optional
-        [description], by default None
-    filter : [type], optional
-        [description], by default None
-    beam_ptr : [type], optional
-        [description], by default None
+    dirty_image_uv : np.ndarray
+        _description_
+    pyfhd_config : dict
+        _description_
+    logger : RootLogger
+        _description_
+    mask : float | np.ndarray | None, optional
+        _description_, by default None
+    baseline_threshold : int | float, optional
+        _description_, by default 0
+    normalization : np.ndarray | None, optional
+        _description_, by default None
+    resize : int | None, optional
+        _description_, by default None
+    width_smooth : int | float, optional
+        _description_, by default None
+    degpix : float | None, optional
+        _description_, by default None
+    not_real : bool, optional
+        _description_, by default False
+    pad_uv_image : int | float | None, optional
+        _description_, by default None
+    weights : np.ndarray | None, optional
+        _description_, by default None
+    filter : np.ndarray | None, optional
+        _description_, by default None
+    beam_ptr : np.ndarray | None, optional
+        _description_, by default None
 
     Returns
     -------
-    [type]
-        [description]
+    _type_
+        _description_
     """
 
     # dimension is columns, elements is rows
@@ -299,7 +314,6 @@ def dirty_image_generate(dirty_image_uv, mask = None, baseline_threshold = 0, no
     di_uv_use = dirty_image_uv
     # If the baseline threshold has been set
     if baseline_threshold is not None:
-        # If width smooth hasn't been set, set it
         if width_smooth is None:
             width_smooth = np.floor(np.sqrt(dimension * elements) / 100)    
         rarray = np.sqrt((meshgrid(dimension, 1) - dimension / 2) ** 2 + (meshgrid(elements, 2) - elements / 2) ** 2)
@@ -314,18 +328,17 @@ def dirty_image_generate(dirty_image_uv, mask = None, baseline_threshold = 0, no
         if np.size(cut_i) > 0:
             mask_bt_flatiter = mask_bt.flat
             mask_bt_flatiter[cut_i] = 0
-        if width_smooth is not None:
-            # Get the kernel width
-            kernel_width = np.max([width_smooth,1])
-            # In IDL if the kernel width is even one is added to make it odd
-            if kernel_width % 2 == 0:
-                kernel_width += 1
-            # Use a box width averaging filter over the mask, use valid so we can insert it in later
-            box_averages = convolve(mask_bt, Box2DKernel(kernel_width), mode = 'valid')
-            # Since IDL SMOOTH edges by default are the edges of the array used, ignore edges (its the reason why we used a valid convolve)
-            start = int(kernel_width // 2)
-            end = int(mask_bt.shape[1] - (kernel_width // 2))
-            mask_bt[start : end, start : end] = box_averages  
+        # Get the kernel width
+        kernel_width = np.max([width_smooth,1])
+        # In IDL if the kernel width is even one is added to make it odd
+        if kernel_width % 2 == 0:
+            kernel_width += 1
+        # Use a box width averaging filter over the mask, use valid so we can insert it in later
+        box_averages = convolve(mask_bt, Box2DKernel(kernel_width), mode = 'valid')
+        # Since IDL SMOOTH edges by default are the edges of the array used, ignore edges (its the reason why we used a valid convolve)
+        start = int(kernel_width // 2)
+        end = int(mask_bt.shape[1] - (kernel_width // 2))
+        mask_bt[start : end, start : end] = box_averages  
         # Apply boxed mask to the dirty image
         di_uv_use *=  mask_bt
     
@@ -341,15 +354,53 @@ def dirty_image_generate(dirty_image_uv, mask = None, baseline_threshold = 0, no
                 di_uv_use *= filter
             # Otherwise use a filter function
             else:
-                # TODO: Add if, elif, else block for pyfhd_config["image_filter"] which can have 
-                # 'filter_uv_uniform', 'filter_uv_hanning', 'filter_uv_natural', 'filter_uv_radial', 
-                # 'filter_uv_tapered_uniform', 'filter_uv_optimal'
-                di_uv_use, _ = eval("filters.{}(di_uv_use, vis_count = vis_count, obs = obs, psf = psf, params = params, weights = weights, fi_use = fi_use, bi_use = bi_use, mask_mirror_indices = mask_mirror_indices)".format(image_filter_fn))
+                if pyfhd_config["image_filter"] == "filter_uv_uniform":
+                    logger.info("Using filter_uv_uniform for dirty_image_generate")
+                    di_uv_use, _ = filters.filter_uv_uniform(
+                        di_uv_use, 
+                        vis_count = filter, 
+                        weights=weights
+                    )
+                elif pyfhd_config["image_filter"] == "filter_uv_hannning":
+                    logger.warning("filter_uv_hanning hasn't been translated yet using filter_uv_uniform for dirty_image_generate instead")
+                    di_uv_use, _ = filters.filter_uv_uniform(
+                        di_uv_use, 
+                        vis_count = filter, 
+                    )
+                elif pyfhd_config["image_filter"] == "filter_uv_natural":
+                    logger.warning("filter_uv_natural hasn't been translated yet using filter_uv_uniform for dirty_image_generate instead")
+                    di_uv_use, _ = filters.filter_uv_uniform(
+                        di_uv_use, 
+                        vis_count = filter, 
+                    )
+                elif pyfhd_config["image_filter"] == "filter_uv_radial":
+                    logger.warning("filter_uv_radial hasn't been translated yet using filter_uv_uniform for dirty_image_generate instead")
+                    di_uv_use, _ = filters.filter_uv_uniform(
+                        di_uv_use, 
+                        vis_count = filter, 
+                    )
+                elif pyfhd_config["image_filter"] == "filter_uv_tapered_uniform":
+                    logger.warning("filter_uv_tapered_uniform hasn't been translated yet using filter_uv_uniform for dirty_image_generate instead")
+                    di_uv_use, _ = filters.filter_uv_uniform(
+                        di_uv_use, 
+                        vis_count = filter, 
+                    )
+                elif pyfhd_config["image_filter"] == "filter_uv_optimal":
+                    logger.warning("filter_uv_optimal hasn't been translated yet using filter_uv_uniform for dirty_image_generate instead")
+                    di_uv_use, _ = filters.filter_uv_uniform(
+                        di_uv_use, 
+                        vis_count = filter, 
+                    )
+                       
     
     # Resize the dirty image by the factor resize    
     if resize is not None:
         dimension *= resize
         elements *= resize
+        # Ensure elements and dimension are integers as resize should be an int
+        # but if it's not this makes sure dimension and elements are ints afterwards
+        dimension = int(dimension)
+        elements = int(elements)
         di_uv_real = di_uv_use.real
         di_uv_img = di_uv_use.imag
         # Use rebin to resize, apply to real and complex separately
@@ -378,12 +429,12 @@ def dirty_image_generate(dirty_image_uv, mask = None, baseline_threshold = 0, no
     
     # filter_uv_optimal produces images that are weighted by one factor of the beam
     # Weight by an additional factor of the beam to align with FHD's convention
-    if image_filter_fn == 'filter_uv_optimal' and beam_ptr is not None:
+    if pyfhd_config["image_filter"] == 'filter_uv_optimal' and beam_ptr is not None:
         dirty_image *= beam_ptr
     
     # If we are returning complex, make sure its complex
     if not_real:
-        dirty_image = dirty_image.astype("complex")
+        dirty_image = dirty_image.astype(np.complex128)
     else:
         dirty_image = dirty_image.real
     # Normalize by the matrix given, if it was given
@@ -396,8 +447,7 @@ def dirty_image_generate(dirty_image_uv, mask = None, baseline_threshold = 0, no
 def grid_beam_per_baseline(psf, uu, vv, ww, l_mode, m_mode, n_tracked, frequency_array, x, y,
                            xmin_use, ymin_use, freq_i, bt_index, polarization, fbin, image_bot, 
                            image_top, psf_dim3, box_matrix, vis_n, beam_clip_floor = False, beam_int = None, 
-                           beam2_int = None, n_grp_use = None, degrid_flag = False, obs = None, params = None,
-                           weights = None, fi_use = None, bi_use = None, mask_mirror_indices = False):
+                           beam2_int = None, n_grp_use = None, degrid_flag = False):
     """
     TODO: Docstring
 
@@ -480,12 +530,6 @@ def grid_beam_per_baseline(psf, uu, vv, ww, l_mode, m_mode, n_tracked, frequency
             np.exp(2 * pi * (0 + 1j) * \
             (-w_n_tracked + deltau_l + deltav_m)),
             not_real = True,
-            obs = obs,
-            params = params, 
-            weights = weights, 
-            fi_use = fi_use, 
-            bi_use = bi_use,
-            mask_mirror_indices = mask_mirror_indices
         )
         psf_base_superres = psf_base_superres[image_bot: image_top + 1, image_bot : image_top + 1]
 

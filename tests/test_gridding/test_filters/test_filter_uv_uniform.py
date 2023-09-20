@@ -78,34 +78,3 @@ def test_filter_uv_uniform(filter_uni_before: Path, filter_uni_after: Path):
 
     npt.assert_allclose(image_uv_filtered, h5_after["image_uv"], atol=2e-5)
     npt.assert_allclose(filter, h5_after["filter"], atol=1e-8)
-
-# def test_filter_uni_two(data_dir):
-#     image_uv, vis_count, expected_image_uv, expected_filter = get_data_items(
-#         data_dir,
-#         'input_image_uv_2.npy',
-#         'restored_vis_count_2.npy',
-#         'output_image_uv_filtered_2.npy',
-#         'output_filter_2.npy'
-#     )
-#     image_uv_filtered, filter = filter_uv_uniform(image_uv, vis_count)
-#     # Check the result precision error is beyond single precision
-#     assert  1e-8 > np.max(np.abs(expected_image_uv.real - image_uv_filtered.real))
-#     assert  1e-8 > np.max(np.abs(expected_image_uv.imag - image_uv_filtered.imag))
-#     # Check the result precision error is beyond single precision
-#     assert 1e-8 > np.max(np.abs(filter - expected_filter))
-
-# def test_filter_uni_three(data_dir):
-#     image_uv, vis_count, weights, expected_image_uv, expected_filter = get_data_items(
-#         data_dir,
-#         'input_image_uv_3.npy',
-#         'restored_vis_count_3.npy',
-#         'input_weights_3.npy',
-#         'output_image_uv_filtered_3.npy',
-#         'output_filter_3.npy'
-#     )
-#     image_uv_filtered, filter = filter_uv_uniform(image_uv, vis_count = vis_count, weights = weights)
-#     # Check the result precision error is beyond a threshold (single precision rounding errors have occurred)
-#     assert  1e-8 > np.max(np.abs(expected_image_uv.real - image_uv_filtered.real))
-#     assert  1e-8 > np.max(np.abs(expected_image_uv.imag - image_uv_filtered.imag))
-#     # Check the result precision error is beyond a threshold (single precision rounding errors have occurred)
-#     assert 1e-8 > np.max(np.abs(filter - expected_filter))
