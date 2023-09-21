@@ -444,72 +444,96 @@ def dirty_image_generate(
     #Return
     return dirty_image  
 
-def grid_beam_per_baseline(psf, uu, vv, ww, l_mode, m_mode, n_tracked, frequency_array, x, y,
-                           xmin_use, ymin_use, freq_i, bt_index, polarization, fbin, image_bot, 
-                           image_top, psf_dim3, box_matrix, vis_n, beam_clip_floor = False, beam_int = None, 
-                           beam2_int = None, n_grp_use = None, degrid_flag = False):
+def grid_beam_per_baseline(
+        psf: dict,
+        pyfhd_config: dict,
+        logger: RootLogger,
+        uu: np.ndarray,
+        vv: np.ndarray,
+        ww: np.ndarray,
+        l_mode: np.ndarray,
+        m_mode: np.ndarray,
+        n_tracked: np.ndarray,
+        frequency_array: np.ndarray,
+        x: np.ndarray,
+        y: np.ndarray,
+        xmin_use: int,
+        ymin_use: int,
+        freq_i: np.ndarray,
+        bt_index: np.ndarray,
+        polarization: int,
+        image_bot: int,
+        image_top: int,
+        psf_dim3: int,
+        box_matrix: np.ndarray,
+        vis_n: int,
+        beam_int: np.ndarray|None = None,
+        beam2_int: np.ndarray|None = None,
+        n_grp_use: np.ndarray|None = None,
+        degrid_flag: bool = False
+    ):
     """
-    TODO: Docstring
+    TODO: _summary_
 
     Parameters
     ----------
-    psf : [type]
-        [description]
-    uu : [type]
-        [description]
-    vv : [type]
-        [description]
-    ww : [type]
-        [description]
-    l_mode : [type]
-        [description]
-    m_mode : [type]
-        [description]
-    n_tracked : [type]
-        [description]
-    frequency_array : [type]
-        [description]
-    x : [type]
-        [description]
-    y : [type]
-        [description]
-    xmin_use : [type]
-        [description]
-    ymin_use : [type]
-        [description]
-    freq_i : [type]
-        [description]
-    bt_index : [type]
-        [description]
-    polarization : [type]
-        [description]
-    fbin : [type]
-        [description]
-    image_bot : [type]
-        [description]
-    image_top : [type]
-        [description]
-    psf_dim3 : [type]
-        [description]
-    box_matrix : [type]
-        [description]
-    vis_n : [type]
-        [description]
-    beam_int : [type], optional
-        [description], by default None
-    beam2_int : [type], optional
-        [description], by default None
-    n_grp_use : [type], optional
-        [description], by default None
+    psf : dict
+        _description_
+    pyfhd_config : dict
+        _description_
+    logger : RootLogger
+        _description_
+    uu : np.ndarray
+        _description_
+    vv : np.ndarray
+        _description_
+    ww : np.ndarray
+        _description_
+    l_mode : np.ndarray
+        _description_
+    m_mode : np.ndarray
+        _description_
+    n_tracked : np.ndarray
+        _description_
+    frequency_array : np.ndarray
+        _description_
+    x : np.ndarray
+        _description_
+    y : np.ndarray
+        _description_
+    xmin_use : int
+        _description_
+    ymin_use : int
+        _description_
+    freq_i : np.ndarray
+        _description_
+    bt_index : np.ndarray
+        _description_
+    polarization : int
+        _description_
+    image_bot : int
+        _description_
+    image_top : int
+        _description_
+    psf_dim3 : int
+        _description_
+    box_matrix : np.ndarray
+        _description_
+    vis_n : int
+        _description_
+    beam_int : np.ndarray | None, optional
+        _description_, by default None
+    beam2_int : np.ndarray | None, optional
+        _description_, by default None
+    n_grp_use : np.ndarray | None, optional
+        _description_, by default None
     degrid_flag : bool, optional
-        [description], by default False
-    beam_clip_floor : bool, optional
-        [description], by default False
-    
+        _description_, by default False
+
     Returns
     -------
-    box_matrix: array
-        [description]
+    box_matrix: np.ndarray
+        _description_
     """
 
     # Make the beams on the fly with corrective phases given the baseline location. 
@@ -519,16 +543,22 @@ def grid_beam_per_baseline(psf, uu, vv, ww, l_mode, m_mode, n_tracked, frequency
     # Loop over all visibilities that fall within the chosen visibility box
     for ii in range(vis_n):
         # Pixel center offset phases
-        deltau_l = l_mode * (uu[bt_index[ii]] * frequency_array[freq_i[ii]] - x[xmin_use + psf['dim'][0] // 2])
-        deltav_m = m_mode * (vv[bt_index[ii]] * frequency_array[freq_i[ii]] - y[ymin_use + psf['dim'][0] // 2])
+        deltau_l = l_mode * (uu[bt_index[ii]] * frequency_array[freq_i[ii]] - x[xmin_use + pyfhd_config['psf_dim'] // 2])
+        deltav_m = m_mode * (vv[bt_index[ii]] * frequency_array[freq_i[ii]] - y[ymin_use + pyfhd_config['psf_dim'] // 2])
         # w term offset phase
         w_n_tracked = n_tracked * ww[bt_index[ii]] * frequency_array[freq_i[ii]]
 
         # Generate a UV beam from the image space beam, offset by calculated phases
+        # TODO: May have to construct the image power beam here for this part, suprisingly can be done without the beam!
+        # beam_setup (line 254) -> image_power_beam -> beam_power call from beam_setup (line 211) -> beam_hyperresolved call from beam_power (line 36)
+        # -> take kernel_window from pyfhd_config if it exists and apply as per line 37 from beam_power
+        # takes the antenna, so the antenna struct could be done too maybe?
+        # Preferred to have another package do this instead.
         psf_base_superres = dirty_image_generate(
-            psf['image_info'][0]['image_power_beam_arr'][fbin[ii]][polarization] * \
-            np.exp(2 * pi * (0 + 1j) * \
-            (-w_n_tracked + deltau_l + deltav_m)),
+            psf['image_info']['image_power_beam_arr'][polarization] * \
+            np.exp(2 * pi * (0 + 1j) * (-w_n_tracked + deltau_l + deltav_m)),
+            pyfhd_config,
+            logger,
             not_real = True,
         )
         psf_base_superres = psf_base_superres[image_bot: image_top + 1, image_bot : image_top + 1]
@@ -549,16 +579,15 @@ def grid_beam_per_baseline(psf, uu, vv, ww, l_mode, m_mode, n_tracked, frequency
         #                      15 16   
         d = psf_base_superres.shape
         # Note columns and rows are swapped from IDL so nx is now rows!
-        nx = d[0] // psf['resolution'][0]
-        ny = d[1] // psf['resolution'][0]
+        nx = d[0] // pyfhd_config['psf_resolution']
+        ny = d[1] // pyfhd_config['psf_resolution']
         # The same result of IDL in numpy is np.reshape, with shape swapping rows and columns, then doing transpose of this shape
-        psf_base_superres = np.reshape(psf_base_superres,[psf['resolution'][0] * ny, nx, psf['resolution'][0]])
+        psf_base_superres = np.reshape(psf_base_superres,[pyfhd_config['psf_resolution'] * ny, nx, pyfhd_config['psf_resolution']])
         psf_base_superres = np.transpose(psf_base_superres, [1,0,2])
-        psf_base_superres = np.reshape(psf_base_superres, [ny, nx, psf['resolution'][0] ** 2])
+        psf_base_superres = np.reshape(psf_base_superres, [ny, nx, pyfhd_config['psf_resolution'] ** 2])
         psf_base_superres = np.sum(psf_base_superres, -1)
         psf_base_superres = np.transpose(psf_base_superres)
-
-        psf_base_superres = np.reshape(psf_base_superres, psf['dim'] ** 2)
+        psf_base_superres = np.reshape(psf_base_superres, pyfhd_config['psf_dim'] ** 2)
         start = psf_dim3 * ii
         end = start + psf_base_superres.size
         box_matrix_iter = box_matrix.flat
@@ -570,10 +599,10 @@ def grid_beam_per_baseline(psf, uu, vv, ww, l_mode, m_mode, n_tracked, frequency
     # Modifications: done per group of baselines that fit within the current box, 
     # rather than individually. region_grow is not used to find a contiguous
     # edge around the beam to cut because it is too slow.
-    if beam_clip_floor:
+    if pyfhd_config["beam_clip_floor"]:
         psf_val_ref = np.sum(box_matrix, 1)
         psf_amp = np.abs(box_matrix)
-        psf_mask_threshold_use = np.max(psf_amp) / psf['beam_mask_threshold']
+        psf_mask_threshold_use = np.max(psf_amp) / pyfhd_config['beam_mask_threshold']
         psf_amp -= psf_mask_threshold_use
         psf_phase = np.arctan2(box_matrix.imag, box_matrix.real)
         psf_amp = np.maximum(psf_amp, np.zeros_like(psf_amp))
@@ -583,7 +612,7 @@ def grid_beam_per_baseline(psf, uu, vv, ww, l_mode, m_mode, n_tracked, frequency
     
     if degrid_flag and beam_int is not None and beam2_int is not None and n_grp_use is not None:
         # Calculate the beam and beam^2 integral (degridding)
-        psf_resolution = psf['resolution']
+        psf_resolution = pyfhd_config['psf_resolution']
         beam_int_temp = np.sum(box_matrix, 0) / psf_resolution ** 2
         beam2_int_temp = np.sum(np.abs(box_matrix) ** 2, 0) / psf_resolution ** 2
         for ii in range(np.size(freq_i)):
@@ -687,6 +716,7 @@ def visibility_count(obs: dict, params: dict, vis_weights: np.ndarray, pyfhd_con
 def holo_mapfn_convert(map_fn, psf_dim, dimension, elements = None, norm = 1, threshold = 0):
     """
     TODO: Description
+    Probably ought to be deprecated
 
     Parameters
     ----------
