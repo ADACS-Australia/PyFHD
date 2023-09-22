@@ -152,6 +152,7 @@ def pyfhd_parser():
     beam.add_argument('--beam-model-version', type = int, default = 2, help = 'A number that indicates the tile beam model calculation.\nThis is dependent on the instrument, and specific calculations are carried out in <instrument>_beam_setup_gain.\nMWA range: 0, 1 (or anything else captured in the else statement), 2\nPAPER range: 1 (or anything else captured in the else statement), 2\nHERA range: 2 (or anything else captured in the else statement)')
     beam.add_argument('--beam-clip-floor', default = False, action = 'store_true', help = 'Set to subtract the minimum non-zero value of the beam model from all pixels.')
     beam.add_argument('--interpolate-kernel', default = False, action = 'store_true', help = "Use interpolation of the gridding kernel while gridding and degridding, rather than selecting the closest super-resolution kernel.")
+    beam.add_argument('--beam-per-baseline', default = False, action = 'store_true', help = 'Set to true if the beams were made with corrective phases given the baseline location, which then enables the gridding to be done per baseline')
     beam.add_argument('--dipole-mutual-coupling-factor', default = False, action = 'store_true', help = 'Allows a modification to the beam as a result of mutual coupling between dipoles calculated in mwa_dipole_mutual_coupling (See Sutinjo 2015 for more details).')
     beam.add_argument('--beam-offset-time', type = float, default = 56, help = "Calculate the beam at a specific time within the observation. 0 seconds indicates the start of the observation, and the # of seconds in an observation indicates the end of the observation.")
 
@@ -159,6 +160,11 @@ def pyfhd_parser():
     gridding.add_argument('-g', '--recalculate-grid', default = False, action ='store_true', help = 'Forces PyFHD to recalculate the gridding function. Replaces grid_recalculate from FHD')
     gridding.add_argument('-map', '--recalculate-mapfn', default = False, action = 'store_true', help = 'Forces PyFHD to recalculate the mapping function. Replaces mapfn_recalculate from FHD')
     gridding.add_argument('--image-filter', default = 'filter_uv_uniform', type = str, choices = ['filter_uv_uniform', 'filter_uv_hanning', 'filter_uv_natural', 'filter_uv_radial', 'filter_uv_tapered_uniform', 'filter_uv_optimal'], help = 'Weighting filter to be applied to resulting snapshot images and fits files. Replaces image_filter_fn from FHD')
+    gridding.add_argument('--mask-mirror-indices', default = False, action= 'store_true', help='Inside baseline_grid_location optionally exclude v-axis mirrored baselines')
+    gridding.add_argument('--grid-weights', default = False, action = 'store_true', help='Grid the weights for the uv plane')
+    gridding.add_argument('--grid-variance', default = False, action = 'store_true', help='Grid the variance for the uv plane'),
+    gridding.add_argument('--grid_uniform', default = False, action = 'store_true', help = "Grid uniformally by applying a uniform weighted filter to all uv-planes"),
+    gridding.add_argument('--grid-spectral', default = False, action = 'store_true', help='Optionally use the spectral index information to scale the uv-plane in gridding')
     gridding.add_argument('--grid_psf_file', nargs='*', default=[],
     help = 'Path(s) to an FHD "psf" object. If running python gridding, this should be n .npz file, as converted from a .sav file. This should contain a gridding kernel matching the pointing of the observation being processed, e.g. for a +1 pointing, --grid-psf-file=/path/to/gauss_beam_pointing1.npz. If only/also running imaging/healpix projection in IDL, a path to the original .sav file should also be included, e.g. --grid-psf-file /path/to/gauss_beam_pointing1.npz /path/to/gauss_beam_pointing1.sav')
 
@@ -371,6 +377,11 @@ def pyfhd_setup(options : argparse.Namespace) -> Tuple[dict, logging.RootLogger]
         pyfhd_config['beam_offset_time'] = 0
         logger.warning("You set the offset time to less than 0, it was reset to 0.")
         warnings += 1
+
+    # If both beam and interp_flag leave a warning, prioritise beam_per_baseline
+    if pyfhd_config['beam_per_baseline'] and pyfhd_config['interpolate_kernel']:
+        logger.warning("Cannot have beam per baseline and interpolation at the same time, turning off interpolation")
+        pyfhd_config['interpolate_kernel'] = False
 
     # If cable_bandpass_fit has been enabled an instrument text file should also exist. (Error)
     #TODO get this as a template file during pip install

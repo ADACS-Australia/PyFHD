@@ -626,45 +626,35 @@ def visibility_count(obs: dict, params: dict, vis_weights: np.ndarray, pyfhd_con
                      fi_use: np.ndarray|None = None, bi_use: np.ndarray|None = None, 
                      mask_mirror_indices: bool = False, no_conjugate: bool = False, fill_model_visibilities: bool = False):
     """
-    TODO: Docstring
-    [summary]
+    TODO:_summary_
 
     Parameters
     ----------
-    obs : [type]
-        [description]
-    psf : [type]
-        [description]
-    params : [type]
-        [description]
-    vis_weights : [type]
-        [description]
-    xmin : [type]
-        [description]
-    ymin : [type]
-        [description]
-    fi_use : [type]
-        [description]
-    n_freq_use : [type]
-        [description]
-    bi_use : [type]
-        [description]
-    mask_miiror_indices : [type]
-        [description]
+    obs : dict
+        _description_
+    params : dict
+        _description_
+    vis_weights : np.ndarray
+        _description_
+    pyfhd_config : dict
+        _description_
+    logger : RootLogger
+        _description_
+    fi_use : np.ndarray | None, optional
+        _description_, by default None
+    bi_use : np.ndarray | None, optional
+        _description_, by default None
+    mask_mirror_indices : bool, optional
+        _description_, by default False
     no_conjugate : bool, optional
-        [description], by default True
-    fill_model_vis : bool, optional
-        [description], by default False
+        _description_, by default False
+    fill_model_visibilities : bool, optional
+        _description_, by default False
 
     Returns
     -------
-    [type]
-        [description]
-
-    Raises
-    ------
-    TypeError
-        [description]
+    _type_
+        _description_
     """
     
     #Retrieve info from the data structures

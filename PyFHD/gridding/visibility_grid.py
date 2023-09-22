@@ -1,5 +1,5 @@
 import numpy as np
-from PyFHD.gridding.gridding_utils import interpolate_kernel, baseline_grid_locations, grid_beam_per_baseline, conjugate_mirror, holo_mapfn_convert
+from PyFHD.gridding.gridding_utils import interpolate_kernel, baseline_grid_locations, grid_beam_per_baseline, conjugate_mirror
 from PyFHD.pyfhd_tools.pyfhd_utils import weight_invert, rebin, l_m_n, idl_argunique
 from logging import RootLogger
 
@@ -12,16 +12,9 @@ def visibility_grid(
         polarization: int,
         pyfhd_config: dict,
         logger: RootLogger,
-        weights_flag: bool = False,
-        variance_flag: bool = False,
         uniform_flag: bool = False,
-        grid_uniform: bool = False,
         no_conjugate: bool = False,
-        mask_mirror_indices: bool = False,
         model: np.ndarray|None = None,
-        grid_spectral: bool = False,
-        beam_per_baseline: bool = False,
-        uv_grid_phase_only: bool = True
     ):
     """
     TODO: _summary_
@@ -44,26 +37,12 @@ def visibility_grid(
         _description_
     logger : RootLogger
         _description_
-    weights_flag : bool, optional
-        _description_, by default False
-    variance_flag : bool, optional
-        _description_, by default False
     uniform_flag : bool, optional
-        _description_, by default False
-    grid_uniform : bool, optional
         _description_, by default False
     no_conjugate : bool, optional
         _description_, by default False
-    mask_mirror_indices : bool, optional
-        _description_, by default False
     model : np.ndarray | None, optional
         _description_, by default None
-    grid_spectral : bool, optional
-        _description_, by default False
-    beam_per_baseline : bool, optional
-        _description_, by default False
-    uv_grid_phase_only : bool, optional
-        _description_, by default True
 
     Returns
     -------
@@ -77,19 +56,14 @@ def visibility_grid(
     """
 
     # Get information from the data structures
-    dimension = obs['dimension']
-    elements = obs['elements']
+    dimension = int(obs['dimension'])
+    elements = int(obs['elements'])
     interp_flag = pyfhd_config['interpolate_kernel']
     freq_bin_i = obs['baseline_info']['fbin_i']
     fi_use = np.nonzero(obs['baseline_info']['freq_use'])[0]
     n_f_use = fi_use.size
     freq_bin_i = freq_bin_i[fi_use]
     n_vis_arr = obs['nf_vis']
-
-    # If both beam and interp_flag leave a warning, prioritise beam_per_baseline
-    if beam_per_baseline and interp_flag:
-        logger.warning("Cannot have beam per baseline and interpolation at the same time, turning off interpolation")
-        interp_flag = False
 
     # For each unflagged baseline, get the minimum contributing pixel number for gridding 
     # and the 2D derivatives for bilinear interpolation
@@ -100,7 +74,7 @@ def visibility_grid(
         pyfhd_config,
         logger,
         fi_use = fi_use, 
-        mask_mirror_indices = mask_mirror_indices, 
+        mask_mirror_indices = pyfhd_config["mask_mirror_indices"], 
         interp_flag = interp_flag
     )
     # Extract data from the returned dictionary 
@@ -126,7 +100,6 @@ def visibility_grid(
     # if it isn't exit
     if model is not None:
         if isinstance(model, np.ndarray):
-            # TODO: replace vis_inds_use with fi_use and bi_use
             model_use = model[fi_use, :][:, bi_use]
             model_return = np.zeros((elements, dimension), dtype = np.complex128)
         else:
@@ -135,14 +108,11 @@ def visibility_grid(
     # Now with the information we need, retrieve more data from the structures
     frequency_array = obs['baseline_info']['freq']
     frequency_array = frequency_array[fi_use]
-    # TODO: check psf or does this go into pyfhd_config?
-    complex_flag = psf['complex_flag']
     psf_dim = pyfhd_config['psf_dim']
     psf_resolution = pyfhd_config['psf_resolution']
     n_baselines = obs['n_baselines']
     n_samples = obs['n_time']
     # New group_arr code that is consistent with the FHD version
-    # TODO: check psf
     group_arr = np.squeeze(psf['id'][:, freq_bin_i, polarization])
     # REBIN in IDL when expanding dimensions repeats 2D arrays after expanding
     group_arr = np.expand_dims(rebin(group_arr, (n_baselines, n_f_use)), axis = 0)
@@ -157,7 +127,7 @@ def visibility_grid(
     # Flags have been defined in the function definition
     # Instead of reading the flags and then setting them.
 
-    if beam_per_baseline:
+    if pyfhd_config['beam_per_baseline']:
         # Initialization for gridding operation via a low-res beam kernel, calculated per
         # baseline using offsets from image-space delays
         uu = params['uu'][bi_use]
@@ -166,13 +136,11 @@ def visibility_grid(
         x = (np.arange(dimension) - dimension / 2) * obs['kpix']
         y = x.copy()
         psf_intermediate_res = np.min([np.ceil(np.sqrt(psf_resolution) / 2) * 2, psf_resolution])
-        # TODO: check psf
         psf_image_dim = psf['image_info']['psf_image_dim']
         image_bot = int(-(psf_dim / 2) * psf_intermediate_res + psf_image_dim / 2)
         image_top = int((psf_dim * psf_resolution - 1) - (psf_dim / 2) * psf_intermediate_res + psf_image_dim / 2)
         l_mode, m_mode, n_tracked = l_m_n(obs, psf)
-        if uv_grid_phase_only:
-            n_tracked = np.zeros_like(n_tracked)
+        n_tracked = np.zeros_like(n_tracked)
     
     # Initialize uv-arrays 
     image_uv = np.zeros((elements, dimension), dtype = np.complex128)
@@ -181,12 +149,12 @@ def visibility_grid(
     uniform_filter = np.zeros((elements, dimension))
 
     # If the uniform gridding has been activated we need to activate the uniform filter and switch off mapping if it has been activated
-    if grid_uniform:
+    if pyfhd_config['grid_uniform']:
         uniform_flag = True
     
     conj_i = np.where(params['vv'][bi_use] > 0)[0]
     if conj_i.size > 0:
-        if beam_per_baseline:
+        if pyfhd_config['beam_per_baseline']:
             uu[conj_i] = -uu[conj_i]
             vv[conj_i] = -vv[conj_i]
             ww[conj_i] = -ww[conj_i]
@@ -204,12 +172,10 @@ def visibility_grid(
         n_vis_arr[fi_use[fi]] = np.sum(xmin[:, fi] > 0)
     obs['nf_vis'] = n_vis_arr
 
-    if complex_flag:
-        init_arr = np.zeros([psf_dim2, psf_dim2], dtype = np.complex128)
-    else:
-        init_arr = np.zeros([psf_dim2, psf_dim2])
+    init_arr = np.zeros([psf_dim2, psf_dim2], dtype = np.complex128)
+
     arr_type = init_arr.dtype
-    if grid_spectral:
+    if pyfhd_config['grid_spectral']:
         # Spectral B and Spectral D shouldn't reference each other just in case
         spectral_A = np.zeros([elements, dimension], dtype = np.complex128)
         spectral_B = np.zeros([elements, dimension])
@@ -253,7 +219,6 @@ def visibility_grid(
             dx0dy0 = dx0dy0_arr.flat[inds]
 
             # Select the model/data visibility values of the set, each with a weight of 1
-            rep_flag = False
             if model is not None:
                 model_box = model_use.flat[inds]
             vis_box = vis_arr_use.flat[inds]
@@ -282,11 +247,10 @@ def visibility_grid(
             n_xyf_bin = xyf_ui.size
 
             # There might be a better selection criteria to determine which is most efficient
-            if vis_n > 1.1 * n_xyf_bin and not beam_per_baseline:
+            if vis_n > 1.1 * n_xyf_bin and not pyfhd_config['beam_per_baseline']:
                 # If there are any baselines which use the same beam kernel and the same discretized location
                 # given the hyperresolution, then reduce the number of gridding operations to only 
                 # non-repeated baselines
-                rep_flag = True
                 inds = inds[xyf_si]
                 inds_use = xyf_si[xyf_ui]
                 freq_i = freq_i[inds_use]
@@ -324,7 +288,6 @@ def visibility_grid(
             else:
                 # If there are not enough baselines which use the same beam kernel and discretized
                 # location to warrent reduction, then perform the gridding operation per baseline
-                rep_flag = False
                 if model is not None:
                     model_box = model_use.flat[inds]
                 vis_box = vis_arr_use.flat[inds]
@@ -335,7 +298,7 @@ def visibility_grid(
                 bt_index = inds // n_freq_use
             
             box_matrix = np.zeros((vis_n, psf_dim3), dtype = arr_type)
-            if beam_per_baseline:
+            if pyfhd_config['beam_per_baseline']:
                 # Make the beams on the fly with corrective phases given the baseline location for each visibility
                 # to the static uv-grid
                 box_matrix = grid_beam_per_baseline(psf, pyfhd_config, logger, uu, vv, ww, l_mode, m_mode, n_tracked, frequency_array,
@@ -348,15 +311,9 @@ def visibility_grid(
                     box_matrix[ii, :] = beam_arr[baseline_inds[ii], fbin[ii], polarization][y_off[ii], x_off[ii]]
         
         #  Calculate the conjugate transpose (dagger) of the uv-pixels that the current beam kernel contributes to
-        #  Calculate the conjugate transpose (dagger) of the uv-pixels that the current beam kernel contributes to
-        if complex_flag:
-            box_matrix_dag = np.conj(box_matrix)
-        else:
-            box_matrix_dag = box_matrix.real
-        if map_flag and rep_flag:
-            box_matrix *= rebin(np.transpose(psf_weight), (vis_n, psf_dim3))
+        box_matrix_dag = np.conj(box_matrix)
         
-        if grid_spectral:
+        if pyfhd_config['grid_spectral']:
             term_A_box = np.dot(np.transpose(box_matrix_dag), np.transpose((freq_i * vis_box) / n_vis))
             term_B_box = np.dot(np.transpose(box_matrix_dag), np.transpose(freq_i / n_vis))
             term_D_box = np.dot(np.transpose(box_matrix_dag), np.transpose(freq_i ** 2 / n_vis))
@@ -388,14 +345,13 @@ def visibility_grid(
         image_uv[ymin_use : ymin_use + psf_dim, xmin_use : xmin_use + psf_dim].flat += box_arr
         del(box_arr)
 
-        if weights_flag:
+        if pyfhd_config['grid_weights']:
             # If weight visibilities are being gridded, calculate the product the weight (1 per vis) and the beam kernel
             # for all vis which contribute to the same static uv-pixels, and add to the static uv-plane
             wts_box = np.dot(np.transpose(box_matrix_dag), np.transpose(psf_weight / n_vis))
-            # TODO: check weights shape
             weights[ymin_use : ymin_use + psf_dim, xmin_use : xmin_use + psf_dim].flat += wts_box
         
-        if variance_flag:
+        if pyfhd_config['grid_variance']:
             # If variance visibilities are being gridded, calculate the product the weight (1 per vis) and the square
             # of the beam kernel for all vis which contribute to the same static uv-pixels, and add to the static uv-plane
             var_box = np.dot(np.transpose(np.abs(box_matrix_dag) ** 2), np.transpose(psf_weight / n_vis))
@@ -409,12 +365,9 @@ def visibility_grid(
 
     if model is not None:
         del(model_use)
-
-    if map_flag:
-        map_fn = holo_mapfn_convert(map_fn, psf_dim, dimension, norm = n_vis)
     
     # Option to use spectral index information to scale the uv-plane 
-    if grid_spectral:
+    if pyfhd_config['grid_spectral']:
         spectral_uv = (spectral_A - n_vis * spectral_B * image_uv) * weight_invert(spectral_D - spectral_B ** 2)
         if model is not None:
             spectral_model_uv = (spectral_model_A - n_vis * spectral_B * model_return) * weight_invert(spectral_D - spectral_B ** 2)
@@ -424,7 +377,7 @@ def visibility_grid(
                 spectral_model_uv = (spectral_model_uv + conjugate_mirror(spectral_model_uv)) / 2
     
     # Option to apply a uniform weighted filter to all uv-planes
-    if grid_uniform:
+    if pyfhd_config['grid_uniform']:
         filter_use = weight_invert(uniform_filter, threshold = 1)
         wts_i = np.nonzero(filter_use)
         if wts_i[0].size > 0:
@@ -432,9 +385,9 @@ def visibility_grid(
         else:
             filter_use /= np.mean(filter_use)
         image_uv *= weight_invert(filter_use)
-        if weights_flag:
+        if pyfhd_config['grid_weights']:
             weights *= weight_invert(filter_use)
-        if variance_flag:
+        if pyfhd_config['grid_variance']:
             variance *= weight_invert(filter_use)
         if model is not None:
             model_return *= weight_invert(filter_use)
@@ -443,9 +396,9 @@ def visibility_grid(
         # The uv-plane is its own conjugate mirror about the x-axis, so fill in the rest of the uv-plane
         # using simple maths instead of extra gridding
         image_uv = (image_uv + conjugate_mirror(image_uv)) / 2
-        if weights_flag:
+        if pyfhd_config['grid_weights']:
             weights = (weights + conjugate_mirror(weights)) / 2
-        if variance_flag:
+        if pyfhd_config['grid_variance']:
             variance = (variance + conjugate_mirror(variance)) / 4
         if model is not None:
             model_return = (model_return + conjugate_mirror(model_return)) / 2
@@ -462,12 +415,12 @@ def visibility_grid(
         'n_vis' : n_vis,
     }
 
-    if grid_spectral:
+    if pyfhd_config['grid_spectral']:
         gridding_dict['spectral_uv'] = spectral_uv
 
     if model is not None:
         gridding_dict['model_return'] = model_return
-        if grid_spectral:
+        if pyfhd_config['grid_spectral']:
             gridding_dict['spectral_model_uv'] = spectral_model_uv
     
     return gridding_dict
