@@ -23,13 +23,13 @@ def interp_kernel_before(data_dir, number):
     
     kernel_arr, x_offset, y_offset, dx0dy0, dx1dy0, dx0dy1, dx1dy1 = get_data_items(
         data_dir,
-        'visibility_grid_input_kernel_arr_1.npy',
-        'visibility_grid_input_x_offset_1.npy',
-        'visibility_grid_input_y_offset_1.npy',
-        'visibility_grid_input_dx0dy0_1.npy',
-        'visibility_grid_input_dx1dy0_1.npy',
-        'visibility_grid_input_dx0dy1_1.npy',
-        'visibility_grid_input_dx1dy1_1.npy',
+        f'visibility_grid_input_kernel_arr_{number}.npy',
+        f'visibility_grid_input_x_offset_{number}.npy',
+        f'visibility_grid_input_y_offset_{number}.npy',
+        f'visibility_grid_input_dx0dy0_{number}.npy',
+        f'visibility_grid_input_dx1dy0_{number}.npy',
+        f'visibility_grid_input_dx0dy1_{number}.npy',
+        f'visibility_grid_input_dx1dy1_{number}.npy',
     )
 
     h5_save_dict = {
