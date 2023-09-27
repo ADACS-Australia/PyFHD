@@ -169,7 +169,7 @@ def visibility_grid(
     
     n_vis = np.sum(bin_n)
     for fi in range(n_f_use):
-        n_vis_arr[fi_use[fi]] = np.sum(xmin[:, fi] > 0)
+        n_vis_arr[fi_use[fi]] = np.sum(xmin[fi, :] > 0)
     obs['nf_vis'] = n_vis_arr
 
     init_arr = np.zeros([psf_dim2, psf_dim2], dtype = np.complex128)
@@ -228,7 +228,7 @@ def visibility_grid(
             for ii in range(vis_n):
                 # For each visibility, calculate the kernel values on the static uv-grid given the
                 # hyperresolved kernel and an interpolation involving the derivatives
-                box_matrix[ii] = interpolate_kernel(beam_arr[baseline_inds[ii], fbin[ii], polarization],
+                box_matrix[ii] = interpolate_kernel(beam_arr[polarization, fbin[ii], baseline_inds[ii]],
                                                     x_off[ii], y_off[ii], dx0dy0[ii], dx1dy0[ii], dx0dy1[ii], dx1dy1[ii])
         else:
             # Calculate the beam kernel at each baseline location given the hyperresolved pre-calculated
@@ -308,7 +308,7 @@ def visibility_grid(
                 for ii in range(vis_n):
                     # For each visibility, calculate the kernel values on the static uv-grid given the
                     # hyperresolved kernel
-                    box_matrix[ii, :] = beam_arr[baseline_inds[ii], fbin[ii], polarization][y_off[ii], x_off[ii]]
+                    box_matrix[ii, :] = beam_arr[polarization, fbin[ii], baseline_inds[ii]][y_off[ii], x_off[ii]]
         
         #  Calculate the conjugate transpose (dagger) of the uv-pixels that the current beam kernel contributes to
         box_matrix_dag = np.conj(box_matrix)
@@ -332,7 +332,6 @@ def visibility_grid(
             # Ensure model_box is flat, sometimes odd shapes can come in from metadata
             model_box = model_box.flatten()
             box_arr = np.dot(np.transpose(box_matrix_dag), np.transpose(model_box / n_vis))
-            # TODO: check model_return shape
             model_return[ymin_use : ymin_use + psf_dim, xmin_use : xmin_use + psf_dim].flat += box_arr
         
         # Calculate the product of the data vis and the beam kernel
@@ -341,7 +340,6 @@ def visibility_grid(
         # Ensure vis_box is flat, sometimes odd shapes can come in from metadata
         vis_box = vis_box.flatten()
         box_arr = np.dot(np.transpose(box_matrix_dag), vis_box / n_vis)
-        # TODO: check image_uv shape
         image_uv[ymin_use : ymin_use + psf_dim, xmin_use : xmin_use + psf_dim].flat += box_arr
         del(box_arr)
 

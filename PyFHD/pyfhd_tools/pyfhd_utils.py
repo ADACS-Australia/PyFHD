@@ -295,9 +295,9 @@ def l_m_n(obs, psf, obsdec = None, obsra = None,  declination_arr = None, right_
     if obsra is None:
         obsra = obs['obsra']
     if  declination_arr is None:
-        declination_arr = psf['image_info'][0]['dec_arr'][0]
+        declination_arr = psf['image_info']['dec_arr']
     if right_ascension_arr  is None:
-        right_ascension_arr = psf['image_info'][0]['ra_arr'][0]
+        right_ascension_arr = psf['image_info']['ra_arr']
 
     # Convert all the degrees given into radians
     obsdec = np.radians(obsdec)
