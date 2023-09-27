@@ -15,6 +15,8 @@ def visibility_grid(
         uniform_flag: bool = False,
         no_conjugate: bool = False,
         model: np.ndarray|None = None,
+        fi_use: np.ndarray|None = None,
+        bi_use: np.ndarray|None = None
     ):
     """
     TODO: _summary_
@@ -43,6 +45,10 @@ def visibility_grid(
         _description_, by default False
     model : np.ndarray | None, optional
         _description_, by default None
+    fi_use : np.ndarray | None, optional
+        _description_, by default None
+    bi_use : np.ndarray | None, optional
+        _description_, by default None
 
     Returns
     -------
@@ -59,11 +65,12 @@ def visibility_grid(
     dimension = int(obs['dimension'])
     elements = int(obs['elements'])
     interp_flag = pyfhd_config['interpolate_kernel']
-    freq_bin_i = obs['baseline_info']['fbin_i']
-    fi_use = np.nonzero(obs['baseline_info']['freq_use'])[0]
-    n_f_use = fi_use.size
-    freq_bin_i = freq_bin_i[fi_use]
     n_vis_arr = obs['nf_vis']
+    if fi_use is None:
+        fi_use = np.nonzero(obs['baseline_info']['freq_use'])[0]
+    n_f_use = fi_use.size
+    freq_bin_i = obs['baseline_info']['fbin_i']
+    freq_bin_i = freq_bin_i[fi_use]
 
     # For each unflagged baseline, get the minimum contributing pixel number for gridding 
     # and the 2D derivatives for bilinear interpolation
@@ -73,6 +80,7 @@ def visibility_grid(
         vis_weights,
         pyfhd_config,
         logger,
+        bi_use = bi_use,
         fi_use = fi_use, 
         mask_mirror_indices = pyfhd_config["mask_mirror_indices"], 
         interp_flag = interp_flag
@@ -86,7 +94,8 @@ def visibility_grid(
     ymin = baselines_dict['ymin']
     x_offset = baselines_dict['x_offset']
     y_offset = baselines_dict['y_offset']
-    bi_use = baselines_dict['bi_use']
+    if bi_use is None:
+        bi_use = baselines_dict['bi_use']
     if interp_flag:
         dx0dy0_arr = baselines_dict['dx0dy0_arr']
         dx0dy1_arr = baselines_dict['dx0dy1_arr']
