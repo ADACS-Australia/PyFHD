@@ -1,8 +1,8 @@
 import pytest
-import numpy as np
+import numpy.testing as npt
 from os import environ as env
 from pathlib import Path
-from PyFHD.pyfhd_tools.test_utils import get_data, get_data_items
+from PyFHD.pyfhd_tools.test_utils import get_data, get_data_items, recarray_to_dict
 from PyFHD.pyfhd_tools.pyfhd_utils import l_m_n
 
 @pytest.fixture
@@ -15,12 +15,13 @@ def test_l_m_n_one(data_dir):
                                                                           'visibility_grid_output_l_mode.npy',
                                                                           'visibility_grid_output_m_mode.npy',
                                                                           'visibility_grid_output_n_tracked.npy')
+    obs = recarray_to_dict(obs)
+    psf = recarray_to_dict(psf)
     l_mode, m_mode, n_tracked = l_m_n(obs, psf)
     # Set the threshold for single precision accuracy. Including rounding errors.
-    threshold= 1e-6
-    assert np.max(l_mode - expected_l_mode) < threshold
-    assert np.max(m_mode - expected_m_mode) < threshold
-    assert np.max(n_tracked - expected_n_tracked) < threshold
+    npt.assert_allclose(l_mode, expected_l_mode, atol = 1e-7)
+    npt.assert_allclose(m_mode, expected_m_mode, atol = 1e-7)
+    npt.assert_allclose(n_tracked, expected_n_tracked, atol = 1e-7)
 
 def test_l_m_n_two(data_dir):
     obs, psf = get_data(
@@ -38,12 +39,13 @@ def test_l_m_n_two(data_dir):
                                                                                                             'output_m_mode_2.npy',
                                                                                                             'output_n_tracked_2.npy'
                                                                                                          )
+    obs = recarray_to_dict(obs)
+    psf = recarray_to_dict(psf)
     l_mode, m_mode, n_tracked = l_m_n(obs, psf, obsdec = obsdec, obsra = obsra, declination_arr = dec_arr, right_ascension_arr = ra_arr)
     # Set the threshold for single precision accuracy. Including rounding errors.
-    threshold= 1e-6
-    assert np.max(l_mode - expected_l_mode) < threshold
-    assert np.max(m_mode - expected_m_mode) < threshold
-    assert np.max(n_tracked - expected_n_tracked) < threshold
+    npt.assert_allclose(l_mode, expected_l_mode, atol = 2e-7)
+    npt.assert_allclose(m_mode, expected_m_mode, atol = 1e-7)
+    npt.assert_allclose(n_tracked, expected_n_tracked, atol = 1e-7)
     
 
 def test_l_m_n_three(data_dir):
@@ -54,9 +56,10 @@ def test_l_m_n_three(data_dir):
                                                                            'output_m_mode_3.npy',
                                                                            'output_n_tracked_3.npy'
                                                                          )
+    obs = recarray_to_dict(obs)
+    psf = recarray_to_dict(psf)
     l_mode, m_mode, n_tracked = l_m_n(obs, psf)
     # Set the threshold for single precision accuracy. Including rounding errors.
-    threshold= 1e-6
-    assert np.max(l_mode - expected_l_mode) < threshold
-    assert np.max(m_mode - expected_m_mode) < threshold
-    assert np.max(n_tracked - expected_n_tracked) < threshold
+    npt.assert_allclose(l_mode, expected_l_mode, atol = 2e-7)
+    npt.assert_allclose(m_mode, expected_m_mode, atol = 1e-7)
+    npt.assert_allclose(n_tracked, expected_n_tracked, atol = 1e-7)
