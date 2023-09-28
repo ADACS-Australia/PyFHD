@@ -549,11 +549,6 @@ def grid_beam_per_baseline(
         w_n_tracked = n_tracked * ww[bt_index[ii]] * frequency_array[freq_i[ii]]
 
         # Generate a UV beam from the image space beam, offset by calculated phases
-        # TODO: May have to construct the image power beam here for this part, suprisingly can be done without the beam!
-        # beam_setup (line 254) -> image_power_beam -> beam_power call from beam_setup (line 211) -> beam_hyperresolved call from beam_power (line 36)
-        # -> take kernel_window from pyfhd_config if it exists and apply as per line 37 from beam_power
-        # takes the antenna, so the antenna struct could be done too maybe?
-        # Preferred to have another package do this instead.
         psf_base_superres = dirty_image_generate(
             psf['image_info']['image_power_beam_arr'][polarization] * \
             np.exp(2 * pi * (0 + 1j) * (-w_n_tracked + deltau_l + deltav_m)),
@@ -772,3 +767,23 @@ def holo_mapfn_convert(map_fn, psf_dim, dimension, elements = None, norm = 1, th
                                (('i_use', 'I_USE'), 'int'), (('norm', 'NORM'), 'float'),\
                                (('indexed', 'INDEXED'), '>i2')])
     return mapfn
+
+def crosspol_reformat(image_uv: np.ndarray) -> np.ndarray:
+    """
+    TODO: _summary_
+
+    Parameters
+    ----------
+    image_uv : np.ndarray
+        The image of the uv plane we are crossol formatting
+
+    Returns
+    -------
+    image_uv: np.ndarray
+        The crosspol formatted uv plane
+    """
+    # Stokes -> instrumental, since inverse keyword in FHD wasn't used here
+    crosspol_image = 2 * image_uv[2] - conjugate_mirror(image_uv[3])
+    image_uv[2] = crosspol_image
+    image_uv[3] = conjugate_mirror(crosspol_image)
+    return image_uv

@@ -17,6 +17,7 @@ n-pol : 2
 deproject-w-term : ~
 
 # Beam Setup
+beam-file-path: './input'
 recalculate-beam : true
 beam-clip-floor : true
 interpolate-kernel : true

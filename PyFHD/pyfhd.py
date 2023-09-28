@@ -11,6 +11,9 @@ from PyFHD.calibration.calibrate import calibrate, calibrate_qu_mixing
 from PyFHD.use_idl_fhd.run_idl_fhd import run_IDL_calibration_only, run_IDL_convert_gridding_to_healpix_images
 from PyFHD.use_idl_fhd.use_idl_outputs import run_gridding_on_IDL_outputs
 from PyFHD.flagging.flagging import vis_flag, vis_flag_basic
+from PyFHD.beam_setup.beam import import_beam
+from PyFHD.gridding.visibility_grid import visibility_grid
+from PyFHD.gridding.gridding_utils import crosspol_reformat
 import logging
 
 def _print_time_diff(start : float, end : float, description : str, logger : RootLogger):
@@ -126,23 +129,70 @@ def main_python_only(pyfhd_config : dict, logger : logging.RootLogger):
         weight_end = time.time()
         _print_time_diff(weight_start, weight_end, 'Visibilities Weights Updated After Calibration', logger)
 
+    # TODO: save vis_arr, vis_weights and cal dict here
+
     if (pyfhd_config['flag_visibilities']):
         flag_start = time.time()
         vis_weights, obs = vis_flag(vis_arr, vis_weights, obs, params)
         flag_end = time.time()
         _print_time_diff(flag_start, flag_end, 'Visibilities Flagged', logger)
 
+    # TODO: save flagged weights and obs here
+
     noise_start = time.time()
     obs['vis_noise'] = vis_noise_calc(obs, vis_arr, vis_weights)
     noise_end = time.time()
     _print_time_diff(noise_start, noise_end, 'Noise Calculated and added to obs', logger)
 
+    # Import psf from a sav file or a fits file
+    psf = import_beam(pyfhd_config, logger)
+
+    # TODO: save the psf here as h5, sav files take a while to read, and then add in hdf5 reader into the import beam function
 
     grid_start = time.time()
-    # TODO: add the fully python compatible gridding function after calibration testing is finished
+    # Since it's done per polarization, we can do multi-processing if it's not fast enough
     for pol_i in range(obs["n_pol"]):
-        logger.info(f"Visibility Grid has begun for polarization {pol_i}")
-        logger.info(f"Visibility Grid has finished for polarization {pol_i}")
+        logger.info(f"Gridding has begun for polarization {pol_i}")
+        image_uv = np.empty((obs["n_pol"], obs["elements"], obs["dimension"]), dtype = np.complex128)
+        weights_uv = np.empty((obs["n_pol"], obs["elements"], obs["dimension"]), dtype = np.complex128)
+        variance_uv = np.empty((obs["n_pol"], obs["elements"], obs["dimension"]))
+        uniform_filter_uv = np.empty((obs["n_pol"], obs["elements"], obs["dimension"]))
+        if vis_model_arr is not None:
+            model_uv = np.empty((obs["n_pol"], obs["elements"], obs["dimension"]), dtype = np.complex128)
+        if pol_i == 0:
+            uniform_flag = True
+            no_conjugate = False
+        else:
+            uniform_flag = False
+            no_conjugate = True
+        gridding_dict = visibility_grid(
+            vis_arr[pol_i], 
+            vis_weights[pol_i], 
+            obs, 
+            psf, 
+            params, 
+            pol_i, 
+            pyfhd_config, 
+            logger, 
+            uniform_flag = uniform_flag, 
+            no_conjugate = no_conjugate, 
+            model = vis_model_arr[pol_i]
+        )
+        image_uv[pol_i] = gridding_dict['image_uv']
+        weights_uv[pol_i] = gridding_dict['weights']
+        variance_uv[pol_i] = gridding_dict['variance']
+        uniform_filter_uv[pol_i] = gridding_dict['uniform_filter']
+        obs['nf_vis'] = gridding_dict["obs"]["nf_vis"]
+        if vis_model_arr is not None:
+            model_uv[pol_i] = gridding_dict['model_return']
+        logger.info(f"Gridding has finished for polarization {pol_i}")
+    if obs["n_pol"] == 4:
+        logger.info("Performing Crosspol reformatting")
+        image_uv = crosspol_reformat(image_uv)
+        weights_uv = crosspol_reformat(weights_uv)
+        if vis_model_arr is not None:
+            model_uv = crosspol_reformat(model_uv)
+    # TODO: Save the results here
     grid_end = time.time()
     _print_time_diff(grid_start, grid_end, 'Visibilities gridded', logger)
 

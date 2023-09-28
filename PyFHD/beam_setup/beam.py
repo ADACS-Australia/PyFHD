@@ -1,7 +1,7 @@
 import numpy as np
 from typing import Tuple
 from astropy.constants import c
-import logging
+from logging import RootLogger
 from scipy.interpolate import interp1d
 from PyFHD.beam_setup.beam_utils import mwa_beam_setup_init
 
@@ -102,3 +102,15 @@ def create_antenna(pyfhd_config : dict, obs : dict) -> dict:
     antenna = mwa_beam_setup_init(pyfhd_config, obs, antenna)
 
     return antenna
+
+def import_beam(pyfhd_config: dict, logger: RootLogger) -> dict:
+    psf = {}
+    if pyfhd_config["beam_file_path"].suffix == '.sav':
+        # Read in a sav file containing the psf structure as we expect from FHD
+        pass
+    elif pyfhd_config["beam_file_path"].suffix == '.fits':
+        # Read in a fits file
+        pass
+
+    return psf
+

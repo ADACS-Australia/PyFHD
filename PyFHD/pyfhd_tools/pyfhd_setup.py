@@ -144,7 +144,8 @@ def pyfhd_parser():
     flag.add_argument('--time-cut', type = list, default = None, help = 'Seconds to cut (rounded up to next time integration step) from the beginning of the observation. Can also specify a negative time to cut off the end of the observation. Specify a vector to cut at both the start and end.')
 
     # Beam Setup Group
-    beam.add_argument('-b', '--recalculate-beam', default = False, action = 'store_true', help = "Forces PyFHD to redo the beam setup using PyFHD's beam setup.")
+    beam.add_argument('-b', '--import-beam', type = Path, help = "The path to the file containing a sav or fits file")
+    beam.add_argument('--recalculate-beam', default = False, action = 'store_true', help = "Forces PyFHD to redo the beam setup using PyFHD's beam setup.")
     beam.add_argument('--beam-nfreq-avg', type = int, default = 16, help = "The number of fine frequency channels to calculate a beam for, using the average of the frequencies.\nThe beam is a function of frequency, and a calculation on the finest level is most correct (beam_nfreq_avg=1).\nHowever, this is computationally difficult for most machines.")
     beam.add_argument('--psf-dim', default = 54, type = int, help = 'Controls the span of the beam in u-v space. Some defaults are 30, 54 (1e6 mask with -2) or 62 (1e7 with -2).')
     beam.add_argument('--psf-resolution', default = 100, type = int, help = 'Super-resolution factor of the psf in UV space. Values greater than 1 increase the resolution of the gridding kernel.')
