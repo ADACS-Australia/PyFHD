@@ -7,11 +7,11 @@ from PyFHD.data_setup.obs import create_obs
 from PyFHD.data_setup.uvfits import extract_header, create_params, extract_visibilities, create_layout
 from PyFHD.pyfhd_tools.pyfhd_utils import simple_deproject_w_term, vis_weights_update, vis_noise_calc
 from PyFHD.source_modeling.vis_model_transfer import vis_model_transfer, flag_model_visibilities
+from PyFHD.beam_setup.beam import create_psf
 from PyFHD.calibration.calibrate import calibrate, calibrate_qu_mixing
 from PyFHD.use_idl_fhd.run_idl_fhd import run_IDL_calibration_only, run_IDL_convert_gridding_to_healpix_images
 from PyFHD.use_idl_fhd.use_idl_outputs import run_gridding_on_IDL_outputs
 from PyFHD.flagging.flagging import vis_flag, vis_flag_basic
-from PyFHD.beam_setup.beam import import_beam
 from PyFHD.gridding.visibility_grid import visibility_grid
 from PyFHD.gridding.gridding_utils import crosspol_reformat
 import logging
@@ -108,6 +108,9 @@ def main_python_only(pyfhd_config : dict, logger : logging.RootLogger):
     vis_model_arr_end = time.time()
     _print_time_diff(vis_model_arr_start, vis_model_arr_end, 'Model Imported and Flagged From UVFITS', logger)
 
+    # Read in the beam from a file returning a psf structure
+    psf = create_psf(pyfhd_config, logger)
+
     # Skipped initializing the cal structure as it mostly just copies values from the obs, params, config and the skymodel from FHD
     # However, there is resulting cal structure for logging and output purposes to store the resulting gain and any other associated
     # arrays
@@ -143,9 +146,6 @@ def main_python_only(pyfhd_config : dict, logger : logging.RootLogger):
     obs['vis_noise'] = vis_noise_calc(obs, vis_arr, vis_weights)
     noise_end = time.time()
     _print_time_diff(noise_start, noise_end, 'Noise Calculated and added to obs', logger)
-
-    # Import psf from a sav file or a fits file
-    psf = import_beam(pyfhd_config, logger)
 
     # TODO: save the psf here as h5, sav files take a while to read, and then add in hdf5 reader into the import beam function
 

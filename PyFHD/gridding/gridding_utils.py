@@ -119,8 +119,8 @@ def baseline_grid_locations(obs: dict, params: dict, vis_weights: np.ndarray, py
     min_baseline = obs['min_baseline']
     max_baseline = obs['max_baseline']
     b_info = obs['baseline_info']
-    psf_dim = pyfhd_config['psf_dim']
-    psf_resolution = pyfhd_config['psf_resolution']
+    psf_dim = psf['dim']
+    psf_resolution = psf['resolution']
 
     # Frequency information of the visibilities
     if fill_model_visibilities:
@@ -543,8 +543,8 @@ def grid_beam_per_baseline(
     # Loop over all visibilities that fall within the chosen visibility box
     for ii in range(vis_n):
         # Pixel center offset phases
-        deltau_l = l_mode * (uu[bt_index[ii]] * frequency_array[freq_i[ii]] - x[xmin_use + pyfhd_config['psf_dim'] // 2])
-        deltav_m = m_mode * (vv[bt_index[ii]] * frequency_array[freq_i[ii]] - y[ymin_use + pyfhd_config['psf_dim'] // 2])
+        deltau_l = l_mode * (uu[bt_index[ii]] * frequency_array[freq_i[ii]] - x[xmin_use + psf['dim'] // 2])
+        deltav_m = m_mode * (vv[bt_index[ii]] * frequency_array[freq_i[ii]] - y[ymin_use + psf['dim'] // 2])
         # w term offset phase
         w_n_tracked = n_tracked * ww[bt_index[ii]] * frequency_array[freq_i[ii]]
 
@@ -574,15 +574,15 @@ def grid_beam_per_baseline(
         #                      15 16   
         d = psf_base_superres.shape
         # Note columns and rows are swapped from IDL so nx is now rows!
-        nx = d[0] // pyfhd_config['psf_resolution']
-        ny = d[1] // pyfhd_config['psf_resolution']
+        nx = d[0] // psf['resolution']
+        ny = d[1] // psf['resolution']
         # The same result of IDL in numpy is np.reshape, with shape swapping rows and columns, then doing transpose of this shape
-        psf_base_superres = np.reshape(psf_base_superres,[pyfhd_config['psf_resolution'] * ny, nx, pyfhd_config['psf_resolution']])
+        psf_base_superres = np.reshape(psf_base_superres,[psf['resolution'] * ny, nx, psf['resolution']])
         psf_base_superres = np.transpose(psf_base_superres, [1,0,2])
-        psf_base_superres = np.reshape(psf_base_superres, [ny, nx, pyfhd_config['psf_resolution'] ** 2])
+        psf_base_superres = np.reshape(psf_base_superres, [ny, nx, psf['resolution'] ** 2])
         psf_base_superres = np.sum(psf_base_superres, -1)
         psf_base_superres = np.transpose(psf_base_superres)
-        psf_base_superres = np.reshape(psf_base_superres, pyfhd_config['psf_dim'] ** 2)
+        psf_base_superres = np.reshape(psf_base_superres, psf['dim'] ** 2)
         start = psf_dim3 * ii
         end = start + psf_base_superres.size
         box_matrix_iter = box_matrix.flat
@@ -597,7 +597,7 @@ def grid_beam_per_baseline(
     if pyfhd_config["beam_clip_floor"]:
         psf_val_ref = np.sum(box_matrix, 1)
         psf_amp = np.abs(box_matrix)
-        psf_mask_threshold_use = np.max(psf_amp) / pyfhd_config['beam_mask_threshold']
+        psf_mask_threshold_use = np.max(psf_amp) / psf['beam_mask_threshold']
         psf_amp -= psf_mask_threshold_use
         psf_phase = np.arctan2(box_matrix.imag, box_matrix.real)
         psf_amp = np.maximum(psf_amp, np.zeros_like(psf_amp))
@@ -607,7 +607,7 @@ def grid_beam_per_baseline(
     
     if degrid_flag and beam_int is not None and beam2_int is not None and n_grp_use is not None:
         # Calculate the beam and beam^2 integral (degridding)
-        psf_resolution = pyfhd_config['psf_resolution']
+        psf_resolution = psf['resolution']
         beam_int_temp = np.sum(box_matrix, 0) / psf_resolution ** 2
         beam2_int_temp = np.sum(np.abs(box_matrix) ** 2, 0) / psf_resolution ** 2
         for ii in range(np.size(freq_i)):
@@ -655,7 +655,7 @@ def visibility_count(obs: dict, params: dict, vis_weights: np.ndarray, pyfhd_con
     #Retrieve info from the data structures
     dimension = int(obs['dimension'])
     elements = int(obs['elements'])
-    psf_dim = pyfhd_config['psf_dim']
+    psf_dim = psf['dim']
 
     baselines_dict = baseline_grid_locations(
         obs, 

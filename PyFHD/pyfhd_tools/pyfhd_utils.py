@@ -952,15 +952,15 @@ def vis_weights_update(vis_weights : np.ndarray, obs: dict, params: dict, pyfhd_
         ky_arr[conj_i] = -ky_arr[conj_i]
 
     xcen = np.outer(obs['baseline_info']['freq'], kx_arr)
-    xmin = np.floor(xcen) + obs['dimension'] / 2 - (pyfhd_config['psf_dim'] / 2 - 1)
+    xmin = np.floor(xcen) + obs['dimension'] / 2 - (psf['dim'] / 2 - 1)
     ycen = np.outer(obs['baseline_info']['freq'], ky_arr)
-    ymin = np.floor(ycen) + obs['elements'] / 2 - (pyfhd_config['psf_dim'] / 2 - 1)
+    ymin = np.floor(ycen) + obs['elements'] / 2 - (psf['dim'] / 2 - 1)
 
-    range_test_x_i = np.where((xmin <= 0) | ((xmin + pyfhd_config['psf_dim'] - 1) >= obs['dimension'] - 1))
+    range_test_x_i = np.where((xmin <= 0) | ((xmin + psf['dim'] - 1) >= obs['dimension'] - 1))
     if (range_test_x_i[0].size > 0):
         xmin[range_test_x_i] = -1
         ymin[range_test_x_i] = -1
-    range_test_y_i = np.where((ymin <= 0) | ((ymin + pyfhd_config['psf_dim'] - 1) >= obs['elements'] - 1))
+    range_test_y_i = np.where((ymin <= 0) | ((ymin + psf['dim'] - 1) >= obs['elements'] - 1))
     if (range_test_y_i[0].size > 0):
         xmin[range_test_y_i] = -1
         ymin[range_test_y_i] = -1

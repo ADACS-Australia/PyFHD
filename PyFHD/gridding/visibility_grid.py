@@ -117,8 +117,8 @@ def visibility_grid(
     # Now with the information we need, retrieve more data from the structures
     frequency_array = obs['baseline_info']['freq']
     frequency_array = frequency_array[fi_use]
-    psf_dim = pyfhd_config['psf_dim']
-    psf_resolution = pyfhd_config['psf_resolution']
+    psf_dim = psf['dim']
+    psf_resolution = psf['resolution']
     n_baselines = obs['n_baselines']
     n_samples = obs['n_time']
     # New group_arr code that is consistent with the FHD version
