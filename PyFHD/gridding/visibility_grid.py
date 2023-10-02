@@ -76,9 +76,9 @@ def visibility_grid(
     # and the 2D derivatives for bilinear interpolation
     baselines_dict = baseline_grid_locations(
         obs, 
+        psf,
         params, 
         vis_weights,
-        pyfhd_config,
         logger,
         bi_use = bi_use,
         fi_use = fi_use, 

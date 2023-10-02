@@ -35,10 +35,6 @@ def vis_count_before(data_dir, number):
         data_dir,
         f'input_psf_{number}.npy',
     ))
-    pyfhd_config = {
-        "psf_dim": psf["dim"],
-        "psf_resolution": psf["resolution"]
-    }
     # Take the required parameters
     obs, params, vis_weights = get_data_items(
         data_dir,
@@ -55,11 +51,10 @@ def vis_count_before(data_dir, number):
 
     # Create the save dict
     h5_save_dict = {}
-    h5_save_dict["pyfhd_config"] = pyfhd_config
     h5_save_dict["obs"] = recarray_to_dict(obs)
+    h5_save_dict["psf"] = psf
     h5_save_dict["params"] = recarray_to_dict(params)
     h5_save_dict["vis_weights"] = vis_weights.transpose()
-    h5_save_dict["pyfhd_config"] = pyfhd_config
     h5_save_dict["fi_use"] = get_file(data_dir, f'input_fi_use_{number}.npy')
     h5_save_dict["bi_use"] = get_file(data_dir, f'input_bi_use_arr_{number}.npy')
     h5_save_dict["mask_mirror_indices"] = True if get_file(data_dir, f'input_mask_mirror_indices_{number}.npy') else False
@@ -96,9 +91,9 @@ def test_vis_count(vis_count_before: Path, vis_count_after: Path):
 
     uniform_filter = visibility_count(
         h5_before["obs"],
+        h5_before["psf"],
         h5_before["params"],
         h5_before["vis_weights"],
-        h5_before["pyfhd_config"],
         RootLogger(1),
         fi_use = h5_before["fi_use"],
         bi_use = h5_before["bi_use"],

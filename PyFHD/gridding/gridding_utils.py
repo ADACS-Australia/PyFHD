@@ -66,45 +66,39 @@ def conjugate_mirror(image: np.ndarray):
         conj_mirror_image = np.conjugate(conj_mirror_image)
     return conj_mirror_image
 
-def baseline_grid_locations(obs: dict, params: dict, vis_weights: np.ndarray, pyfhd_config: dict, logger: RootLogger, 
+def baseline_grid_locations(obs: dict, psf: dict, params: dict, vis_weights: np.ndarray, logger: RootLogger, 
                             bi_use: np.ndarray|None = None, fi_use: np.ndarray|None = None, fill_model_visibilities: bool = False, 
                             interp_flag: bool = False, mask_mirror_indices: bool = False):
     """
-    TODO: Docstring
-    [summary]
+    TODO: _summary_
 
     Parameters
     ----------
-    obs : [type]
-        [description]
-    psf : [type]
-        [description]
-    params : [type]
-        [description]
-    vis_weights : [type]
-        [description]
-    bi_use : [type], optional
-        [description], by default None
-    fi_use : [type], optional
-        [description], by default None
+    obs : dict
+        _description_
+    psf : dict
+        _description_
+    params : dict
+        _description_
+    vis_weights : np.ndarray
+        _description_
+    logger : RootLogger
+        _description_
+    bi_use : np.ndarray | None, optional
+        _description_, by default None
+    fi_use : np.ndarray | None, optional
+        _description_, by default None
     fill_model_visibilities : bool, optional
-        [description], by default False
+        _description_, by default False
     interp_flag : bool, optional
-        [description], by default False
+        _description_, by default False
     mask_mirror_indices : bool, optional
-        [description], by default False
+        _description_, by default False
 
     Returns
     -------
-    [type]
-        [description]
-    
-    Raises
-    ------
-    TypeError
-        In the case obs, psf, params or vis_weights is None.
-        TypeError is raised as the function needs to reference
-        obs, psf, params and vis_weights.
+    _type_
+        _description_
     """
 
     # Set up the return dictionary
@@ -617,7 +611,7 @@ def grid_beam_per_baseline(
     
     return box_matrix
 
-def visibility_count(obs: dict, params: dict, vis_weights: np.ndarray, pyfhd_config: dict, logger: RootLogger, 
+def visibility_count(obs: dict, psf: dict, params: dict, vis_weights: np.ndarray, logger: RootLogger, 
                      fi_use: np.ndarray|None = None, bi_use: np.ndarray|None = None, 
                      mask_mirror_indices: bool = False, no_conjugate: bool = False, fill_model_visibilities: bool = False):
     """
@@ -659,9 +653,9 @@ def visibility_count(obs: dict, params: dict, vis_weights: np.ndarray, pyfhd_con
 
     baselines_dict = baseline_grid_locations(
         obs, 
+        psf,
         params, 
         vis_weights, 
-        pyfhd_config, 
         logger, 
         bi_use = bi_use, 
         fi_use = fi_use,

@@ -47,11 +47,10 @@ def baseline_before(data_dir, number):
     )
     # Create the save dict
     h5_save_dict = {}
-    h5_save_dict["pyfhd_config"] = pyfhd_config
     h5_save_dict["obs"] = recarray_to_dict(obs)
+    h5_save_dict["psf"] = recarray_to_dict(psf)
     h5_save_dict["params"] = recarray_to_dict(params)
     h5_save_dict["vis_weights"] = vis_weights.transpose()
-    h5_save_dict["pyfhd_config"] = pyfhd_config
     h5_save_dict["bi_use"] = get_file(data_dir, f'input_bi_use_arr_{number}.npy')
     h5_save_dict["fi_use"] = get_file(data_dir, f'input_fi_use_{number}.npy')
     h5_save_dict["fill_model_visibilities"] = True if get_file(data_dir, f'input_fill_model_visibilities_{number}.npy') else False
@@ -91,9 +90,9 @@ def test_baselines(baseline_before: Path, baseline_after: Path):
 
     baselines_dict = baseline_grid_locations(
         h5_before["obs"], 
+        h5_before["psf"],
         h5_before["params"], 
         h5_before["vis_weights"], 
-        h5_before["pyfhd_config"],
         RootLogger(1),
         bi_use = h5_before["bi_use"],
         fi_use = h5_before["fi_use"], 
