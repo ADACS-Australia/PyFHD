@@ -96,6 +96,8 @@ def test_visibility_grid(before_gridding: Path, after_gridding: Path):
     h5_before = dd.io.load(before_gridding)
     h5_after = dd.io.load(after_gridding)
 
+    h5_before["psf"]["id"] = h5_before["psf"]["id"].T
+
     gridding_dict = visibility_grid(
         h5_before["visibility_ptr"],
         h5_before['vis_weight_ptr'],

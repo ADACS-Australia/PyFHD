@@ -82,8 +82,11 @@ def main_python_only(pyfhd_config : dict, logger : logging.RootLogger):
     obs_end = time.time()
     _print_time_diff(obs_start, obs_end, 'Obs Dictionary Created', logger)
 
-    # Read in the beam from a file returning a psf structure
+    # Read in the beam from a file returning a psf dictionary
+    psf_start = time.time()
     psf = create_psf(pyfhd_config, logger)
+    psf_end = time.time()
+    _print_time_diff(psf_start, psf_end, 'Beam and PSF dictionary imported.', logger)
 
     if pyfhd_config['deproject_w_term'] is not None:
         w_term_start = time.time()

@@ -184,10 +184,14 @@ def pyfhd_parser():
     export.add_argument('--description', type=str, default = None, help = "A more detailed description of the current task, will get applied to the output directory and logging where all output will be stored.\nBy default the date and time is used")
     export.add_argument('--export-images', help = 'Export fits files and images of the sky.', action = 'store_true',  default = True)
     export.add_argument('--cleanup', help = 'Deletes some intermediate data products that are easy to recalculate in order to save disk space', default = False, action='store_true')
-    export.add_argument('--save-visibilities', default = False, action = 'store_true', help = 'Save the calibrated data visibilities, the model visibilities, and the visibility flags.')
     export.add_argument('--snapshot-healpix-export', default = False, action = 'store_true', help = 'Save model/dirty/residual/weights/variance cubes as healpix arrays, split into even and odd time samples, in preparation for epsilon.')
     export.add_argument('--pad-uv-image', type = float, default = 1.0, help = "Pad the UV image by this factor with 0's along the outside so that output images are at a higher resolution.")
     export.add_argument('--ring-radius-multi', type = float, default = 10, help = 'Sets the multiplier for the size of the rings around sources in the restored images.\nRing Radius will equal pad-uv-image * ring-radius-multi.\nTo generate restored images without rings, set ring_radius = 0.')
+    export.add_argument('--save-obs', default = False, action = 'store_true', help = "Save the obs dictionary created during PyFHD's run")
+    export.add_argument('--save-params', default = False, action = 'store_true', help = "Save the params dictionary created during PyFHD's run")
+    export.add_argument('--save-cal', default = False, action='store_true', help = "Save the calibration dictionary created during PyFHD's run")
+    export.add_argument('--save-visibilities', default = False, action = 'store_true', help = 'Save the calibrated data visibilities, the model visibilities, and the visibility flags.')
+
 
     # Model Group
     model.add_argument('-m', '--model-file-type', default = 'sav', choices = ['sav', 'uvfits'], help = 'Set the file type of the model, by default it looks for sav files of format <obs_id>_params.sav and <obs_id>_vis_model_<pol_name>.sav.\nIf you set uvfits you must put set path using --import-model-uvfits.\nThis argument is required as PyFHD currently cannot produce a model.')
@@ -342,6 +346,7 @@ def pyfhd_setup(options : argparse.Namespace) -> Tuple[dict, logging.RootLogger]
     pyfhd_config = vars(options)
     # Start the logger
     logger, output_dir = pyfhd_logger(pyfhd_config)
+    pyfhd_config['output_dir'] = output_dir
     pyfhd_config['top_level_dir'] = str(output_dir).split('/')[-1]
     # Check input_path exists and obs_id uvfits and metafits files exist (Error)
     if not pyfhd_config['input_path'].exists():

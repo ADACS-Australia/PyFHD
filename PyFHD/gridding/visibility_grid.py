@@ -122,11 +122,11 @@ def visibility_grid(
     n_baselines = obs['n_baselines']
     n_samples = obs['n_time']
     # New group_arr code that is consistent with the FHD version
-    group_arr = np.squeeze(psf['id'][:, freq_bin_i, polarization])
+    group_arr = psf['id'][polarization, freq_bin_i, :]
     # REBIN in IDL when expanding dimensions repeats 2D arrays after expanding
-    group_arr = np.expand_dims(rebin(group_arr, (n_baselines, n_f_use)), axis = 0)
+    group_arr = np.expand_dims(rebin(group_arr, (n_f_use, n_baselines)), axis = 0)
     group_arr = np.repeat(group_arr, n_samples, axis = 0) 
-    group_arr = np.reshape(group_arr, (n_samples*n_baselines ,n_f_use))
+    group_arr = np.reshape(group_arr, (n_f_use, n_samples*n_baselines))
     beam_arr = psf['beam_ptr']
     n_freq_use = frequency_array.size
     psf_dim2 = 2 * psf_dim
