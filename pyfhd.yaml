@@ -76,7 +76,6 @@ time-cut: ~
 
 # Gridding
 recalculate-grid : false
-recalculate-mapfn : false
 image-filter : 'filter_uv_uniform'
 mask-mirror-indices: false
 grid-spectral: false

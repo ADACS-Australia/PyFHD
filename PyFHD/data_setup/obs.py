@@ -399,3 +399,6 @@ def project_slant_orthographic(meta : dict, obs : dict, epoch = 2000) -> dict:
     zenx, zeny = radec_to_pixel(meta['zenra'], meta['zendec'], astr)
 
     return astr, zenx, zeny
+
+def update_obs(obs: dict, dimension: int, kbinsize: float|int) -> dict
+    return obs

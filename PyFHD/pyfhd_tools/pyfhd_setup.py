@@ -160,7 +160,6 @@ def pyfhd_parser():
 
     # Gridding Group
     gridding.add_argument('-g', '--recalculate-grid', default = False, action ='store_true', help = 'Forces PyFHD to recalculate the gridding function. Replaces grid_recalculate from FHD')
-    gridding.add_argument('-map', '--recalculate-mapfn', default = False, action = 'store_true', help = 'Forces PyFHD to recalculate the mapping function. Replaces mapfn_recalculate from FHD')
     gridding.add_argument('--image-filter', default = 'filter_uv_uniform', type = str, choices = ['filter_uv_uniform', 'filter_uv_hanning', 'filter_uv_natural', 'filter_uv_radial', 'filter_uv_tapered_uniform', 'filter_uv_optimal'], help = 'Weighting filter to be applied to resulting snapshot images and fits files. Replaces image_filter_fn from FHD')
     gridding.add_argument('--mask-mirror-indices', default = False, action= 'store_true', help='Inside baseline_grid_location optionally exclude v-axis mirrored baselines')
     gridding.add_argument('--grid-weights', default = False, action = 'store_true', help='Grid the weights for the uv plane')
@@ -190,8 +189,8 @@ def pyfhd_parser():
     export.add_argument('--save-obs', default = False, action = 'store_true', help = "Save the obs dictionary created during PyFHD's run")
     export.add_argument('--save-params', default = False, action = 'store_true', help = "Save the params dictionary created during PyFHD's run")
     export.add_argument('--save-cal', default = False, action='store_true', help = "Save the calibration dictionary created during PyFHD's run")
-    export.add_argument('--save-visibilities', default = False, action = 'store_true', help = 'Save the calibrated data visibilities, the model visibilities, and the visibility flags.')
-
+    export.add_argument('--save-visibilities', default = False, action = 'store_true', help = 'Save the calibrated data visibilities, the model visibilities, and the gridded uv planes')
+    export.add_argument('--save-calibrated-weights', default = False, action = 'store_true', help = "Save the calibrated weights from PyFHD's run")
 
     # Model Group
     model.add_argument('-m', '--model-file-type', default = 'sav', choices = ['sav', 'uvfits'], help = 'Set the file type of the model, by default it looks for sav files of format <obs_id>_params.sav and <obs_id>_vis_model_<pol_name>.sav.\nIf you set uvfits you must put set path using --import-model-uvfits.\nThis argument is required as PyFHD currently cannot produce a model.')
