@@ -116,11 +116,11 @@ def test_many_points(before_file, after_file):
     obs = h5_before['obs']
     params = h5_before['params']
 
-    pyfhd_config = {
-        'psf_dim': 54
+    psf = {
+        'dim': 54
     }
 
-    weights_result, obs_result = vis_weights_update(vis_weight_arr, obs, params, pyfhd_config)
+    weights_result, obs_result = vis_weights_update(vis_weight_arr, obs, psf, params)
 
     npt.assert_allclose(weights_result, h5_after['vis_weight_ptr'])
     npt.assert_array_equal(
@@ -146,11 +146,11 @@ def test_many_points_before_cal(cal_before_file, cal_after_file):
     obs = h5_before['obs']
     params = h5_before['params']
 
-    pyfhd_config = {
-        'psf_dim': 54
+    psf = {
+        'dim': 54
     }
 
-    weights_result, obs_result = vis_weights_update(vis_weight_arr, obs, params, pyfhd_config)
+    weights_result, obs_result = vis_weights_update(vis_weight_arr, obs, psf, params)
 
     npt.assert_allclose(weights_result, h5_after['vis_weights'])
     npt.assert_array_equal(

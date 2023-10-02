@@ -82,6 +82,9 @@ def main_python_only(pyfhd_config : dict, logger : logging.RootLogger):
     obs_end = time.time()
     _print_time_diff(obs_start, obs_end, 'Obs Dictionary Created', logger)
 
+    # Read in the beam from a file returning a psf structure
+    psf = create_psf(pyfhd_config, logger)
+
     if pyfhd_config['deproject_w_term'] is not None:
         w_term_start = time.time()
         vis_arr = simple_deproject_w_term(obs, params, vis_arr, pyfhd_config['deproject_w_term'], logger)
@@ -97,7 +100,7 @@ def main_python_only(pyfhd_config : dict, logger : logging.RootLogger):
 
     # Update the visibility weights
     weight_start = time.time()
-    vis_weights, obs = vis_weights_update(vis_weights, obs, params, pyfhd_config)
+    vis_weights, obs = vis_weights_update(vis_weights, obs, psf, params)
     weight_end = time.time()
     _print_time_diff(weight_start, weight_end, 'Visibilities Weights Updated After Basic Flagging', logger)
 
@@ -107,9 +110,6 @@ def main_python_only(pyfhd_config : dict, logger : logging.RootLogger):
     vis_model_arr = flag_model_visibilities(vis_model_arr, params, params_model, obs, pyfhd_config, logger)
     vis_model_arr_end = time.time()
     _print_time_diff(vis_model_arr_start, vis_model_arr_end, 'Model Imported and Flagged From UVFITS', logger)
-
-    # Read in the beam from a file returning a psf structure
-    psf = create_psf(pyfhd_config, logger)
 
     # Skipped initializing the cal structure as it mostly just copies values from the obs, params, config and the skymodel from FHD
     # However, there is resulting cal structure for logging and output purposes to store the resulting gain and any other associated
@@ -128,7 +128,7 @@ def main_python_only(pyfhd_config : dict, logger : logging.RootLogger):
             _print_time_diff(qu_mixing_start, qu_mixing_end, 'Calibrate QU-Mixing has finished, result in cal["stokes_mix_phase"]', logger)
 
         weight_start = time.time()
-        vis_weights, obs = vis_weights_update(vis_weights, obs, params, pyfhd_config)
+        vis_weights, obs = vis_weights_update(vis_weights, obs, psf, params)
         weight_end = time.time()
         _print_time_diff(weight_start, weight_end, 'Visibilities Weights Updated After Calibration', logger)
 

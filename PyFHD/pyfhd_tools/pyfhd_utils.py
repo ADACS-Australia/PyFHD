@@ -921,7 +921,7 @@ def run_command(cmd : str, dry_run=False):
 
     return stdout
 
-def vis_weights_update(vis_weights : np.ndarray, obs: dict, params: dict, pyfhd_config: dict) -> tuple[np.ndarray, dict]:
+def vis_weights_update(vis_weights : np.ndarray, obs: dict, psf: dict, params: dict) -> tuple[np.ndarray, dict]:
     """
     TODO: _summary_
 
@@ -931,9 +931,9 @@ def vis_weights_update(vis_weights : np.ndarray, obs: dict, params: dict, pyfhd_
         _description_
     obs : dict
         _description_
-    params : dict
+    psf: dict
         _description_
-    pyfhd_config : dict
+    params : dict
         _description_
 
     Returns

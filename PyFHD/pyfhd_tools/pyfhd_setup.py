@@ -144,7 +144,7 @@ def pyfhd_parser():
     flag.add_argument('--time-cut', type = list, default = None, help = 'Seconds to cut (rounded up to next time integration step) from the beginning of the observation. Can also specify a negative time to cut off the end of the observation. Specify a vector to cut at both the start and end.')
 
     # Beam Setup Group
-    beam.add_argument('-b', '--import-beam', type = Path, help = "The path to the file containing a sav or fits file")
+    beam.add_argument('-b', '--beam-file-path', type = Path, help = "The path to the file containing a sav or fits file")
     beam.add_argument('--beam-sav-to-npz', default = False, action = 'store_true', help="When using a sav file for the beam-file-path it will automatically sav a npz file of the psf with the exact same contents as the sav file.")
     beam.add_argument('--recalculate-beam', default = False, action = 'store_true', help = "Forces PyFHD to redo the beam setup using PyFHD's beam setup.")
     beam.add_argument('--beam-nfreq-avg', type = int, default = 16, help = "The number of fine frequency channels to calculate a beam for, using the average of the frequencies.\nThe beam is a function of frequency, and a calculation on the finest level is most correct (beam_nfreq_avg=1).\nHowever, this is computationally difficult for most machines.")
@@ -165,7 +165,7 @@ def pyfhd_parser():
     gridding.add_argument('--mask-mirror-indices', default = False, action= 'store_true', help='Inside baseline_grid_location optionally exclude v-axis mirrored baselines')
     gridding.add_argument('--grid-weights', default = False, action = 'store_true', help='Grid the weights for the uv plane')
     gridding.add_argument('--grid-variance', default = False, action = 'store_true', help='Grid the variance for the uv plane'),
-    gridding.add_argument('--grid_uniform', default = False, action = 'store_true', help = "Grid uniformally by applying a uniform weighted filter to all uv-planes"),
+    gridding.add_argument('--grid-uniform', default = False, action = 'store_true', help = "Grid uniformally by applying a uniform weighted filter to all uv-planes"),
     gridding.add_argument('--grid-spectral', default = False, action = 'store_true', help='Optionally use the spectral index information to scale the uv-plane in gridding')
     gridding.add_argument('--grid_psf_file', nargs='*', default=[],
     help = 'Path(s) to an FHD "psf" object. If running python gridding, this should be n .npz file, as converted from a .sav file. This should contain a gridding kernel matching the pointing of the observation being processed, e.g. for a +1 pointing, --grid-psf-file=/path/to/gauss_beam_pointing1.npz. If only/also running imaging/healpix projection in IDL, a path to the original .sav file should also be included, e.g. --grid-psf-file /path/to/gauss_beam_pointing1.npz /path/to/gauss_beam_pointing1.sav')
