@@ -120,8 +120,7 @@ def create_psf(pyfhd_config: dict, logger: RootLogger) -> dict:
         if pyfhd_config["beam_sav_to_npz"]:
             new_name = Path(pyfhd_config["beam_file_path"].parent, pyfhd_config["beam_file_path"].stem + '.npz')
             logger.info(f"Because you waited all this time for the sav file to be read in and you want to read it in faster in the future, I'll save it as a numpy zipped archive to {new_name}.")
-            np.savez(new_name, **beam['psf]'])
-        return psf
+            np.savez(new_name, **beam['psf'])
     elif pyfhd_config["beam_file_path"].suffix == ".npz":
         logger.info(f"Reading in the numpy zipped archive {pyfhd_config['beam_file_path']}")
         beam = np.load(pyfhd_config["beam_file_path"], allow_pickle=True)
@@ -131,7 +130,6 @@ def create_psf(pyfhd_config: dict, logger: RootLogger) -> dict:
         psf['beam_ptr'] = psf['beam_ptr'].reshape([obs['nbaselines'], psf['n_freq'], obs['n_pol']]).T
         # Transpose the ID array
         psf['id'] = psf['id'].T
-        return psf
     elif pyfhd_config["beam_file_path"].suffix == '.fits':
         # Read in a fits file
         pass
