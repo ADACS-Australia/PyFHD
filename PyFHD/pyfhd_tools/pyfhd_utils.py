@@ -1,13 +1,10 @@
 import numpy as np
 from numba import njit
 from math import factorial
-from typing import Tuple, Union
-from astropy.coordinates import SkyCoord, EarthLocation, AltAz, ICRS
-from astropy.time import Time
+from astropy.coordinates import SkyCoord
 from astropy import units as u
 from math import pi
 from logging import RootLogger
-from scipy.stats import median_abs_deviation
 import subprocess
 from scipy.ndimage import median_filter
 from copy import deepcopy
@@ -1172,3 +1169,18 @@ def reshape_and_average_in_time(vis_array : np.ndarray, n_freq : int,
 
     return reshape_array
     
+def region_grow(image: np.ndarray, roiPixels: np.ndarray, low = None, high = None) -> np.ndarray:
+    # Get the roi and set the low and high thresholds if they haven't been so already.
+    roi = image.flat[roiPixels]
+    if low is None:
+        low = np.min(roi)
+    if high is None:
+        high = np.max(roi)
+    # Replace all NaNs with Zeros
+    nans = np.isnan(image)
+    image[nans] = 0
+    # Get all the values that are within the threshold
+    threshArray = np.zeros_like(image)
+    threshArray[np.where((image >= low) and (image <= high))] = 0
+    threshArray[nans] = 0
+
