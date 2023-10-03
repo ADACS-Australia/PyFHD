@@ -3,6 +3,8 @@ import deepdish as dd
 from logging import RootLogger
 from pathlib import Path
 from PyFHD.data_setup.obs import update_obs
+from PyFHD.pyfhd_tools.unit_conv import pixel_to_radec
+from PyFHD.pyfhd_tools.pyfhd_utils import meshgrid, rebin, weight_invert
 
 def quickview(
     obs: dict,
@@ -51,6 +53,28 @@ def quickview(
         weights_path = Path(pyfhd_config["output_dir"],"calibrated_vis_weights.h5")
         logger.info(f"Saving the calibrated weights to {weights_path}")
         dd.io.save(weights_path, {"weights": vis_weights})
+    
+    obs_out = update_obs(obs, obs['dimension'] * pyfhd_config['pad_uv_image'], obs['kpix'])
+    horizon_mask = np.ones([obs_out['dimension'], obs_out['elements']])
+    ra, _ = pixel_to_radec(
+        meshgrid(obs_out["dimension"], obs_out["elements"], 1), 
+        meshgrid(obs_out["dimension"], obs_out["elements"], 2),
+        obs_out['astr']
+    )
+    horizon_test = np.isfinite(ra)
+    horizon_mask[horizon_test] = 0
 
-    if pyfhd_config["pad_uv_image"]:
-        obs = update_obs(obs, obs['dimension'] * pyfhd_config['pad_uv_image'], obs['kpix'])
+    beam_mask = np.ones([obs_out["dimension"], obs_out["elements"]])
+    beam_avg = np.zeros([obs_out["dimension"], obs_out["elements"]]) 
+    beam_base_out = np.empty([obs_out["n_pol"], obs_out["dimension"], obs_out["elements"]])
+    beam_correction_out = np.empty_like(beam_base_out)
+    for pol_i in obs["n_pol"]:
+        beam_base_out[pol_i] = rebin(psf["beam_ptr"], [obs_out["dimension"], obs_out["elements"]]) * horizon_mask
+        beam_correction_out[pol_i] = weight_invert(beam_base_out[pol_i], 1e-3)
+        if (pol_i == 0):
+            beam_mask_test = beam_base_out[pol_i]
+            # Didn't see the option for allow_sidelobe_image_output in FHD dictionary defined or used anywhere?
+            # beam_i = 
+
+
+    

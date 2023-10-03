@@ -367,16 +367,10 @@ def pyfhd_setup(options : argparse.Namespace) -> Tuple[dict, logging.RootLogger]
         pyfhd_config['recalculate_mapfn'] = True
         logger.info('Recalculate All option has been enabled, the beam, gridding and map function will be recalculated')
 
-    # Check if recalculate_mapfn has been enabled and recalculate_grids disabled, if so enable recaluclate_grid (Warning)
-    if pyfhd_config['recalculate_mapfn'] and not pyfhd_config['recalculate_grid']:
-        pyfhd_config['recalculate_grid'] = True
-        logger.warning('The grid has to be recalculated in order for the mapping function to be recalculated. Grid recalculation has now been enabled.') 
-        warnings += 1
-
     # If both mapping function and healpi export are on save the visibilities (Warning)
-    if pyfhd_config['recalculate_mapfn'] and pyfhd_config['snapshot_healpix_export'] and not pyfhd_config['save_visibilities']:
+    if pyfhd_config['snapshot_healpix_export'] and not pyfhd_config['save_visibilities']:
         pyfhd_config['save_visibilities'] = True
-        logger.warning("If the mapping function is being recalculated and we're exporting healpix we should also save the visibilities that created them.")
+        logger.warning("If we're exporting healpix we should also save the visibilities that created them.")
         warnings += 1
 
     if pyfhd_config['beam_offset_time'] < 0:

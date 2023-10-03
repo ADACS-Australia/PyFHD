@@ -2,9 +2,9 @@ from astropy.coordinates import SkyCoord, EarthLocation, AltAz, ICRS
 from astropy.wcs import WCS
 from astropy.time import Time
 from astropy import units as u
-from typing import Tuple
+import numpy as np
 
-def altaz_to_radec(alt : float, az : float, lat : float, lon : float, height : float, time : float, time_format = 'jd') -> Tuple[float, float]:
+def altaz_to_radec(alt : float, az : float, lat : float, lon : float, height : float, time : float, time_format = 'jd') -> tuple[float, float]:
     """
     Turn AltAz coordinates into the equatorial/celestial coordinates RA and DEC.
     The exact location and time must given in order for the coordinates to be calculated.
@@ -36,7 +36,7 @@ def altaz_to_radec(alt : float, az : float, lat : float, lon : float, height : f
     altaz = AltAz(alt = alt*u.deg, az = az*u.deg, location = loc, obstime = Time(time, format=time_format))
     return altaz.transform_to(ICRS()).ra.deg, altaz.transform_to(ICRS()).dec.deg
 
-def radec_to_altaz(ra : float, dec : float, lat : float, lon : float, height : float, time : float, time_format = 'jd') -> Tuple[float, float]:
+def radec_to_altaz(ra : float, dec : float, lat : float, lon : float, height : float, time : float, time_format = 'jd') -> tuple[float, float]:
     """
     Turn Celestial/Equatorial coordinates into AltAz at the given location and time.
     Time Format by default is Julian, but you can use any of the formats provided by the AstroPy Time classes.
@@ -72,7 +72,7 @@ def radec_to_altaz(ra : float, dec : float, lat : float, lon : float, height : f
     return altaz.alt.deg, altaz.az.deg
 
 
-def radec_to_pixel(ra : float, dec : float, astr : dict) -> Tuple[float, float]:
+def radec_to_pixel(ra : float, dec : float, astr : dict) -> tuple[float, float]:
     """
     Turn Celestial Coordinates into Pixel coordinates (X & Y). The astr dictionary should contain
     cdelt, ctype, crpix and crval as per the WCS standard when naxis is 2.
@@ -102,3 +102,32 @@ def radec_to_pixel(ra : float, dec : float, astr : dict) -> Tuple[float, float]:
     x, y = wcs_astr.world_to_pixel(SkyCoord(ra = ra*u.deg, dec = dec*u.deg))
     # AstroPy returns values as an array, cast to float
     return float(x), float(y)
+
+def pixel_to_radec(x: float | np.ndarray, y: float | np.ndarray, astr: dict) -> tuple[float, float]:
+    """
+    Turn Pixel coordinates (X & Y) into Celestial Coordinates based off a WCS. 
+    The astr dictionary should contain cdelt, ctype, crpix and crval as per the 
+    WCS standard when naxis is 2.
+
+    Parameters
+    ----------
+    x : float | np.ndarray
+        x coordinate(s)
+    y : float | np.ndarray
+        y coordinate(s)
+    astr : dict
+        The astrometry dictionary from an obs dictionary
+
+    Returns
+    -------
+    ra, dec : tuple[float | np.ndarray, float | np.ndarray]
+        The corresponding celestial cooridnates
+    """
+    wcs_astr = WCS(naxis  = 2)
+    wcs_astr.wcs.cdelt = astr['cdelt']
+    wcs_astr.wcs.ctype = astr['ctype']
+    wcs_astr.wcs.crpix = astr['crpix']
+    wcs_astr.wcs.crval = astr['crval']
+    radec = wcs_astr.pixel_to_world(x, y)
+
+    return radec.ra, radec.dec

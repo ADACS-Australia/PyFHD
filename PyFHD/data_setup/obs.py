@@ -400,5 +400,42 @@ def project_slant_orthographic(meta : dict, obs : dict, epoch = 2000) -> dict:
 
     return astr, zenx, zeny
 
-def update_obs(obs: dict, dimension: int, kbinsize: float|int) -> dict
+def update_obs(obs: dict, dimension: int, kbinsize: float|int) -> dict:
+    """
+    Inside the quickview function for exporting files we need to update the obs
+    dictionary based on the new dimension and kbinsize given. This differs slightly from
+    FHD as we only adjust the exact things required for this as we only use this function
+    once in quickview.
+
+    Parameters
+    ----------
+    obs : dict
+        The original observation dictionary
+    dimension : int
+        The new dimension for the size of each axes
+    kbinsize : float | int
+        The new kbin
+
+    Returns
+    -------
+    obs: dict
+        The new updated obs dictionary
+    """
+    beam_nfreq_avg = np.round(obs["n_freq"] / np.max(obs["baseline_info"]["fbin_i"]) + 1)
+    freq_bin = beam_nfreq_avg * obs["freq_res"]
+    freq_hist,_, freq_ri = histogram(obs["baseline_info"]["freq"], bin_size = freq_bin)
+    freq_bin_i = np.zeros(obs["n_freq"])
+    for bin in range(freq_hist.size - 1):
+        if freq_ri[bin] < freq_ri[bin + 1]:
+            freq_bin_i[freq_ri[freq_ri[bin] : freq_ri[bin + 1]]] = bin
+    # Adjust the obs dictionary based on the new dimension and kbinsize
+    obs['dimension'] = dimension
+    obs['elements'] = dimension
+    obs['kpix'] = kbinsize
+    obs['degpix'] = (180 / np.pi) / (kbinsize * dimension)
+    obs["max_baseline"] = min(obs["max_baseline"], (dimension * kbinsize) / np.sqrt(2))
+    obs['astr']['naxis'] =  np.array([dimension, dimension])
+    obs['astr']['cdelt'] = np.full(2, obs['degpix'])
+    obs["baseline_info"]["fbin_i"] = freq_bin_i
+
     return obs
