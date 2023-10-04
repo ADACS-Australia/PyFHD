@@ -9,6 +9,7 @@ import subprocess
 from scipy.ndimage import median_filter
 from copy import deepcopy
 from sys import exit
+from scipy.ndimage import label
 
 @njit
 def get_bins(min, max, bin_size):
@@ -1170,6 +1171,28 @@ def reshape_and_average_in_time(vis_array : np.ndarray, n_freq : int,
     return reshape_array
     
 def region_grow(image: np.ndarray, roiPixels: np.ndarray, low = None, high = None) -> np.ndarray:
+    """
+    Replicates IDL's Region Grow, where a region of interest will be expanded with a given threshold
+    until it can't connect together any of the blobs that connect based on the given threshold.
+
+    TODO: finish docstring
+
+    Parameters
+    ----------
+    image : np.ndarray
+        _description_
+    roiPixels : np.ndarray
+        _description_
+    low : _type_, optional
+        _description_, by default None
+    high : _type_, optional
+        _description_, by default None
+
+    Returns
+    -------
+    np.ndarray
+        _description_
+    """\
     # Get the roi and set the low and high thresholds if they haven't been so already.
     roi = image.flat[roiPixels]
     if low is None:
@@ -1183,4 +1206,40 @@ def region_grow(image: np.ndarray, roiPixels: np.ndarray, low = None, high = Non
     threshArray = np.zeros_like(image)
     threshArray[np.where((image >= low) and (image <= high))] = 0
     threshArray[nans] = 0
+
+    labelArray, nlabels = label(threshArray)
+
+    if np.size(roiPixels) > 1:
+        labels, _ , _ =  histogram(labelArray.flat[roiPixels], min = 0)
+        labels = np.nonzero(labels != 0)[0]
+        nLabels = labels.size
+    else:
+        nLabels = 1
+        labels = labelArray.flat[roiPixels]
+    
+    if (labels[0] == 0):
+        nLabels -= 1
+        if (nLabels > 0):
+            labels = labels[1:]
+    if nLabels:
+        labels -= 1
+    labelHist,_ , revInd = histogram(labelArray, min=1)
+    nPixels = np.sum(labelHist[labels]) if nLabels else 0
+
+    if nPixels > 0:
+        if nLabels == 1:
+            growROIPixels = revInd[revInd[labels[0]]: revInd[labels[0] + 1]]
+        else:
+            growROIPixels = np.empty(nPixels, dtype = np.int64)
+            j = 0
+            for i in range(nLabels):
+                if revInd[labels[i] + 1] <= revInd.size:
+                    test_arr1= growROIPixels[j: labelHist[labels[i]]]
+                    test_arr2 = revInd[revInd[labels[i]]:revInd[labels[i]+1]]
+                    growROIPixels[j: j + labelHist[labels[i]]] = revInd[revInd[labels[i]]:revInd[labels[i]+1]]
+                    j = j + labelHist[labels[i]]
+    else:
+        growROIPixels = -1
+    
+    return growROIPixels
 
