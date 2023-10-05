@@ -111,23 +111,32 @@ def create_psf(pyfhd_config: dict, logger: RootLogger) -> dict:
         # Read in a sav file containing the psf structure as we expect from FHD
         logger.warning("Reading in a beam sav file probably will take a long time, check back with me in an hour or three if it's a large file (10+GB). If you happen to know how long it takes to read the file, then set that time aside and turn this sav file into something else, anything else will not take as long to read. If you have beam_sav_to_npx set to True, sit tight, while I read it in, you'll get another message to let you know where it's being saved.")
         beam = readsav(pyfhd_config["beam_file_path"], python_dict=True)
-        psf = recarray_to_dict(beam['psf'])
-        obs = recarray_to_dict(beam['obs'])
-        # Reshape the beam pointer from the recarray_to_dict as it doesn't get it in the shape we expect but its close
-        psf['beam_ptr'] = psf['beam_ptr'].reshape([obs['nbaselines'], psf['n_freq'], obs['n_pol']]).T
-        # Transpose the ID array
-        psf['id'] = psf['id'].T
+        nbaselines = beam['obs']['nbaselines'][0]
+        n_pol = beam['obs']['n_pol'][0]
+        # Save some memory hopefully
+        del beam['obs']
         if pyfhd_config["beam_sav_to_npz"]:
             new_name = Path(pyfhd_config["beam_file_path"].parent, pyfhd_config["beam_file_path"].stem + '.npz')
             logger.info(f"Because you waited all this time for the sav file to be read in and you want to read it in faster in the future, I'll save it as a numpy zipped archive to {new_name}.")
             np.savez(new_name, **beam)
+        psf = recarray_to_dict(beam['psf'])
+        # Save some memory hopefully
+        del beam
+        # Reshape the beam pointer from the recarray_to_dict as it doesn't get it in the shape we expect but its close
+        psf['beam_ptr'] = psf['beam_ptr'].reshape([nbaselines, psf['n_freq'], n_pol]).T
+        # Transpose the ID array
+        psf['id'] = psf['id'].T
     elif pyfhd_config["beam_file_path"].suffix == ".npz":
         logger.info(f"Reading in the numpy zipped archive {pyfhd_config['beam_file_path']}")
         beam = np.load(pyfhd_config["beam_file_path"], allow_pickle=True)
+        nbaselines = beam['obs']['nbaselines'][0]
+        n_pol = beam['obs']['n_pol'][0]
+        # Save some memory hopefully
+        del beam['obs']
         psf = recarray_to_dict(beam['psf'])
-        obs = recarray_to_dict(beam['obs'])
+        del beam
         # Reshape the beam pointer from the recarray_to_dict as it doesn't get it in the shape we expect but its close
-        psf['beam_ptr'] = psf['beam_ptr'].reshape([obs['nbaselines'], psf['n_freq'], obs['n_pol']]).T
+        psf['beam_ptr'] = psf['beam_ptr'].reshape([nbaselines, psf['n_freq'], n_pol]).T
         # Transpose the ID array
         psf['id'] = psf['id'].T
     elif pyfhd_config["beam_file_path"].suffix == '.fits':
