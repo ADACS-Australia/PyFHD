@@ -1197,6 +1197,15 @@ def region_grow(image: np.ndarray, roiPixels: np.ndarray, low: int|float|None = 
     -------
     growROIPixels: np.ndarray | None
         The grown region of interest that has connected neighbours by using the threshold
+
+    See Also
+    --------
+    scipy.ndimage.label: Labels an image based off a given kernel
+    
+
+    Notes
+    -----
+    'scikit-image Blob Detection' : https://scikit-image.org/docs/stable/auto_examples/features_detection/plot_blob.html
     """
     # Get the roi and set the low and high thresholds if they haven't been so already.
     roi = image.flat[roiPixels]
