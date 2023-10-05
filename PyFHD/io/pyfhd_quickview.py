@@ -4,7 +4,7 @@ from logging import RootLogger
 from pathlib import Path
 from PyFHD.data_setup.obs import update_obs
 from PyFHD.pyfhd_tools.unit_conv import pixel_to_radec
-from PyFHD.pyfhd_tools.pyfhd_utils import meshgrid, rebin, weight_invert
+from PyFHD.pyfhd_tools.pyfhd_utils import meshgrid, rebin, weight_invert, region_grow
 
 def quickview(
     obs: dict,
@@ -64,6 +64,7 @@ def quickview(
     horizon_test = np.isfinite(ra)
     horizon_mask[horizon_test] = 0
 
+    # Calculate the beam mask and beam indexes associated with that mask
     beam_mask = np.ones([obs_out["dimension"], obs_out["elements"]])
     beam_avg = np.zeros([obs_out["dimension"], obs_out["elements"]]) 
     beam_base_out = np.empty([obs_out["n_pol"], obs_out["dimension"], obs_out["elements"]])
@@ -74,7 +75,22 @@ def quickview(
         if (pol_i == 0):
             beam_mask_test = beam_base_out[pol_i]
             # Didn't see the option for allow_sidelobe_image_output in FHD dictionary defined or used anywhere?
-            # beam_i = 
+            beam_i = region_grow(
+                beam_mask_test, 
+                np.array([obs_out["dimension"] / 2 + obs_out["dimension"] * obs_out["elements"] / 2]),
+                low = 0.05 / 2, # This is beam_threshold/2 in FHD
+                high = np.max(beam_mask_test)
+            )
+            beam_mask0 = np.zeros([obs_out["dimension"], obs_out["elements"]])
+            beam_mask0.flat[beam_i] = 1
+            beam_avg += beam_base_out[pol_i] ** 2
+            beam_mask *= beam_mask0
+    beam_avg /= min(obs["n_pol"],2)
+    beam_avg = np.sqrt(np.maximum(beam_avg, 0)) * beam_mask
+    beam_i = np.nonzero(beam_mask)
 
+    if pyfhd_config["save_healpix_fits"]:
+        FoV_use = (180 / np.pi) / obs_out["kpix"]
+        # hpx_cnv
+        # ring2nest
 
-    

@@ -191,6 +191,7 @@ def pyfhd_parser():
     export.add_argument('--save-cal', default = False, action='store_true', help = "Save the calibration dictionary created during PyFHD's run")
     export.add_argument('--save-visibilities', default = False, action = 'store_true', help = 'Save the calibrated data visibilities, the model visibilities, and the gridded uv planes')
     export.add_argument('--save-calibrated-weights', default = False, action = 'store_true', help = "Save the calibrated weights from PyFHD's run")
+    export.add_argument('--save-healpix-fits', default = False, action = 'store_true', help = "Create Healpix fits files. Healpix fits maps are in units Jy/sr. Replaces write_healpix_fits")
 
     # Model Group
     model.add_argument('-m', '--model-file-type', default = 'sav', choices = ['sav', 'uvfits'], help = 'Set the file type of the model, by default it looks for sav files of format <obs_id>_params.sav and <obs_id>_vis_model_<pol_name>.sav.\nIf you set uvfits you must put set path using --import-model-uvfits.\nThis argument is required as PyFHD currently cannot produce a model.')

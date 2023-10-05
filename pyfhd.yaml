@@ -96,7 +96,12 @@ deconvolution-filter : 'filter_uv_uniform'
 output-path : './output'
 export-images : true
 cleanup : false
+save-obs: true
+save-params: true
+save-cal: true
 save-visibilities : true
+save-calibrated-weights: true
+save-healpix-fits: true
 snapshot-healpix-export : true
 pad-uv-image : 1.
 ring-radius-multi : 10.

@@ -1170,29 +1170,34 @@ def reshape_and_average_in_time(vis_array : np.ndarray, n_freq : int,
 
     return reshape_array
     
-def region_grow(image: np.ndarray, roiPixels: np.ndarray, low = None, high = None) -> np.ndarray:
+def region_grow(image: np.ndarray, roiPixels: np.ndarray, low: int|float|None = None, high: int|float|None = None) -> np.ndarray:
     """
-    Replicates IDL's Region Grow, where a region of interest will be expanded with a given threshold
-    until it can't connect together any of the blobs that connect based on the given threshold.
+    Replicates IDL's Region Grow, where a region of interest will grow based upon a given threshold
+    within a 2D array. It finds all the pixels within the array that are connected neighbors via the 
+    threshold and blob detection using SciPy's `label` function. In this case, the standard deviation 
+    form of this function hasn't been implemented as PyFHD will only use this function once with a threshold.
 
-    TODO: finish docstring
+    If you want to use standard deviation region growing adjusting the function can be done by potentially
+    implementing skimage's blob detection algorithms for the labelling and keeping the rest the same.
 
     Parameters
     ----------
     image : np.ndarray
-        _description_
+        A 2D array of pixels
     roiPixels : np.ndarray
-        _description_
-    low : _type_, optional
-        _description_, by default None
-    high : _type_, optional
-        _description_, by default None
+        The region of interest given as FLAT indexes i.e. array.flat
+    low : int | float | None, optional
+        The low threshold, any number below this is considered background, 
+        If left as None, this will be the lowest value of the region of interest, by default None
+    high : int | float | None, optional
+        The high threshold, any number higher than this is considered background, 
+        If left as None, this will be the highest value of the region of interest, by default None
 
     Returns
     -------
-    np.ndarray
-        _description_
-    """\
+    growROIPixels: np.ndarray | None
+        The grown region of interest that has connected neighbours by using the threshold
+    """
     # Get the roi and set the low and high thresholds if they haven't been so already.
     roi = image.flat[roiPixels]
     if low is None:
@@ -1206,9 +1211,9 @@ def region_grow(image: np.ndarray, roiPixels: np.ndarray, low = None, high = Non
     threshArray = np.zeros_like(image)
     threshArray[np.where((image >= low) and (image <= high))] = 0
     threshArray[nans] = 0
-
-    labelArray, nlabels = label(threshArray)
-
+    # Do binary blob detection with the label function
+    labelArray, _ = label(threshArray)
+    # Get the histogram of the labels to ascertain the neighbours we will be interested in
     if np.size(roiPixels) > 1:
         labels, _ , _ =  histogram(labelArray.flat[roiPixels], min = 0)
         labels = np.nonzero(labels != 0)[0]
@@ -1216,30 +1221,34 @@ def region_grow(image: np.ndarray, roiPixels: np.ndarray, low = None, high = Non
     else:
         nLabels = 1
         labels = labelArray.flat[roiPixels]
-    
+    # Ignore the first label if it's 0 as it's the background
     if (labels[0] == 0):
         nLabels -= 1
         if (nLabels > 0):
             labels = labels[1:]
+    # The histogram will have a minimum of 1 so we need to take 1 off the labels
     if nLabels:
         labels -= 1
+    # Get a histogram of all the labels
     labelHist,_ , revInd = histogram(labelArray, min=1)
+    # Get the number of pixels we will be growing to
     nPixels = np.sum(labelHist[labels]) if nLabels else 0
-
+    # If we have any pixels to grow, then grow
     if nPixels > 0:
+        # Only one label
         if nLabels == 1:
             growROIPixels = revInd[revInd[labels[0]]: revInd[labels[0] + 1]]
         else:
+            # Take in all the labels and save all the flat indexes
             growROIPixels = np.empty(nPixels, dtype = np.int64)
             j = 0
             for i in range(nLabels):
                 if revInd[labels[i] + 1] <= revInd.size:
-                    test_arr1= growROIPixels[j: labelHist[labels[i]]]
-                    test_arr2 = revInd[revInd[labels[i]]:revInd[labels[i]+1]]
                     growROIPixels[j: j + labelHist[labels[i]]] = revInd[revInd[labels[i]]:revInd[labels[i]+1]]
                     j = j + labelHist[labels[i]]
     else:
-        growROIPixels = -1
-    
+        # Return None if we didn't have anywhere to grow
+        growROIPixels = None
+    # Return the flat indexes
     return growROIPixels
 
