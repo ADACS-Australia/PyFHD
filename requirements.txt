@@ -3,6 +3,7 @@ configargparse
 numba
 numpy
 pytest
+pytest-cov
 scipy
 setuptools
 sphinx
@@ -12,3 +13,4 @@ h5py
 sphinx-rtd-theme
 sphinx-argparse
 deepdish
+myst-parser

@@ -151,53 +151,53 @@ def main_python_only(pyfhd_config : dict, logger : logging.RootLogger):
     _print_time_diff(noise_start, noise_end, 'Noise Calculated and added to obs', logger)
 
     # TODO: save the psf here as h5, sav files take a while to read, and then add in hdf5 reader into the import beam function
-
-    grid_start = time.time()
-    # Since it's done per polarization, we can do multi-processing if it's not fast enough
-    for pol_i in range(obs["n_pol"]):
-        logger.info(f"Gridding has begun for polarization {pol_i}")
-        image_uv = np.empty((obs["n_pol"], obs["elements"], obs["dimension"]), dtype = np.complex128)
-        weights_uv = np.empty((obs["n_pol"], obs["elements"], obs["dimension"]), dtype = np.complex128)
-        variance_uv = np.empty((obs["n_pol"], obs["elements"], obs["dimension"]))
-        uniform_filter_uv = np.empty((obs["n_pol"], obs["elements"], obs["dimension"]))
-        if vis_model_arr is not None:
-            model_uv = np.empty((obs["n_pol"], obs["elements"], obs["dimension"]), dtype = np.complex128)
-        if pol_i == 0:
-            uniform_flag = True
-            no_conjugate = False
-        else:
-            uniform_flag = False
-            no_conjugate = True
-        gridding_dict = visibility_grid(
-            vis_arr[pol_i], 
-            vis_weights[pol_i], 
-            obs, 
-            psf, 
-            params, 
-            pol_i, 
-            pyfhd_config, 
-            logger, 
-            uniform_flag = uniform_flag, 
-            no_conjugate = no_conjugate, 
-            model = vis_model_arr[pol_i]
-        )
-        image_uv[pol_i] = gridding_dict['image_uv']
-        weights_uv[pol_i] = gridding_dict['weights']
-        variance_uv[pol_i] = gridding_dict['variance']
-        uniform_filter_uv[pol_i] = gridding_dict['uniform_filter']
-        obs['nf_vis'] = gridding_dict["obs"]["nf_vis"]
-        if vis_model_arr is not None:
-            model_uv[pol_i] = gridding_dict['model_return']
-        logger.info(f"Gridding has finished for polarization {pol_i}")
-    if obs["n_pol"] == 4:
-        logger.info("Performing Crosspol reformatting")
-        image_uv = crosspol_reformat(image_uv)
-        weights_uv = crosspol_reformat(weights_uv)
-        if vis_model_arr is not None:
-            model_uv = crosspol_reformat(model_uv)
-    # TODO: Save the results here
-    grid_end = time.time()
-    _print_time_diff(grid_start, grid_end, 'Visibilities gridded', logger)
+    if (pyfhd_config['recalculate_grid']):
+        grid_start = time.time()
+        # Since it's done per polarization, we can do multi-processing if it's not fast enough
+        for pol_i in range(obs["n_pol"]):
+            logger.info(f"Gridding has begun for polarization {pol_i}")
+            image_uv = np.empty((obs["n_pol"], obs["elements"], obs["dimension"]), dtype = np.complex128)
+            weights_uv = np.empty((obs["n_pol"], obs["elements"], obs["dimension"]), dtype = np.complex128)
+            variance_uv = np.empty((obs["n_pol"], obs["elements"], obs["dimension"]))
+            uniform_filter_uv = np.empty((obs["n_pol"], obs["elements"], obs["dimension"]))
+            if vis_model_arr is not None:
+                model_uv = np.empty((obs["n_pol"], obs["elements"], obs["dimension"]), dtype = np.complex128)
+            if pol_i == 0:
+                uniform_flag = True
+                no_conjugate = False
+            else:
+                uniform_flag = False
+                no_conjugate = True
+            gridding_dict = visibility_grid(
+                vis_arr[pol_i], 
+                vis_weights[pol_i], 
+                obs, 
+                psf, 
+                params, 
+                pol_i, 
+                pyfhd_config, 
+                logger, 
+                uniform_flag = uniform_flag, 
+                no_conjugate = no_conjugate, 
+                model = vis_model_arr[pol_i]
+            )
+            image_uv[pol_i] = gridding_dict['image_uv']
+            weights_uv[pol_i] = gridding_dict['weights']
+            variance_uv[pol_i] = gridding_dict['variance']
+            uniform_filter_uv[pol_i] = gridding_dict['uniform_filter']
+            obs['nf_vis'] = gridding_dict["obs"]["nf_vis"]
+            if vis_model_arr is not None:
+                model_uv[pol_i] = gridding_dict['model_return']
+            logger.info(f"Gridding has finished for polarization {pol_i}")
+        if obs["n_pol"] == 4:
+            logger.info("Performing Crosspol reformatting")
+            image_uv = crosspol_reformat(image_uv)
+            weights_uv = crosspol_reformat(weights_uv)
+            if vis_model_arr is not None:
+                model_uv = crosspol_reformat(model_uv)
+        # TODO: Save the results here
+        grid_end = time.time()
+        _print_time_diff(grid_start, grid_end, 'Visibilities gridded', logger)
 
     # TODO: Translate fhd_quickview and add it here
 
