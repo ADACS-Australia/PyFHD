@@ -213,7 +213,8 @@ def pyfhd_parser():
     # HEALPIX Group
     healpix.add_argument('--ps-kbinsize', type = float, default = 0.5, help = 'UV pixel size in wavelengths to grid for Healpix cube generation. Overrides ps_fov and the kpix in the obs structure if set.')
     healpix.add_argument('--ps-kspan', type = float, default = 0, help = 'UV plane dimension in wavelengths for Healpix cube generation.\nOverrides ps_dimension and ps_degpix if set.\nIf ps_kspan, ps_dimension, or ps_degpix are not set, the UV plane dimension is calculated from the FoV and the degpix from the obs structure.')
-    healpix.add_argument('--restrict-hpx-inds', type = Path, default = None, help = "Only allow gridding of the output healpix cubes to include the healpix pixels specified in a file.\nThis is useful for restricting many observations to have consistent healpix pixels during integration, and saves on memory and walltime.")
+    healpix.add_argument('--restrict-healpix-inds', default = False, action= "store_true", help = "Only allow gridding of the output healpix cubes to include the healpix pixels specified in a file.\nThis is useful for restricting many observations to have consistent healpix pixels during integration, and saves on memory and walltime.")
+    healpix.add_argument('--healpix-inds', default = None, type = Path, help = "In the event you want to restrict the healpix indices to a specified file, use a combination of restrict-healpix-inds and this argument to restrict the healpix indexes to your given file rather than a predetermined one from the obs dictionary.")
     healpix.add_argument('--split-ps-export', default = False, action = 'store_true', help = 'Split up the Healpix outputs into even and odd time samples.\nThis is essential to propogating errors in εppsilon.\nRequires more than one time sample.')
 
     #Temporary options to run IDL or use IDL outputs.
@@ -509,8 +510,9 @@ def pyfhd_setup(options : argparse.Namespace) -> Tuple[dict, logging.RootLogger]
     # sim_noise depends on a file (Error)
     errors += _check_file_exists(pyfhd_config, 'sim_noise')
 
-    # Restrict_hpx_inds depends on a file (Error)
-    errors += _check_file_exists(pyfhd_config, 'restrict_hpx_inds')
+    # restrict_healpix_inds depends on a file (Error)
+    if pyfhd_config["healpix_inds"] is not None and pyfhd_config['restrict_healpix_inds']:
+        errors += _check_file_exists(pyfhd_config, 'healpix_inds')
     
     pyfhd_config['ring_radius'] =  pyfhd_config['pad_uv_image'] * pyfhd_config['ring_radius_multi']
 
@@ -528,7 +530,7 @@ def pyfhd_setup(options : argparse.Namespace) -> Tuple[dict, logging.RootLogger]
             errors += 1
 
     # if 
-    # Restrict_hpx_inds depends on a file (Error)
+    # restrict_healpix_inds depends on a file (Error)
     errors += _check_file_exists(pyfhd_config, 'IDL_variables_file')
 
     #TODO see lines 41-43 of fhd_core/HEALPix/healpix_snapshot_cube_generate.pro

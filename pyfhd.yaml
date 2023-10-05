@@ -129,5 +129,6 @@ remove-sim-flags : false
 # HEALPIX
 ps-kbinsize : 0.5
 ps-kspan : 600.
-restrict-hpx-inds : ~
+restrict-healpix-inds : true
+healpix-inds: ~
 split-ps-export : true

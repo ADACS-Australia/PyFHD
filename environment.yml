@@ -17,6 +17,7 @@ dependencies:
   - importlib_resources
   - h5py
   - pip
+  - healpy
   - pip:
     - sphinx-rtd-theme
     - sphinx-argparse

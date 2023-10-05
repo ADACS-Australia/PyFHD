@@ -211,7 +211,7 @@ def create_obs(pyfhd_header : dict, params : dict, layout: dict, pyfhd_config : 
     healpix['nside'] = 0
     healpix['n_pix'] = 0
     # May be none!
-    healpix['ind_list'] = pyfhd_config['restrict_hpx_inds']
+    healpix['ind_list'] = pyfhd_config['restrict_healpix_inds']
     healpix['n_zero'] = -1
     obs['healpix'] = healpix
 

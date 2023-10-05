@@ -87,7 +87,7 @@ def test_2_pol_obs_creation(obs_id, data_dir, obs_dir):
         'time_cut': None,
         'beam_nfreq_avg' : 16,
         'dft_threshold' : False,
-        'restrict_hpx_inds' : True,
+        'restrict_healpix_inds' : True,
     }
     pyfhd_header, params_data, antenna_header, antenna_data = extract_header(pyfhd_config, logger)
     params = create_params(pyfhd_header, params_data, logger)
@@ -152,7 +152,7 @@ def test_4_pol_obs_creation(obs_id, data_dir, obs_dir):
         'time_cut': None,
         'beam_nfreq_avg' : 16,
         'dft_threshold' : False,
-        'restrict_hpx_inds' : True,
+        'restrict_healpix_inds' : True,
     }
     pyfhd_header, params_data, antenna_header, antenna_data = extract_header(pyfhd_config, logger)
     params = create_params(pyfhd_header, params_data, logger)

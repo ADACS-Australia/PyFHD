@@ -36,7 +36,6 @@ def vis_extract_autocorr(obs: dict, vis_arr: np.array, pyfhd_config: dict, auto_
         # As auto_tile_i is used for indexing we need to make it an integer array
         auto_tile_i = auto_tile_i.astype(np.int_)
         auto_tile_i_single = np.unique(auto_tile_i)
-        #TODO this is now explicitly a 3D array; parts of the code potentially
         # expect it as a list of 2D arrays, so there might be trouble
         if (not pyfhd_config['cal_time_average']):
             freq_tile_shape = np.real(vis_arr[0][:, autocorr_i]).shape
@@ -71,7 +70,6 @@ def vis_extract_autocorr(obs: dict, vis_arr: np.array, pyfhd_config: dict, auto_
         return auto_corr, auto_tile_i
     else:
         # Return auto_corr as 0 and auto_tile_i as an empty array
-        # TODO should the zeros and ones at least be the correct shape here?
         return np.zeros(1), np.zeros(0)
 
 def vis_cal_auto_init(obs : dict, cal : dict, vis_arr: np.array, vis_model_arr: np.array, vis_auto: np.array, vis_auto_model: np.array, auto_tile_i: np.array) -> np.ndarray:
