@@ -111,14 +111,14 @@ def create_psf(pyfhd_config: dict, logger: RootLogger) -> dict:
         # Read in a sav file containing the psf structure as we expect from FHD
         logger.warning("Reading in a beam sav file probably will take a long time, check back with me in an hour or three if it's a large file (10+GB). If you happen to know how long it takes to read the file, then set that time aside and turn this sav file into something else, anything else will not take as long to read. If you have beam_sav_to_npx set to True, sit tight, while I read it in, you'll get another message to let you know where it's being saved.")
         beam = readsav(pyfhd_config["beam_file_path"], python_dict=True)
-        nbaselines = beam['obs']['nbaselines'][0]
-        n_pol = beam['obs']['n_pol'][0]
-        # Save some memory hopefully
-        del beam['obs']
         if pyfhd_config["beam_sav_to_npz"]:
             new_name = Path(pyfhd_config["beam_file_path"].parent, pyfhd_config["beam_file_path"].stem + '.npz')
             logger.info(f"Because you waited all this time for the sav file to be read in and you want to read it in faster in the future, I'll save it as a numpy zipped archive to {new_name}.")
             np.savez(new_name, **beam)
+        nbaselines = beam['obs']['nbaselines'][0]
+        n_pol = beam['obs']['n_pol'][0]
+        # Save some memory hopefully
+        del beam['obs']
         psf = recarray_to_dict(beam['psf'])
         # Save some memory hopefully
         del beam
