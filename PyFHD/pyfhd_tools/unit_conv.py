@@ -71,7 +71,6 @@ def radec_to_altaz(ra : float, dec : float, lat : float, lon : float, height : f
     altaz = radec.transform_to(AltAz(location = loc, obstime = loc_time))
     return altaz.alt.deg, altaz.az.deg
 
-
 def radec_to_pixel(ra : float, dec : float, astr : dict) -> tuple[float, float]:
     """
     Turn Celestial Coordinates into Pixel coordinates (X & Y). The astr dictionary should contain

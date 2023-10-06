@@ -3,6 +3,9 @@ from logging import RootLogger
 import deepdish as dd
 from PyFHD.pyfhd_tools.pyfhd_utils import angle_difference
 import importlib_resources
+from healpy.pixelfunc import pix2vec, vec2ang, ang2vec
+from healpy import query_disc
+from PyFHD.pyfhd_tools.unit_conv import radec_to_pixel, radec_to_altaz
 
 def healpix_cnv_generate(obs: dict, mask: np.ndarray, hpx_radius: float, pyfhd_config: dict, logger: RootLogger) -> dict:
     """
@@ -90,5 +93,42 @@ def healpix_cnv_generate(obs: dict, mask: np.ndarray, hpx_radius: float, pyfhd_c
     # add it as an option inside pyfhd_config
 
     if hpx_inds is not None:
-        
+        pix_coords = np.vstack(pix2vec(nside, hpx_inds)).T
+        pix_dec, pix_ra = vec2ang(pix_coords, lonlat=True)
+        xv_hpx, yv_hpx = radec_to_pixel(pix_ra, pix_dec, obs["astr"])
+    else:
+        cen_coords = ang2vec(obs["obsra"], obs["obsdec"], lonlat=True)
+        hpx_inds = query_disc(nside, cen_coords, hpx_radius)
+        pix_coords = np.vstack(pix2vec(nside, hpx_inds)).T
+        pix_dec, pix_ra = vec2ang(pix_coords, lonlat=True)
+        xv_hpx, yv_hpx = radec_to_pixel(pix_ra, pix_dec, obs["astr"])
+        # slightly more restrictive boundary here ('LT' and 'GT' instead of 'LE' and 'GE') 
+        pix_i_use = np.where((xv_hpx > 0) & (xv_hpx < obs['dimension'] - 1) & (yv_hpx > 0) & (yv_hpx < obs['elements'] - 1))
+        xv_hpx = xv_hpx[pix_i_use]
+        yv_hpx = yv_hpx[pix_i_use]
+        hpx_mask00 = mask[np.floor(xv_hpx), np.floor(yv_hpx)]
+        hpx_mask01 = mask[np.floor(xv_hpx), np.ceil(yv_hpx)]
+        hpx_mask10 = mask[np.ceil(xv_hpx), np.floor(yv_hpx)]
+        hpx_mask11 = mask[np.ceil(xv_hpx), np.ceil(yv_hpx)]
+        hpx_mask = hpx_mask00 * hpx_mask01 * hpx_mask10 * hpx_mask11
+        pix_i_use2 = np.nonzero(hpx_mask)
+        xv_hpx = xv_hpx[pix_i_use2]
+        yv_hpx = yv_hpx[pix_i_use2]
+        pix_i_use = pix_i_use[pix_i_use2]
+        hpx_inds = hpx_inds[pix_i_use]
+    
+    # Test for pixels past the horizon. We don't need to be precise with this, so turn off precession, etc..
+    alt, _ = radec_to_altaz(pix_ra, pix_dec, obs["lat"], obs["lon"], obs["alt"], obs["jd0"])
+    horizon_i = np.where(alt <= 0)
+    if np.size(horizon_i) > 0:
+        logger.info("Cutting the HEALPix pixels that were below the horizon")
+        h_use = np.where(alt > 0)
+        xv_hpx = xv_hpx[h_use]
+        yv_hpx = yv_hpx[h_use]
+        hpx_inds = hpx_inds[h_use]
+    
+    x_frac = 1 - (xv_hpx - np.floor(xv_hpx))
+    y_frac = 1 - (yv_hpx - np.floor(yv_hpx))
+
+    
 
