@@ -1,11 +1,15 @@
 import numpy as np
 from logging import RootLogger
 import deepdish as dd
-from PyFHD.pyfhd_tools.pyfhd_utils import angle_difference
+from PyFHD.pyfhd_tools.pyfhd_utils import angle_difference, histogram
 import importlib_resources
 from healpy.pixelfunc import pix2vec, vec2ang, ang2vec
 from healpy import query_disc
 from PyFHD.pyfhd_tools.unit_conv import radec_to_pixel, radec_to_altaz
+
+def healpix_cnv_apply(image: np.ndarray, hpx_cnv: dict) -> np.ndarray:
+    hpx_map = np.zeros(np.size(hpx_cnv['inds']))
+
 
 def healpix_cnv_generate(obs: dict, mask: np.ndarray, hpx_radius: float, pyfhd_config: dict, logger: RootLogger) -> dict:
     """
@@ -130,5 +134,70 @@ def healpix_cnv_generate(obs: dict, mask: np.ndarray, hpx_radius: float, pyfhd_c
     x_frac = 1 - (xv_hpx - np.floor(xv_hpx))
     y_frac = 1 - (yv_hpx - np.floor(yv_hpx))
 
-    
+    v_floor = np.floor(xv_hpx) + obs['dimension'] * np.floor(yv_hpx)
+    v_ceil = np.ceil(xv_hpx) + obs['dimension'] * np.ceil(yv_hpx)
+    min_bin = max(np.min(v_floor), 0)
+    max_bin = min(np.max(v_ceil), obs['dimension'] * obs['elements'] - 1)
+    h00, _, ri00 = histogram(v_floor, min = min_bin, max = max_bin)
+    h01, _, ri01 = histogram(np.floor(xv_hpx) + obs['dimension'] * np.ceil(yv_hpx), min = min_bin, max = max_bin)
+    h10, _, ri10 = histogram(np.ceil(xv_hpx) + obs['dimension'] * np.floor(yv_hpx), min = min_bin, max = max_bin)
+    h11, _, ri11 = histogram(v_ceil, min = min_bin, max = max_bin)
+    htot = h00 + h01 + h10 + h11
+    inds = np.nonzero(htot)
+
+    n_arr = htot[inds]
+    i_use = inds + min_bin
+    sa = np.empty(np.size(n_arr), dtype=object)
+    ija = np.empty(np.size(n_arr), dtype=object)
+
+    for i in range(np.size(n_arr)):
+        ind0 = inds[i]
+        sa0 = np.zeros(n_arr[ind0])
+        ija0 = np.zeros(n_arr[ind0], dtype = np.int64)
+        hist_arr = np.array([0, h00[ind0], h01[ind0], h10[ind0], h11[ind0]], dtype = np.int64)
+        bin_i = np.cumsum(hist_arr)
+        for j in range(1, hist_arr.size):
+            bi = j - 1
+            if (hist_arr[j] > 0):
+                if (j == 1):
+                    # h00 > 0
+                    inds1 = ri00[ri00[ind0] : ri00[ind0 + 1]]
+                elif (j == 2):
+                    # h01 > 0
+                    inds1 = ri01[ri01[ind0] : ri01[ind0 + 1]]
+                elif (j == 3):
+                    # h10 > 0
+                    inds1 = ri10[ri10[ind0] : ri10[ind0 + 1]]
+                elif (j == 4):
+                    # h11 > 0
+                    inds1 = ri11[ri11[ind0] : ri11[ind0 + 1]]
+                y_frac_multi = y_frac[inds1]
+                x_frac_multi = x_frac[inds1]
+                if j % 2 == 0:
+                    y_frac_multi = 1 - y_frac_multi
+                if j > 2:
+                    x_frac_multi = 1 - x_frac_multi
+                sa0[bin_i[bi] : bin_i[bi + 1]] = x_frac_multi * y_frac_multi
+                ija0[bin_i[bi] : bin_i[bi + 1]] = inds1
+        sa[i] = sa0
+        ija[i] = ija0
+
+    hpx_cnv = {
+        "nside": nside,
+        "ija": ija,
+        "sa": sa,
+        "i_use": i_use,
+        "inds": hpx_inds
+    }
+    obs['healpix']['nside'] = nside
+    if pyfhd_config["restrict_healpix_inds"]:
+        obs['healpix']['ind_list'] = None
+    else:
+        obs['healpix']['ind_list'] = hpx_inds
+    obs['healpix']['n_pix'] = np.size(hpx_inds)
+    mask_test = healpix_cnv_apply(mask, hpx_cnv)
+    mask_test_i0 = np.where(mask_test == 0)
+    obs['healpix']['n_zero'] = np.size(mask_test_i0[0])
+
+    return hpx_cnv, obs
 

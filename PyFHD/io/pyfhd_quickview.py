@@ -5,6 +5,8 @@ from pathlib import Path
 from PyFHD.data_setup.obs import update_obs
 from PyFHD.pyfhd_tools.unit_conv import pixel_to_radec
 from PyFHD.pyfhd_tools.pyfhd_utils import meshgrid, rebin, weight_invert, region_grow
+from PyFHD.healpix.healpix_utils import healpix_cnv_generate
+from healpy.pixelfunc import ring2nest
 
 def quickview(
     obs: dict,
@@ -91,6 +93,5 @@ def quickview(
 
     if pyfhd_config["save_healpix_fits"]:
         FoV_use = (180 / np.pi) / obs_out["kpix"]
-        # hpx_cnv
-        # ring2nest
-
+        hpx_cnv, obs_out = healpix_cnv_generate(obs_out, beam_mask, FoV_use / np.sqrt(2), pyfhd_config, logger)
+        hpx_inds_nest = ring2nest(hpx_cnv['nside'], hpx_cnv['inds'])
