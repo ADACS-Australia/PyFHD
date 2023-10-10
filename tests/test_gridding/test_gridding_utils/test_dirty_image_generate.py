@@ -77,7 +77,7 @@ def test_dirty_image_generate(dirty_before: Path, dirty_after: Path):
     h5_after = dd.io.load(dirty_after)
 
     if h5_before["normalization"] == None:
-        dirty_image = dirty_image_generate(
+        dirty_image, _ = dirty_image_generate(
             h5_before["dirty_image_uv"],
             h5_before["pyfhd_config"],
             RootLogger(1),
@@ -94,7 +94,7 @@ def test_dirty_image_generate(dirty_before: Path, dirty_after: Path):
             beam_ptr = h5_before["beam_ptr"],
         )
     else:
-        dirty_image, normalization = dirty_image_generate(
+        dirty_image, _, normalization = dirty_image_generate(
             h5_before["dirty_image_uv"],
             h5_before["pyfhd_config"],
             RootLogger(1),

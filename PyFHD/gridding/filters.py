@@ -6,7 +6,7 @@ from logging import RootLogger
 def filter_uv_uniform(image_uv, vis_count: np.ndarray | None, 
                       obs: dict|None = None, params: dict|None = None, pyfhd_config: dict|None = None, 
                       logger: RootLogger|None = None,weights: dict|None = None, fi_use: dict|None = None, 
-                      bi_use: dict|None = None, mask_mirror_indices: bool = False):
+                      bi_use: dict|None = None, mask_mirror_indices: bool = False) -> tuple[np.ndarray, np.ndarray]:
     """
     TODO:_summary_
 
@@ -49,11 +49,15 @@ def filter_uv_uniform(image_uv, vis_count: np.ndarray | None,
     # This does not make use of fine-grained flagging, but relies on coarse flags from the obs structure 
     # (i.e. a list of tiles completely flagged, and of frequencies completely flagged)
     if vis_count is None:
-        if obs is None or params is None:
+        if obs is not None or params is not None:
+            vis_count = gridding_utils.visibility_count(
+                obs, params, weights, pyfhd_config, logger, fi_use, bi_use, mask_mirror_indices
+            )
+        else:
+            if (weights is not None and np.size(weights) == np.size(image_uv)):
+                vis_count = weights / np.min(weights[weights > 0])
             raise TypeError("obs and params must not be None when vis_count is None")
-        vis_count = gridding_utils.visibility_count(
-            obs, params, weights, pyfhd_config, logger, fi_use, bi_use, mask_mirror_indices
-        )
+        
     # Get the parts of the filter we're using
     filter_use = weight_invert(vis_count, threshold = 1)
     # Get the weights index as well

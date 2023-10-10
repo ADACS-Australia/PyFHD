@@ -7,9 +7,42 @@ from healpy.pixelfunc import pix2vec, vec2ang, ang2vec
 from healpy import query_disc
 from PyFHD.pyfhd_tools.unit_conv import radec_to_pixel, radec_to_altaz
 
-def healpix_cnv_apply(image: np.ndarray, hpx_cnv: dict) -> np.ndarray:
-    hpx_map = np.zeros(np.size(hpx_cnv['inds']))
+def healpix_cnv_apply(image: np.ndarray, hpx_cnv: dict, transpose = True, mask = False) -> np.ndarray:
+    """
+    healpix_cnv_apply creates a map based off the array/image and healpix convention dictionary given.
+    In FHD the healpix_cnv_apply was mainly used as a wrapper for sprsax2, as such I will put the code
+    for sprsax2 in here as PyFHD will only use sprsax2 here as we don't have the holographic mapping
+    function at this time.
 
+    Parameters
+    ----------
+    image : np.ndarray
+        _description_
+    hpx_cnv : dict
+        The HEALPix convention dictionary
+    transpose : bool, optional
+        Use a transpose of the image instead, by default True
+    mask : bool, optional
+        TODO: _description_, by default False
+
+    Returns
+    -------
+    hpx_map: np.ndarray
+        TODO: _description_
+    """
+    # Is B in sprsax2
+    hpx_map = np.zeros(np.size(hpx_cnv['inds']))
+    # Is X in sprsax2 or X_use
+    image_vector = image.flatten()
+    for i in range(0, np.size(hpx_cnv['i_use'])):
+        i_use = hpx_cnv['i_use'][i]
+        if transpose:
+            hpx_map[hpx_cnv['ija'][i]] += hpx_cnv['sa'][i] * image_vector[i_use]
+        else:
+            x1 = image_vector[hpx_cnv['ija'][i]]
+            # TODO: Check if outer is the correct multiplication and the order of matrices is correct
+            hpx_map[i] = np.outer(x1, np.reshape(hpx_cnv['sa'][i], [np.size(hpx_cnv['sa'][i]), 1]))
+    return hpx_map
 
 def healpix_cnv_generate(obs: dict, mask: np.ndarray, hpx_radius: float, pyfhd_config: dict, logger: RootLogger) -> dict:
     """
@@ -200,4 +233,3 @@ def healpix_cnv_generate(obs: dict, mask: np.ndarray, hpx_radius: float, pyfhd_c
     obs['healpix']['n_zero'] = np.size(mask_test_i0[0])
 
     return hpx_cnv, obs
-

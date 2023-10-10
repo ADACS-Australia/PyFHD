@@ -262,9 +262,9 @@ def dirty_image_generate(
         weights: np.ndarray|None = None,
         filter: np.ndarray|None = None,
         beam_ptr: np.ndarray|None = None
-):
+) -> tuple[np.ndarray, np.ndarray]|tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
-    TODO: _summary_
+    TODO:_summary_
 
     Parameters
     ----------
@@ -282,7 +282,7 @@ def dirty_image_generate(
         _description_, by default None
     resize : int | None, optional
         _description_, by default None
-    width_smooth : int | float, optional
+    width_smooth : int | float | None, optional
         _description_, by default None
     degpix : float | None, optional
         _description_, by default None
@@ -299,7 +299,7 @@ def dirty_image_generate(
 
     Returns
     -------
-    _type_
+    tuple[np.ndarray, np.ndarray]|tuple[np.ndarray, np.ndarray, np.ndarray]
         _description_
     """
 
@@ -350,41 +350,26 @@ def dirty_image_generate(
             else:
                 if pyfhd_config["image_filter"] == "filter_uv_uniform":
                     logger.info("Using filter_uv_uniform for dirty_image_generate")
-                    di_uv_use, _ = filters.filter_uv_uniform(
-                        di_uv_use, 
-                        vis_count = filter, 
-                        weights=weights
-                    )
                 elif pyfhd_config["image_filter"] == "filter_uv_hannning":
                     logger.warning("filter_uv_hanning hasn't been translated yet using filter_uv_uniform for dirty_image_generate instead")
-                    di_uv_use, _ = filters.filter_uv_uniform(
-                        di_uv_use, 
-                        vis_count = filter, 
-                    )
+                    
                 elif pyfhd_config["image_filter"] == "filter_uv_natural":
                     logger.warning("filter_uv_natural hasn't been translated yet using filter_uv_uniform for dirty_image_generate instead")
-                    di_uv_use, _ = filters.filter_uv_uniform(
-                        di_uv_use, 
-                        vis_count = filter, 
-                    )
+                    
                 elif pyfhd_config["image_filter"] == "filter_uv_radial":
                     logger.warning("filter_uv_radial hasn't been translated yet using filter_uv_uniform for dirty_image_generate instead")
-                    di_uv_use, _ = filters.filter_uv_uniform(
-                        di_uv_use, 
-                        vis_count = filter, 
-                    )
+                    
                 elif pyfhd_config["image_filter"] == "filter_uv_tapered_uniform":
                     logger.warning("filter_uv_tapered_uniform hasn't been translated yet using filter_uv_uniform for dirty_image_generate instead")
-                    di_uv_use, _ = filters.filter_uv_uniform(
-                        di_uv_use, 
-                        vis_count = filter, 
-                    )
+                    
                 elif pyfhd_config["image_filter"] == "filter_uv_optimal":
                     logger.warning("filter_uv_optimal hasn't been translated yet using filter_uv_uniform for dirty_image_generate instead")
-                    di_uv_use, _ = filters.filter_uv_uniform(
-                        di_uv_use, 
-                        vis_count = filter, 
-                    )
+                # Since we only use filter_uniform at the moment, put the call to it here.
+                di_uv_use, filter = filters.filter_uv_uniform(
+                    di_uv_use, 
+                    vis_count = None, 
+                    weights = weights
+                )
                        
     
     # Resize the dirty image by the factor resize    
@@ -434,9 +419,9 @@ def dirty_image_generate(
     # Normalize by the matrix given, if it was given
     if normalization is not None:
         dirty_image *= normalization
-        return dirty_image, normalization
+        return dirty_image, filter, normalization
     #Return
-    return dirty_image  
+    return dirty_image, filter  
 
 def grid_beam_per_baseline(
         psf: dict,

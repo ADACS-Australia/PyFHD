@@ -5,6 +5,7 @@ from pathlib import Path
 from PyFHD.data_setup.obs import update_obs
 from PyFHD.pyfhd_tools.unit_conv import pixel_to_radec
 from PyFHD.pyfhd_tools.pyfhd_utils import meshgrid, rebin, weight_invert, region_grow
+from PyFHD.gridding.gridding_utils import dirty_image_generate
 from PyFHD.healpix.healpix_utils import healpix_cnv_generate
 from healpy.pixelfunc import ring2nest
 
@@ -19,7 +20,7 @@ def quickview(
     weights_uv: np.ndarray,
     variance_uv: np.ndarray,
     uniform_filter_uv: np.ndarray,
-    model_uv: np.ndarray|None,
+    model_uv: np.ndarray,
     pyfhd_config: dict,
     logger: RootLogger
  ) -> None:
@@ -47,11 +48,11 @@ def quickview(
         cal_vis_arr_path = Path(pyfhd_config["output_dir"],'calibrated_vis_arr.h5')
         logger.info(f"Saving the calibrated visibilities to {cal_vis_arr_path}")
         dd.io.save(cal_vis_arr_path, {"visibilities": vis_arr})
-    if pyfhd_config["save-cal"] and pyfhd_config["calibrate_visibilities"]:
+    if pyfhd_config["save_cal"] and pyfhd_config["calibrate_visibilities"]:
         cal_path = Path(pyfhd_config["output_dir"],"cal.h5")
         logger.info(f"Saving the calibration dictionary to {cal_path}")
         dd.io.save(cal_path, cal)
-    if pyfhd_config["save-calibrated-weights"]:
+    if pyfhd_config["save_calibrated_weights"]:
         weights_path = Path(pyfhd_config["output_dir"],"calibrated_vis_weights.h5")
         logger.info(f"Saving the calibrated weights to {weights_path}")
         dd.io.save(weights_path, {"weights": vis_weights})
@@ -95,3 +96,36 @@ def quickview(
         FoV_use = (180 / np.pi) / obs_out["kpix"]
         hpx_cnv, obs_out = healpix_cnv_generate(obs_out, beam_mask, FoV_use / np.sqrt(2), pyfhd_config, logger)
         hpx_inds_nest = ring2nest(hpx_cnv['nside'], hpx_cnv['inds'])
+    
+    instr_dirty_arr = np.empty([obs["n_pol"], obs["dimension"], obs["elements"]])
+    instr_model_arr = np.empty([obs["n_pol"], obs["dimension"], obs["elements"]])
+    filter_arr = np.zeros([obs["n_pol"], obs["dimension"], obs["elements"]])
+    for pol_i in range(obs['n_pol']):
+        complex_flag = pol_i > 1
+        filter = np.empty(0)
+        # Get the dirty image of the uv plane and the filter from filter_uv_uniform
+        instr_dirty_arr[pol_i], filter = dirty_image_generate(
+            image_uv[pol_i], 
+            pyfhd_config, 
+            logger, 
+            degpix = obs_out['degpix'],
+            weights = vis_weights[pol_i],
+            pad_uv_image = pyfhd_config['pad_uv_image'],
+            filter = filter,
+            not_real = complex_flag,
+            beam_ptr = beam_base_out[pol_i]
+        )
+        filter_arr[pol_i] = filter
+        instr_model_arr[pol_i], filter = dirty_image_generate(
+            model_uv[pol_i], 
+            pyfhd_config, 
+            logger, 
+            degpix = obs_out['degpix'],
+            weights = vis_weights[pol_i],
+            pad_uv_image = pyfhd_config['pad_uv_image'],
+            filter = filter,
+            not_real = complex_flag,
+            beam_ptr = beam_base_out[pol_i]
+        )
+
+    
