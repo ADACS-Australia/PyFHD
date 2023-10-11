@@ -262,7 +262,7 @@ def dirty_image_generate(
         weights: np.ndarray|None = None,
         filter: np.ndarray|None = None,
         beam_ptr: np.ndarray|None = None
-) -> tuple[np.ndarray, np.ndarray]|tuple[np.ndarray, np.ndarray, np.ndarray]:
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
     TODO:_summary_
 
@@ -419,9 +419,9 @@ def dirty_image_generate(
     # Normalize by the matrix given, if it was given
     if normalization is not None:
         dirty_image *= normalization
-        return dirty_image, filter, normalization
+    
     #Return
-    return dirty_image, filter  
+    return dirty_image, filter, normalization
 
 def grid_beam_per_baseline(
         psf: dict,
@@ -528,7 +528,7 @@ def grid_beam_per_baseline(
         w_n_tracked = n_tracked * ww[bt_index[ii]] * frequency_array[freq_i[ii]]
 
         # Generate a UV beam from the image space beam, offset by calculated phases
-        psf_base_superres = dirty_image_generate(
+        psf_base_superres, _, _ = dirty_image_generate(
             psf['image_info']['image_power_beam_arr'][polarization] * \
             np.exp(2 * pi * (0 + 1j) * (-w_n_tracked + deltau_l + deltav_m)),
             pyfhd_config,

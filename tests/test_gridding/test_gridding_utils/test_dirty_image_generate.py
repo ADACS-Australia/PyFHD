@@ -75,41 +75,23 @@ def dirty_after(data_dir, number):
 def test_dirty_image_generate(dirty_before: Path, dirty_after: Path):
     h5_before = dd.io.load(dirty_before)
     h5_after = dd.io.load(dirty_after)
-
-    if h5_before["normalization"] == None:
-        dirty_image, _ = dirty_image_generate(
-            h5_before["dirty_image_uv"],
-            h5_before["pyfhd_config"],
-            RootLogger(1),
-            mask = h5_before["mask"],
-            baseline_threshold = h5_before["baseline_threshold"],
-            normalization = h5_before["normalization"],
-            resize = int(h5_before["resize"]) if h5_before["resize"] else None,
-            width_smooth = h5_before["width_smooth"],
-            degpix = h5_before["degpix"],
-            not_real = h5_before["not_real"],
-            pad_uv_image = h5_before["pad_uv_image"],
-            weights = h5_before["weights"],
-            filter = h5_before["filter"],
-            beam_ptr = h5_before["beam_ptr"],
-        )
-    else:
-        dirty_image, _, normalization = dirty_image_generate(
-            h5_before["dirty_image_uv"],
-            h5_before["pyfhd_config"],
-            RootLogger(1),
-            mask = h5_before["mask"],
-            baseline_threshold = h5_before["baseline_threshold"],
-            normalization = h5_before["normalization"],
-            resize = int(h5_before["resize"]) if h5_before["resize"] else None,
-            width_smooth = h5_before["width_smooth"],
-            degpix = h5_before["degpix"],
-            not_real = h5_before["not_real"],
-            pad_uv_image = h5_before["pad_uv_image"],
-            weights = h5_before["weights"],
-            filter = h5_before["filter"],
-            beam_ptr = h5_before["beam_ptr"],
-        )
+    
+    dirty_image, _, normalization = dirty_image_generate(
+        h5_before["dirty_image_uv"],
+        h5_before["pyfhd_config"],
+        RootLogger(1),
+        mask = h5_before["mask"],
+        baseline_threshold = h5_before["baseline_threshold"],
+        normalization = h5_before["normalization"],
+        resize = int(h5_before["resize"]) if h5_before["resize"] else None,
+        width_smooth = h5_before["width_smooth"],
+        degpix = h5_before["degpix"],
+        not_real = h5_before["not_real"],
+        pad_uv_image = h5_before["pad_uv_image"],
+        weights = h5_before["weights"],
+        filter = h5_before["filter"],
+        beam_ptr = h5_before["beam_ptr"],
+    )
     
     assert_allclose(dirty_image, h5_after["dirty_image"], atol=1e-8)
     if h5_after["normalization"] != None:

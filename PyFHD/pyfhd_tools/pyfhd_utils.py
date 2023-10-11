@@ -1261,3 +1261,29 @@ def region_grow(image: np.ndarray, roiPixels: np.ndarray, low: int|float|None = 
     # Return the flat indexes
     return growROIPixels
 
+def crosspol_split_real_imaginary(image: np.ndarray, pol_names: list[str]|None = None) -> tuple[np.ndarray, list[str]|None]:
+    """
+    TODO: _summary_
+
+    Parameters
+    ----------
+    image : np.ndarray
+        _description_
+    pol_names : list[str] | None, optional
+        _description_, by default None
+
+    Returns
+    -------
+    tuple[np.ndarray, list[str]|None]
+        _description_
+    """
+    crosspol_image: np.ndarray = image[2]
+    image[2] = crosspol_image.real
+    image[3] = crosspol_image.imag
+
+    if pol_names is not None:
+        crosspol_name: str = pol_names[2]
+        pol_names[2] = f"{crosspol_name}_real"
+        pol_names[3] = f"{crosspol_name}_imag"
+    
+    return image, pol_names
