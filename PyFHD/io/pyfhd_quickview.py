@@ -8,8 +8,6 @@ from PyFHD.data_setup.obs import update_obs
 from PyFHD.pyfhd_tools.unit_conv import pixel_to_radec
 from PyFHD.pyfhd_tools.pyfhd_utils import meshgrid, rebin, weight_invert, region_grow, crosspol_split_real_imaginary
 from PyFHD.gridding.gridding_utils import dirty_image_generate
-from PyFHD.healpix.healpix_utils import healpix_cnv_generate
-from healpy.pixelfunc import ring2nest
 
 def get_image_renormalization(
     obs: dict, 
@@ -141,10 +139,6 @@ def quickview(
     beam_avg = np.sqrt(np.maximum(beam_avg, 0)) * beam_mask
     beam_i = np.nonzero(beam_mask)
 
-    if pyfhd_config["save_healpix_fits"]:
-        FoV_use = (180 / np.pi) / obs_out["kpix"]
-        hpx_cnv, obs_out = healpix_cnv_generate(obs_out, beam_mask, FoV_use / np.sqrt(2), pyfhd_config, logger)
-        hpx_inds_nest = ring2nest(hpx_cnv['nside'], hpx_cnv['inds'])
     # Generate our dirty images of the uv planes
     instr_dirty_arr = np.empty([obs["n_pol"], obs["dimension"], obs["elements"]])
     instr_model_arr = np.empty([obs["n_pol"], obs["dimension"], obs["elements"]])
@@ -242,11 +236,6 @@ def quickview(
     fits_file_uv.header.set("MJD-OBS", obs_out["astr"]["mjd_obs"], 'Modified Julian day of observation')
     fits_file_uv.header.set("DATE-OBS", obs_out["astr"]["date_obs"], 'Date of observation')
 
-    x_inc = beam_i % obs_out["dimension"]
-    y_inc = np.floor(beam_i / obs_out["dimension"])
-    zoom_low = min(np.min(x_inc), np.min(y_inc))
-    zoom_high = max(np.max(x_inc), np.max(y_inc))
-
     # If you need the beam_contour arrays add them here, lines 369-378 in fhd_quickview.pro
 
     filter_name = pyfhd_config["image_filter"].split("_")[-1]
@@ -257,12 +246,16 @@ def quickview(
         instr_model = instr_model_arr[pol_i] * beam_correction_out[pol_i]
         beam_use = beam_base_out[pol_i]
         
-        # Write the fits apparent files
+        # Write the fits files for the dirty images
         fits_file_apparent.data = instr_dirty
         fits_file_apparent.writeto(Path(pyfhd_config['output_dir'], f"{filter_name}_dirty_{pol_names[pol_i]}.fits"))
         fits_file_apparent.data = instr_model
         fits_file_apparent.writeto(Path(pyfhd_config['output_dir'], f"{filter_name}_model_{pol_names[pol_i]}.fits"))
         fits_file_apparent.data = instr_residual
         fits_file_apparent.writeto(Path(pyfhd_config['output_dir'], f"{filter_name}_residual_{pol_names[pol_i]}.fits"))
-        # Write the HEALPix Fits files
+        fits_file.data = beam_use
+        fits_file.writeto(Path(pyfhd_config['output_dir'], f"beam_{pol_names[pol_i]}.fits"))
+        fits_file_uv.data = np.abs(vis_weights) * obs["n_vis"]
+        fits_file_uv.writeto(Path(pyfhd_config['output_dir'], f"uv_weights_{pol_names[pol_i]}.fits"))
+            
     
