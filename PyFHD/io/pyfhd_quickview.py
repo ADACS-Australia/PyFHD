@@ -196,51 +196,51 @@ def quickview(
     
     # Build a fits header
     logger.info("Building the FITS Header for all the FITS files")
-    fits_header = fits.PrimaryHDU(instr_dirty_arr[0])
+    fits_file = fits.PrimaryHDU(instr_dirty_arr[0])
     # Write in the WCS into the header from the astr dictionary in obs_out
-    fits_header.header.set("ctype1", obs_out["astr"]["ctype"][0].decode(), "Coordinate Type")
-    fits_header.header.set("ctype2", obs_out["astr"]["ctype"][1].decode(), "Coordinate Type")
-    fits_header.header.set("equinox", obs_out["astr"]["equinox"], "Equinox of Ref. Coord.")
-    fits_header.header.set("equinox", obs_out["astr"]["equinox"], "Equinox of Ref. Coord.")
-    fits_header.header.set("equinox", obs_out["astr"]["equinox"], "Equinox of Ref. Coord.")
+    fits_file.header.set("ctype1", obs_out["astr"]["ctype"][0].decode(), "Coordinate Type")
+    fits_file.header.set("ctype2", obs_out["astr"]["ctype"][1].decode(), "Coordinate Type")
+    fits_file.header.set("equinox", obs_out["astr"]["equinox"], "Equinox of Ref. Coord.")
+    fits_file.header.set("equinox", obs_out["astr"]["equinox"], "Equinox of Ref. Coord.")
+    fits_file.header.set("equinox", obs_out["astr"]["equinox"], "Equinox of Ref. Coord.")
     cd = obs_out["astr"]["cd"]
     cd[0,:] = cd[0, :] * obs_out["astr"]["cdelt"][0]
     cd[1, :] = cd[1, :] * obs_out["astr"]["cdelt"][1]
-    fits_header.header.set("cd1_1", cd[0,0], "Degrees / Pixel")
-    fits_header.header.set("cd1_2", cd[0,1], "Degrees / Pixel")
-    fits_header.header.set("cd2_1", cd[1,0], "Degrees / Pixel")
-    fits_header.header.set("cd2_2", cd[1,1], "Degrees / Pixel")
-    fits_header.header.set("crpix1", int(obs_out["astr"]["crpix"][0]), "Reference Pixel in X")
-    fits_header.header.set("crpix2", int(obs_out["astr"]["crpix"][1]), "Reference Pixel in Y")
-    fits_header.header.set("crval1", obs_out["astr"]["crval"][0], "R.A. (degrees) of reference pixel")
-    fits_header.header.set("crval2", obs_out["astr"]["crval"][1], "Declination of reference pixel")
-    fits_header.header.set("pv2_1", obs_out["astr"]["pv2"][0], "Projection parameter 1")
-    fits_header.header.set("pv2_2", obs_out["astr"]["pv2"][1], "Projection parameter 2")
+    fits_file.header.set("cd1_1", cd[0,0], "Degrees / Pixel")
+    fits_file.header.set("cd1_2", cd[0,1], "Degrees / Pixel")
+    fits_file.header.set("cd2_1", cd[1,0], "Degrees / Pixel")
+    fits_file.header.set("cd2_2", cd[1,1], "Degrees / Pixel")
+    fits_file.header.set("crpix1", int(obs_out["astr"]["crpix"][0]), "Reference Pixel in X")
+    fits_file.header.set("crpix2", int(obs_out["astr"]["crpix"][1]), "Reference Pixel in Y")
+    fits_file.header.set("crval1", obs_out["astr"]["crval"][0], "R.A. (degrees) of reference pixel")
+    fits_file.header.set("crval2", obs_out["astr"]["crval"][1], "Declination of reference pixel")
+    fits_file.header.set("pv2_1", obs_out["astr"]["pv2"][0], "Projection parameter 1")
+    fits_file.header.set("pv2_2", obs_out["astr"]["pv2"][1], "Projection parameter 2")
     for i in range(obs_out["astr"]["pv1"].size):
-        fits_header.header.set(f"pv1_{i}", obs_out["astr"]["pv1"][i], "Projection parameters")
-    fits_header.header.set("mjd-obs", obs_out["astr"]["mjd_obs"], "Modified Julian day of observations")
-    fits_header.header.set("date-obs", obs_out["astr"]["date_obs"], "Date of observations")
-    fits_header.header.set("radecsys", obs_out["astr"]["radecsys"], "Reference Frame")
-    fits_header.header.set(
+        fits_file.header.set(f"pv1_{i}", obs_out["astr"]["pv1"][i], "Projection parameters")
+    fits_file.header.set("mjd-obs", obs_out["astr"]["mjd_obs"], "Modified Julian day of observations")
+    fits_file.header.set("date-obs", obs_out["astr"]["date_obs"], "Date of observations")
+    fits_file.header.set("radecsys", obs_out["astr"]["radecsys"], "Reference Frame")
+    fits_file.header.set(
         "history", 
         f"World Coordinate System parameters written by PyFHD: {datetime.datetime.now().strftime('%b %d %Y %H:%M:%S')}"
     )
     # Create the fits header to store the dirty images
-    fits_header_apparent = fits_header.copy()
-    fits_header_apparent.header.set("bunit", "Jy/sr (apparent)")
+    fits_file_apparent = fits_file.copy()
+    fits_file_apparent.header.set("bunit", "Jy/sr (apparent)")
 
     # Create the fits header for the weights
-    fits_header_uv = fits.PrimaryHDU(vis_weights[0])
-    fits_header_uv.header.set("CD1_1", obs['kpix'], 'Wavelengths / Pixel')
-    fits_header_uv.header.set("CD2_1", 0., 'Wavelengths / Pixel')
-    fits_header_uv.header.set("CD1_2", 0., 'Wavelengths / Pixel')
-    fits_header_uv.header.set("CD2_2", obs['kpix'], 'Wavelengths / Pixel')
-    fits_header_uv.header.set("CRPIX1", obs_out['dimension'] / 2 + 1, 'Reference Pixel in X')
-    fits_header_uv.header.set("CRPIX2", obs_out['elements'] / 2 + 1, 'Reference Pixel in Y')
-    fits_header_uv.header.set("CRVAL1", 0., 'Wavelengths (u)')
-    fits_header_uv.header.set("CRVAL2", 0., 'Wavelengths (v)')
-    fits_header_uv.header.set("MJD-OBS", obs_out["astr"]["mjd_obs"], 'Modified Julian day of observation')
-    fits_header_uv.header.set("DATE-OBS", obs_out["astr"]["date_obs"], 'Date of observation')
+    fits_file_uv = fits.PrimaryHDU(vis_weights[0])
+    fits_file_uv.header.set("CD1_1", obs['kpix'], 'Wavelengths / Pixel')
+    fits_file_uv.header.set("CD2_1", 0., 'Wavelengths / Pixel')
+    fits_file_uv.header.set("CD1_2", 0., 'Wavelengths / Pixel')
+    fits_file_uv.header.set("CD2_2", obs['kpix'], 'Wavelengths / Pixel')
+    fits_file_uv.header.set("CRPIX1", obs_out['dimension'] / 2 + 1, 'Reference Pixel in X')
+    fits_file_uv.header.set("CRPIX2", obs_out['elements'] / 2 + 1, 'Reference Pixel in Y')
+    fits_file_uv.header.set("CRVAL1", 0., 'Wavelengths (u)')
+    fits_file_uv.header.set("CRVAL2", 0., 'Wavelengths (v)')
+    fits_file_uv.header.set("MJD-OBS", obs_out["astr"]["mjd_obs"], 'Modified Julian day of observation')
+    fits_file_uv.header.set("DATE-OBS", obs_out["astr"]["date_obs"], 'Date of observation')
 
     x_inc = beam_i % obs_out["dimension"]
     y_inc = np.floor(beam_i / obs_out["dimension"])
@@ -249,6 +249,7 @@ def quickview(
 
     # If you need the beam_contour arrays add them here, lines 369-378 in fhd_quickview.pro
 
+    filter_name = pyfhd_config["image_filter"].split("_")[-1]
     for pol_i in range(obs["n_pol"]):
         logger.info(f"Saving the FITS files for polarization {pol_i}")
         instr_residual = instr_residual_arr[pol_i] * beam_correction_out[pol_i]
@@ -257,6 +258,11 @@ def quickview(
         beam_use = beam_base_out[pol_i]
         
         # Write the fits apparent files
-    
+        fits_file_apparent.data = instr_dirty
+        fits_file_apparent.writeto(Path(pyfhd_config['output_dir'], f"{filter_name}_dirty_{pol_names[pol_i]}.fits"))
+        fits_file_apparent.data = instr_model
+        fits_file_apparent.writeto(Path(pyfhd_config['output_dir'], f"{filter_name}_model_{pol_names[pol_i]}.fits"))
+        fits_file_apparent.data = instr_residual
+        fits_file_apparent.writeto(Path(pyfhd_config['output_dir'], f"{filter_name}_residual_{pol_names[pol_i]}.fits"))
         # Write the HEALPix Fits files
     
