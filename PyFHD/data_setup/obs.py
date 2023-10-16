@@ -211,7 +211,7 @@ def create_obs(pyfhd_header : dict, params : dict, layout: dict, pyfhd_config : 
     healpix['nside'] = 0
     healpix['n_pix'] = 0
     # May be none!
-    healpix['ind_list'] = pyfhd_config['restrict_healpix_inds']
+    healpix['ind_list'] = pyfhd_config['healpix_inds']
     healpix['n_zero'] = -1
     obs['healpix'] = healpix
 
@@ -327,7 +327,11 @@ def read_metafits(obs : dict, pyfhd_header : dict, params : dict, pyfhd_config :
     # Save the header as a Python dictionary
     meta['meta_hdr'] = {}
     for key in hdr.keys():
-        meta['meta_hdr'][key] = hdr[key]
+        # Check if they is HISTORY or COMMENT which will be changed to a list for ease of use with hdf5 files
+        if key in ["HISTORY", "COMMENT"]:
+            meta['meta_hdr'][key] = list(hdr[key])
+        else:
+            meta['meta_hdr'][key] = hdr[key]
     # The astropy FITS_rec class is based off a numpy record array so saving as is should be fine
     # If so desired a tolist() function to turn the data into list of lists, but you lose the column names
     meta['meta_data'] = data

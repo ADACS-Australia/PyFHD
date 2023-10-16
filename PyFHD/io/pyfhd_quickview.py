@@ -184,9 +184,9 @@ def quickview(
         logger.info("Peforming Cross Polarization splits for real and imaginary")
         instr_dirty_arr, pol_names = crosspol_split_real_imaginary(instr_dirty_arr, pol_names = pol_names)
         instr_model_arr,_ = crosspol_split_real_imaginary(instr_model_arr)
-        instr_residual_arr = crosspol_split_real_imaginary(instr_residual_arr)
+        instr_residual_arr, _ = crosspol_split_real_imaginary(instr_residual_arr)
         # The weights should have been saved at this point and we only need them like this from here
-        vis_weights = crosspol_split_real_imaginary(vis_weights)
+        vis_weights, _ = crosspol_split_real_imaginary(vis_weights)
     
     # Build a fits header
     logger.info("Building the FITS Header for all the FITS files")
@@ -257,5 +257,3 @@ def quickview(
         fits_file.writeto(Path(pyfhd_config['output_dir'], f"beam_{pol_names[pol_i]}.fits"))
         fits_file_uv.data = np.abs(vis_weights) * obs["n_vis"]
         fits_file_uv.writeto(Path(pyfhd_config['output_dir'], f"uv_weights_{pol_names[pol_i]}.fits"))
-            
-    
