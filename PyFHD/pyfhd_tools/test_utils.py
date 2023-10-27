@@ -223,7 +223,11 @@ def recarray_to_dict(data: np.recarray | dict) -> dict:
                         new_array[idx] = data[key][idx]
                     data[key] = new_array
                 else: 
-                    data[key] = np.vstack(data[key]).astype(data[key][0].dtype)
+                    # For an object array you can flatten it, and stack all inner arrays together until it's not an object array
+                    # Crucially this assumes the array not as an object array can fit in memory! If you're doing the beam_ptr
+                    # conversion take this into consideration
+                    while data[key].dtype == object:
+                        data[key] = np.vstack(data[key].flatten()).reshape(list(data[key].shape) + list(data[key].flat[0].shape))
             except ValueError:
                 data[key] = list(x for x in data[key])
     return data
