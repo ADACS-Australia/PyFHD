@@ -99,8 +99,7 @@ def pyfhd_parser():
     parser.add_argument('--n-pol', type = int, default = 2, choices = [0, 2, 4], help = 'Set number of polarizations to use (XX, YY versus XX, YY, XY, YX).')
 
     # Calibration Group
-    calibration.add_argument('-cv', '--calibrate-visibilities', default = True, type=bool,
-    help = 'Turn on the calibration of the visibilities. If turned on, calibration of the dirty, modelling, and subtraction to make a residual occurs. Otherwise, none of these occur and an uncalibrated dirty cube is output.')
+    calibration.add_argument('-cv', '--calibrate-visibilities', default = False, action = 'store_true', help = 'Turn on the calibration of the visibilities. If turned on, calibration of the dirty, modelling, and subtraction to make a residual occurs. Otherwise, none of these occur and an uncalibrated dirty cube is output.')
     calibration.add_argument('--diffuse-calibrate', type = Path, help = 'Path to a file containing a map/model of the diffuse in which to calibrate on.\nThe map/model undergoes a DFT for every pixel, and the contribution from every pixel is added to the model visibilities from which to calibrate on.\nIf no diffuse_model is specified, then this map/model is used for the subtraction model as well. See diffuse_model for information about the formatting of the file.')
     calibration.add_argument('--transfer-calibration', type = Path, help = 'The file path of a calibration to be read-in, if you give a directory PyFHD expects there to be a file called <obs_id>_cal.hdf5 using the same observation as you plan to process.')
     calibration.add_argument('--calibration_catalog-file-path', type = Path, default = None, help = 'The file path to the desired source catalog to be used for calibration')
@@ -136,7 +135,7 @@ def pyfhd_parser():
     # Flagging Group
     flag.add_argument('-fv', '--flag-visibilities', default = False, action = 'store_true', help = 'Flag visibilities based on calculations in vis_flag')
     flag.add_argument('-fc', '--flag-calibration', default = False, action = 'store_true', help = 'Flags antennas based on calculations in vis_calibration_flag')
-    flag.add_argument('-fb', '--flag-basic', default = False, action='store_true', help='Flags Frequencies and Tiles based on your configuration, params and the visibility weights.\nThe freq_use, tile_use arrays of obs will be adjusted and the vis_weights_arr adjusted to be in line with the freq_use and tile_use arrays.\nYou may want to turn this off if you\'re dealing with a simulation in PyFHD')
+    flag.add_argument('-fb', '--flag-basic', default = False, action='store_true', help='Flags Frequencies and Tiles based on your configuration, params and the visibility weights.\nThe freq_use, tile_use arrays of obs will be adjusted and the vis_weights_arr adjusted to be in line with the freq_use and tile_use arrays.\nThis should be True always, the only time you should consider turning off basic flagging is when you\'re dealing with a simulated visibilities and weights in PyFHD')
     flag.add_argument('--flag-freq-start', default = None, type = float, help = 'Frequency in MHz to begin the observation. Flags frequencies less than it. Replaces freq_start from FHD')
     flag.add_argument('--flag-freq-end', default = None, type = float, help = 'Frequency in MHz to end the observation. Flags frequencies greater than it. Replaces freq_end from FHD')
     flag.add_argument('--flag-tiles', default = [], type = list, action = 'append', help = 'A list of tile names to manually flag. I repeat, a list of tile names, NOT tile indices')
