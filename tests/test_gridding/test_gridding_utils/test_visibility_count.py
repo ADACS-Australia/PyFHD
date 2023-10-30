@@ -1,8 +1,9 @@
+from PyFHD.io.pyfhd_io import recarray_to_dict
 import pytest
 import numpy as np
 from os import environ as env
 from pathlib import Path
-from PyFHD.pyfhd_tools.test_utils import get_data, get_data_items, recarray_to_dict, sav_file_vis_arr_swap_axes
+from PyFHD.pyfhd_tools.test_utils import get_data, get_data_items, sav_file_vis_arr_swap_axes
 from PyFHD.gridding.gridding_utils import visibility_count
 import deepdish as dd
 from logging import RootLogger

@@ -2,7 +2,7 @@ import numpy as np
 from PyFHD.data_setup.uvfits import extract_visibilities, create_params, extract_header
 import logging
 from PyFHD.pyfhd_tools.pyfhd_utils import run_command
-from PyFHD.pyfhd_tools.test_utils import recarray_to_dict
+from PyFHD.io.pyfhd_io import recarray_to_dict
 import importlib_resources
 import os
 import shutil

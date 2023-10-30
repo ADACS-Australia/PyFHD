@@ -18,7 +18,6 @@ deproject-w-term : ~
 
 # Beam Setup
 beam-file-path: './input'
-beam-sav-to-npz: true
 recalculate-beam : true
 beam-clip-floor : true
 interpolate-kernel : true

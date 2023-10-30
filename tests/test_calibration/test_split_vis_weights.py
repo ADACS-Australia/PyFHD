@@ -1,9 +1,10 @@
+from PyFHD.io.pyfhd_io import recarray_to_dict
 import pytest
 from os import environ as env
 from pathlib import Path
 from PyFHD.pyfhd_tools.pyfhd_utils import split_vis_weights
 from PyFHD.use_idl_fhd.use_idl_outputs import convert_sav_to_dict
-from PyFHD.pyfhd_tools.test_utils import recarray_to_dict, sav_file_vis_arr_swap_axes
+from PyFHD.pyfhd_tools.test_utils import sav_file_vis_arr_swap_axes
 import numpy as np
 import deepdish as dd
 from logging import RootLogger

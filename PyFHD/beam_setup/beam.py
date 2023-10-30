@@ -5,9 +5,10 @@ from logging import RootLogger
 from scipy.interpolate import interp1d
 from PyFHD.beam_setup.beam_utils import mwa_beam_setup_init
 from scipy.io import readsav
-from PyFHD.pyfhd_tools.test_utils import recarray_to_dict
+from PyFHD.io.pyfhd_io import recarray_to_dict
 from pathlib import Path
 from PyFHD.io.pyfhd_io import save, load
+from h5py import File
 import sys
 
 def create_antenna(pyfhd_config : dict, obs : dict) -> dict:
@@ -96,10 +97,25 @@ def create_antenna(pyfhd_config : dict, obs : dict) -> dict:
 
     return antenna
 
-def create_psf(pyfhd_config: dict, logger: RootLogger) -> dict:
+def create_psf(pyfhd_config: dict, logger: RootLogger) -> dict | File:
+    """
+    Creates the psf dictionary by loading in a `sav` or `HDF5` file
+
+    Parameters
+    ----------
+    pyfhd_config : dict
+        _description_
+    logger : RootLogger
+        _description_
+
+    Returns
+    -------
+    dict | h5py.File
+        _description_
+    """
     if pyfhd_config["beam_file_path"].suffix == '.sav':
         # Read in a sav file containing the psf structure as we expect from FHD
-        logger.info("Reading in a beam sav file probably will take a long time. You will require double the storage size of the sav file in RAM at least. Maybe watch your favourite long movie, for example the extended edition of LOTR: Return of the King is 4 hours 10 minutes.\n\t       Check back when the Battle of the Pelennor Fields has finished or roughly 3 hours in.")
+        logger.info("Reading in a beam sav file probably will take a long time. You will require double the storage size of the sav file in RAM at least. Do some other work or maybe watch your favourite long movie, for example the extended edition of LOTR: Return of the King is 4 hours 10 minutes. Check back when the Battle of the Pelennor Fields has finished or roughly 3 hours in.")
         beam = readsav(pyfhd_config["beam_file_path"], python_dict=True)
         psf = beam['psf']
         # Delete the read in sav file, now that we got the psf, at this point we will have the psf size twice!
@@ -123,11 +139,12 @@ def create_psf(pyfhd_config: dict, logger: RootLogger) -> dict:
         return psf
     elif pyfhd_config["beam_file_path"].suffix == ".h5" or pyfhd_config["beam_file_path"].suffix == ".hdf5":
         logger.info(f"Reading in the HDF5 file {pyfhd_config['beam_file_path']}")
-        psf = load(pyfhd_config['beam_file_path'], logger)
+        # If you selected to lazy load the beam, then psf will be a h5py File Object
+        psf = load(pyfhd_config['beam_file_path'], logger, lazy_load = pyfhd_config["lazy_load_beam"])
         return psf
     elif pyfhd_config["beam_file_path"].suffix == '.fits':
-        # Read in a fits file
+        # Read in a fits file, when you do I assume you probably will be translating
+        # FHD's beam setup while reading in a beam fits file.
         logger.error("The ability to read in a beam fits hasn't been implemented yet")
         sys.exit(1)
-    return psf
 

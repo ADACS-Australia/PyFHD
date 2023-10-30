@@ -145,7 +145,7 @@ def pyfhd_parser():
 
     # Beam Setup Group
     beam.add_argument('-b', '--beam-file-path', type = Path, help = "The path to the file containing a sav or fits file")
-    beam.add_argument('--beam-sav-to-npz', default = False, action = 'store_true', help="When using a sav file for the beam-file-path it will automatically sav a npz file of the psf with the exact same contents as the sav file.")
+    beam.add_argument('-ll', '--lazy-load-beam', default = False, action = 'store_true', help = "PyFHD will lazy load the beam HDF5 file, allowing PyFHD to be run on much smaller systems with much less memory than FHD")
     beam.add_argument('--recalculate-beam', default = False, action = 'store_true', help = "Forces PyFHD to redo the beam setup using PyFHD's beam setup.")
     beam.add_argument('--beam-nfreq-avg', type = int, default = 16, help = "The number of fine frequency channels to calculate a beam for, using the average of the frequencies.\nThe beam is a function of frequency, and a calculation on the finest level is most correct (beam_nfreq_avg=1).\nHowever, this is computationally difficult for most machines.")
     beam.add_argument('--psf-dim', default = 54, type = int, help = 'Controls the span of the beam in u-v space. Some defaults are 30, 54 (1e6 mask with -2) or 62 (1e7 with -2).')

@@ -1,8 +1,9 @@
+from PyFHD.io.pyfhd_io import recarray_to_dict
 import pytest
 from os import environ as env
 from pathlib import Path
 from PyFHD.gridding.gridding_utils import grid_beam_per_baseline
-from PyFHD.pyfhd_tools.test_utils import get_data, get_data_items, recarray_to_dict
+from PyFHD.pyfhd_tools.test_utils import get_data, get_data_items
 import deepdish as dd
 from numpy.testing import assert_allclose
 from logging import RootLogger

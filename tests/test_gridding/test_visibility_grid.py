@@ -1,10 +1,11 @@
+from PyFHD.io.pyfhd_io import recarray_to_dict
 import pytest
 import numpy.testing as npt
 import numpy as np
 from os import environ as env
 from pathlib import Path
 from PyFHD.gridding.visibility_grid import visibility_grid
-from PyFHD.pyfhd_tools.test_utils import get_savs, recarray_to_dict
+from PyFHD.pyfhd_tools.test_utils import get_savs
 import deepdish as dd
 from logging import RootLogger
 

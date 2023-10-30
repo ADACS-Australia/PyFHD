@@ -6,7 +6,7 @@ import numpy as np
 
 from PyFHD.calibration.calibration_utils import vis_extract_autocorr
 from PyFHD.use_idl_fhd.use_idl_outputs import convert_sav_to_dict
-from PyFHD.pyfhd_tools.test_utils import recarray_to_dict
+from PyFHD.io.pyfhd_io import recarray_to_dict
 
 @pytest.fixture
 def data_dir():

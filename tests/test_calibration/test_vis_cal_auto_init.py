@@ -1,9 +1,10 @@
+from PyFHD.io.pyfhd_io import recarray_to_dict
 import pytest
 from os import environ as env
 from pathlib import Path
 from PyFHD.calibration.calibration_utils import vis_cal_auto_init
 from PyFHD.use_idl_fhd.use_idl_outputs import convert_sav_to_dict
-from PyFHD.pyfhd_tools.test_utils import recarray_to_dict, sav_file_vis_arr_swap_axes
+from PyFHD.pyfhd_tools.test_utils import sav_file_vis_arr_swap_axes
 import deepdish as dd
 import numpy.testing as npt
 

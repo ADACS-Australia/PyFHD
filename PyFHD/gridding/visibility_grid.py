@@ -2,12 +2,13 @@ import numpy as np
 from PyFHD.gridding.gridding_utils import interpolate_kernel, baseline_grid_locations, grid_beam_per_baseline, conjugate_mirror
 from PyFHD.pyfhd_tools.pyfhd_utils import weight_invert, rebin, l_m_n, idl_argunique
 from logging import RootLogger
+from h5py import File
 
 def visibility_grid(
         visibility: np.ndarray,
         vis_weights: np.ndarray,
         obs: dict,
-        psf: dict,
+        psf: dict | File,
         params: dict,
         polarization: int,
         pyfhd_config: dict,
@@ -29,7 +30,7 @@ def visibility_grid(
         _description_
     obs : dict
         _description_
-    psf : dict
+    psf : dict | h5py.File
         _description_
     params : dict
         _description_
@@ -127,6 +128,7 @@ def visibility_grid(
     group_arr = np.expand_dims(rebin(group_arr, (n_f_use, n_baselines)), axis = 0)
     group_arr = np.repeat(group_arr, n_samples, axis = 0) 
     group_arr = np.reshape(group_arr, (n_f_use, n_samples*n_baselines))
+    # Do note that the beam_ptr will be a dataset if you lazy loaded
     beam_arr = psf['beam_ptr']
     n_freq_use = frequency_array.size
     psf_dim2 = 2 * psf_dim
@@ -237,7 +239,7 @@ def visibility_grid(
             for ii in range(vis_n):
                 # For each visibility, calculate the kernel values on the static uv-grid given the
                 # hyperresolved kernel and an interpolation involving the derivatives
-                box_matrix[ii] = interpolate_kernel(beam_arr[polarization, fbin[ii], baseline_inds[ii]],
+                box_matrix[ii] = interpolate_kernel(beam_arr[polarization, fbin[ii]],
                                                     x_off[ii], y_off[ii], dx0dy0[ii], dx1dy0[ii], dx0dy1[ii], dx1dy1[ii])
         else:
             # Calculate the beam kernel at each baseline location given the hyperresolved pre-calculated
