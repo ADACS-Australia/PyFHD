@@ -89,6 +89,8 @@ def save(file_name: Path, to_save: np.ndarray | dict, dataset_name: str, logger:
     See Also
     --------
     PyFHD.io.pyfhd_io.load : Load a HDF5 file
+    PyFHD.io.pyfhd_io.dict_to_group : Converts a dictionary to a h5py Group Object
+    PyFHD.io.pyfhd_io.recarray_to_dict : Turns any record arrays into dicts, also formats object arrays into the correct dtype array
     """
     with h5py.File(file_name, "w") as h5_file:
         match to_save:
@@ -96,7 +98,7 @@ def save(file_name: Path, to_save: np.ndarray | dict, dataset_name: str, logger:
                 logger.info(f"Writing the {dataset_name} array to {file_name}.h5")
                 h5_file.create_dataset(dataset_name, to_save.shape, data = to_save, dtype = dtype_picker(to_save.dtype), compression = 'gzip')
             case dict():
-                logger.info(f"Writing the {dataset_name} dict to {file_name}.h5, each key will be a dataset, if the key contains a dict then it will be a group.")
+                logger.info(f"Writing the {dataset_name} dict to {file_name}, each key will be a dataset, if the key contains a dict then it will be a group.")
                 for key in to_save:
                     match to_save[key]:
                         case dict():
@@ -148,7 +150,8 @@ def load(file_name: Path, logger: RootLogger, lazy_load: bool = False) -> dict |
     """
     Loads a HDF5 file into PyFHD, it reads the HDF5 into an array if the 
     HDF5 file contains a single dataset, while a HDF5 which contains multiple
-    datasets will load them into a dictionary. 
+    datasets will load them into a dictionary. Any groups will be convered to
+    sub dictionaries using `group_to_dict` 
 
     Parameters
     ----------
@@ -168,6 +171,11 @@ def load(file_name: Path, logger: RootLogger, lazy_load: bool = False) -> dict |
         Returns a dict in the case the HDF5 file contains multple datasets, 
         An array if the HDF5 contains one dataset or h5py File object if the 
         file is lazy loaded to conserve memory. 
+
+    See Also
+    --------
+    PyFHD.io.pyfhd_io.save : Save a HDF5 file
+    PyFHD.io.pyfhd_io.group_to_dict : Converts a h5py Group object to a dictionary
     """
     h5_file = h5py.File(file_name, "r")
     if lazy_load:

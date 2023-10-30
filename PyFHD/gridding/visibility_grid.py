@@ -2,13 +2,13 @@ import numpy as np
 from PyFHD.gridding.gridding_utils import interpolate_kernel, baseline_grid_locations, grid_beam_per_baseline, conjugate_mirror
 from PyFHD.pyfhd_tools.pyfhd_utils import weight_invert, rebin, l_m_n, idl_argunique
 from logging import RootLogger
-from h5py import File
+import h5py
 
 def visibility_grid(
         visibility: np.ndarray,
         vis_weights: np.ndarray,
         obs: dict,
-        psf: dict | File,
+        psf: dict | h5py.File,
         params: dict,
         polarization: int,
         pyfhd_config: dict,
@@ -120,6 +120,9 @@ def visibility_grid(
     frequency_array = frequency_array[fi_use]
     psf_dim = psf['dim']
     psf_resolution = psf['resolution']
+    if isinstance(psf_dim, h5py.Dataset):
+        psf_dim = psf_dim[0]
+        psf_resolution = psf_resolution[0]
     n_baselines = obs['n_baselines']
     n_samples = obs['n_time']
     # New group_arr code that is consistent with the FHD version
@@ -128,8 +131,6 @@ def visibility_grid(
     group_arr = np.expand_dims(rebin(group_arr, (n_f_use, n_baselines)), axis = 0)
     group_arr = np.repeat(group_arr, n_samples, axis = 0) 
     group_arr = np.reshape(group_arr, (n_f_use, n_samples*n_baselines))
-    # Do note that the beam_ptr will be a dataset if you lazy loaded
-    beam_arr = psf['beam_ptr']
     n_freq_use = frequency_array.size
     psf_dim2 = 2 * psf_dim
     psf_dim3 = psf_dim ** 2
@@ -148,6 +149,8 @@ def visibility_grid(
         y = x.copy()
         psf_intermediate_res = np.min([np.ceil(np.sqrt(psf_resolution) / 2) * 2, psf_resolution])
         psf_image_dim = psf['image_info']['psf_image_dim']
+        if isinstance(psf_image_dim, h5py.Dataset):
+            psf_image_dim = psf_image_dim[0]
         image_bot = int(-(psf_dim / 2) * psf_intermediate_res + psf_image_dim / 2)
         image_top = int((psf_dim * psf_resolution - 1) - (psf_dim / 2) * psf_intermediate_res + psf_image_dim / 2)
         l_mode, m_mode, n_tracked = l_m_n(obs, psf)
@@ -239,7 +242,7 @@ def visibility_grid(
             for ii in range(vis_n):
                 # For each visibility, calculate the kernel values on the static uv-grid given the
                 # hyperresolved kernel and an interpolation involving the derivatives
-                box_matrix[ii] = interpolate_kernel(beam_arr[polarization, fbin[ii]],
+                box_matrix[ii] = interpolate_kernel(psf['beam_ptr'][polarization, fbin[ii]],
                                                     x_off[ii], y_off[ii], dx0dy0[ii], dx1dy0[ii], dx0dy1[ii], dx1dy1[ii])
         else:
             # Calculate the beam kernel at each baseline location given the hyperresolved pre-calculated
@@ -319,7 +322,7 @@ def visibility_grid(
                 for ii in range(vis_n):
                     # For each visibility, calculate the kernel values on the static uv-grid given the
                     # hyperresolved kernel
-                    box_matrix[ii, :] = beam_arr[polarization, fbin[ii], baseline_inds[ii]][y_off[ii], x_off[ii]]
+                    box_matrix[ii, :] = psf['beam_ptr'][polarization, fbin[ii]][y_off[ii], x_off[ii]]
         
         #  Calculate the conjugate transpose (dagger) of the uv-pixels that the current beam kernel contributes to
         box_matrix_dag = np.conj(box_matrix)

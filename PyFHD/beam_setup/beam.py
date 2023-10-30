@@ -133,6 +133,7 @@ def create_psf(pyfhd_config: dict, logger: RootLogger) -> dict | File:
                 "chunk": tuple([1] * 2 + list(psf['beam_ptr'].shape)[2:])
             }
         }
+        # By default save the file in the same place as the original beam
         output_path = Path(pyfhd_config["beam_file_path"].parent ,pyfhd_config["beam_file_path"].stem + ".h5")
         save(output_path, psf, "psf", logger, to_chunk = to_chunk)
         # Since the psf is already in memory, return it

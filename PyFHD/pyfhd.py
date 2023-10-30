@@ -1,6 +1,5 @@
 import time
 from datetime import timedelta
-from logging import RootLogger
 import numpy as np
 from PyFHD.pyfhd_tools.pyfhd_setup import pyfhd_parser, pyfhd_setup
 from PyFHD.data_setup.obs import create_obs
@@ -15,8 +14,9 @@ from PyFHD.flagging.flagging import vis_flag, vis_flag_basic
 from PyFHD.gridding.visibility_grid import visibility_grid
 from PyFHD.gridding.gridding_utils import crosspol_reformat
 import logging
+import h5py
 
-def _print_time_diff(start : float, end : float, description : str, logger : RootLogger):
+def _print_time_diff(start : float, end : float, description : str, logger : logging.RootLogger):
     """
     Print the time difference in a nice format between start and end time
 
@@ -73,8 +73,6 @@ def main_python_only(pyfhd_config : dict, logger : logging.RootLogger):
     layout = create_layout(antenna_header, antenna_data, logger)
     layout_end = time.time()
     _print_time_diff(layout_start, layout_end, 'Layout Dictionary Extracted', logger)
-
-    # TODO: Save the layout here later
     
     # Get obs
     obs_start = time.time()
@@ -87,6 +85,11 @@ def main_python_only(pyfhd_config : dict, logger : logging.RootLogger):
     psf = create_psf(pyfhd_config, logger)
     psf_end = time.time()
     _print_time_diff(psf_start, psf_end, 'Beam and PSF dictionary imported.', logger)
+
+    if len(psf['image_info']['image_power_beam_arr'].shape) == 1:
+        # Turn off beam_per_baseline if image_power_beam_arr is 
+        # only one value
+        pyfhd_config['beam_per_baseline'] = False
 
     if pyfhd_config['deproject_w_term'] is not None:
         w_term_start = time.time()
@@ -202,7 +205,10 @@ def main_python_only(pyfhd_config : dict, logger : logging.RootLogger):
     # TODO: Translate fhd_quickview and add it here
 
     # TODO: Translate snapshot_healpix_export and add it here
-    
+
+    # Close all open h5 files
+    if isinstance(psf, h5py.File):
+        psf.close()
 
 def main():
 
