@@ -5,7 +5,7 @@ from pathlib import Path
 from PyFHD.gridding.gridding_utils import dirty_image_generate
 from PyFHD.pyfhd_tools.test_utils import get_data, get_data_items
 from numpy.testing import assert_allclose
-import deepdish as dd
+from PyFHD.io.pyfhd_io import save, load
 from logging import RootLogger
 
 @pytest.fixture
@@ -73,8 +73,8 @@ def dirty_after(data_dir, number):
     return dirty_after
 
 def test_dirty_image_generate(dirty_before: Path, dirty_after: Path):
-    h5_before = dd.io.load(dirty_before)
-    h5_after = dd.io.load(dirty_after)
+    h5_before = load(dirty_before)
+    h5_after = load(dirty_after)
     
     dirty_image, _, normalization = dirty_image_generate(
         h5_before["dirty_image_uv"],

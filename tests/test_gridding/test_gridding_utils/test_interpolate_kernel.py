@@ -4,7 +4,7 @@ from pathlib import Path
 import pytest
 from PyFHD.gridding.gridding_utils import interpolate_kernel
 from PyFHD.pyfhd_tools.test_utils import get_data_items
-import deepdish as dd
+from PyFHD.io.pyfhd_io import save, load
 
 @pytest.fixture
 def data_dir():
@@ -62,8 +62,8 @@ def interp_kernel_after(data_dir, number):
     return interp_kernel_after
 
 def test_interpolate_kernel(interp_kernel_before: Path, interp_kernel_after: Path):
-    h5_before = dd.io.load(interp_kernel_before)
-    h5_after = dd.io.load(interp_kernel_after)
+    h5_before = load(interp_kernel_before)
+    h5_after = load(interp_kernel_after)
 
     kernel = interpolate_kernel(
         h5_before["kernel_arr"],

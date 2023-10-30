@@ -4,7 +4,7 @@ from os import environ as env
 from pathlib import Path
 from PyFHD.gridding.gridding_utils import conjugate_mirror
 from PyFHD.pyfhd_tools.test_utils import get_data_items
-import deepdish as dd
+from PyFHD.io.pyfhd_io import save, load
 
 @pytest.fixture
 def data_dir():
@@ -35,6 +35,6 @@ def conjugate_file(data_dir, number):
     return conjugate_file
 
 def test_conjugate_mirror(conjugate_file: Path):
-    h5 = dd.io.load(conjugate_file)
+    h5 = load(conjugate_file)
     image = conjugate_mirror(h5["input"])
     assert np.array_equal(image, h5["conj_mirror_image"])

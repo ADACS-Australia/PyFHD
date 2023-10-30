@@ -7,7 +7,7 @@ from PyFHD.calibration.calibration_utils import vis_calibration_apply
 from PyFHD.use_idl_fhd.use_idl_outputs import convert_sav_to_dict
 from PyFHD.pyfhd_tools.test_utils import sav_file_vis_arr_swap_axes
 import numpy as np
-import deepdish as dd
+from PyFHD.io.pyfhd_io import save, load
 import numpy.testing as npt
 from logging import RootLogger
 # import matplotlib.pyplot as plt
@@ -73,7 +73,7 @@ def before_file(tag, run, data_dir):
         except KeyError:
             h5_save_dict[key]  = None
 
-    dd.io.save(before_file, h5_save_dict)
+    save(before_file, h5_save_dict, "before_file")
 
     return before_file
 
@@ -96,7 +96,7 @@ def after_file(tag, run, data_dir):
     h5_save_dict['vis_cal_ptr'] = sav_file_vis_arr_swap_axes(sav_dict['vis_cal_ptr'])
     h5_save_dict['cal'] = recarray_to_dict(sav_dict['cal'])
 
-    dd.io.save(after_file, h5_save_dict)
+    save(after_file, h5_save_dict, "after_file")
 
     return after_file
 
@@ -106,8 +106,8 @@ def test_vis_calibration_apply(before_file, after_file):
     if (before_file == None or after_file == None):
         pytest.skip(f"This test has been skipped because the test was listed in the skipped tests due to FHD not outputting them: {skip_tests}")
 
-    h5_before = dd.io.load(before_file)
-    h5_after = dd.io.load(after_file)
+    h5_before = load(before_file)
+    h5_after = load(after_file)
 
     vis_ptr = h5_before['vis_ptr']
     cal = h5_before['cal']

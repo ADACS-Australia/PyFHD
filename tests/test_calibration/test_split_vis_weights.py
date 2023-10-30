@@ -6,7 +6,7 @@ from PyFHD.pyfhd_tools.pyfhd_utils import split_vis_weights
 from PyFHD.use_idl_fhd.use_idl_outputs import convert_sav_to_dict
 from PyFHD.pyfhd_tools.test_utils import sav_file_vis_arr_swap_axes
 import numpy as np
-import deepdish as dd
+from PyFHD.io.pyfhd_io import save, load
 from logging import RootLogger
 import numpy.testing as npt
 
@@ -37,7 +37,7 @@ def before_file(data_dir, tag, run):
     h5_save_dict['obs'] = recarray_to_dict(sav_dict['obs'])
     h5_save_dict['vis_weights'] = sav_file_vis_arr_swap_axes(sav_dict['vis_weights'])
 
-    dd.io.save(before_file, h5_save_dict)
+    save(before_file, h5_save_dict, "before_file")
 
     return before_file
 
@@ -55,13 +55,13 @@ def after_file(data_dir, tag, run):
     h5_save_dict['vis_weights_use'] = sav_file_vis_arr_swap_axes(sav_dict['vis_weights_use'])
     h5_save_dict['bi_use'] = sav_dict['bi_use']
 
-    dd.io.save(after_file, h5_save_dict)
+    save(after_file, h5_save_dict, "after_file")
 
     return after_file
 
 def test_split_vis_weights(before_file, after_file):
-    h5_before = dd.io.load(before_file)
-    h5_after = dd.io.load(after_file)
+    h5_before = load(before_file)
+    h5_after = load(after_file)
 
     obs = h5_before['obs']
     vis_weights = h5_before['vis_weights']

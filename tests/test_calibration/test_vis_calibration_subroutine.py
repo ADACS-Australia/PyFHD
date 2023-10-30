@@ -9,7 +9,7 @@ from logging import RootLogger
 from PyFHD.pyfhd_tools.test_utils import get_data_items, sav_file_vis_arr_swap_axes
 from PyFHD.use_idl_fhd.use_idl_outputs import convert_sav_to_dict
 from numpy.testing import assert_allclose
-import deepdish as dd
+from PyFHD.io.pyfhd_io import save, load
 
 @pytest.fixture
 def data_dir():
@@ -65,7 +65,7 @@ def before_file(tag, run, data_dir):
     pyfhd_config['cal_phase_fit_iter'] = h5_save_dict['cal']['phase_iter']
     h5_save_dict['pyfhd_config'] = pyfhd_config
 
-    dd.io.save(before_file, h5_save_dict)
+    save(before_file, h5_save_dict, "before_file")
 
     return before_file
 
@@ -85,7 +85,7 @@ def after_file(tag, run, data_dir):
     h5_save_dict['cal_return'] = recarray_to_dict(sav_dict['cal_return'])
     h5_save_dict['cal_return']['gain'] = sav_file_vis_arr_swap_axes(h5_save_dict['cal_return']['gain'])
 
-    dd.io.save(after_file, h5_save_dict)
+    save(after_file, h5_save_dict, "after_file")
 
     return after_file
 
@@ -93,8 +93,8 @@ def test_points_around_zenith_and_1088716296(before_file, after_file):
     if (before_file == None or after_file == None):
         pytest.skip(f"This test has been skipped because the test was listed in the skipped tests due to FHD not outputting them: {skip_tests}")
 
-    h5_before = dd.io.load(before_file)
-    h5_after = dd.io.load(after_file)
+    h5_before = load(before_file)
+    h5_after = load(after_file)
 
     vis_ptr = h5_before['vis_ptr']
     vis_model_ptr = h5_before['vis_model_ptr']
@@ -190,8 +190,8 @@ def subroutine_after(data_dir, subroutine_test):
 
 def test_vis_calibration_x(subroutine_before, subroutine_after):
 
-    h5_before = dd.io.load(subroutine_before)
-    h5_after = dd.io.load(subroutine_after)
+    h5_before = load(subroutine_before)
+    h5_after = load(subroutine_after)
 
     vis_ptr = h5_before['vis_ptr']
     vis_model_ptr = h5_before['vis_model_ptr']

@@ -4,7 +4,7 @@ from os import environ as env
 from pathlib import Path
 from PyFHD.gridding.gridding_utils import grid_beam_per_baseline
 from PyFHD.pyfhd_tools.test_utils import get_data, get_data_items
-import deepdish as dd
+from PyFHD.io.pyfhd_io import save, load
 from numpy.testing import assert_allclose
 from logging import RootLogger
 
@@ -109,8 +109,8 @@ def after_grid_per_baseline(data_dir, number):
     return after_grid_per_baseline
 
 def test_grid_per_baseline(before_grid_per_baseline: Path, after_grid_per_baseline: Path):
-    h5_before = dd.io.load(before_grid_per_baseline)
-    h5_after = dd.io.load(after_grid_per_baseline)
+    h5_before = load(before_grid_per_baseline)
+    h5_after = load(after_grid_per_baseline)
 
     output_box_matrix = grid_beam_per_baseline(
         h5_before["psf"], 

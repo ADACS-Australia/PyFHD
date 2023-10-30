@@ -4,7 +4,7 @@ from pathlib import Path
 from PyFHD.pyfhd_tools.test_utils import get_data_items
 from PyFHD.calibration.calibration_utils import calculate_adaptive_gain
 from PyFHD.use_idl_fhd.use_idl_outputs import convert_sav_to_dict
-import deepdish as dd
+from PyFHD.io.pyfhd_io import save, load
 import numpy.testing as npt
 
 @pytest.fixture
@@ -83,7 +83,7 @@ def calc_test_before(data_dir, calc_test):
     h5_save_dict['base_gain'] = base_gain
     h5_save_dict['final_convergence_estimate'] = final_con_est
 
-    dd.io.save(before_file, h5_save_dict)
+    save(before_file, h5_save_dict, "before_file")
 
     return before_file
 
@@ -102,7 +102,7 @@ def calc_test_after(data_dir, calc_test):
     h5_save_dict = {}
     h5_save_dict['expected_gain'] = expected_gain
 
-    dd.io.save(after_file, h5_save_dict)
+    save(after_file, h5_save_dict, "after_file")
 
     return after_file
 
@@ -110,8 +110,8 @@ def test_point_offzenith_and_zenith(before_file, after_file):
     if (before_file == None or after_file == None):
         pytest.skip(f"This test has been skipped because the test was listed in the skipped tests due to FHD not outputting them: {skip_tests}")
 
-    h5_before = dd.io.load(before_file)
-    h5_after = dd.io.load(after_file)
+    h5_before = load(before_file)
+    h5_after = load(after_file)
 
     result_gain = calculate_adaptive_gain(
         h5_before['gain_list'], 
@@ -125,8 +125,8 @@ def test_point_offzenith_and_zenith(before_file, after_file):
 
 def test_calc_test_1_and_2(calc_test_before, calc_test_after):
 
-    h5_before = dd.io.load(calc_test_before)
-    h5_after = dd.io.load(calc_test_after)
+    h5_before = load(calc_test_before)
+    h5_after = load(calc_test_after)
 
     result_gain = calculate_adaptive_gain(
         h5_before['gain_list'], 

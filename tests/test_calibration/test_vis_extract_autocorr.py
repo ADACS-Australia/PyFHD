@@ -1,7 +1,7 @@
 import pytest
 from os import environ as env
 from pathlib import Path
-import deepdish as dd
+from PyFHD.io.pyfhd_io import save, load
 import numpy as np
 
 from PyFHD.calibration.calibration_utils import vis_extract_autocorr
@@ -58,7 +58,7 @@ def before_file(tag, run, data_dir):
         pyfhd_config['cal_time_average'] = False
     h5_save_dict['pyfhd_config'] = pyfhd_config
 
-    dd.io.save(before_file, h5_save_dict)
+    save(before_file, h5_save_dict, "before_file")
 
     return before_file
 
@@ -79,7 +79,7 @@ def after_file(tag, run, data_dir):
     h5_save_dict['auto_corr'] = sav_dict['auto_corr']
     h5_save_dict['auto_tile_i'] = sav_dict['auto_tile_i']
 
-    dd.io.save(after_file, h5_save_dict)
+    save(after_file, h5_save_dict, "after_file")
 
     return after_file
 
@@ -89,8 +89,8 @@ def test_points_offzenith_zenith_1088716296(before_file, after_file):
     if (before_file == None or after_file == None):
         pytest.skip(f"This test has been skipped because the test was listed in the skipped tests due to FHD not outputting them: {skip_tests}")
 
-    h5_before = dd.io.load(before_file)
-    h5_after = dd.io.load(after_file)
+    h5_before = load(before_file)
+    h5_after = load(after_file)
 
     obs = h5_before['obs']
     vis_arr = h5_before['vis_arr']

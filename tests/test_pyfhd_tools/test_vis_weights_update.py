@@ -6,7 +6,7 @@ from os import environ as env
 from PyFHD.use_idl_fhd.use_idl_outputs import convert_sav_to_dict
 from PyFHD.pyfhd_tools.test_utils import sav_file_vis_arr_swap_axes
 from PyFHD.pyfhd_tools.pyfhd_utils import vis_weights_update
-import deepdish as dd
+from PyFHD.io.pyfhd_io import save, load
 import numpy.testing as npt
 import numpy as np
 
@@ -41,7 +41,7 @@ def before_file(tag, run, data_dir):
     h5_save_dict['obs'] = recarray_to_dict(sav_dict['obs'])
     h5_save_dict['params'] = recarray_to_dict(sav_dict['params'])
 
-    dd.io.save(before_file, h5_save_dict)
+    save(before_file, h5_save_dict, "before_file")
 
     return before_file
     
@@ -61,7 +61,7 @@ def after_file(tag, run, data_dir):
     h5_save_dict['vis_weight_ptr'] = sav_file_vis_arr_swap_axes(sav_dict['vis_weight_ptr'])
     h5_save_dict['obs'] = recarray_to_dict(sav_dict['obs'])
 
-    dd.io.save(after_file, h5_save_dict)
+    save(after_file, h5_save_dict, "after_file")
 
     return after_file
 
@@ -82,7 +82,7 @@ def cal_before_file(tag, run, data_dir):
     h5_save_dict['obs'] = recarray_to_dict(sav_dict['obs'])
     h5_save_dict['params'] = recarray_to_dict(sav_dict['params'])
 
-    dd.io.save(before_file, h5_save_dict)
+    save(before_file, h5_save_dict, "before_file")
 
     return before_file
     
@@ -102,7 +102,7 @@ def cal_after_file(tag, run, data_dir):
     h5_save_dict['vis_weights'] = sav_file_vis_arr_swap_axes(sav_dict['vis_weights'])
     h5_save_dict['obs'] = recarray_to_dict(sav_dict['obs'])
 
-    dd.io.save(after_file, h5_save_dict)
+    save(after_file, h5_save_dict, "after_file")
 
     return after_file
 
@@ -110,8 +110,8 @@ def test_many_points(before_file, after_file):
     if (before_file == None or after_file == None):
         pytest.skip(f"This test has been skipped because the test was listed in the skipped tests due to FHD not outputting them: {skip_tests}")
 
-    h5_before = dd.io.load(before_file)
-    h5_after = dd.io.load(after_file)
+    h5_before = load(before_file)
+    h5_after = load(after_file)
 
     vis_weight_arr = h5_before['vis_weight_ptr']
     obs = h5_before['obs']
@@ -140,8 +140,8 @@ def test_many_points_before_cal(cal_before_file, cal_after_file):
     if (cal_before_file == None or cal_after_file == None):
         pytest.skip(f"This test has been skipped because the test was listed in the skipped tests due to FHD not outputting them: {skip_tests}")
 
-    h5_before = dd.io.load(cal_before_file)
-    h5_after = dd.io.load(cal_after_file)
+    h5_before = load(cal_before_file)
+    h5_after = load(cal_after_file)
 
     vis_weight_arr = h5_before['vis_weights']
     obs = h5_before['obs']

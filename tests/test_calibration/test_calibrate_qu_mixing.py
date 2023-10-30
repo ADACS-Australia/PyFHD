@@ -6,7 +6,7 @@ from PyFHD.calibration.calibrate import calibrate_qu_mixing
 from PyFHD.use_idl_fhd.use_idl_outputs import convert_sav_to_dict
 from PyFHD.pyfhd_tools.test_utils import sav_file_vis_arr_swap_axes
 import numpy as np
-import deepdish as dd
+from PyFHD.io.pyfhd_io import save, load
 from logging import RootLogger
 import numpy.testing as npt
 
@@ -43,7 +43,7 @@ def before_file(tag, run, data_dir):
     h5_save_dict['vis_model_ptr'] = sav_file_vis_arr_swap_axes(sav_dict['vis_model_ptr'])
     h5_save_dict['vis_weight_ptr'] = sav_file_vis_arr_swap_axes(sav_dict['vis_weight_ptr'])
 
-    dd.io.save(before_file, h5_save_dict)
+    save(before_file, h5_save_dict, "before_file")
 
     return before_file
 
@@ -63,7 +63,7 @@ def after_file(tag, run, data_dir):
     h5_save_dict = {}
     h5_save_dict['calc_phase'] = sav_dict['calc_phase']
 
-    dd.io.save(after_file, h5_save_dict)
+    save(after_file, h5_save_dict, "after_file")
 
     return after_file
 
@@ -78,8 +78,8 @@ def test_qu_mixing(before_file, after_file):
                     by default which for some reason makes a difference for values
                     close to 0 in single precision.""")
 
-    h5_before = dd.io.load(before_file)
-    h5_after = dd.io.load(after_file)
+    h5_before = load(before_file)
+    h5_after = load(after_file)
 
     obs = h5_before['obs']
     obs['n_baselines'] = obs['nbaselines']

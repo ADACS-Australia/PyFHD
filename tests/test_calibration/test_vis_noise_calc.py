@@ -6,7 +6,7 @@ from PyFHD.pyfhd_tools.pyfhd_utils import vis_noise_calc
 from PyFHD.use_idl_fhd.use_idl_outputs import convert_sav_to_dict
 from PyFHD.pyfhd_tools.test_utils import sav_file_vis_arr_swap_axes
 import numpy as np
-import deepdish as dd
+from PyFHD.io.pyfhd_io import save, load
 from logging import RootLogger
 import numpy.testing as npt
 
@@ -43,7 +43,7 @@ def before_file(tag, run, data_dir):
     h5_save_dict['vis_weights'] = sav_file_vis_arr_swap_axes(sav_dict['vis_weights'])
     # print('vis-weights shape', h5_save_dict['vis_weights'].shape)
 
-    dd.io.save(before_file, h5_save_dict)
+    save(before_file, h5_save_dict, "before_file")
 
     return before_file
 
@@ -63,7 +63,7 @@ def after_file(tag, run, data_dir):
     h5_save_dict = {}
     h5_save_dict['noise_arr'] = sav_dict['noise_arr']
 
-    dd.io.save(after_file, h5_save_dict)
+    save(after_file, h5_save_dict, "after_file")
 
     return after_file
 
@@ -71,8 +71,8 @@ def test_points_zenith_and_offzenith(before_file, after_file):
     """Runs the test on `vis_noise_calc` - reads in the data in `data_loc`,
     and then calls `vis_noise_calc`, checking the outputs match expectations"""
 
-    h5_before = dd.io.load(before_file)
-    h5_after = dd.io.load(after_file)
+    h5_before = load(before_file)
+    h5_after = load(after_file)
 
     obs = h5_before['obs']
     vis_arr = h5_before['vis_arr']

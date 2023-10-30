@@ -28,7 +28,7 @@ def dtype_picker(dtype: type) -> type:
         # Should never get here, this should throw an error
         return None
 
-def dict_to_group(group: h5py.Group, to_convert: dict, logger: RootLogger) -> None:
+def dict_to_group(group: h5py.Group, to_convert: dict, logger: RootLogger | None) -> None:
     """
     Converts a dictionary to a HDF5 group. This is called in the event a dictionary is found inside
     a dictionary that is being saved in a HDF5 file. Creates a subgroup for the hdf5 file with everything
@@ -47,7 +47,7 @@ def dict_to_group(group: h5py.Group, to_convert: dict, logger: RootLogger) -> No
         match to_convert[key]:
             case dict():
                 subgroup = group.create_group(key)
-                dict_to_group(subgroup, to_convert[key])
+                dict_to_group(subgroup, to_convert[key], logger)
             case np.ndarray():
                 group.create_dataset(key, shape = to_convert[key].shape, data = to_convert[key], dtype = dtype_picker(to_convert[key].dtype), compression = 'gzip')
             case list():
@@ -56,10 +56,10 @@ def dict_to_group(group: h5py.Group, to_convert: dict, logger: RootLogger) -> No
                 try:
                     group.create_dataset(key, shape = (1), data = to_convert[key])
                 except ValueError:
-                    logger.error(f"key, type(to_convert[key])")
+                    if logger:
+                        logger.error(f"Failed to save {key}, the type of key was {type(to_convert[key])}")
 
-# Create the save function here
-def save(file_name: Path, to_save: np.ndarray | dict, dataset_name: str, logger: RootLogger, to_chunk: dict[str, dict] = {}) -> None:
+def save(file_name: Path, to_save: np.ndarray | dict, dataset_name: str, logger: RootLogger | None = None, to_chunk: dict[str, dict] = {}) -> None:
     """
     Saves a numpy array or dictionary into a hdf5 file using h5py, with compression applied to all arrays/datasets. 
     An array will be saved as a single dataset, while a dictionary will be saved where each key will be a dataset
@@ -78,8 +78,8 @@ def save(file_name: Path, to_save: np.ndarray | dict, dataset_name: str, logger:
     dataset_name : str
         Used in the case that the to_save variable is an array, this name will 
         be used as the key for the dataset in the hdf5 file.
-    logger : RootLogger
-        PyFHD's Logger
+    logger : RootLogger, optional
+        PyFHD's Logger, by default None (in case you don't want to use the logger for testing)
     to_chunk : dict[str, dict], optional
         A dictionary where each key-value pair represents a key in the to_save dictionary, and the value is a dictionary
         which should contain two key-value pairs, `shape` which should be the `shape` of the array and `chunk` which tells
@@ -95,10 +95,12 @@ def save(file_name: Path, to_save: np.ndarray | dict, dataset_name: str, logger:
     with h5py.File(file_name, "w") as h5_file:
         match to_save:
             case np.ndarray():
-                logger.info(f"Writing the {dataset_name} array to {file_name}.h5")
+                if logger:
+                    logger.info(f"Writing the {dataset_name} array to {file_name}.h5")
                 h5_file.create_dataset(dataset_name, to_save.shape, data = to_save, dtype = dtype_picker(to_save.dtype), compression = 'gzip')
             case dict():
-                logger.info(f"Writing the {dataset_name} dict to {file_name}, each key will be a dataset, if the key contains a dict then it will be a group.")
+                if logger:
+                    logger.info(f"Writing the {dataset_name} dict to {file_name}, each key will be a dataset, if the key contains a dict then it will be a group.")
                 for key in to_save:
                     match to_save[key]:
                         case dict():
@@ -115,9 +117,11 @@ def save(file_name: Path, to_save: np.ndarray | dict, dataset_name: str, logger:
                             try:
                                 h5_file.create_dataset(key, shape = (1), data = to_save[key])
                             except ValueError:
-                                print(key, type(to_save[key]))
+                                if logger:
+                                    logger.error(f"Failed to save {key}, the type of key was {type(to_save[key])}")
             case _:
-                logger.warning("Not a dict or numpy array, PyFHD won't write other types at this time, refer to PyFHD.io.pyfhd_io.save to see what is supported")
+                if logger:
+                    logger.warning("Not a dict or numpy array, PyFHD won't write other types at this time, refer to PyFHD.io.pyfhd_io.save to see what is supported")
 
 def group_to_dict(group: h5py.Group) -> dict:
     """
@@ -145,8 +149,7 @@ def group_to_dict(group: h5py.Group) -> dict:
                 return_dict[key] = group_to_dict(group[key])
     return return_dict
 
-# Create the load function
-def load(file_name: Path, logger: RootLogger, lazy_load: bool = False) -> dict | np.ndarray | h5py.File:
+def load(file_name: Path, logger: RootLogger | None = None, lazy_load: bool = False) -> dict | np.ndarray | h5py.File:
     """
     Loads a HDF5 file into PyFHD, it reads the HDF5 into an array if the 
     HDF5 file contains a single dataset, while a HDF5 which contains multiple
@@ -184,12 +187,14 @@ def load(file_name: Path, logger: RootLogger, lazy_load: bool = False) -> dict |
         if (len(h5_file.keys()) == 1):
             # Assume that it contains only one numpy array, in which case read the array
             key = list(h5_file.keys())[0]
-            logger.info(f"Loading {key} from {file_name} into an array")
+            if logger:
+                logger.info(f"Loading {key} from {file_name} into an array")
             array = h5_file[key][:]
             return array
         else:
             return_dict = {}
-            logger.info(f"Loading {file_name} into a dictionary")
+            if logger:
+                logger.info(f"Loading {file_name} into a dictionary")
             for key in h5_file:
                 match h5_file[key]:
                     case h5py.Dataset():
@@ -202,7 +207,6 @@ def load(file_name: Path, logger: RootLogger, lazy_load: bool = False) -> dict |
     finally:
         if not lazy_load:
             h5_file.close()
-
 
 def recarray_to_dict(data: np.recarray | dict) -> dict:
     """
@@ -245,16 +249,40 @@ def recarray_to_dict(data: np.recarray | dict) -> dict:
             data[key] = recarray_to_dict(data[key])
         elif (type(data[key]) == np.ndarray and type(data[key][0]) == np.recarray):
             data[key] = recarray_to_dict(data[key][0])
+        # We found a single array with only None
+        elif (type(data[key]) == np.ndarray and isinstance(data[key][0], type(None))):
+            # Get all the None values and turn them into NaNs
+            none_values = np.where(data[key] == None)
+            if np.size(none_values) > 0:
+                data[key][none_values] = np.nan
+            # If all of the values were None, then set the array dtype to float64 
+            # (as we don't know what dtype it actually was), probably only relevant for testing
+            if np.size(none_values) == np.size(data[key]):
+                data[key] = data[key].astype(np.float64)
+        # Assume we found a string array since it's bytes, convert to a string list
+        elif (type(data[key]) == np.ndarray and isinstance(data[key].flat[0], bytes)):
+            data[key] = [x.decode().strip() for x in data[key]]
+        # Found only bytes, assume it's a string, convert the string
+        elif isinstance(data[key], bytes):
+            data[key] = data[key].decode()
         # You can also get object arrays which themselves contain numpy arrays, it's best to turn these
         # into multidimensional arrays. If they can't turn into multidimensional arrays due to them 
         # being different types or not of the same size then it will convert the numpy object array 
         # into a list of objects instead.
         elif (type(data[key]) == np.ndarray and data[key].dtype == object and type(data[key][0]) == np.ndarray):
             try:
+                # Get all the None values and turn them into NaNs
+                none_values = np.where(data[key] == None)
+                if np.size(none_values) > 0:
+                    data[key][none_values] = np.nan
+                # If all of the values were None, then set the array dtype to float64 
+                # (as we don't know what dtype it actually was), probably only relevant for testing
+                if (np.size(none_values) // len(data[key].shape)) == np.size(data[key]):
+                    data[key] = data[key].astype(np.float64)
                 # If it's not an object array, numpy will stack the axes, which isn't desired here
                 # as we want to maintain the multidimensional nature of the data. So we'll create an 
                 # array of the desired size using the shape of the first element.
-                if (data[key][0].dtype != object):
+                elif (data[key][0].dtype != object):
                     new_array = np.empty([data[key].size, *data[key][0].shape], dtype = data[key][0].dtype)
                     for idx in range(new_array.shape[0]):
                         new_array[idx] = data[key][idx]

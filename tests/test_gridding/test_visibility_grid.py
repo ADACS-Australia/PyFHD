@@ -6,7 +6,7 @@ from os import environ as env
 from pathlib import Path
 from PyFHD.gridding.visibility_grid import visibility_grid
 from PyFHD.pyfhd_tools.test_utils import get_savs
-import deepdish as dd
+from PyFHD.io.pyfhd_io import save, load
 from logging import RootLogger
 
 @pytest.fixture
@@ -94,8 +94,8 @@ def after_gridding(data_dir: Path, number: int):
     return after_gridding
 
 def test_visibility_grid(before_gridding: Path, after_gridding: Path):
-    h5_before = dd.io.load(before_gridding)
-    h5_after = dd.io.load(after_gridding)
+    h5_before = load(before_gridding)
+    h5_after = load(after_gridding)
 
     h5_before["psf"]["id"] = h5_before["psf"]["id"].T
 
@@ -212,8 +212,8 @@ def full_after_gridding(data_dir: Path, full_number: int):
     return after_gridding
 
 def test_full_visibility_grid(full_before_gridding: Path, full_after_gridding: Path):
-    h5_before = dd.io.load(full_before_gridding)
-    h5_after = dd.io.load(full_after_gridding)
+    h5_before = load(full_before_gridding)
+    h5_after = load(full_after_gridding)
 
     gridding_dict = visibility_grid(
         h5_before["visibility_ptr"],

@@ -6,7 +6,7 @@ from os import environ as env
 from pathlib import Path
 from PyFHD.pyfhd_tools.test_utils import get_data, get_data_items, sav_file_vis_arr_swap_axes
 from PyFHD.gridding.gridding_utils import baseline_grid_locations
-import deepdish as dd
+from PyFHD.io.pyfhd_io import save, load
 from logging import RootLogger
 
 @pytest.fixture
@@ -85,8 +85,8 @@ def baseline_after(data_dir, number):
     return baseline_after
 
 def test_baselines(baseline_before: Path, baseline_after: Path):
-    h5_before = dd.io.load(baseline_before)
-    h5_after = dd.io.load(baseline_after)
+    h5_before = load(baseline_before)
+    h5_after = load(baseline_after)
     expected_baseline = h5_after["baseline_dict"]
 
     baselines_dict = baseline_grid_locations(

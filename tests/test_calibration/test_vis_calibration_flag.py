@@ -7,7 +7,7 @@ from PyFHD.calibration.calibration_utils import vis_calibration_flag, vis_calibr
 from PyFHD.use_idl_fhd.use_idl_outputs import convert_sav_to_dict
 from PyFHD.pyfhd_tools.test_utils import sav_file_vis_arr_swap_axes
 import numpy as np
-import deepdish as dd
+from PyFHD.io.pyfhd_io import save, load
 
 from logging import RootLogger
 
@@ -57,7 +57,7 @@ def before_file(tag, run, data_dir):
     h5_save_dict['cal'] = cal
     h5_save_dict['pyfhd_config'] = pyfhd_config
 
-    dd.io.save(before_file, h5_save_dict)
+    save(before_file, h5_save_dict, "before_file")
 
     return before_file
 
@@ -79,7 +79,7 @@ def after_file(tag, run, data_dir):
     h5_save_dict = {}
     h5_save_dict['obs'] = obs
 
-    dd.io.save(after_file, h5_save_dict)
+    save(after_file, h5_save_dict, "after_file")
 
     return after_file
 
@@ -96,8 +96,8 @@ def test_vis_calibration_flag(before_file, after_file):
                     it doesn't feel appropriate to use the IDL median.
                     """)
 
-    h5_before = dd.io.load(before_file)
-    h5_after = dd.io.load(after_file)
+    h5_before = load(before_file)
+    h5_after = load(after_file)
 
     obs_in = h5_before['obs']
     cal = h5_before['cal']

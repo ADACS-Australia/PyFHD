@@ -1,5 +1,5 @@
 import numpy as np
-import deepdish as dd
+from PyFHD.io.pyfhd_io import save
 from logging import RootLogger
 from pathlib import Path
 from astropy.io import fits
@@ -73,16 +73,16 @@ def quickview(
  ) -> None:
     # Save all the things into the output directory
     if pyfhd_config["save_obs"]:
-        obs_path = Path(pyfhd_config["output_dir"],'obs.h5')
+        obs_path = Path(pyfhd_config["output_dir"],f"{pyfhd_config['obs_id']}_obs.h5")
         logger.info(f"Saving the obs dictionary to {obs_path}")
-        dd.io.save(obs_path, obs)
+        save(obs_path, obs, "obs", logger = logger)
     if pyfhd_config["save_params"]:
-        params_path = Path(pyfhd_config["output_dir"],'params.h5')
+        params_path = Path(pyfhd_config["output_dir"],f"{pyfhd_config['obs_id']}_params.h5")
         logger.info(f"Saving params dictionary to {params_path}")
-        dd.io.save(params_path, params)
+        save(params_path, params, "params", logger = logger)
     if pyfhd_config["save_visibilities"]:
         if pyfhd_config["recalculate-grid"]:
-            uv_path = Path(pyfhd_config["output_dir"],'uv.h5')
+            uv_path = Path(pyfhd_config["output_dir"],f"{pyfhd_config['obs_id']}_uv.h5")
             logger.info(f"Saving the gridded uv plane to {uv_path}")
             h5_save_dict = {
                 "image": image_uv,
@@ -91,18 +91,18 @@ def quickview(
                 "uniform_filter": uniform_filter_uv,
                 "model": model_uv
             }
-            dd.io.save(uv_path, h5_save_dict)
-        cal_vis_arr_path = Path(pyfhd_config["output_dir"],'calibrated_vis_arr.h5')
+            save(uv_path, h5_save_dict, "uv", logger = logger)
+        cal_vis_arr_path = Path(pyfhd_config["output_dir"],f"{pyfhd_config['obs_id']}_calibrated_vis_arr.h5")
         logger.info(f"Saving the calibrated visibilities to {cal_vis_arr_path}")
-        dd.io.save(cal_vis_arr_path, {"visibilities": vis_arr})
+        save(cal_vis_arr_path, vis_arr, "visibilities", logger = logger)
     if pyfhd_config["save_cal"] and pyfhd_config["calibrate_visibilities"]:
-        cal_path = Path(pyfhd_config["output_dir"],"cal.h5")
+        cal_path = Path(pyfhd_config["output_dir"], f"{pyfhd_config['obs_id']}_cal.h5")
         logger.info(f"Saving the calibration dictionary to {cal_path}")
-        dd.io.save(cal_path, cal)
+        save(cal_path, cal, "cal", logger = logger)
     if pyfhd_config["save_calibrated_weights"]:
-        weights_path = Path(pyfhd_config["output_dir"],"calibrated_vis_weights.h5")
+        weights_path = Path(pyfhd_config["output_dir"],f"{pyfhd_config['obs_id']}_calibrated_vis_weights.h5")
         logger.info(f"Saving the calibrated weights to {weights_path}")
-        dd.io.save(weights_path, {"weights": vis_weights})
+        save(weights_path, vis_weights, "weights", logger = logger)
     
     obs_out = update_obs(obs, obs['dimension'] * pyfhd_config['pad_uv_image'], obs['kpix'])
     horizon_mask = np.ones([obs_out['dimension'], obs_out['elements']])

@@ -135,13 +135,13 @@ def create_psf(pyfhd_config: dict, logger: RootLogger) -> dict | File:
         }
         # By default save the file in the same place as the original beam
         output_path = Path(pyfhd_config["beam_file_path"].parent ,pyfhd_config["beam_file_path"].stem + ".h5")
-        save(output_path, psf, "psf", logger, to_chunk = to_chunk)
+        save(output_path, psf, "psf", logger = logger, to_chunk = to_chunk)
         # Since the psf is already in memory, return it
         return psf
     elif pyfhd_config["beam_file_path"].suffix == ".h5" or pyfhd_config["beam_file_path"].suffix == ".hdf5":
         logger.info(f"Reading in the HDF5 file {pyfhd_config['beam_file_path']}")
         # If you selected to lazy load the beam, then psf will be a h5py File Object
-        psf = load(pyfhd_config['beam_file_path'], logger, lazy_load = pyfhd_config["lazy_load_beam"])
+        psf = load(pyfhd_config['beam_file_path'], logger = logger, lazy_load = pyfhd_config["lazy_load_beam"])
         return psf
     elif pyfhd_config["beam_file_path"].suffix == '.fits':
         # Read in a fits file, when you do I assume you probably will be translating

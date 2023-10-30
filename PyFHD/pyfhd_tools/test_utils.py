@@ -5,7 +5,7 @@ from pathlib import Path
 import numpy.testing as npt
 from colorama import Fore
 from colorama import Style
-import deepdish as dd
+from PyFHD.io.pyfhd_io import save
 
 def get_data(data_dir, data_filename, *args):
     """
@@ -198,7 +198,7 @@ def convert_to_h5(test_path: Path, save_path: Path, *args) -> None:
             var = np.load(Path(test_path, file), allow_pickle=True).item()
         for key in var:
             to_save[key] = var[key]
-    dd.io.save(save_path, to_save)
+    save(save_path, to_save, "to_save")
 
 def sav_file_vis_arr_swap_axes(sav_file_vis_arr : np.ndarray):
     """After saving arrays from IDL like `vis_arr` and `vis_model_arr` into

@@ -6,7 +6,7 @@ from PyFHD.data_setup.uvfits import extract_header, create_params, create_layout
 from PyFHD.data_setup.obs import create_obs
 from PyFHD.use_idl_fhd.use_idl_outputs import convert_sav_to_dict
 from PyFHD.io.pyfhd_io import recarray_to_dict
-import deepdish as dd
+from PyFHD.io.pyfhd_io import save, load
 import numpy.testing as npt
 import numpy as np
 from scipy.io import readsav
@@ -94,7 +94,7 @@ def test_2_pol_obs_creation(obs_id, data_dir, obs_dir):
     layout = create_layout(antenna_header, antenna_data, logger)
     obs = create_obs(pyfhd_header, params, layout, pyfhd_config, logger)
     obs_fhd_result_path = check_sav_file(obs_dir, 1, pyfhd_config)
-    obs_fhd = dd.io.load(obs_fhd_result_path)['obs']
+    obs_fhd = load(obs_fhd_result_path)['obs']
 
     # Check the basic obs info
     assert(obs['n_pol'] == obs_fhd['n_pol'])
@@ -159,7 +159,7 @@ def test_4_pol_obs_creation(obs_id, data_dir, obs_dir):
     layout = create_layout(antenna_header, antenna_data, logger)
     obs = create_obs(pyfhd_header, params, layout, pyfhd_config, logger)
     obs_fhd_result_path = check_sav_file(obs_dir, 3, pyfhd_config)
-    obs_fhd = dd.io.load(obs_fhd_result_path)['obs']
+    obs_fhd = load(obs_fhd_result_path)['obs']
 
     # Check the basic obs info
     assert(obs['n_pol'] == obs_fhd['n_pol'])

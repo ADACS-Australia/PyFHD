@@ -5,7 +5,7 @@ from os import environ as env
 from pathlib import Path
 from PyFHD.pyfhd_tools.test_utils import get_data, get_data_items, sav_file_vis_arr_swap_axes
 from PyFHD.gridding.gridding_utils import visibility_count
-import deepdish as dd
+from PyFHD.io.pyfhd_io import save, load
 from logging import RootLogger
 from numpy.testing import assert_allclose
 
@@ -87,8 +87,8 @@ def vis_count_after(data_dir, number):
     return vis_count_after
 
 def test_vis_count(vis_count_before: Path, vis_count_after: Path):
-    h5_before = dd.io.load(vis_count_before)
-    h5_after = dd.io.load(vis_count_after)
+    h5_before = load(vis_count_before)
+    h5_after = load(vis_count_after)
 
     uniform_filter = visibility_count(
         h5_before["obs"],

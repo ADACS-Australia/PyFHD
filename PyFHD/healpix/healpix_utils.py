@@ -1,6 +1,6 @@
 import numpy as np
 from logging import RootLogger
-import deepdish as dd
+from PyFHD.io.pyfhd_io import load
 from PyFHD.pyfhd_tools.pyfhd_utils import angle_difference, histogram
 import importlib_resources
 from healpy.pixelfunc import pix2vec, vec2ang, ang2vec
@@ -119,7 +119,7 @@ def healpix_cnv_generate(obs: dict, mask: np.ndarray, hpx_radius: float, pyfhd_c
             freq_dist = np.abs(np.array(freq_dist) - (obs["freq_center"]/1e6))
             min_i = np.argmin(freq_dist)
             pyfhd_config["healpix_inds"] = importlib_resources.files('PyFHD.templates').joinpath(files[min_i]["name"])
-        hpx_inds = dd.io.load(pyfhd_config["healpix_inds"])
+        hpx_inds = load(pyfhd_config["healpix_inds"], logger = logger)
         nside = hpx_inds["nside"]
         hpx_inds = hpx_inds["hpx_inds"]
     if nside is None:

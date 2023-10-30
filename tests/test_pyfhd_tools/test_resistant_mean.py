@@ -4,7 +4,7 @@ from numpy import testing as npt
 from os import environ as env
 from pathlib import Path
 import pytest
-import deepdish as dd
+from PyFHD.io.pyfhd_io import save, load
 from PyFHD.use_idl_fhd.use_idl_outputs import convert_sav_to_dict
 
 @pytest.fixture
@@ -48,7 +48,7 @@ def before_file(tag, run, data_dir):
     h5_save_dict['input_array'] = input_array
     h5_save_dict['deviations'] = deviations
 
-    dd.io.save(before_file, h5_save_dict)
+    save(before_file, h5_save_dict, "before_file")
 
     return before_file
 
@@ -70,7 +70,7 @@ def after_file(tag, run, data_dir):
     h5_save_dict = {}
     h5_save_dict['res_mean_data'] = res_mean_data
 
-    dd.io.save(after_file, h5_save_dict)
+    save(after_file, h5_save_dict, "after_file")
 
     return after_file
 
@@ -86,8 +86,8 @@ def test_points_zenith_offzenith_and_1088716296(before_file, after_file):
                     result as Python, but the tests taken here were single_precision.""")
 
 
-    h5_before = dd.io.load(before_file)
-    h5_after = dd.io.load(after_file)
+    h5_before = load(before_file)
+    h5_after = load(after_file)
 
     input_array = h5_before['input_array']
     deviations = h5_before['deviations']

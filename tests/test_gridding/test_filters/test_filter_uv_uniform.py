@@ -4,7 +4,7 @@ from os import environ as env
 from pathlib import Path
 from PyFHD.gridding.filters import filter_uv_uniform
 from PyFHD.pyfhd_tools.test_utils import get_data_items
-import deepdish as dd
+from PyFHD.io.pyfhd_io import save, load
 
 @pytest.fixture
 def data_dir():
@@ -67,8 +67,8 @@ def filter_uni_after(data_dir, number):
     return filter_uni_after
 
 def test_filter_uv_uniform(filter_uni_before: Path, filter_uni_after: Path):
-    h5_before = dd.io.load(filter_uni_before)
-    h5_after = dd.io.load(filter_uni_after)
+    h5_before = load(filter_uni_before)
+    h5_after = load(filter_uni_after)
 
     image_uv_filtered, filter = filter_uv_uniform(
         h5_before["image_uv"], 
