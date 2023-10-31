@@ -48,6 +48,9 @@ def before_file(tag, run, data_dir):
     h5_save_dict['vis_model_auto'] = sav_file_vis_arr_swap_axes(sav_dict['vis_model_auto'])
 
     h5_save_dict['auto_tile_i'] = sav_dict['auto_tile_i']
+    
+    # Delete the ragged array
+    del h5_save_dict['cal']['mode_params']
 
     save(before_file, h5_save_dict, "before_file")
 
@@ -81,7 +84,7 @@ def test_vis_cal_auto_init(before_file, after_file):
         pytest.skip(f"This test has been skipped because the test was listed in the skipped tests due to FHD not outputting them: {skip_tests}")
 
     h5_before = load(before_file)
-    h5_after = load(after_file)
+    expected_auto_gain = load(after_file)
 
     obs = h5_before['obs']
     cal = h5_before['cal']
@@ -90,8 +93,6 @@ def test_vis_cal_auto_init(before_file, after_file):
     vis_auto = h5_before['vis_auto']
     vis_model_auto = h5_before['vis_model_auto']
     auto_tile_i = h5_before['auto_tile_i']
-
-    expected_auto_gain = h5_after['auto_gain']
 
     result_auto_gain = vis_cal_auto_init(obs, cal, vis_arr, vis_model_arr, vis_auto, vis_model_auto, auto_tile_i)
 

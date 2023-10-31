@@ -41,20 +41,20 @@ def before_file(tag, run, data_dir):
     obs = recarray_to_dict(sav_dict['obs'])
     cal = recarray_to_dict(sav_dict['cal'])
     
-    #Swap the freq and tile dimensions
-    #this make shape (n_pol, n_freq, n_tile)
+    # Swap the freq and tile dimensions
+    # this make shape (n_pol, n_freq, n_tile)
     gain = sav_file_vis_arr_swap_axes(cal['gain'])
     cal['gain'] = gain
     
     params = recarray_to_dict(sav_dict['params'])
     
-    #make a slimmed down version of pyfhd_config
+    # make a slimmed down version of pyfhd_config
     pyfhd_config = {}
     
-    #If keywords cal_bp_transfer, cable_bandpass_fit are not set, IDL won't save it,
-    #so catch non-existent key and set to zero if this is the case
-    #Also, pyfhd uses None instead of 0 for False, so swap to none if
-    #needed
+    # If keywords cal_bp_transfer, cable_bandpass_fit are not set, IDL won't save it,
+    # so catch non-existent key and set to zero if this is the case
+    # Also, pyfhd uses None instead of 0 for False, so swap to none if
+    # needed
     try:
         pyfhd_config['cal_bp_transfer'] = sav_dict['cal_bp_transfer']
         if pyfhd_config['cal_bp_transfer'] == 0:
@@ -134,34 +134,36 @@ def test_vis_cal_bandpass(before_file, after_file):
     cal = h5_before['cal']
     params = h5_before['params']
     pyfhd_config = h5_before['pyfhd_config']
+    pyfhd_config['cal_bp_transfer'] = None
+    pyfhd_config['instrument'] = pyfhd_config['instrument'].decode()
 
-    exptected_cal_bandpass = h5_after['cal_bandpass']
-    exptected_cal_remainder = h5_after['cal_remainder']
+    expected_cal_bandpass = h5_after['cal_bandpass']
+    expected_cal_remainder = h5_after['cal_remainder']
     
     logger = RootLogger(1)
     
     result_cal_bandpass, result_cal_remainder = vis_cal_bandpass(obs, cal, params, pyfhd_config, logger)
 
-    #The FHD function does some dividing by zeros, so we end up with NaNs
-    #in both the expected and result data. To check we are replicating
-    #the NaNs correctly, check both results for NaNs and assert they are
-    #in the same place
+    # The FHD function does some dividing by zeros, so we end up with NaNs
+    # in both the expected and result data. To check we are replicating
+    # the NaNs correctly, check both results for NaNs and assert they are
+    # in the same place
 
-    expec_nan_inds = np.where(np.isnan(exptected_cal_remainder['gain']) == True)
-    result_nan_inds = np.where(np.isnan(exptected_cal_remainder['gain']) == True)
+    expec_nan_inds = np.where(np.isnan(expected_cal_remainder['gain']) == True)
+    result_nan_inds = np.where(np.isnan(expected_cal_remainder['gain']) == True)
 
     npt.assert_array_equal(expec_nan_inds, result_nan_inds)
 
     #find where things are not NaN and check they are close
-    test_inds = np.where(np.isnan(exptected_cal_remainder['gain']) == False)
+    test_inds = np.where(np.isnan(expected_cal_remainder['gain']) == False)
 
     rtol = 5e-5
     atol = 1e-8
 
-    npt.assert_allclose(exptected_cal_remainder['gain'][test_inds],
+    npt.assert_allclose(expected_cal_remainder['gain'][test_inds],
                         result_cal_remainder['gain'][test_inds],
                         rtol=rtol, atol=atol)
 
     #shouoldn't be NaNs in this, so just check all the outputs
-    npt.assert_allclose(exptected_cal_bandpass['gain'],
+    npt.assert_allclose(expected_cal_bandpass['gain'],
                        result_cal_bandpass['gain'], rtol=rtol, atol=atol)

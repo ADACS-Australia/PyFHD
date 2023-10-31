@@ -230,7 +230,7 @@ def vis_calibration_flag(obs: dict, cal: dict, pyfhd_config: dict, logger: RootL
     # Return the obs with an updated baseline_info on the use of tiles and frequency
     return obs
 
-def transfer_bandpass(obs: dict, params: dict, cal: dict, pyfhd_config: dict, logger: RootLogger) -> Tuple[dict, dict]:
+def transfer_bandpass(obs: dict, cal: dict, pyfhd_config: dict, logger: RootLogger) -> Tuple[dict, dict]:
     # TODO: Get bandpass from fits file and process the data_array
     cal_bandpass = {}
     try:  
@@ -337,12 +337,12 @@ def transfer_bandpass(obs: dict, params: dict, cal: dict, pyfhd_config: dict, lo
                 logger.warning(f"Calfits input freq channel width is different by a factor of {freq_factor}. Using linear interpolation")
                 # The IDL code has 5 nested loops, and I can't think of the vectorization right now in a reasonable ampount of time
                 # TODO: Please vectorize this later
-                data_array_temp = np.zeros((data_dims[4], obs.n_freq, n_time, n_jones, 2))
+                data_array_temp = np.zeros((data_dims[4], obs['n_freq'], n_time, n_jones, 2))
                 for data_i in range(2):
                     for jones_i in range(n_jones):
                         for times_i in range(n_time):
                             for tile_i in range(data_dims[4]):
-                                for channel_i in range(obs.n_freq - 1):
+                                for channel_i in range(obs['n_freq'] - 1):
                                     start_idx = int(channel_i * (1.0 / freq_factor))
                                     end_idx = int((channel_i + 1) * (1.0 / freq_factor))
                                     data_array_temp[tile_i, start_idx:end_idx, times_i, jones_i, data_i] = np.interp(
@@ -350,7 +350,7 @@ def transfer_bandpass(obs: dict, params: dict, cal: dict, pyfhd_config: dict, lo
                                         np.arange(channel_i, channel_i + 1, 1.0),
                                         data_array[data_i, jones_i, times_i, channel_i:channel_i + 1, tile_i]
                                     )
-                data_array_temp[:, obs.n_freq-1, :, :, :] = data_array[:, n_freq-1, :, :, :]                                     
+                data_array_temp[:, obs['n_freq']-1, :, :, :] = data_array[:, n_freq-1, :, :, :]                                     
                 data_array = np.copy(data_array_temp)
         
         # Check to see what time range this needs to be applied to, and if pointings are necessary
@@ -481,7 +481,7 @@ def vis_cal_bandpass(obs: dict, cal: dict, params: dict, pyfhd_config: dict, log
 
     # Initialize cal_bandpass and cal_remainder and transfer them in, if a file has been set (fits only supported right now)
     if (pyfhd_config["cal_bp_transfer"] is not None):
-        cal_bandpass, cal_remainder = transfer_bandpass(obs, params, cal, pyfhd_config, logger)
+        cal_bandpass, cal_remainder = transfer_bandpass(obs, cal, pyfhd_config, logger)
         if (len(cal_bandpass.keys()) != 0 and len(cal_remainder.keys()) != 0):
             logger.info(f"Calibration Bandpass FITS file {pyfhd_config['cal_bp_transfer']} transferred in for cal_bandpass and cal_remainder")
             return cal_bandpass, cal_remainder
@@ -793,7 +793,6 @@ def vis_cal_polyfit(obs: dict, cal: dict, auto_ratio: np.ndarray | None, pyfhd_c
                             inds = np.where((obs['baseline_info']['tile_use']) & (mode_i_arr[pol_i, :] > 0) & ((np.abs(mode_i_arr[pol_i,:] - mode_i)) > 0.01))
                             # mean over frequency for each tile
                             freq_mean = np.nanmean(auto_ratio[pol_i], axis = 0)
-                            # TODO: check shape, transpose and rebin seem odd together, normalized autos using each tile's freq mean
                             norm_autos = auto_ratio[pol_i] / rebin(freq_mean, (obs['n_freq'], obs['n_tile']))
                             # mean over all tiles which *are not* accidently coherent as a func of freq
                             incoherent_mean = np.nanmean(norm_autos[:, inds[0]], axis=1)
@@ -836,7 +835,7 @@ def vis_cal_polyfit(obs: dict, cal: dict, auto_ratio: np.ndarray | None, pyfhd_c
                         phase_use = phase_arr[pol_i, tile_i]
                     else:
                         # Use nominal delay mode, but fit amplitude and phase of reflections
-                        mode_fit = np.sum(np.exp(1j * 2 * np.pi / obs['n_freq'] * mode_i * freq_use) * np.squeeze(gain_arr[freq_use, tile_i]))
+                        mode_fit = np.sum(np.exp(1j * 2 * np.pi / obs['n_freq'] * mode_i * freq_use) * gain_arr[freq_use, tile_i])
                         amp_use = np.abs(mode_fit) / freq_use[0].size
                         phase_use = np.arctan2(mode_fit.imag, mode_fit.real)
                     
@@ -901,17 +900,16 @@ def vis_cal_auto_fit(obs: dict, cal: dict, vis_auto : np.ndarray, vis_auto_model
             gain_auto_single = np.abs(auto_gain[pol_i, :, tile_idx])
             gain_cross_single = np.abs(gain_cross[pol_i, :, tile_idx])
 
-            #TODO need to mask out any NaN values; numpy doesn't like them,
-            #I assume the IDL equiv function just masks them?
-            #or maybe we need to do a catch for NaNs here, and abandon all
-            #hope for a fit if there are NaNs?
+            # mask out any NaN values; numpy doesn't like them,
+            # I assume the IDL equiv function just masks them?
+            # or maybe we need to do a catch for NaNs here, and abandon all
+            # hope for a fit if there are NaNs?
             notnan = np.where((np.isnan(gain_auto_single[freq_i_use]) != True) & (np.isnan(gain_cross_single[freq_i_use]) != True))
             gain_auto_single_fit = gain_auto_single[freq_i_use][notnan]
             gain_cross_single_fit = gain_cross_single[freq_i_use][notnan]
 
             # linfit from IDL uses chi-square error calculations to do the linear fit, instead of least squares.
             # The polynomial fit uses least square method
-            # TODO: Is there a good reason to use chi-square of least square in this case?
             x = np.vstack([gain_auto_single_fit, np.ones(gain_auto_single_fit.size)]).T
             fit_single = np.linalg.lstsq(x, gain_cross_single_fit, rcond = None)[0]
             # IDL gives the solution in terms of [A, B] while Python does [B, A] assuming we're
@@ -953,7 +951,6 @@ def vis_calibration_apply(vis_arr: np.ndarray, obs: dict, cal: dict, vis_model_a
     tile_a_i = obs['baseline_info']['tile_a'] - 1
     tile_b_i = obs['baseline_info']['tile_b'] - 1
 
-    # TODO: Check this is polarizations from vis_arr, should be 2 or 4
     n_pol_vis = vis_arr.shape[0]
     gain_pol_arr1 = [0,1,0,1]
     gain_pol_arr2 = [0,1,1,0]
@@ -967,19 +964,16 @@ def vis_calibration_apply(vis_arr: np.ndarray, obs: dict, cal: dict, vis_model_a
     inds_a_baseline, inds_a_freqs,  = np.meshgrid(tile_a_i, np.arange(obs['n_freq']))
     inds_b_baseline, inds_b_freqs = np.meshgrid(tile_b_i, np.arange(obs['n_freq']))
 
-    # TODO: Vectorize
     for pol_i in range(n_pol_vis):
         gain_arr1 = cal['gain'][gain_pol_arr1[pol_i], : , :]
         gain_arr2 = cal['gain'][gain_pol_arr2[pol_i], : , :]
-
-        #TODO  If you wish to add a way to invert the gain do that here with weight_invert
 
         vis_gain = gain_arr1[inds_a_freqs, inds_a_baseline] * np.conjugate(gain_arr2[inds_b_freqs, inds_b_baseline])
 
         vis_arr[pol_i, :, :] *= weight_invert(vis_gain, use_abs=False)
 
-    #TODO we haven't run FHD in a way that uses 4 pols yet so this is all
-    #untested
+    # TODO we haven't run FHD in a way that uses 4 pols yet so this is all
+    # untested
     if (n_pol_vis == 4):
         if type(vis_model_arr) == np.ndarray and type(vis_weights) == np.ndarray:
             # This if statement replaces vis_calibrate_crosspol_phase 

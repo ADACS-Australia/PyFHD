@@ -2,7 +2,6 @@ from PyFHD.io.pyfhd_io import recarray_to_dict
 import pytest
 from os import environ as env
 from pathlib import Path
-from PyFHD.pyfhd_tools.test_utils import get_data_items, get_data_sav
 from PyFHD.calibration.calibration_utils import vis_baseline_hist
 from PyFHD.use_idl_fhd.use_idl_outputs import convert_sav_to_dict
 from PyFHD.pyfhd_tools.test_utils import sav_file_vis_arr_swap_axes
@@ -67,13 +66,11 @@ def after_file(tag, run, data_dir):
     sav_file = after_file.with_suffix('.sav')
     sav_dict = convert_sav_to_dict(str(sav_file), "faked")
 
-    #super dictionary to save everything in
-    h5_save_dict = {}
-    h5_save_dict['vis_baseline_hist'] = recarray_to_dict(sav_dict['vis_baseline_hist'])
-    h5_save_dict['vis_baseline_hist']['vis_res_ratio_mean'] = h5_save_dict['vis_baseline_hist']['vis_res_ratio_mean'].transpose()
-    h5_save_dict['vis_baseline_hist']['vis_res_sigma'] = h5_save_dict['vis_baseline_hist']['vis_res_sigma'].transpose()
+    vis_baseline_hist = recarray_to_dict(sav_dict['vis_baseline_hist'])
+    vis_baseline_hist['vis_res_ratio_mean'] = vis_baseline_hist['vis_res_ratio_mean'].transpose()
+    vis_baseline_hist['vis_res_sigma'] = vis_baseline_hist['vis_res_sigma'].transpose()
 
-    save(after_file, h5_save_dict, "after_file")
+    save(after_file, vis_baseline_hist, "after_file")
 
     return after_file
 
@@ -87,14 +84,12 @@ def test_vis_baseline_hist(before_file: Path, after_file: Path):
         pytest.skip(f"This test has been skipped because the test was listed in the skipped tests due to FHD not outpoutting them: {skip_tests}")
 
     h5_before = load(before_file)
-    h5_after = load(after_file)
+    expec_vis_baseline_hist = load(after_file)
 
     obs = h5_before['obs']
     params = h5_before['params']
     vis_arr = h5_before['vis_arr']
     vis_model_arr = h5_before['vis_model_arr']
-
-    expec_vis_baseline_hist = h5_after['vis_baseline_hist']
 
     result_vis_baseline_hist = vis_baseline_hist(obs, params, vis_arr, vis_model_arr)
 

@@ -56,6 +56,7 @@ def before_file(tag, run, data_dir):
     h5_save_dict['obs'] = obs
     h5_save_dict['cal'] = cal
     h5_save_dict['pyfhd_config'] = pyfhd_config
+    del h5_save_dict['cal']['mode_params']
 
     save(before_file, h5_save_dict, "before_file")
 
@@ -75,11 +76,7 @@ def after_file(tag, run, data_dir):
 
     obs = recarray_to_dict(sav_dict['obs'])
 
-    #super dictionary to save everything in
-    h5_save_dict = {}
-    h5_save_dict['obs'] = obs
-
-    save(after_file, h5_save_dict, "after_file")
+    save(after_file, obs, "after_file")
 
     return after_file
 
@@ -97,15 +94,13 @@ def test_vis_calibration_flag(before_file, after_file):
                     """)
 
     h5_before = load(before_file)
-    h5_after = load(after_file)
+    expected_obs = load(after_file)
 
     obs_in = h5_before['obs']
     cal = h5_before['cal']
     pyfhd_config = h5_before['pyfhd_config']
     pyfhd_config['cal_amp_degree_fit'] = 2
     pyfhd_config['cal_phase_degree_fit'] = 1
-    
-    expected_obs = h5_after['obs']
     
     logger = RootLogger(1)
     

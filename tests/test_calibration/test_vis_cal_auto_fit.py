@@ -2,7 +2,6 @@ from PyFHD.io.pyfhd_io import recarray_to_dict
 import pytest
 from os import environ as env
 from pathlib import Path
-from PyFHD.pyfhd_tools.test_utils import get_data_items, get_data_sav
 from PyFHD.calibration.calibration_utils import vis_cal_auto_fit
 from PyFHD.use_idl_fhd.use_idl_outputs import convert_sav_to_dict
 from PyFHD.pyfhd_tools.test_utils import sav_file_vis_arr_swap_axes
@@ -55,6 +54,8 @@ def before_file(tag, run, data_dir):
     h5_save_dict['vis_auto'] = sav_file_vis_arr_swap_axes(sav_dict['vis_auto'])
     h5_save_dict['vis_model_auto'] = sav_file_vis_arr_swap_axes(sav_dict['vis_model_auto'])
     h5_save_dict['auto_tile_i'] = sav_dict['auto_tile_i']
+    # Del ragged array
+    del h5_save_dict['cal']['mode_params']
 
     save(before_file, h5_save_dict, "before_file")
 
@@ -74,16 +75,13 @@ def after_file(tag, run, data_dir):
 
     cal_fit = recarray_to_dict(sav_dict['cal_fit'])
         
-    #Swap the freq and tile dimensions
-    #this make shape (n_pol, n_freq, n_tile)
+    # Swap the freq and tile dimensions
+    # this make shape (n_pol, n_freq, n_tile)
     cal_fit['gain'] = sav_file_vis_arr_swap_axes(cal_fit['gain'])
-    
-    #super dictionary to save everything in
-    h5_save_dict = {}
-    
-    h5_save_dict['cal_fit'] = cal_fit
+    # Delete ragged array
+    del cal_fit['mode_params']
 
-    save(after_file, h5_save_dict, "after_file")
+    save(after_file, cal_fit, "after_file")
 
     return after_file
 
@@ -94,15 +92,13 @@ def test_vis_cal_auto_fit(before_file, after_file, data_dir):
         pytest.skip(f"This test has been skipped because the test was listed in the skipped tests due to FHD not outputting them: {skip_tests}")
 
     h5_before = load(before_file)
-    h5_after = load(after_file)
+    expected_cal_fit = load(after_file)
 
     obs = h5_before['obs']
     cal = h5_before['cal']
     vis_auto = h5_before['vis_auto']
     vis_model_auto = h5_before['vis_model_auto']
     auto_tile_i = h5_before['auto_tile_i']
-
-    expected_cal_fit = h5_after['cal_fit']
 
     return_cal_fit = vis_cal_auto_fit(obs, cal, vis_auto, vis_model_auto, auto_tile_i)
     # auto_scale is nan, nan from FHD and Python, can't compare them due to the nans

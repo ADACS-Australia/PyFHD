@@ -41,12 +41,15 @@ def before_file(tag, run, data_dir):
 
     cal = recarray_to_dict(sav_dict['cal'])
             
-    #super dictionary to save everything in
+    # super dictionary to save everything in
     h5_save_dict = {}
     h5_save_dict['cal'] = cal
     h5_save_dict['cal']['gain'] = sav_file_vis_arr_swap_axes(h5_save_dict['cal']['gain'])
     h5_save_dict['auto_tile_i'] = sav_dict['auto_tile_i']
     h5_save_dict['auto_ratio'] = sav_file_vis_arr_swap_axes(sav_dict['auto_ratio'])
+    # Mainly to not have to deal with the ragged arrays for saving to HDF5
+    del h5_save_dict['cal']['mode_params']
+
 
     save(before_file, h5_save_dict, "before_file")
 
@@ -65,13 +68,15 @@ def after_file(tag, run, data_dir):
     sav_file = after_file.with_suffix('.sav')
     sav_dict = convert_sav_to_dict(str(sav_file), "faked")
 
-    #super dictionary to save everything in
+    # super dictionary to save everything in
     h5_save_dict = {}
     
-    h5_save_dict['cal'] = recarray_to_dict(sav_dict['cal'])
-    h5_save_dict['cal']['gain'] = sav_file_vis_arr_swap_axes(h5_save_dict['cal']['gain'])
+    cal = recarray_to_dict(sav_dict['cal'])
+    cal['gain'] = sav_file_vis_arr_swap_axes(cal['gain'])
+    # Mainly to not have to deal with the ragged arrays for saving to HDF5
+    del cal['mode_params']
 
-    save(after_file, h5_save_dict, "after_file")
+    save(after_file, cal, "after_file")
 
     return after_file
 
@@ -85,80 +90,15 @@ def test_cal_auto_ratio_remultiply(before_file, after_file):
                     skipped tests due to FHD not outputting them: {skip_tests}""")
 
     h5_before = load(before_file)
-    h5_after = load(after_file)
+    expected_cal = load(after_file)
 
     cal = h5_before['cal']
     auto_tile_i = h5_before['auto_tile_i']
     auto_ratio = h5_before['auto_ratio']
 
-    expected_cal = h5_after['cal']
-
     result_cal = cal_auto_ratio_remultiply(cal, auto_ratio, auto_tile_i)
 
     atol = 1e-10
 
-    #check the gains have been updated
+    # check the gains have been updated
     npt.assert_allclose(expected_cal['gain'], result_cal['gain'], atol=atol)
-
-
-# def test_pointsource1_vary1(data_dir):
-#     """Test using the `pointsource1_vary1` set of inputs"""
-
-#     run_test(data_dir, "pointsource1_vary1")
-
-# def test_pointsource2_vary1(data_dir):
-#     """Test using the `pointsource2_vary1` set of inputs"""
-
-#     run_test(data_dir, "pointsource2_vary1")
-
-if __name__ == "__main__":
-
-    def convert_before_sav(data_dir, tag_name):
-        """Takes the before .sav file out of FHD function `cal_auto_ratio_remultiply`
-        and converts into an hdf5 format"""
-
-        func_name = 'cal_auto_ratio_remultiply'
-
-        sav_dict = convert_sav_to_dict(f"{data_dir}/{tag_name}_before_{func_name}.sav", "meh")
-
-        cal = recarray_to_dict(sav_dict['cal'])
-            
-        #super dictionary to save everything in
-        h5_save_dict = {}
-        h5_save_dict['cal'] = cal
-        h5_save_dict['cal']['gain'] = sav_file_vis_arr_swap_axes(h5_save_dict['cal']['gain'])
-        h5_save_dict['auto_tile_i'] = sav_dict['auto_tile_i']
-        h5_save_dict['auto_ratio'] = sav_file_vis_arr_swap_axes(sav_dict['auto_ratio'])
-
-        dd.io.save(Path(data_dir, f"{tag_name}_before_{func_name}.h5"), h5_save_dict)
-        
-    def convert_after_sav(data_dir, tag_name):
-        """Takes the after .sav file out of FHD function `cal_auto_ratio_remultiply`
-        and converts into an hdf5 format"""
-
-        func_name = 'cal_auto_ratio_remultiply'
-
-        sav_dict = convert_sav_to_dict(f"{data_dir}/{tag_name}_after_{func_name}.sav", "meh")
-        
-        #super dictionary to save everything in
-        h5_save_dict = {}
-        
-        h5_save_dict['cal'] = recarray_to_dict(sav_dict['cal'])
-        h5_save_dict['cal']['gain'] = sav_file_vis_arr_swap_axes(h5_save_dict['cal']['gain'])
-        
-
-        dd.io.save(Path(data_dir, f"{tag_name}_after_{func_name}.h5"), h5_save_dict)
-        
-    def convert_sav(base_dir, tag_name):
-        """Load the inputs and outputs needed for testing `cal_auto_ratio_remultiply`"""
-        convert_before_sav(base_dir, tag_name)
-        convert_after_sav(base_dir, tag_name)
-
-    #Where be all of our data
-    base_dir = Path(env.get('PYFHD_TEST_PATH'), 'cal_auto_ratio_remultiply')
-
-    tag_names = ['pointsource2_vary1', 'pointsource1_vary1']
-
-    for tag_name in tag_names:
-        convert_sav(base_dir, tag_name)
-        # run_test(base_dir, tag_name)

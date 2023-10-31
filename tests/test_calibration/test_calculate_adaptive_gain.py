@@ -35,7 +35,7 @@ def before_file(data_dir, tag, run):
     sav_dict = convert_sav_to_dict(str(sav_file), "faked")
 
     # The dict happens to be good already
-    dd.io.save(before_file ,sav_dict)
+    save(before_file, sav_dict, "before_file")
 
     return before_file
 
@@ -52,7 +52,7 @@ def after_file(data_dir, tag, run):
     sav_dict = convert_sav_to_dict(str(sav_file), "faked")
 
     # After is also good in this case
-    dd.io.save(after_file, sav_dict)
+    save(after_file, sav_dict, "after_file")
 
     return after_file
 
@@ -126,7 +126,7 @@ def test_point_offzenith_and_zenith(before_file, after_file):
 def test_calc_test_1_and_2(calc_test_before, calc_test_after):
 
     h5_before = load(calc_test_before)
-    h5_after = load(calc_test_after)
+    expected_gain = load(calc_test_after)
 
     result_gain = calculate_adaptive_gain(
         h5_before['gain_list'], 
@@ -136,7 +136,7 @@ def test_calc_test_1_and_2(calc_test_before, calc_test_after):
         h5_before['final_convergence_estimate']
     )
 
-    npt.assert_almost_equal(h5_after['expected_gain'], result_gain)
+    npt.assert_almost_equal(expected_gain, result_gain)
 
 '''
 The below test will never pass due to IDL's default median behaviour, for example

@@ -79,15 +79,13 @@ def test_qu_mixing(before_file, after_file):
                     close to 0 in single precision.""")
 
     h5_before = load(before_file)
-    h5_after = load(after_file)
+    expected_calc_phase = load(after_file)
 
     obs = h5_before['obs']
     obs['n_baselines'] = obs['nbaselines']
     vis_ptr = h5_before['vis_ptr']
     vis_model_ptr = h5_before['vis_model_ptr']
     vis_weight_ptr = h5_before['vis_weight_ptr']
-
-    expected_calc_phase = h5_after['calc_phase']
 
     result_cal_phase = calibrate_qu_mixing(vis_ptr, vis_model_ptr,
                                           vis_weight_ptr, obs)

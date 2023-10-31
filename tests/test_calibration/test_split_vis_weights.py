@@ -54,6 +54,8 @@ def after_file(data_dir, tag, run):
     h5_save_dict = {}
     h5_save_dict['vis_weights_use'] = sav_file_vis_arr_swap_axes(sav_dict['vis_weights_use'])
     h5_save_dict['bi_use'] = sav_dict['bi_use']
+    # Format the dict appropriately
+    h5_save_dict = recarray_to_dict(h5_save_dict)
 
     save(after_file, h5_save_dict, "after_file")
 

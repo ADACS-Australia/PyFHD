@@ -51,7 +51,7 @@ def dict_to_group(group: h5py.Group, to_convert: dict, logger: RootLogger | None
             case np.ndarray():
                 group.create_dataset(key, shape = to_convert[key].shape, data = to_convert[key], dtype = dtype_picker(to_convert[key].dtype), compression = 'gzip')
             case list():
-                group.create_dataset(key, shape = len(to_convert[key]), data = to_convert[key], compression = 'gzip')
+                group.create_dataset(key, data = to_convert[key], compression = 'gzip')
             case _:
                 try:
                     group.create_dataset(key, shape = (1), data = to_convert[key])
