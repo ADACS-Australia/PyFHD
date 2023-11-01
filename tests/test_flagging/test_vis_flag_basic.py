@@ -8,7 +8,6 @@ from PyFHD.pyfhd_tools.test_utils import sav_file_vis_arr_swap_axes
 from PyFHD.flagging.flagging import vis_flag_basic
 from PyFHD.io.pyfhd_io import save, load
 import numpy.testing as npt
-import numpy as np
 
 @pytest.fixture
 def data_dir():

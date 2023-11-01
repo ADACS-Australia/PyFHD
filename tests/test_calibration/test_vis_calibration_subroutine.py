@@ -81,11 +81,10 @@ def after_file(tag, run, data_dir):
     sav_file = after_file.with_suffix('.sav')
     sav_dict = convert_sav_to_dict(str(sav_file), "faked")
 
-    h5_save_dict = {}
-    h5_save_dict['cal_return'] = recarray_to_dict(sav_dict['cal_return'])
-    h5_save_dict['cal_return']['gain'] = sav_file_vis_arr_swap_axes(h5_save_dict['cal_return']['gain'])
+    cal_return = recarray_to_dict(sav_dict['cal_return'])
+    cal_return['gain'] = sav_file_vis_arr_swap_axes(cal_return['gain'])
 
-    save(after_file, h5_save_dict, "after_file")
+    save(after_file, cal_return, "after_file")
 
     return after_file
 
@@ -94,7 +93,7 @@ def test_points_around_zenith_and_1088716296(before_file, after_file):
         pytest.skip(f"This test has been skipped because the test was listed in the skipped tests due to FHD not outputting them: {skip_tests}")
 
     h5_before = load(before_file)
-    h5_after = load(after_file)
+    expected_cal = load(after_file)
 
     vis_ptr = h5_before['vis_ptr']
     vis_model_ptr = h5_before['vis_model_ptr']
@@ -104,8 +103,6 @@ def test_points_around_zenith_and_1088716296(before_file, after_file):
     cal = h5_before['cal']
     params = h5_before['params']
     pyfhd_config = h5_before['pyfhd_config']
-
-    expected_cal = h5_after['cal_return']
 
     logger = RootLogger(1)
 
@@ -169,7 +166,7 @@ def subroutine_before(data_dir, subroutine_test):
     pyfhd_config['cal_phase_fit_iter'] = h5_save_dict['cal']['phase_iter']
     h5_save_dict['pyfhd_config'] = pyfhd_config
    
-    dd.io.save(subroutine_before, h5_save_dict)
+    save(subroutine_before, h5_save_dict, "before_file")
 
     return subroutine_before
 
@@ -180,18 +177,17 @@ def subroutine_after(data_dir, subroutine_test):
     if subroutine_after.exists():
         return subroutine_after
     
-    h5_save_dict = {}
-    h5_save_dict['cal_return'] = recarray_to_dict(get_data_items(data_dir, f"output_cal_return_{subroutine_test}.npy"))
-    h5_save_dict['cal_return']['gain'] = sav_file_vis_arr_swap_axes(h5_save_dict['cal_return']['gain'])
+    cal_return = recarray_to_dict(get_data_items(data_dir, f"output_cal_return_{subroutine_test}.npy"))
+    cal_return['gain'] = sav_file_vis_arr_swap_axes(cal_return['gain'])
 
-    dd.io.save(subroutine_after, h5_save_dict)
+    save(subroutine_after, cal_return, "after_file")
 
     return subroutine_after
 
 def test_vis_calibration_x(subroutine_before, subroutine_after):
 
     h5_before = load(subroutine_before)
-    h5_after = load(subroutine_after)
+    expected_cal_return = load(subroutine_after)
 
     vis_ptr = h5_before['vis_ptr']
     vis_model_ptr = h5_before['vis_model_ptr']
@@ -202,8 +198,6 @@ def test_vis_calibration_x(subroutine_before, subroutine_after):
     calibration_weights = h5_before['calibration_weights']
     params = h5_before['params']
     pyfhd_config = h5_before['pyfhd_config']
-
-    expected_cal = h5_after['cal_return']
 
     logger = RootLogger(1)
 
@@ -219,6 +213,6 @@ def test_vis_calibration_x(subroutine_before, subroutine_after):
         calibration_weights = calibration_weights
     )
     
-    assert expected_cal['n_vis_cal'] == cal_return['n_vis_cal'] 
+    assert expected_cal_return['n_vis_cal'] == cal_return['n_vis_cal'] 
    
-    assert_allclose(cal_return['gain'], expected_cal['gain'], atol = 1.02e-03)
+    assert_allclose(cal_return['gain'], expected_cal_return['gain'], atol = 1.02e-03)

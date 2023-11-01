@@ -29,6 +29,8 @@ def before_gridding(data_dir: Path, number: int):
     # Going to leave as an object array due to the size of it being
     # 2 * 8128 * 51 * 51 * 196, which is 123GiB for storing it as a
     # np.complex128 array. Too big for most machines except for HPC.
+    # TODO: ignore past comment and make it better with frequency only!
+    # NO HPC needed!
     beam_ptr = np.copy(h5_save_dict["psf"]["beam_ptr"][0].T)
     h5_save_dict = recarray_to_dict(h5_save_dict)
     h5_save_dict["psf"]["beam_ptr"] = beam_ptr
@@ -65,7 +67,7 @@ def before_gridding(data_dir: Path, number: int):
     else:
         if not isinstance(h5_save_dict['bi_use'], np.ndarray):
             h5_save_dict['bi_use'] = np.array([h5_save_dict['bi_use']], dtype = np.int64)
-    dd.io.save(before_gridding, h5_save_dict)
+    save(before_gridding, h5_save_dict, "before_file")
     
     return before_gridding
 
@@ -89,7 +91,7 @@ def after_gridding(data_dir: Path, number: int):
     if 'model_return' in outputs:
         h5_save_dict["model_return"] = outputs["model_return"]
 
-    dd.io.save(after_gridding, h5_save_dict)
+    save(after_gridding, h5_save_dict, "after_file")
     
     return after_gridding
 
@@ -183,7 +185,7 @@ def full_before_gridding(data_dir: Path, full_number: int):
     else:
         if not isinstance(h5_save_dict['bi_use'], np.ndarray):
             h5_save_dict['bi_use'] = np.array([h5_save_dict['bi_use']], dtype = np.int64)
-    dd.io.save(before_gridding, h5_save_dict)
+    save(before_gridding, h5_save_dict, "before_file")
     
     return before_gridding
 
@@ -207,7 +209,7 @@ def full_after_gridding(data_dir: Path, full_number: int):
     if 'model_return' in outputs:
         h5_save_dict["model_return"] = outputs["model_return"]
 
-    dd.io.save(after_gridding, h5_save_dict)
+    save(after_gridding, h5_save_dict, "after_file")
     
     return after_gridding
 

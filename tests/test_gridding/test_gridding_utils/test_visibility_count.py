@@ -63,7 +63,7 @@ def vis_count_before(data_dir, number):
     h5_save_dict["fill_model_visibilities"] = True if get_file(data_dir, f'input_fill_model_vis_{number}.npy') else False
 
     # Save it
-    dd.io.save(vis_count_before, h5_save_dict)
+    save(vis_count_before, h5_save_dict, "before_file")
 
     return vis_count_before
     
@@ -82,13 +82,13 @@ def vis_count_after(data_dir, number):
         "uniform_filter": uniform_filter
     }
 
-    dd.io.save(vis_count_after, h5_save_dict)
+    save(vis_count_after, h5_save_dict, "after_file")
 
     return vis_count_after
 
 def test_vis_count(vis_count_before: Path, vis_count_after: Path):
     h5_before = load(vis_count_before)
-    h5_after = load(vis_count_after)
+    expected_uniform_filter = load(vis_count_after)
 
     uniform_filter = visibility_count(
         h5_before["obs"],
@@ -110,5 +110,5 @@ def test_vis_count(vis_count_before: Path, vis_count_after: Path):
     # account for 9.54e-05% of the dataset, which is why the atol is 1.5 
     # specifically for test 3. The relative and absolute tolerance can be lower for
     # tests 1 and 2
-    assert_allclose(uniform_filter, h5_after["uniform_filter"], rtol = 1, atol=1.51)
+    assert_allclose(uniform_filter, expected_uniform_filter, rtol = 1, atol=1.51)
 

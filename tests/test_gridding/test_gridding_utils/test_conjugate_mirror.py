@@ -30,7 +30,7 @@ def conjugate_file(data_dir, number):
         "conj_mirror_image": conj_mirror_image
     }
 
-    dd.io.save(conjugate_file, h5_save_dict)
+    save(conjugate_file, h5_save_dict, "file")
 
     return conjugate_file
 

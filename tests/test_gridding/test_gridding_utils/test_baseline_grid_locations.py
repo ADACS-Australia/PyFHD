@@ -58,7 +58,7 @@ def baseline_before(data_dir, number):
     h5_save_dict["interp_flag"] = True if get_file(data_dir, f'input_interp_flag_{number}.npy') else False
     h5_save_dict["mask_mirror_indices"] = True if get_file(data_dir, f'input_mask_mirror_indices_{number}.npy') else False
     # Save it
-    dd.io.save(baseline_before, h5_save_dict)
+    save(baseline_before, h5_save_dict, "before_file")
 
     return baseline_before
 
@@ -75,19 +75,14 @@ def baseline_after(data_dir, number):
         name = file.name.split("_")[1:-1]
         name = "_".join(name)
         baseline_dict[name] = get_data_items(data_dir, file)
-    
-    # Create the save dict
-    h5_save_dict = {}
-    h5_save_dict["baseline_dict"] = baseline_dict
 
-    dd.io.save(baseline_after, h5_save_dict)
+    save(baseline_after, baseline_dict, "after_file")
 
     return baseline_after
 
 def test_baselines(baseline_before: Path, baseline_after: Path):
     h5_before = load(baseline_before)
-    h5_after = load(baseline_after)
-    expected_baseline = h5_after["baseline_dict"]
+    expected_baseline = load(baseline_after)
 
     baselines_dict = baseline_grid_locations(
         h5_before["obs"], 

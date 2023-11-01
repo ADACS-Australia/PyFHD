@@ -74,10 +74,11 @@ def after_file(tag, run, data_dir):
     sav_file = after_file.with_suffix('.sav')
     sav_dict = convert_sav_to_dict(str(sav_file), "faked")
 
-    #super dictionary
+    # super dictionary
     h5_save_dict = {}
     h5_save_dict['auto_corr'] = sav_dict['auto_corr']
     h5_save_dict['auto_tile_i'] = sav_dict['auto_tile_i']
+    h5_save_dict = recarray_to_dict(h5_save_dict)
 
     save(after_file, h5_save_dict, "after_file")
 

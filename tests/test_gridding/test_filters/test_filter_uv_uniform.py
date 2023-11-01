@@ -41,7 +41,7 @@ def filter_uni_before(data_dir, number):
     h5_save_dict["vis_count"] = vis_count
     h5_save_dict["weights"] = weights
 
-    dd.io.save(filter_uni_before, h5_save_dict)
+    save(filter_uni_before, h5_save_dict, "before_file")
     
     return filter_uni_before
 
@@ -62,7 +62,7 @@ def filter_uni_after(data_dir, number):
     h5_save_dict["image_uv"] = expected_image_uv
     h5_save_dict["filter"] = expected_filter
 
-    dd.io.save(filter_uni_after, h5_save_dict)
+    save(filter_uni_after, h5_save_dict, "after_file")
     
     return filter_uni_after
 

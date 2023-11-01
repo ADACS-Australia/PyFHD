@@ -42,7 +42,7 @@ def interp_kernel_before(data_dir, number):
         "dx1dy1" : dx1dy1,
     }
 
-    dd.io.save(interp_kernel_before, h5_save_dict)
+    save(interp_kernel_before, h5_save_dict, "before_file")
 
     return interp_kernel_before
 
@@ -57,13 +57,13 @@ def interp_kernel_after(data_dir, number):
         "kernel": get_data_items(data_dir, f'visibility_grid_output_kernel_{number}.npy')
     }
 
-    dd.io.save(interp_kernel_after, h5_save_dict)
+    save(interp_kernel_after, h5_save_dict, "after_file")
 
     return interp_kernel_after
 
 def test_interpolate_kernel(interp_kernel_before: Path, interp_kernel_after: Path):
     h5_before = load(interp_kernel_before)
-    h5_after = load(interp_kernel_after)
+    expected_kernel = load(interp_kernel_after)
 
     kernel = interpolate_kernel(
         h5_before["kernel_arr"],
@@ -77,4 +77,4 @@ def test_interpolate_kernel(interp_kernel_before: Path, interp_kernel_after: Pat
 
     # Slightly higher absolute error than others due to precision differences
     # mostly caused by x_offset and y_offset
-    assert_allclose(kernel, h5_after["kernel"], atol = 4e-4)
+    assert_allclose(kernel, expected_kernel, atol = 4e-4)

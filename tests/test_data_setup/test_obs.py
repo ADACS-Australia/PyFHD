@@ -40,7 +40,7 @@ def check_sav_file(path: Path, run: int, pyfhd_config: dict) -> Path:
     Parameters
     ----------
     path : Path
-        Path to the obs testing directory containing the reuslting FHD obs structures
+        Path to the obs testing directory containing the resulting FHD obs structures
     pyfhd_config : dict
         A mock example of PyFHD's configuration given to the test
 
@@ -60,9 +60,7 @@ def check_sav_file(path: Path, run: int, pyfhd_config: dict) -> Path:
     sav_file = h5_file.with_suffix('.sav')
     sav_dict = readsav(sav_file, python_dict=True)
     obs = recarray_to_dict(sav_dict['obs'])
-    h5_save_dict = {}
-    h5_save_dict['obs'] = obs
-    dd.io.save(h5_file, h5_save_dict)
+    save(h5_file, obs, "before_file")
 
     return h5_file
 
@@ -94,7 +92,7 @@ def test_2_pol_obs_creation(obs_id, data_dir, obs_dir):
     layout = create_layout(antenna_header, antenna_data, logger)
     obs = create_obs(pyfhd_header, params, layout, pyfhd_config, logger)
     obs_fhd_result_path = check_sav_file(obs_dir, 1, pyfhd_config)
-    obs_fhd = load(obs_fhd_result_path)['obs']
+    obs_fhd = load(obs_fhd_result_path)
 
     # Check the basic obs info
     assert(obs['n_pol'] == obs_fhd['n_pol'])
@@ -159,7 +157,7 @@ def test_4_pol_obs_creation(obs_id, data_dir, obs_dir):
     layout = create_layout(antenna_header, antenna_data, logger)
     obs = create_obs(pyfhd_header, params, layout, pyfhd_config, logger)
     obs_fhd_result_path = check_sav_file(obs_dir, 3, pyfhd_config)
-    obs_fhd = load(obs_fhd_result_path)['obs']
+    obs_fhd = load(obs_fhd_result_path)
 
     # Check the basic obs info
     assert(obs['n_pol'] == obs_fhd['n_pol'])

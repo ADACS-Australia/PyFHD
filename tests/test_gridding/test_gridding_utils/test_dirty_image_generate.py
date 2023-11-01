@@ -50,7 +50,7 @@ def dirty_before(data_dir, number):
         "beam_ptr": get_file(data_dir, f'input_beam_ptr_{number}.npy'),
     }
 
-    dd.io.save(dirty_before, h5_save_dict)
+    save(dirty_before, h5_save_dict, "before_file")
     
     return dirty_before
 
@@ -68,7 +68,7 @@ def dirty_after(data_dir, number):
         "normalization": normalization
     }
 
-    dd.io.save(dirty_after, h5_save_dict)
+    save(dirty_after, h5_save_dict, "after_file")
     
     return dirty_after
 
@@ -94,5 +94,5 @@ def test_dirty_image_generate(dirty_before: Path, dirty_after: Path):
     )
     
     assert_allclose(dirty_image, h5_after["dirty_image"], atol=1e-8)
-    if h5_after["normalization"] != None:
+    if h5_after["normalization"] != 0:
         assert_allclose(normalization, h5_after["normalization"], atol=1e-8)

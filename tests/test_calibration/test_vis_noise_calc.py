@@ -7,7 +7,6 @@ from PyFHD.use_idl_fhd.use_idl_outputs import convert_sav_to_dict
 from PyFHD.pyfhd_tools.test_utils import sav_file_vis_arr_swap_axes
 import numpy as np
 from PyFHD.io.pyfhd_io import save, load
-from logging import RootLogger
 import numpy.testing as npt
 
 @pytest.fixture
@@ -72,13 +71,12 @@ def test_points_zenith_and_offzenith(before_file, after_file):
     and then calls `vis_noise_calc`, checking the outputs match expectations"""
 
     h5_before = load(before_file)
-    h5_after = load(after_file)
+    expected_noise_arr = load(after_file)
+    expected_noise_arr = expected_noise_arr.transpose()
 
     obs = h5_before['obs']
     vis_arr = h5_before['vis_arr']
     vis_weights = h5_before['vis_weights']
-
-    expected_noise_arr = h5_after['noise_arr'].transpose()
 
     result_noise_arr = vis_noise_calc(obs, vis_arr, vis_weights)
 

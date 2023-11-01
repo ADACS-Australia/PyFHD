@@ -66,11 +66,7 @@ def after_file(tag, run, data_dir):
 
     res_mean_data = sav_dict["res_mean_data"]
 
-    #super dictionary to save everything in
-    h5_save_dict = {}
-    h5_save_dict['res_mean_data'] = res_mean_data
-
-    save(after_file, h5_save_dict, "after_file")
+    save(after_file, res_mean_data, "after_file")
 
     return after_file
 
@@ -87,12 +83,10 @@ def test_points_zenith_offzenith_and_1088716296(before_file, after_file):
 
 
     h5_before = load(before_file)
-    h5_after = load(after_file)
+    expected_res_mean = load(after_file)
 
     input_array = h5_before['input_array']
     deviations = h5_before['deviations']
-    
-    expected_res_mean = h5_after['res_mean_data']
 
     result_res_mean = resistant_mean(input_array, deviations)
     
@@ -123,52 +117,3 @@ def test_res_mean_complex_large_i():
 def test_res_mean_random_large():
     input = np.concatenate([np.linspace(0, 10, 100_000), np.arange(-1_000_000, 1_000_000, 1000)])
     npt.assert_allclose(resistant_mean(input, 4), 4.9998998746918923, atol=1e-4)
-    
-if __name__ == "__main__":
-
-    def convert_before_sav(test_dir):
-        """Takes the before .sav file out of FHD function `resistant_mean`
-        and converts into an hdf5 format"""
-
-        sav_dict = convert_sav_to_dict(f"{test_dir}/before_resistant_mean.sav", "meh")
-
-        input_array = sav_dict['input_array']
-        deviations = sav_dict['deviations']
-        
-        print(input_array.shape)
-
-        #super dictionary to save everything in
-        h5_save_dict = {}
-        h5_save_dict['input_array'] = input_array
-        h5_save_dict['deviations'] = deviations
-        
-        dd.io.save(Path(test_dir, "before_resistant_mean.h5"), h5_save_dict)
-        
-    def convert_after_sav(test_dir):
-        """Takes the after .sav file out of FHD function `resistant_mean`
-        and converts into an hdf5 format"""
-
-        sav_dict = convert_sav_to_dict(f"{test_dir}/after_resistant_mean.sav", "meh")
-        
-        res_mean_data = sav_dict["res_mean_data"]
-
-        #super dictionary to save everything in
-        h5_save_dict = {}
-        h5_save_dict['res_mean_data'] = res_mean_data
-        
-        dd.io.save(Path(test_dir, "after_resistant_mean.h5"), h5_save_dict)
-        
-    def convert_sav(test_dir):
-        """Load the inputs and outputs needed for testing `resistant_mean`"""
-        convert_before_sav(test_dir)
-        convert_after_sav(test_dir)
-
-    #Where be all of our data
-    base_dir = Path(env.get('PYFHD_TEST_PATH'))
-
-    #Each test_set contains a run with a different set of inputs/options
-    for test_set in ['pointsource1_vary1']:
-        convert_sav(Path(base_dir, test_set))
-
-        # convert_before_sav(Path(base_dir, test_set))
-        # run_test(Path(base_dir, test_set))
