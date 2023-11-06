@@ -44,7 +44,7 @@ cal-reflection-mode-theory : 150
 cal-reflection-mode-delay : false
 cal-reflection-mode-file : false
 calibration-auto-fit: false
-calibration-auto-initialize: false
+calibration-auto-initialize: true
 cal-gain-init: 1
 cal-convergence-threshold: 1e-7
 cal-adaptive-calibration-gain: false
