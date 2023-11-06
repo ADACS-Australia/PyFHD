@@ -122,7 +122,7 @@ def pyfhd_parser():
     calibration.add_argument('--cal-reflection-mode-delay', default = False, action = 'store_true', help = 'Calculate cable reflection modes by Fourier transforming the residual gains, removing modes contaminated by frequency flagging, and choosing the maximum mode.')
     calibration.add_argument('--cal-reflection-mode-file', default = False, action = 'store_true', help = 'Use predetermined cable reflection parameters (mode, amplitude, and phase) in the calibration solutions from a file.\nThe specified format of the text file must have one header line and eleven columns:\ntile index\ntile name\ncable length\ncable velocity factor\nlogic on whether to fit (1) or not (0)\nmode for X\namplitude for X\nphase for X\nmode for Y\namplitude for Y\nphase for Y. The file will be instrument_config of the input directory')
     calibration.add_argument('--calibration-auto-fit', default = False, action = 'store_true', help='Use the autocorrelations to calibrate. This will suffer from increased, correlated noise and bit statistic errors. However, this will save the autos as the gain in the cal structure, which can be a useful diagnostic.')
-    calibration.add_argument('--calibration-auto-initialize', default = False, action='store_true', help='initialize gain values for calibration with the autocorrelations. If unset, gains will initialize to 1 or the value supplied by cal_gain_init')
+    calibration.add_argument('--calibration-auto-initialize', default = False, action = 'store_true', help='initialize gain values for calibration with the autocorrelations. If unset, gains will initialize to 1 or the value supplied by cal_gain_init')
     calibration.add_argument('--cal-gain-init', default = 1, type = int, help='Initial gain values for calibration. Selecting accurate inital calibration values speeds up calibration and can improve convergence. This keyword will not be used if calibration_auto_initialize is set.')
     calibration.add_argument('--vis-baseline-hist', default = False, action = 'store_true', help = 'Calculates the vis_baseline_hist dictionary containing the visibility resolution ratio average and standard deviation')
     calibration.add_argument('--bandpass-calibrate', default = False, action = 'store_true', help = 'Calculates a bandpass.\nThis is an average of tiles by frequency by polarization (default), beamformer-to-LNA cable types by frequency by polarization (see cable_bandpass_fit),\nor over the whole season by pointing by by cable type by frequency by polarization via a read-in file (see saved_run_bp).\nIf unset, no by-frequency bandpass is used')
@@ -133,6 +133,7 @@ def pyfhd_parser():
     calibration.add_argument('--cal-phase-fit-iter', default = 4, type = int, help = 'Set the iteration number to begin phase calibration. Before this, phase is held fixed and only amplitude is being calibrated.')
 
     # Flagging Group
+    flag.add_argument('-fm', '--flag-model', default = False, action = 'store_true', help = "Flag the imported model based on time offsets and the tiles. Turn off if you're dealing with an already flagged model or simulation.")
     flag.add_argument('-fv', '--flag-visibilities', default = False, action = 'store_true', help = 'Flag visibilities based on calculations in vis_flag')
     flag.add_argument('-fc', '--flag-calibration', default = False, action = 'store_true', help = 'Flags antennas based on calculations in vis_calibration_flag')
     flag.add_argument('-fb', '--flag-basic', default = False, action='store_true', help='Flags Frequencies and Tiles based on your configuration, params and the visibility weights.\nThe freq_use, tile_use arrays of obs will be adjusted and the vis_weights_arr adjusted to be in line with the freq_use and tile_use arrays.\nThis should be True always, the only time you should consider turning off basic flagging is when you\'re dealing with a simulated visibilities and weights in PyFHD')
@@ -421,13 +422,23 @@ def pyfhd_setup(options : argparse.Namespace) -> Tuple[dict, logging.RootLogger]
         pyfhd_config['cal_reflection_mode_delay'] = True
         pyfhd_config['cal_reflection_mode_theory'] = False
 
-    # cal_adaptive_calibration_gain impacts cal_base_gain if cal_base_gain isn't set, set to 1.0 unless cal_adaptive_calibration_gain has
-    # been enabled in which case set to 0.75, this does the same behaviour as fhd_struct_init_cal
+    # cal_adaptive_calibration_gain impacts cal_base_gain if cal_base_gain isn't set
     if pyfhd_config['cal_base_gain'] == None:
-        if pyfhd_config['cal_adaptive_calibration_gain']:
-            pyfhd_config['cal_base_gain'] = 0.75
-        else:
-            pyfhd_config['cal_base_gain'] = 1.0
+        """
+        Is set to 0.75 by default, confusingly the FHD code implies if 
+        use_adaptive_calibration_gain isn't active then base gain is 1.0
+        However because they did this:
+
+            IF N_Elements(use_adaptive_calibration_gain) EQ 0 THEN use_adaptive_calibration_gain=0
+            IF N_Elements(calibration_base_gain) EQ 0 THEN BEGIN
+                IF N_Elements(use_adaptive_calibration_gain) EQ 0 THEN calibration_base_gain=1. ELSE calibration_base_gain=0.75
+
+        Since use_adaptive_calibration_gain is set before the line then 
+        N_ELEMENTS(use_adaptive_calibration_gain) == 1 meaning base_gain is set to 0.75
+        This confusingly means it isn't checking if use_adaptive_calibraton_gain is actually active
+        but whether it has been set at all, small but significant difference.
+        """
+        pyfhd_config['cal_base_gain'] = 0.75
     
     # diffuse_calibrate depends on a file (Error)
     errors += _check_file_exists(pyfhd_config, 'diffuse_calibrate')
@@ -532,14 +543,17 @@ def pyfhd_setup(options : argparse.Namespace) -> Tuple[dict, logging.RootLogger]
     # restrict_healpix_inds depends on a file (Error)
     errors += _check_file_exists(pyfhd_config, 'IDL_variables_file')
 
-    #TODO see lines 41-43 of fhd_core/HEALPix/healpix_snapshot_cube_generate.pro
-    #for other options in setting the dimesion/elements parameters
-    #If ks_span is included, resize the dimension and elements as the user
-    #is specifying how large the 2D gridding array should be
-    if pyfhd_config['ps_kspan']:
-        dimension_use = int(pyfhd_config['ps_kspan']/pyfhd_config['kbinsize'])
-        pyfhd_config['dimension'] = dimension_use
-        pyfhd_config['elements'] = dimension_use
+    # TODO see lines 41-43 of fhd_core/HEALPix/healpix_snapshot_cube_generate.pro
+    # for other options in setting the dimesion/elements parameters
+    # If ks_span is included, resize the dimension and elements as the user
+    # is specifying how large the 2D gridding array should be
+    # This should affect ps_dimension or ps_elements not the dimension and elements
+    # used for gridding, may use again later modified, leaving commented for now.
+    # If you see this in the year 2025 and don't know what it does, please delete it
+    # if pyfhd_config['ps_kspan']:
+    #     dimension_use = int(pyfhd_config['ps_kspan']/pyfhd_config['kbinsize'])
+    #     pyfhd_config['dimension'] = dimension_use
+    #     pyfhd_config['elements'] = dimension_use
 
     #--------------------------------------------------------------------------
     # Checks are finished, report any errors or warings

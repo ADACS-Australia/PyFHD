@@ -141,7 +141,6 @@ def vis_calibration_flag(obs: dict, cal: dict, pyfhd_config: dict, logger: RootL
     for pol_i in range(cal["n_pol"]):
         tile_use_i = np.nonzero(obs["baseline_info"]["tile_use"])[0]
         freq_use_i = np.nonzero(obs["baseline_info"]["freq_use"])[0]
-        # TODO: adjust depending on size given by vis_cal_auto_init
         gain = cal["gain"][pol_i]
         phase = np.arctan2(gain.imag, gain.real)
         amp = np.abs(gain)
@@ -558,9 +557,9 @@ def vis_cal_bandpass(obs: dict, cal: dict, params: dict, pyfhd_config: dict, log
                 # For the last bit at the end of the cable
                 if cable_i == cable_length_ref.size - 1:
                     # Set gain3 to the input gains
-                    gain3 = deepcopy(cal["gain"][pol_i])
+                    gain3 = cal["gain"][pol_i].copy()
                     # Set what will be passed back as the output gain as the final bandpass per cable type.
-                    gain2_input = np.squeeze(gain2[pol_i, :, :])
+                    gain2_input = gain2[pol_i, :, :]
                     cal_bandpass_gain[pol_i] = gain2_input
                     # Set what will be passed back as the residual as the input gain divided by the final bandpass per cable type.
                     gain3[freq_use, :] /= gain2_input[freq_use, :]

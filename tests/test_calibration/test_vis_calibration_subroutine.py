@@ -19,7 +19,7 @@ def data_dir():
 def full_data_dir():
     return glob('../**/full_size_vis_calibrate_subroutine/', recursive = True)[0]
 
-@pytest.fixture(scope="function", params=['point_zenith','point_offzenith', '1088716296'])
+@pytest.fixture(scope="function", params=['point_zenith','point_offzenith', '1088716296', '1088285600'])
 def tag(request):
     return request.param
 
@@ -27,7 +27,7 @@ def tag(request):
 def run(request):
     return request.param
 
-skip_tests = [['1088716296', "run3"]]
+skip_tests = [['1088716296', "run3"], ['1088285600', "run3"]]
 
 @pytest.fixture()
 def before_file(tag, run, data_dir):
@@ -88,7 +88,7 @@ def after_file(tag, run, data_dir):
 
     return after_file
 
-def test_points_around_zenith_and_1088716296(before_file, after_file):
+def test_points(before_file, after_file):
     if (before_file == None or after_file == None):
         pytest.skip(f"This test has been skipped because the test was listed in the skipped tests due to FHD not outputting them: {skip_tests}")
 

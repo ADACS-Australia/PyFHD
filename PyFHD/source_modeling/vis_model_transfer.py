@@ -9,6 +9,7 @@ import shutil
 import h5py
 from scipy.io import readsav
 from pathlib import Path
+import sys
 
 def vis_model_transfer(pyfhd_config: dict, obs : dict, logger: logging.RootLogger) -> tuple[np.array, dict]:
     """_summary_
@@ -29,6 +30,9 @@ def vis_model_transfer(pyfhd_config: dict, obs : dict, logger: logging.RootLogge
         return import_vis_model_from_sav(pyfhd_config, obs, logger)
     elif (pyfhd_config['model_file_type'] == 'uvfits'):
         return import_vis_model_from_uvfits(pyfhd_config, obs, logger)
+    else:
+        logger.error("You chose a file type PyFHD can't import, existing")
+        sys.exit()
     
 
 def import_vis_model_from_sav(pyfhd_config : dict, obs : dict, logger : logging.RootLogger) -> tuple[np.ndarray, dict]:
@@ -97,10 +101,6 @@ def import_vis_model_from_uvfits(pyfhd_config : dict, obs : dict,
         A `np.complex128` type array of shape (n_pol, n_vis_raw, n_freq)
     """
     
-    #TODO WORRY about which order XX and YY are
-    #TODO WORRY about order of baselines comparing WODEN sims and real data
-    #TODO WORRY about weights
-    
     header_model, params_data_model, _, _ = extract_header(pyfhd_config, logger, model_uvfits=True)
 
     if header_model['n_freq'] != obs['n_freq']:
@@ -137,12 +137,12 @@ class _FlaggingInfoCounter(object):
 
         self.num_visis = len(params['antenna1'])
 
-        #If there are no auto-correlations, you don't get every unique tile
-        #in either antenna1 or antenna2, so do a unique on both of them to be sure
+        # If there are no auto-correlations, you don't get every unique tile
+        # in either antenna1 or antenna2, so do a unique on both of them to be sure
         self.ant_names = np.unique(np.append(ant_names1, ant_names2))
         self.num_ants = len(self.ant_names)
 
-        #indexes of the auto-correlations
+        # indexes of the auto-correlations
         self.auto_locs = params['antenna1'] == params['antenna2']
         self.num_autos = np.count_nonzero(self.auto_locs)
 
@@ -151,21 +151,21 @@ class _FlaggingInfoCounter(object):
         else:
             self.num_autos_per_time = self.num_ants
             
-        #indexes of the cross-correlations
+        # indexes of the cross-correlations
         self.cross_locs = params['antenna1'] != params['antenna2']
         
-        #how many cross-correlations there should be per time step
+        # how many cross-correlations there should be per time step
         self.num_cross_per_time = int((self.num_ants*(self.num_ants - 1)) / 2)
 
-        #number of visibilities per time step
+        # number of visibilities per time step
         self.num_visi_per_time_step = self.num_cross_per_time + self.num_autos_per_time
 
-        #within a single time step, where the cross-correlations are indexed
-        #can use this while iterating over time to select the crosses only
+        # within a single time step, where the cross-correlations are indexed
+        # can use this while iterating over time to select the crosses only
         self.cross_locs_per_time = np.where(self.cross_locs[:self.num_visi_per_time_step])[0]
 
-        #within a single time step, where the cross-correlations are indexed
-        #can use this while iterating over time to select the crosses only
+        # within a single time step, where the cross-correlations are indexed
+        # can use this while iterating over time to select the crosses only
         self.auto_locs_per_time = np.where(self.auto_locs[:self.num_visi_per_time_step])[0]
 
         self.ant1_single_time = params['antenna1'][:self.num_visi_per_time_step]
@@ -320,9 +320,9 @@ def flag_model_visibilities(vis_model_arr : np.ndarray,
 
     # This gives us true/false if the visibilities should be included
     # for a single time step based on antenna1 and antenna2
-    include_per_time_ant1 = np.in1d(flaginfo_model.ant1_single_time,
+    include_per_time_ant1 = np.isin(flaginfo_model.ant1_single_time,
                                           flag_indexes, invert=True)
-    include_per_time_ant2 = np.in1d(flaginfo_model.ant2_single_time,
+    include_per_time_ant2 = np.isin(flaginfo_model.ant2_single_time,
                                           flag_indexes, invert=True)
 
     # Doing a logic union combines info from ant1 and ant2
@@ -330,17 +330,20 @@ def flag_model_visibilities(vis_model_arr : np.ndarray,
 
     # To get indexes of cross-correlations to use, ensure ant1 != ant2
     # These are now indexes of unflagged cross-correlations to grab from model
-    include_cross_per_time = np.where(flaginfo_model.ant1_single_time[include_per_time] != flaginfo_model.ant2_single_time[include_per_time])[0]
+    # However we need the actual indexes, so we use include_per_time and
+    # check for where there is non_zeros. This previously check where they didn't
+    # match but that resulted in us getting the indexes of the antenna arrays rather
+    # than the baseline indexes
+    include_cross_per_time = np.nonzero(include_per_time)[0]
 
     # To get indexes of auto-correlations to use, ensure ant1 == ant2
     # These are now indexes of unflagged auto-correlations to grab from model
     include_auto_per_time = np.where(flaginfo_model.ant1_single_time[include_per_time] == flaginfo_model.ant2_single_time[include_per_time])[0]
 
     # empty holder for the flagged model - this should be the same shape
-    # as the data TODO check is same shape
     vis_model_arr_flagged = np.zeros((obs['n_pol'], obs['n_freq'],
                                       flaginfo_data.num_visis),
-                                      dtype=complex)
+                                      dtype=np.complex128)
 
     # For each time step that matches the data, copy across any visibilities
     # that aren't to be flagged

@@ -10,6 +10,7 @@ from scipy.ndimage import median_filter
 from copy import deepcopy
 from sys import exit
 from scipy.ndimage import label
+import h5py
 
 @njit
 def get_bins(min, max, bin_size):
@@ -919,7 +920,7 @@ def run_command(cmd : str, dry_run=False):
 
     return stdout
 
-def vis_weights_update(vis_weights : np.ndarray, obs: dict, psf: dict, params: dict) -> tuple[np.ndarray, dict]:
+def vis_weights_update(vis_weights : np.ndarray, obs: dict, psf: dict | h5py.File, params: dict) -> tuple[np.ndarray, dict]:
     """
     TODO: _summary_
 
@@ -948,17 +949,19 @@ def vis_weights_update(vis_weights : np.ndarray, obs: dict, psf: dict, params: d
     if (conj_i[0].size > 0):
         kx_arr[conj_i] = -kx_arr[conj_i]
         ky_arr[conj_i] = -ky_arr[conj_i]
-
+    psf_dim = psf['dim']
+    if isinstance(psf, h5py.File):
+        psf_dim = psf_dim[0]
     xcen = np.outer(obs['baseline_info']['freq'], kx_arr)
-    xmin = np.floor(xcen) + obs['dimension'] / 2 - (psf['dim'] / 2 - 1)
+    xmin = np.floor(xcen) + obs['dimension'] / 2 - (psf_dim / 2 - 1)
     ycen = np.outer(obs['baseline_info']['freq'], ky_arr)
-    ymin = np.floor(ycen) + obs['elements'] / 2 - (psf['dim'] / 2 - 1)
+    ymin = np.floor(ycen) + obs['elements'] / 2 - (psf_dim / 2 - 1)
 
-    range_test_x_i = np.where((xmin <= 0) | ((xmin + psf['dim'] - 1) >= obs['dimension'] - 1))
+    range_test_x_i = np.where((xmin <= 0) | ((xmin + psf_dim - 1) >= obs['dimension'] - 1))
     if (range_test_x_i[0].size > 0):
         xmin[range_test_x_i] = -1
         ymin[range_test_x_i] = -1
-    range_test_y_i = np.where((ymin <= 0) | ((ymin + psf['dim'] - 1) >= obs['elements'] - 1))
+    range_test_y_i = np.where((ymin <= 0) | ((ymin + psf_dim - 1) >= obs['elements'] - 1))
     if (range_test_y_i[0].size > 0):
         xmin[range_test_y_i] = -1
         ymin[range_test_y_i] = -1

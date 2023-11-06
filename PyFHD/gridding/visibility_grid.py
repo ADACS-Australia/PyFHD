@@ -104,13 +104,14 @@ def visibility_grid(
         dx1dy1_arr = baselines_dict['dx1dy1_arr']
 
     # Instead of checking the visibilitity pointer we just take the vis_inds_use from visibility
-    vis_arr_use = visibility[fi_use, :][:, bi_use]
+    rows, cols = np.meshgrid(fi_use, bi_use)
+    vis_arr_use = visibility[rows, cols].T
     # Model_flag has been removed in favor of just the model taking advantage that the model default is None
     # If it has been specified at all with anything other than None or False, then it should be a numpy array
     # if it isn't exit
     if model is not None:
         if isinstance(model, np.ndarray):
-            model_use = model[fi_use, :][:, bi_use]
+            model_use = model[rows, cols].T
             model_return = np.zeros((elements, dimension), dtype = np.complex128)
         else:
             raise ValueError('Your model must be a numpy array when used as an argument')
@@ -179,7 +180,7 @@ def visibility_grid(
     # Return if all baselines have been flagged
     if n_bin_use == 0:
         logger.error("All data has been flagged")
-        return np.zeros([elements, dimension], dtype = np.complex128)
+        return {}
     
     n_vis = np.sum(bin_n)
     for fi in range(n_f_use):

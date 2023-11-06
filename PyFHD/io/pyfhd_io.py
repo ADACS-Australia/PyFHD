@@ -145,6 +145,8 @@ def group_to_dict(group: h5py.Group) -> dict:
                 return_dict[key] = group[key][:]
                 if isinstance(return_dict[key], np.ndarray) and return_dict[key].size == 1:
                     return_dict[key] = return_dict[key][0]
+                if isinstance(return_dict[key], bytes):
+                    return_dict[key] = return_dict[key].decode()
             case h5py.Group():
                 return_dict[key] = group_to_dict(group[key])
     return return_dict
@@ -201,6 +203,8 @@ def load(file_name: Path, logger: RootLogger | None = None, lazy_load: bool = Fa
                         return_dict[key] = h5_file[key][:]
                         if isinstance(return_dict[key], np.ndarray) and return_dict[key].size == 1:
                             return_dict[key] = return_dict[key][0]
+                        if isinstance(return_dict[key], bytes):
+                            return_dict[key] = return_dict[key].decode()
                     case h5py.Group():
                         return_dict[key] = group_to_dict(h5_file[key])
             return return_dict

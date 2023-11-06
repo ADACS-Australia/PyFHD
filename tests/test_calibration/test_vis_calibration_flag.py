@@ -48,8 +48,8 @@ def before_file(tag, run, data_dir):
     
     #Make a small pyfhd_config with just the variables needed for this func
     pyfhd_config = {}
-    pyfhd_config['amp_degree'] = sav_dict['amp_degree']
-    pyfhd_config['phase_degree'] = sav_dict['phase_degree']
+    pyfhd_config['cal_amp_degree_fit'] = sav_dict['amp_degree']
+    pyfhd_config['cal_phase_degree_fit'] = sav_dict['phase_degree']
     
     #super dictionary to save everything in
     h5_save_dict = {}

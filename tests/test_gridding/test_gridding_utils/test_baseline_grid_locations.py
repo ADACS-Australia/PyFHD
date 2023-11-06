@@ -84,6 +84,9 @@ def test_baselines(baseline_before: Path, baseline_after: Path):
     h5_before = load(baseline_before)
     expected_baseline = load(baseline_after)
 
+    if not isinstance(h5_before['bi_use'], np.ndarray):
+        h5_before['bi_use'] = None
+
     baselines_dict = baseline_grid_locations(
         h5_before["obs"], 
         h5_before["psf"],

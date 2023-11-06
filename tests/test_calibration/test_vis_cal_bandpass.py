@@ -65,12 +65,12 @@ def before_file(tag, run, data_dir):
     try:
         pyfhd_config['cable_bandpass_fit'] = sav_dict['cable_bandpass_fit']
     except KeyError:
-        pyfhd_config['cable_bandpass_fit'] = None
+        pyfhd_config['cable_bandpass_fit'] = False
 
     try:
         pyfhd_config['auto_ratio_calibration'] = sav_dict['auto_ratio_calibration']
     except KeyError:
-        pyfhd_config['auto_ratio_calibration'] = None
+        pyfhd_config['auto_ratio_calibration'] = False
 
 
     #need the instrument as that's needed for a file path
@@ -135,7 +135,6 @@ def test_vis_cal_bandpass(before_file, after_file):
     params = h5_before['params']
     pyfhd_config = h5_before['pyfhd_config']
     pyfhd_config['cal_bp_transfer'] = None
-    pyfhd_config['instrument'] = pyfhd_config['instrument'].decode()
 
     expected_cal_bandpass = h5_after['cal_bandpass']
     expected_cal_remainder = h5_after['cal_remainder']

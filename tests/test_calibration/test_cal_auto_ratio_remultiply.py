@@ -67,9 +67,6 @@ def after_file(tag, run, data_dir):
     
     sav_file = after_file.with_suffix('.sav')
     sav_dict = convert_sav_to_dict(str(sav_file), "faked")
-
-    # super dictionary to save everything in
-    h5_save_dict = {}
     
     cal = recarray_to_dict(sav_dict['cal'])
     cal['gain'] = sav_file_vis_arr_swap_axes(cal['gain'])

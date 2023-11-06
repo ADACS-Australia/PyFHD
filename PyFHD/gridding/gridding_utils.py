@@ -140,7 +140,8 @@ def baseline_grid_locations(obs: dict, psf: dict, params: dict, vis_weights: np.
     
     # Rather than calculating the flat indexes we want, lets just index the array
     # by the frequency use and baseline_use indexes
-    vis_weights = vis_weights[fi_use, :][:, bi_use]
+    rows, cols = np.meshgrid(fi_use, bi_use)
+    vis_weights_use = vis_weights[rows, cols].T
 
     # Units in pixel/Hz
     kx_arr = params['uu'][bi_use] / kbinsize
@@ -202,7 +203,7 @@ def baseline_grid_locations(obs: dict, psf: dict, params: dict, vis_weights: np.
             del(flag_dist_baseline)
     
     # Normally we check vis_weight_switch, but its always true here so... do this
-    flag_i = np.where(vis_weights <= 0)
+    flag_i = np.where(vis_weights_use <= 0)
     if fill_model_visibilities:
         n_flag = 0
     else:

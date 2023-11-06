@@ -4,7 +4,7 @@ from pathlib import Path
 import pytest
 from PyFHD.gridding.gridding_utils import interpolate_kernel
 from PyFHD.pyfhd_tools.test_utils import get_data_items
-from PyFHD.io.pyfhd_io import save, load
+from PyFHD.io.pyfhd_io import save, load, recarray_to_dict
 
 @pytest.fixture
 def data_dir():
@@ -41,6 +41,8 @@ def interp_kernel_before(data_dir, number):
         "dx0dy1" : dx0dy1,
         "dx1dy1" : dx1dy1,
     }
+
+    h5_save_dict = recarray_to_dict(h5_save_dict)
 
     save(interp_kernel_before, h5_save_dict, "before_file")
 

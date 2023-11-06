@@ -25,15 +25,10 @@ def before_gridding(data_dir: Path, number: int):
         return before_gridding
     
     h5_save_dict = get_savs(data_dir,f'input_{number}.sav')
-    # Take out and copy the beam_ptr to keep its structure
-    # Going to leave as an object array due to the size of it being
-    # 2 * 8128 * 51 * 51 * 196, which is 123GiB for storing it as a
-    # np.complex128 array. Too big for most machines except for HPC.
-    # TODO: ignore past comment and make it better with frequency only!
-    # NO HPC needed!
-    beam_ptr = np.copy(h5_save_dict["psf"]["beam_ptr"][0].T)
+    # Subset the beam_ptr so we only take the first index of the baselines 
+    # which contains the pointer for the rest of the baselines
+    h5_save_dict['psf']['beam_ptr'][0] = h5_save_dict['psf']['beam_ptr'][0].T[:, :, 0]
     h5_save_dict = recarray_to_dict(h5_save_dict)
-    h5_save_dict["psf"]["beam_ptr"] = beam_ptr
     h5_save_dict["uniform_flag"] = True if ("uniform_filter" in h5_save_dict and h5_save_dict["uniform_filter"]) else False
     h5_save_dict["no_conjugate"] = True if ("no_conjugate" in h5_save_dict and h5_save_dict["no_conjugate"]) else False
     h5_save_dict["obs"]["n_baselines"] = h5_save_dict["obs"]["nbaselines"]
@@ -78,7 +73,12 @@ def after_gridding(data_dir: Path, number: int):
     if after_gridding.exists():
         return after_gridding
     
-    outputs = recarray_to_dict(get_savs(data_dir, f'output_{number}.sav'))
+    outputs = get_savs(data_dir, f'output_{number}.sav')
+    # Delete the psf, we don't need it
+    del outputs['psf']
+    del outputs['beam_arr']
+    del outputs['extra']
+    outputs = recarray_to_dict(outputs)
 
     h5_save_dict = {
         'image_uv': outputs['image_uv'],
@@ -100,6 +100,25 @@ def test_visibility_grid(before_gridding: Path, after_gridding: Path):
     h5_after = load(after_gridding)
 
     h5_before["psf"]["id"] = h5_before["psf"]["id"].T
+
+    # Look for things that are supposed to be None
+    if not isinstance(h5_before["model_ptr"], np.ndarray) and isinstance(h5_before["model_ptr"], np.floating):
+        h5_before["model_ptr"] = None
+    if not isinstance(h5_before["fi_use"], np.ndarray) and isinstance(h5_before["fi_use"], np.floating):
+        h5_before["fi_use"] = None
+    if not isinstance(h5_before["bi_use"], np.ndarray) and isinstance(h5_before["bi_use"], np.floating):
+        h5_before["bi_use"] = None
+
+    # Format the indexing arrays if needed
+    if h5_before["fi_use"] is not None and h5_before["fi_use"].size == 1:
+        new_arr = np.zeros(1, dtype = np.int64)
+        new_arr[0] = h5_before["fi_use"]
+        h5_before["fi_use"] = new_arr
+
+    if h5_before["bi_use"] is not None and h5_before["bi_use"].size == 1:
+        new_arr = np.zeros(1, dtype = np.int64)
+        new_arr[0] = h5_before["bi_use"]
+        h5_before["bi_use"] = new_arr
 
     gridding_dict = visibility_grid(
         h5_before["visibility_ptr"],

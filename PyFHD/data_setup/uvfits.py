@@ -217,9 +217,9 @@ def create_params(pyfhd_header : dict, params_data : np.recarray, logger : loggi
     params = {}
     # Retrieve params values
     try:
-        params['uu'] = params_data['UU']
-        params['vv'] = params_data['VV']
-        params['ww'] = params_data['WW']
+        params['uu'] = params_data['UU'].astype(np.float64)
+        params['vv'] = params_data['VV'].astype(np.float64)
+        params['ww'] = params_data['WW'].astype(np.float64)
         # Astropy has already normalized the values by PZEROx, time in Julian
         params['time'] = params_data['DATE']
         # Get baseline and antenna arrays
@@ -299,7 +299,9 @@ def extract_visibilities(pyfhd_header : dict, params_data : np.recarray, pyfhd_c
         vis_arr = data_array[:, : , polarizations, pyfhd_header['real_index']] + data_array[:, : , polarizations, pyfhd_header['imaginary_index']] * (1j)
         vis_weights = data_array[:, : , polarizations, pyfhd_header['weights_index']]
     # Redo the shape so its the format per polarization, per frequency per baseline.
-    return vis_arr.transpose(), vis_weights.transpose()
+    # Also ensure the types are double precision to ensure calculations from them result
+    # in double precision
+    return vis_arr.transpose().astype(np.complex128), vis_weights.transpose().astype(np.float64)
 
 def _check_layout_valid(layout : dict, key : str, logger : logging.RootLogger, check_min_max = False):
     """

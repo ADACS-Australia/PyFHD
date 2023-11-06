@@ -113,7 +113,8 @@ def main_python_only(pyfhd_config : dict, logger : logging.RootLogger):
     # Get the vis_model_arr from a UVFITS file or SAV files and flag any issues
     vis_model_arr_start = time.time()
     vis_model_arr, params_model = vis_model_transfer(pyfhd_config, obs, logger)
-    vis_model_arr = flag_model_visibilities(vis_model_arr, params, params_model, obs, pyfhd_config, logger)
+    if pyfhd_config['flag_model']:
+        vis_model_arr = flag_model_visibilities(vis_model_arr, params, params_model, obs, pyfhd_config, logger)
     vis_model_arr_end = time.time()
     _print_time_diff(vis_model_arr_start, vis_model_arr_end, 'Model Imported and Flagged From UVFITS', logger)
 
@@ -123,7 +124,7 @@ def main_python_only(pyfhd_config : dict, logger : logging.RootLogger):
     if (pyfhd_config['calibrate_visibilities']):
         logger.info("Beginning Calibration")
         cal_start = time.time()
-        vis_arr, cal = calibrate(obs, params, vis_arr, vis_weights, vis_model_arr, pyfhd_config, logger)
+        vis_arr, cal, obs = calibrate(obs, params, vis_arr, vis_weights, vis_model_arr, pyfhd_config, logger)
         cal_end = time.time()
         _print_time_diff(cal_start, cal_end, 'Visibilities calibrated and cal dictionary with gains created', logger)
 

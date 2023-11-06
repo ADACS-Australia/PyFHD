@@ -195,7 +195,7 @@ def vis_calibrate_subroutine(vis_arr: np.ndarray, vis_model_ptr: np.ndarray, vis
         n_converged = 0
         for fii in range(freq_use.size):
             fi = freq_use[fii]
-            gain_curr = np.squeeze(gain_arr[fi, tile_use])
+            gain_curr = gain_arr[fi, tile_use]
             # Set up data and model arrays of the original and conjugated versions. This
             # provides twice as many equations into the linear least-squares solver.
             vis_data2 = np.squeeze(vis_avg[fi, baseline_use])

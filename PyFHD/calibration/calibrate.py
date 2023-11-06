@@ -1,5 +1,4 @@
 import numpy as np
-from typing import Tuple
 from logging import RootLogger
 from PyFHD.calibration.calibration_utils import (
     vis_extract_autocorr, 
@@ -16,7 +15,7 @@ from PyFHD.calibration.calibration_utils import (
 from PyFHD.calibration.vis_calibrate_subroutine import vis_calibrate_subroutine
 from PyFHD.pyfhd_tools.pyfhd_utils import resistant_mean, reshape_and_average_in_time
 
-def calibrate(obs: dict, params: dict, vis_arr: np.array, vis_weights: np.array, vis_model_arr: np.ndarray, pyfhd_config: dict, logger: RootLogger) -> Tuple[np.array, np.array, dict] :
+def calibrate(obs: dict, params: dict, vis_arr: np.array, vis_weights: np.array, vis_model_arr: np.ndarray, pyfhd_config: dict, logger: RootLogger) -> tuple[np.array, dict, dict] :
     """
     TODO: Docstring
 
@@ -46,19 +45,19 @@ def calibrate(obs: dict, params: dict, vis_arr: np.array, vis_weights: np.array,
     cal = {}
     # Add any default values to calibration here
     cal["n_pol"] = min(obs["n_pol"], 2)
-    cal["conv_thresh"] = 1e-7
+    cal["conv_thresh"] = pyfhd_config['cal_convergence_threshold']
     cal['ref_antenna'] = 1
     cal['ref_antenna_name'] = obs['baseline_info']['tile_names'][cal['ref_antenna']]
 
     # Calculate auto-correlation visibilities, optionally use them for initial calibration estimates
-    vis_auto, auto_tile_i = vis_extract_autocorr(obs, vis_arr, pyfhd_config);
+    vis_auto, auto_tile_i = vis_extract_autocorr(obs, vis_arr, pyfhd_config)
     # Calculate auto-correlation visibilities 
-    vis_auto_model, auto_tile_i = vis_extract_autocorr(obs, vis_model_arr, pyfhd_config, auto_tile_i = auto_tile_i)
+    vis_auto_model, auto_tile_i = vis_extract_autocorr(obs, vis_model_arr, pyfhd_config)
     # Initalize the gain
     if (pyfhd_config['calibration_auto_initialize']):
         cal["gain"] = vis_cal_auto_init(obs, cal, vis_arr, vis_model_arr, vis_auto, vis_auto_model, auto_tile_i)
     else:
-        cal["gain"] = np.full((cal['n_pol'], obs['n_freq'], obs['n_tile']), pyfhd_config['cal_gain_init'])
+        cal["gain"] = np.full((cal['n_pol'], obs['n_freq'], obs['n_tile']), pyfhd_config['cal_gain_init'], dtype = np.complex128)
 
     # Do the calibration with vis_calibrate_subroutine
     logger.info("Gain initialized beginning vis_calibrate subroutine")
@@ -147,7 +146,7 @@ def calibrate(obs: dict, params: dict, vis_arr: np.array, vis_weights: np.array,
 
 
     # Return the calibrated visibility array
-    return vis_cal, cal
+    return vis_cal, cal, obs
 
 def calibrate_qu_mixing(vis_arr: np.ndarray, vis_model_arr : np.ndarray, vis_weights: np.ndarray, obs : dict) -> float:
     """
