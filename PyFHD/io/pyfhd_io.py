@@ -2,6 +2,7 @@ import numpy as np
 import h5py
 from logging import RootLogger
 from pathlib import Path
+from typing import Any
 
 def dtype_picker(dtype: type) -> type:
     """
@@ -28,7 +29,164 @@ def dtype_picker(dtype: type) -> type:
         # Should never get here, this should throw an error
         return None
 
-def dict_to_group(group: h5py.Group, to_convert: dict, logger: RootLogger | None) -> None:
+@np.vectorize
+def _is_complex(value: Any) -> bool:
+    """
+    Finds if a value is complex, this works regardless of the array type
+    unlike np.iscomplex or np.iscomplexobj which can't handle object arrays. 
+    This being vectorized also allows us to check this for any complex type, 
+    whether it be the python complex type or a numpy complex type
+
+    Parameters
+    ----------
+    value : Any
+        The value to check in a NumPy array
+
+    Returns
+    -------
+    bool
+        True if value is a complex, False otherwise
+    """
+    return np.iscomplexobj(value)
+
+@np.vectorize
+def _is_string(value: Any) -> bool:
+    """
+    Finds if a value is a string or not, works regardless of the array type.
+    There is no string check available for object arrays
+
+    Parameters
+    ----------
+    value : Any
+        A value to check
+
+    Returns
+    -------
+    bool
+        True if value is a str, False otherwise
+    """
+    return type(value) == str
+
+@np.vectorize
+def _decode_byte_arr(value: np.bytes_) -> str:
+    """
+    Decodes a byte string into a string
+
+    Parameters
+    ----------
+    value : np.bytes_
+        Value to decode
+
+    Returns
+    -------
+    str
+        The decoded value
+    """
+    return value.decode()
+
+def find_none_and_replace(array: np.ndarray) -> np.ndarray:
+    """
+    Find any `None` values in an array and replaces them with empty
+    strings if we're dealing with a string array, or `NaN`s if we're 
+    dealing with a Number array. If complex, the NaN will be nan + nanj.
+
+    Parameters
+    ----------
+    array : np.ndarray
+        The array to find None in and if so convert from object array
+
+    Returns
+    -------
+    array: np.ndarray
+        Array without None objects and in the correct dtype
+    """
+    if np.any(_is_string(array)):
+        array = np.where(array == None, '', array).astype(bytes)
+    else:
+        try:
+            array = np.where(array == None, np.nan, array)
+            if np.any(_is_complex(array)):
+                array = array.astype(np.complex128)
+                array[np.isnan(array.real)] = np.nan*0j
+            else:
+                array = array.astype(np.float64)
+        except TypeError:
+            # Sometimes we deal with structured/record arrays like
+            # astropy's FITS_rec, let's leave them alone as we intend 
+            # on saving them raw
+            pass
+    return array
+
+def save_dataset(h5py_obj: h5py.File | h5py.Group,  key: str, value: Any, to_chunk: dict[str, dict], logger: RootLogger | None) -> bool:
+    """
+    A general function for saving a dataset inside a HDF5 File or Group. It's used exclusively for saving
+    a dictionary into a HDF5 file, hence why we take a `key` and `value` pair. The `to_chunk` parameter is
+    explained in the `save` function, please look there for explanation. In the case of finding a None object
+    an Empty Dataset is saved and the is_none is returned as True, so the attribute associated with the key
+    can also be set to True to indicate to PyFHD later that the value is meant to be None when reading in the 
+    dataset again.
+
+    Parameters
+    ----------
+    h5py_obj : h5py.File | h5py.Group
+        A h5py object that has access to the `create_dataset` and `create_group` methods
+    key : str
+        The key from the dictionary we're saving
+    value : Any
+        The value from the dictionary
+    to_chunk : dict[str, dict]
+        A dictionary where each key-value pair represents a key in the to_save dictionary, and the value is a dictionary
+        which should contain two key-value pairs, `shape` which should be the `shape` of the array and `chunk` which tells
+        hdf5 how to chunk the dataset when it's being read/written. If you're not sure how to `chunk` the dataset, set `chunk` 
+        to True which enables h5py to guess the chunk size for you. By default {}
+    logger : RootLogger | None
+        PyFHD's Logger
+
+    Returns
+    -------
+    is_none : bool
+        True if the value is None, False otherwise
+
+    See Also
+    --------
+    PyFHD.io.pyfhd_io.save : Save a HDF5 file
+    PyFHD.io.pyfhd_io.dict_to_group : Converts a dictionary to a h5py Group Object
+    """
+    is_none = False
+    # Match the type
+    match value:
+        case dict():
+            group = h5py_obj.create_group(key)
+            # dict_to_group will be recursively called if there is another dict
+            # in this dict
+            dict_to_group(group, value, to_chunk, logger)
+        case np.ndarray():
+            # Find and replace all None objects
+            value = find_none_and_replace(value)
+            # If we want it to be chunked do that, always compress it
+            if key in to_chunk:
+                h5py_obj.create_dataset(key, shape=to_chunk[key]['shape'], data = value, dtype = dtype_picker(value.dtype), chunks = to_chunk[key]['chunk'], compression = 'gzip')
+            else:
+                h5py_obj.create_dataset(key, shape = value.shape, data = value, dtype = dtype_picker(value.dtype), compression = 'gzip')
+        case list():
+            # Was easier to convert to a NumPy array to get vectorization
+            value = np.array(value)
+            value = find_none_and_replace(value)
+            h5py_obj.create_dataset(key, data = value)
+        case None:
+            is_none = True
+            # In the case we get something that is none, create empty dataset
+            h5py_obj.create_dataset(key, dtype = "b")
+        case _:
+            try:
+                # Store the value in a single size dataset, used for ints, floats, strings etc
+                h5py_obj.create_dataset(key, shape = (1), data = value)
+            except ValueError:
+                if logger is not None:
+                    logger.error(f"Failed to save {key}, the type of key was {type(value)}")
+    return is_none
+
+def dict_to_group(group: h5py.Group, to_convert: dict, to_chunk: dict[str, dict], logger: RootLogger | None) -> None:
     """
     Converts a dictionary to a HDF5 group. This is called in the event a dictionary is found inside
     a dictionary that is being saved in a HDF5 file. Creates a subgroup for the hdf5 file with everything
@@ -44,20 +202,7 @@ def dict_to_group(group: h5py.Group, to_convert: dict, logger: RootLogger | None
        PyFHD's Logger
     """
     for key in to_convert:
-        match to_convert[key]:
-            case dict():
-                subgroup = group.create_group(key)
-                dict_to_group(subgroup, to_convert[key], logger)
-            case np.ndarray():
-                group.create_dataset(key, shape = to_convert[key].shape, data = to_convert[key], dtype = dtype_picker(to_convert[key].dtype), compression = 'gzip')
-            case list():
-                group.create_dataset(key, data = to_convert[key], compression = 'gzip')
-            case _:
-                try:
-                    group.create_dataset(key, shape = (1), data = to_convert[key])
-                except ValueError:
-                    if logger:
-                        logger.error(f"Failed to save {key}, the type of key was {type(to_convert[key])}")
+        group.attrs[key] = save_dataset(group, key, to_convert[key], to_chunk, logger)
 
 def save(file_name: Path, to_save: np.ndarray | dict, dataset_name: str, logger: RootLogger | None = None, to_chunk: dict[str, dict] = {}) -> None:
     """
@@ -91,37 +236,68 @@ def save(file_name: Path, to_save: np.ndarray | dict, dataset_name: str, logger:
     PyFHD.io.pyfhd_io.load : Load a HDF5 file
     PyFHD.io.pyfhd_io.dict_to_group : Converts a dictionary to a h5py Group Object
     PyFHD.io.pyfhd_io.recarray_to_dict : Turns any record arrays into dicts, also formats object arrays into the correct dtype array
+    PyFHD.io.pyfhd_io.save_dataset : Saves a single dataset based off a dictionary key-value pair
+    PyFHD.io.pyfhd_io.find_none_and_replace : Finds any None is an array and replaces them appropriately
     """
+    # Create a custom vectorized function to check for complex numbers
+    # is_complex_vectorized = np.vectorize(is_complex)
     with h5py.File(file_name, "w") as h5_file:
         match to_save:
             case np.ndarray():
                 if logger:
                     logger.info(f"Writing the {dataset_name} array to {file_name}.h5")
                 h5_file.create_dataset(dataset_name, to_save.shape, data = to_save, dtype = dtype_picker(to_save.dtype), compression = 'gzip')
+                h5_file.attrs[dataset_name] = False
             case dict():
                 if logger:
                     logger.info(f"Writing the {dataset_name} dict to {file_name}, each key will be a dataset, if the key contains a dict then it will be a group.")
                 for key in to_save:
-                    match to_save[key]:
-                        case dict():
-                            group = h5_file.create_group(key)
-                            dict_to_group(group, to_save[key], logger)
-                        case np.ndarray():
-                            if key in to_chunk:
-                                h5_file.create_dataset(key, shape=to_chunk[key]['shape'], data = to_save[key], dtype = dtype_picker(to_save[key].dtype), chunks = to_chunk[key]['chunk'], compression = 'gzip')
-                            else:
-                                h5_file.create_dataset(key, shape = to_save[key].shape, data = to_save[key], dtype = dtype_picker(to_save[key].dtype), compression = 'gzip')
-                        case list():
-                            h5_file.create_dataset(key, shape = len(to_save[key]), data = to_save[key])
-                        case _:
-                            try:
-                                h5_file.create_dataset(key, shape = (1), data = to_save[key])
-                            except ValueError:
-                                if logger:
-                                    logger.error(f"Failed to save {key}, the type of key was {type(to_save[key])}")
+                    # We're using the attributes as a mask, where if True then we know
+                    # the dataset is representing a None object. 
+                    h5_file.attrs[key] = save_dataset(h5_file, key, to_save[key], to_chunk, logger)
             case _:
                 if logger:
                     logger.warning("Not a dict or numpy array, PyFHD won't write other types at this time, refer to PyFHD.io.pyfhd_io.save to see what is supported")
+
+def load_dataset(h5py_obj: h5py.File | h5py.Group, key: str, dataset: h5py.Dataset) -> Any:
+    """
+    Loads a single dataset from a HDF5 File or Group, the key here is the dataset name from the
+    file or group and is only used to check the attributes of said file or group. If the attribute
+    associated with the key is True, then we assume the value saved is an empty dataset and we should
+    return None. If this is False, load the value and check if this value should be a single value. There
+    are special checks for byte arrays, if there is byte arrays, PyFHD assumes these are meant to be strings.
+
+    Parameters
+    ----------
+    h5py_obj : h5py.File | h5py.Group
+        A HDF5 file or group
+    key : str
+        The dataset name
+    dataset : h5py.Dataset
+        The dataset we are loading
+
+    Returns
+    -------
+    Any
+        The value stored in the HDF5 Dataset
+
+    See Also
+    --------
+    PyFHD.io.pyfhd_io.load : Load a HDF5 file
+    """
+    # If the corresponding attribute is True set the current
+    # key to None as its an empty dataset
+    if h5py_obj.attrs[key]:
+        return None
+    else:
+        value = dataset[:]
+        if value.dtype.kind == 'S':
+            value = _decode_byte_arr(value)
+        if isinstance(value, np.ndarray) and value.size == 1:
+            value = value[0]
+        if isinstance(value, bytes):
+            value = value.decode()
+        return value
 
 def group_to_dict(group: h5py.Group) -> dict:
     """
@@ -142,11 +318,7 @@ def group_to_dict(group: h5py.Group) -> dict:
     for key in group:
         match group[key]:
             case h5py.Dataset():
-                return_dict[key] = group[key][:]
-                if isinstance(return_dict[key], np.ndarray) and return_dict[key].size == 1:
-                    return_dict[key] = return_dict[key][0]
-                if isinstance(return_dict[key], bytes):
-                    return_dict[key] = return_dict[key].decode()
+                return_dict[key] = load_dataset(group, key, group[key])
             case h5py.Group():
                 return_dict[key] = group_to_dict(group[key])
     return return_dict
@@ -200,11 +372,7 @@ def load(file_name: Path, logger: RootLogger | None = None, lazy_load: bool = Fa
             for key in h5_file:
                 match h5_file[key]:
                     case h5py.Dataset():
-                        return_dict[key] = h5_file[key][:]
-                        if isinstance(return_dict[key], np.ndarray) and return_dict[key].size == 1:
-                            return_dict[key] = return_dict[key][0]
-                        if isinstance(return_dict[key], bytes):
-                            return_dict[key] = return_dict[key].decode()
+                        return_dict[key] = load_dataset(h5_file, key, h5_file[key])
                     case h5py.Group():
                         return_dict[key] = group_to_dict(h5_file[key])
             return return_dict
