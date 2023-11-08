@@ -94,5 +94,5 @@ def test_dirty_image_generate(dirty_before: Path, dirty_after: Path):
     )
     
     assert_allclose(dirty_image, h5_after["dirty_image"], atol=1e-8)
-    if h5_after["normalization"] != 0:
+    if h5_after["normalization"] != None:
         assert_allclose(normalization, h5_after["normalization"], atol=1e-8)

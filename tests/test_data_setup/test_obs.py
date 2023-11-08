@@ -60,7 +60,7 @@ def check_sav_file(path: Path, run: int, pyfhd_config: dict) -> Path:
     sav_file = h5_file.with_suffix('.sav')
     sav_dict = readsav(sav_file, python_dict=True)
     obs = recarray_to_dict(sav_dict['obs'])
-    save(h5_file, obs, "before_file")
+    save(h5_file, obs, "after_file")
 
     return h5_file
 

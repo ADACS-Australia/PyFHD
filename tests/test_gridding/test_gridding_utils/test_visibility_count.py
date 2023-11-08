@@ -32,10 +32,12 @@ def vis_count_before(data_dir, number):
         return vis_count_before
 
     # First put values from psf into pyfhd_config
-    psf = recarray_to_dict(get_data(
+    psf = get_data(
         data_dir,
         f'input_psf_{number}.npy',
-    ))
+    )
+    psf[0]['beam_ptr'] = psf[0]['beam_ptr'][0, : ,:].T
+    psf = recarray_to_dict(psf)
     # Take the required parameters
     obs, params, vis_weights = get_data_items(
         data_dir,

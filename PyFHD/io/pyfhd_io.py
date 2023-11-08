@@ -104,8 +104,12 @@ def find_none_and_replace(array: np.ndarray) -> np.ndarray:
         array = np.where(array == None, '', array).astype(bytes)
     else:
         try:
+            dtype = array.dtype
             array = np.where(array == None, np.nan, array)
-            if np.any(_is_complex(array)):
+            # In the case no nans were inserted, then leave the array as it was, ensure the dtype is the same
+            if np.count_nonzero(np.isnan(array)) == 0:
+                array = array.astype(dtype)
+            elif np.any(_is_complex(array)):
                 array = array.astype(np.complex128)
                 array[np.isnan(array.real)] = np.nan*0j
             else:

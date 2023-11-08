@@ -21,7 +21,7 @@ def tag(request):
 def run(request):
     return request.param
 
-skip_tests = []
+skip_tests: list = []
 
 @pytest.fixture()
 def before_file(tag, run, data_dir):

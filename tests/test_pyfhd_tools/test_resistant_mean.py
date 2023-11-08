@@ -40,10 +40,8 @@ def before_file(tag, run, data_dir):
 
     input_array = sav_dict['input_array']
     deviations = sav_dict['deviations']
-    
-    print(input_array.shape)
 
-    #super dictionary to save everything in
+    # super dictionary to save everything in
     h5_save_dict = {}
     h5_save_dict['input_array'] = input_array
     h5_save_dict['deviations'] = deviations
@@ -66,7 +64,7 @@ def after_file(tag, run, data_dir):
 
     res_mean_data = sav_dict["res_mean_data"]
 
-    save(after_file, res_mean_data, "after_file")
+    save(after_file, np.array([res_mean_data], dtype = np.float64), "after_file")
 
     return after_file
 
@@ -89,8 +87,6 @@ def test_points_zenith_offzenith_and_1088716296(before_file, after_file):
     deviations = h5_before['deviations']
 
     result_res_mean = resistant_mean(input_array, deviations)
-    
-    print(result_res_mean, expected_res_mean)
 
     assert np.allclose(result_res_mean, expected_res_mean, atol=1e-4)
 

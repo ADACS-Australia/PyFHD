@@ -101,43 +101,49 @@ def test_vis_cal_auto_fit(before_file, after_file, data_dir):
     auto_tile_i = h5_before['auto_tile_i']
 
     return_cal_fit = vis_cal_auto_fit(obs, cal, vis_auto, vis_model_auto, auto_tile_i)
+
+    assert True
+
+    # Plots have been made already testing this against FHD, uncomment to regenerate them.
+
+    
     # auto_scale is nan, nan from FHD and Python, can't compare them due to the nans
     # assert np.array_equal(return_cal_fit['auto_scale'], expected_cal_fit['auto_scale'])
     # cal_fit['auto_params'] came in as an object array
-    auto_params = np.empty([2, cal["n_pol"], cal['n_tile']], dtype = np.float64)
-    auto_params[0] = expected_cal_fit['auto_params'][0].transpose()
-    auto_params[1] = expected_cal_fit['auto_params'][1].transpose()
+    # auto_params = np.empty([2, cal["n_pol"], cal['n_tile']], dtype = np.float64)
+    # auto_params[0] = expected_cal_fit['auto_params'][0].transpose()
+    # auto_params[1] = expected_cal_fit['auto_params'][1].transpose()
 
-    name_split = before_file.name.split('_')
-    tag = f"{name_split[0]}_{name_split[1]}"
-    run = name_split[2]
-    #TODO get this stored somewhere as a test input
-    actual_gains = np.load(Path(data_dir, f"{tag}_gains_applied_woden.npz"))
-    gx = actual_gains['gx'].transpose()
-    gy = actual_gains['gy'].transpose()
+    # name_split = before_file.name.split('_')
+    # tag = f"{name_split[0]}_{name_split[1]}"
+    # run = name_split[2]
+    # #TODO get this stored somewhere as a test input
+    # actual_gains = np.load(Path(data_dir, f"{tag}_gains_applied_woden.npz"))
+    # gx = actual_gains['gx'].transpose()
+    # gy = actual_gains['gy'].transpose()
 
-    fig, axs = plt.subplots(2, 1)
+    # fig, axs = plt.subplots(2, 1)
 
-    axs[0].plot(np.abs(gx[0, :]), 's', mfc='none', linestyle='none', label='Sim gains')
-    axs[0].plot(return_cal_fit['gain'][0, 0, :], 'x', mfc='none', linestyle='none', label='Fit PyFHD')
+    # axs[0].plot(np.abs(gx[0, :]), 's', mfc='none', linestyle='none', label='Sim gains')
+    # axs[0].plot(return_cal_fit['gain'][0, 0, :], 'x', mfc='none', linestyle='none', label='Fit PyFHD')
 
-    print(expected_cal_fit['gain'][0, 0, 1])
-    print(return_cal_fit['gain'][0, 0, 1])
+    # print(expected_cal_fit['gain'][0, 0, 1])
+    # print(return_cal_fit['gain'][0, 0, 1])
 
-    axs[1].plot(np.abs(gx[0, :]), 's', mfc='none', linestyle='none', label='Sim gains')
-    axs[1].plot(expected_cal_fit['gain'][0, 0, :]*0.5, '^', mfc='none', linestyle='none', label='Fit FHD')
+    # axs[1].plot(np.abs(gx[0, :]), 's', mfc='none', linestyle='none', label='Sim gains')
+    # axs[1].plot(expected_cal_fit['gain'][0, 0, :]*0.5, '^', mfc='none', linestyle='none', label='Fit FHD')
 
-    axs[1].set_xlabel('Tile index')
+    # axs[1].set_xlabel('Tile index')
 
-    axs[0].set_ylabel('Gain value')
-    axs[1].set_ylabel('Gain value')
+    # axs[0].set_ylabel('Gain value')
+    # axs[1].set_ylabel('Gain value')
 
-    axs[0].legend()
-    axs[1].legend()
+    # axs[0].legend()
+    # axs[1].legend()
 
-    plt.tight_layout()
-    fig.savefig(f"test_vis_cal_auto_fit_{tag}_{run}.png", bbox_inches='tight', dpi=300)
-    plt.close()
+    # plt.tight_layout()
+    # fig.savefig(f"test_vis_cal_auto_fit_{tag}_{run}.png", bbox_inches='tight', dpi=300)
+    # plt.close()
 
     # rtol = 1e-5
     # atol = 1e-3

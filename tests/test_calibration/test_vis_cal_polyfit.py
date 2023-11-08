@@ -196,9 +196,7 @@ def test_vis_cal_polyfit(before_file, after_file):
     obs = h5_before['obs']
     cal = h5_before['cal']
     auto_ratio = h5_before['auto_ratio']
-    # HDF5 saves None as 0, detect that
-    if not isinstance(auto_ratio, np.ndarray):
-        auto_ratio = None
+    
     pyfhd_config = h5_before['pyfhd_config']
     pyfhd_config['instrument'] = 'mwa'
     pyfhd_config["cable_reflection_coefficients"] = Path(pyfhd_config["cable_reflection_coefficients"])

@@ -76,8 +76,6 @@ def test_model_transfer(before_file, after_file):
     h5_before = load(before_file)
     expected_vis_model_arr = load(after_file)
 
-    h5_before["obs"]["pol_names"] = [name.decode() for name in h5_before["obs"]["pol_names"]]
-
     vis_model_arr, params_model = vis_model_transfer(h5_before["pyfhd_config"], h5_before["obs"], RootLogger(1))
     if (h5_before["pyfhd_config"]["flag_model"]):
         vis_model_arr = flag_model_visibilities(vis_model_arr, h5_before["params"], params_model, h5_before["obs"], h5_before["pyfhd_config"], RootLogger(1))

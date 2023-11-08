@@ -99,8 +99,6 @@ def test_vis_calibration_flag(before_file, after_file):
     obs_in = h5_before['obs']
     cal = h5_before['cal']
     pyfhd_config = h5_before['pyfhd_config']
-    pyfhd_config['cal_amp_degree_fit'] = 2
-    pyfhd_config['cal_phase_degree_fit'] = 1
     
     logger = RootLogger(1)
     

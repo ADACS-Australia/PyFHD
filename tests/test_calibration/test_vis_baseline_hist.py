@@ -109,41 +109,43 @@ def test_vis_baseline_hist(before_file: Path, after_file: Path):
     
     npt.assert_allclose(result_vis_baseline_hist['baseline_length'], num_bins)
 
-    fig, axs = plt.subplots(1, 2, figsize=(10, 5))
+    # Plots have already been made and saved, if you want to regenerate them, uncomment the code
 
-    extent = [-0.5, 1.5, -0.5, num_bins - 0.5]
+    # fig, axs = plt.subplots(1, 2, figsize=(10, 5))
 
-    im = axs[0].imshow(expec_vis_res_ratio_mean.transpose(), aspect='auto',
-                       extent=extent, origin='lower')
-    plt.colorbar(im)
-    axs[0].set_xticks([0, 1])
+    # extent = [-0.5, 1.5, -0.5, num_bins - 0.5]
+
+    # im = axs[0].imshow(expec_vis_res_ratio_mean.transpose(), aspect='auto',
+    #                    extent=extent, origin='lower')
+    # plt.colorbar(im)
+    # axs[0].set_xticks([0, 1])
 
 
-    vis_res_ratio_mean_plt = np.zeros([num_bins, 2])
-    vis_res_ratio_mean_plt[:,1] = expec_vis_res_ratio_mean[1]
+    # vis_res_ratio_mean_plt = np.zeros([num_bins, 2])
+    # vis_res_ratio_mean_plt[:,1] = expec_vis_res_ratio_mean[1]
 
-    im = axs[1].imshow(result_vis_baseline_hist['vis_res_ratio_mean'].transpose(), aspect='auto',
-                       extent=extent, origin='lower')
-    plt.colorbar(im)
-    axs[1].set_xticks([0, 1])
+    # im = axs[1].imshow(result_vis_baseline_hist['vis_res_ratio_mean'].transpose(), aspect='auto',
+    #                    extent=extent, origin='lower')
+    # plt.colorbar(im)
+    # axs[1].set_xticks([0, 1])
 
-    axs[0].set_title('FHD')
+    # axs[0].set_title('FHD')
   
-    axs[1].set_title('PyFHD')
+    # axs[1].set_title('PyFHD')
 
-    for ax in axs.flatten():
-        ax.set_xlabel('Polarisation')
+    # for ax in axs.flatten():
+    #     ax.set_xlabel('Polarisation')
 
-    axs[0].set_ylabel("Baseline hist bin")
+    # axs[0].set_ylabel("Baseline hist bin")
 
-    plt.tight_layout()
-    name_split = before_file.name.split('_')
-    if (name_split[0] == 'point'):
-        tag = f"{name_split[0]}_{name_split[1]}"
-        run = f"{name_split[2]}"
-    else:
-        tag = f"{name_split[0]}"
-        run = f"{name_split[1]}"
-    fig.savefig(f"test_vis_baseline_hist_{tag}_{run}_after_fix.png", bbox_inches='tight', dpi=300)
-    plt.close()
+    # plt.tight_layout()
+    # name_split = before_file.name.split('_')
+    # if (name_split[0] == 'point'):
+    #     tag = f"{name_split[0]}_{name_split[1]}"
+    #     run = f"{name_split[2]}"
+    # else:
+    #     tag = f"{name_split[0]}"
+    #     run = f"{name_split[1]}"
+    # fig.savefig(f"test_vis_baseline_hist_{tag}_{run}_after_fix.png", bbox_inches='tight', dpi=300)
+    # plt.close()
     

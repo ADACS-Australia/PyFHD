@@ -134,7 +134,7 @@ def test_vis_cal_bandpass(before_file, after_file):
     cal = h5_before['cal']
     params = h5_before['params']
     pyfhd_config = h5_before['pyfhd_config']
-    pyfhd_config['cal_bp_transfer'] = None
+    # pyfhd_config['cal_bp_transfer'] = None
 
     expected_cal_bandpass = h5_after['cal_bandpass']
     expected_cal_remainder = h5_after['cal_remainder']

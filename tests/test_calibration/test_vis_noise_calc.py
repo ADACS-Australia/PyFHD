@@ -21,7 +21,7 @@ def tag(request):
 def run(request):
     return request.param
 
-skip_tests = []
+skip_tests: list = []
 
 @pytest.fixture()
 def before_file(tag, run, data_dir):
@@ -62,7 +62,7 @@ def after_file(tag, run, data_dir):
     h5_save_dict = {}
     h5_save_dict['noise_arr'] = sav_dict['noise_arr']
 
-    save(after_file, h5_save_dict, "after_file")
+    save(after_file, sav_dict['noise_arr'].transpose(), "noise_arr")
 
     return after_file
 
@@ -72,7 +72,6 @@ def test_points_zenith_and_offzenith(before_file, after_file):
 
     h5_before = load(before_file)
     expected_noise_arr = load(after_file)
-    expected_noise_arr = expected_noise_arr.transpose()
 
     obs = h5_before['obs']
     vis_arr = h5_before['vis_arr']

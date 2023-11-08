@@ -52,6 +52,7 @@ def before_file(tag, run, data_dir):
     pyfhd_config["calibration_auto_initialize"] = False
     pyfhd_config["flag_calibration"] = True
     pyfhd_config["cal_gain_init"] = 1
+    pyfhd_config["cal_base_gain"] = 0.75
     pyfhd_config["calibration_auto_fit"] = False
     if run in ["run1", "run3"]:
         pyfhd_config["bandpass_calibrate"] = True
