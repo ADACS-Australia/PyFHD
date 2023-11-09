@@ -486,9 +486,6 @@ def vis_cal_bandpass(obs: dict, cal: dict, params: dict, pyfhd_config: dict, log
             return cal_bandpass, cal_remainder
     cal_bandpass = deepcopy(cal)
     cal_remainder = deepcopy(cal)
-     # These replace gain_arr_ptr_2 & 3 from FHD with better names
-    # cal_bandpass_gain = np.empty((n_pol, gain.shape[1], gain.shape[2]))
-    # cal_remainder_gain = np.empty((n_pol, gain.shape[1], gain.shape[2]))
 
     cal_bandpass_gain = np.empty(cal["gain"].shape, dtype=np.complex128)
     cal_remainder_gain = np.empty(cal["gain"].shape, dtype=np.complex128)
@@ -922,7 +919,7 @@ def vis_cal_auto_fit(obs: dict, cal: dict, vis_auto : np.ndarray, vis_auto_model
     cal['auto_params'][1, :, :] = fit_slope
     return cal
 
-def vis_calibration_apply(vis_arr: np.ndarray, obs: dict, cal: dict, vis_model_arr: np.ndarray, vis_weights: np.ndarray, logger: RootLogger) -> np.ndarray:
+def vis_calibration_apply(vis_arr: np.ndarray, obs: dict, cal: dict, vis_model_arr: np.ndarray, vis_weights: np.ndarray, logger: RootLogger) -> tuple[np.ndarray, dict]:
     """
     TODO: Docstring
 

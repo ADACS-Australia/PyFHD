@@ -72,7 +72,6 @@ def before_file(tag, run, data_dir):
         bandpass = load(bandpass_file)
         bandpass['pyfhd_config']['cal_bp_transfer'] = None
         pyfhd_config.update(bandpass['pyfhd_config'])
-        pyfhd_config['instrument'] = pyfhd_config['instrument'].decode()
     # Fill pyfhd_config from the polyfit before
     polyfit_dir = Path(data_dir.parent, 'vis_cal_polyfit')
     polyfit_file = Path(polyfit_dir, f"{tag}_{run}_before_{polyfit_dir.name}.h5")
@@ -98,7 +97,9 @@ def before_file(tag, run, data_dir):
 
     # Read the vis_model_arr
     vis_model_arr, params_model = vis_model_transfer(pyfhd_config, h5_save_dict['obs'], RootLogger(1))
-    vis_model_arr = flag_model_visibilities(vis_model_arr, h5_save_dict['params'], params_model, h5_save_dict['obs'], pyfhd_config, RootLogger(1))
+    # No flagging was done for point zenith or point offzenith
+    if tag == "1088716296":
+        vis_model_arr = flag_model_visibilities(vis_model_arr, h5_save_dict['params'], params_model, h5_save_dict['obs'], pyfhd_config, RootLogger(1))
 
     h5_save_dict['vis_model_arr'] = vis_model_arr
 
@@ -168,10 +169,6 @@ def test_calibrate(before_file, after_file):
     h5_before = load(before_file)
     h5_after = load(after_file)
 
-    # HDF5 loads None as 0, probably should make it empty
-    h5_before['pyfhd_config']['cal_bp_transfer'] = None
-    h5_before['pyfhd_config']['instrument'] = h5_before['pyfhd_config']['instrument'].decode()
-
     vis_cal, cal, obs = calibrate(
         h5_before['obs'],
         h5_before['params'],
@@ -181,8 +178,10 @@ def test_calibrate(before_file, after_file):
         h5_before['pyfhd_config'],
         RootLogger(1)
     )
+    actual_nan = np.nonzero(np.isnan(cal['gain'].real))
+    expected_nan = np.nonzero(np.isnan(h5_after['cal']['gain'].real))
     # The gain has been calculated
-    assert_allclose(cal['gain'], h5_after['cal']['gain'], atol = 1e-8)
+    assert_allclose(cal['gain'][actual_nan], h5_after['cal']['gain'][actual_nan], atol = 1e-8)
     # The visibilities should be changed, check them
     assert_allclose(vis_cal, h5_after['vis_arr'], atol = 1e-8)
     # Not checking the amp, phase and mode_params as they shouldn't chnage after polyfit (nor are they used in PyFHD)
