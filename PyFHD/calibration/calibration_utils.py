@@ -148,7 +148,8 @@ def vis_calibration_flag(obs: dict, cal: dict, pyfhd_config: dict, logger: RootL
         # first flag based on overall amplitude
         # extract_subarray is not being used as it was FHD's way of taking the fact that
         # IDL's indexing can be weird and won't allow to index the result
-        # TODO: May need to adjust the indexing to match IDL as tile_use_i and freq_use_i use np.where on gain, which will be multidimensional as well
+        # TODO: May need to adjust the indexing to match IDL as tile_use_i and freq_use_i 
+        # use np.where on gain, which will be multidimensional as well
         amp_sub = amp[: , tile_use_i][freq_use_i, :]
         gain_freq_fom = np.std(amp_sub, axis = 1)
         # Calculate the y values from a polynomial fit and keep the standard deviation of the error in gain_tile_fom
@@ -210,17 +211,18 @@ def vis_calibration_flag(obs: dict, cal: dict, pyfhd_config: dict, logger: RootL
             phase_fit = np.polynomial.polynomial.polyval(freq_use_i, phase_params)
             phase_sigma2 = np.std(phase_use - phase_fit)
             # In an unusual scenario sometimes you'll get an all 0 array to fit on, which gives only a zero back for the fit
-            phase_slope_arr[tile_i] = phase_params[1] if phase_params.size > 1 else phase_params[0]
+            phase_slope_arr[tile_i] = phase_params[1] if phase_params.size > 1 else 0
             phase_sigma_arr[tile_i] = phase_sigma2
         iter = 0
         n_addl_cut = 1
         n_cut = 0
         while n_addl_cut > 0 and iter < 3:
-            slope_sigma = np.std(phase_slope_arr)
-            tile_cut_i = np.where(
-                ((np.abs(phase_slope_arr) - np.median(np.abs(phase_slope_arr))) > phase_sigma_threshold * slope_sigma) | 
-                ((phase_sigma_arr - np.median(phase_sigma_arr)) > phase_sigma_threshold * np.std(phase_sigma_arr))
-            )[0]
+            slope_sigma = np.nanstd(phase_slope_arr)
+            tile_cut_test1 = (np.abs(phase_slope_arr) - np.median(np.abs(phase_slope_arr))) > phase_sigma_threshold * slope_sigma
+            first_part_tile_cut_test2 = phase_sigma_arr - np.median(phase_sigma_arr)
+            second_part_tile_cut_test2 = phase_sigma_threshold * np.nanstd(phase_sigma_arr)
+            tile_cut_test2 = (phase_sigma_arr - np.median(phase_sigma_arr)) > (phase_sigma_threshold * np.nanstd(phase_sigma_arr))
+            tile_cut_i = np.where(tile_cut_test1 | tile_cut_test2)[0]
             n_addl_cut = tile_cut_i.size - n_cut
             n_cut = tile_cut_i.size
             iter += 1
@@ -450,7 +452,7 @@ def transfer_bandpass(obs: dict, cal: dict, pyfhd_config: dict, logger: RootLogg
     cal_remainder["gain"][0 : cal["n_pol"], :, :] = cal["gain"][0 : cal["n_pol"], :, :] / cal_bandpass["gain"][0 : cal["n_pol"], :, :]
     return cal_bandpass, cal_remainder
 
-def vis_cal_bandpass(obs: dict, cal: dict, params: dict, pyfhd_config: dict, logger: RootLogger) -> Tuple[dict, dict]:
+def vis_cal_bandpass(obs: dict, cal: dict, pyfhd_config: dict, logger: RootLogger) -> Tuple[dict, dict]:
     """
     TODO: Docstring
 
@@ -460,8 +462,6 @@ def vis_cal_bandpass(obs: dict, cal: dict, params: dict, pyfhd_config: dict, log
         The observation data given to PyFHD
     cal : dict
         The calibration dictionary containing the data from the calibration
-    params : dict
-        The PyFHD params containing uu, ww, vv
     pyfhd_config : dict
         The config used to start PyFHD containing config for calibration
     logger : RootLogger
@@ -675,7 +675,9 @@ def vis_cal_polyfit(obs: dict, cal: dict, auto_ratio: np.ndarray | None, pyfhd_c
                 phase_fit += phase_params[di] * np.arange(obs['n_freq'])**di
             gain_arr[:, tile_i] = gain_fit * np.exp(1j * phase_fit)
         cal['gain'][pol_i] = gain_arr
-
+    remainder_nans = np.nonzero(np.isnan(cal['gain']))
+    remainder_freq_idxs = np.unique(remainder_nans[1])
+    remainder_tile_idxs = np.unique(remainder_nans[2])
     # Cable Reflection Fitting
     if (cal_mode_fit):
         if (pyfhd_config['cal_reflection_mode_file']):

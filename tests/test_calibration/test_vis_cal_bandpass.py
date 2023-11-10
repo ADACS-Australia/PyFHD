@@ -46,8 +46,6 @@ def before_file(tag, run, data_dir):
     gain = sav_file_vis_arr_swap_axes(cal['gain'])
     cal['gain'] = gain
     
-    params = recarray_to_dict(sav_dict['params'])
-    
     # make a slimmed down version of pyfhd_config
     pyfhd_config = {}
     
@@ -80,7 +78,6 @@ def before_file(tag, run, data_dir):
     h5_save_dict = {}
     h5_save_dict['obs'] = obs
     h5_save_dict['cal'] = cal
-    h5_save_dict['params'] = params
     h5_save_dict['pyfhd_config'] = pyfhd_config
 
     save(before_file, h5_save_dict, "before_file")
@@ -132,7 +129,6 @@ def test_vis_cal_bandpass(before_file, after_file):
 
     obs = h5_before['obs']
     cal = h5_before['cal']
-    params = h5_before['params']
     pyfhd_config = h5_before['pyfhd_config']
     # pyfhd_config['cal_bp_transfer'] = None
 
@@ -141,7 +137,7 @@ def test_vis_cal_bandpass(before_file, after_file):
     
     logger = RootLogger(1)
     
-    result_cal_bandpass, result_cal_remainder = vis_cal_bandpass(obs, cal, params, pyfhd_config, logger)
+    result_cal_bandpass, result_cal_remainder = vis_cal_bandpass(obs, cal, pyfhd_config, logger)
 
     # The FHD function does some dividing by zeros, so we end up with NaNs
     # in both the expected and result data. To check we are replicating

@@ -75,7 +75,7 @@ def calibrate(obs: dict, params: dict, vis_arr: np.array, vis_weights: np.array,
             cal, auto_ratio = cal_auto_ratio_divide(obs, cal, vis_auto, auto_tile_i)
         else:
             auto_ratio = None
-        cal_bandpass, cal_remainder = vis_cal_bandpass(obs, cal, params, pyfhd_config, logger)
+        cal_bandpass, cal_remainder = vis_cal_bandpass(obs, cal, pyfhd_config, logger)
 
         if (pyfhd_config["calibration_polyfit"]):
             logger.info("You have selected to calculate a polynomial fit allowing the cable reflections to be fit")

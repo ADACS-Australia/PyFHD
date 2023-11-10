@@ -204,7 +204,6 @@ def test_vis_cal_polyfit(before_file, after_file):
     logger = RootLogger(1)
     
     cal_polyfit = vis_cal_polyfit(obs, cal, auto_ratio, pyfhd_config, logger)
-    
     npt.assert_allclose(cal_polyfit['amp_params'], expected_cal_return['amp_params'], atol=2e-7)
     # Only the real data has atol error of 2e-6, simulated has 1e-8 atol error
     npt.assert_allclose(cal_polyfit['phase_params'], expected_cal_return['phase_params'], atol=2e-6)

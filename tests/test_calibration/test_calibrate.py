@@ -79,7 +79,7 @@ def before_file(tag, run, data_dir):
         polyfit = load(polyfit_file)
         pyfhd_config.update(polyfit['pyfhd_config'])
         pyfhd_config["cable_reflection_coefficients"] = str(pyfhd_config["cable_reflection_coefficients"])
-        pyfhd_config["cable_lengths"] = str(pyfhd_config["cable_reflection_coefficients"]) 
+        pyfhd_config["cable_lengths"] = str(pyfhd_config["cable_lengths"]) 
     # Fill pyfhd_config from the flag before
     flag_before = Path(data_dir.parent, 'vis_calibration_flag')
     flag_file = Path(flag_before, f"{tag}_{run}_before_{flag_before.name}.h5")
@@ -181,7 +181,7 @@ def test_calibrate(before_file, after_file):
     actual_nan = np.nonzero(np.isnan(cal['gain'].real))
     expected_nan = np.nonzero(np.isnan(h5_after['cal']['gain'].real))
     # The gain has been calculated
-    assert_allclose(cal['gain'][actual_nan], h5_after['cal']['gain'][actual_nan], atol = 1e-8)
+    assert_allclose(cal['gain'], h5_after['cal']['gain'], atol = 1e-8)
     # The visibilities should be changed, check them
     assert_allclose(vis_cal, h5_after['vis_arr'], atol = 1e-8)
     # Not checking the amp, phase and mode_params as they shouldn't chnage after polyfit (nor are they used in PyFHD)

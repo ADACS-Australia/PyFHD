@@ -1,5 +1,4 @@
 import numpy as np
-from typing import Tuple
 from astropy.constants import c
 from logging import RootLogger
 from scipy.interpolate import interp1d
