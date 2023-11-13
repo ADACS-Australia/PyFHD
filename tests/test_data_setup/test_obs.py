@@ -102,6 +102,7 @@ def test_2_pol_obs_creation(obs_id, data_dir, obs_dir):
     assert(obs['kpix'] == obs_fhd['kpix'])
     assert(obs['dimension'] == obs_fhd['dimension'])
     assert(obs['elements'] == obs_fhd['elements'])
+    assert(obs['n_baselines'] == obs_fhd['nbaselines'])
     npt.assert_almost_equal(obs['degpix'], obs_fhd['degpix'])
     npt.assert_almost_equal(obs['max_baseline'], obs_fhd['max_baseline'])
     npt.assert_almost_equal(obs['min_baseline'], obs_fhd['min_baseline'])
