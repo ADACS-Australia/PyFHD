@@ -19,7 +19,7 @@ def test_1061316296(data_dir, uvfits_dir):
     dummy_log = logging.getLogger('dummy')
     pyfhd_config = np.load(Path(data_dir, 'config.npy'), allow_pickle=True).item()
     pyfhd_config['input_path'] = uvfits_dir
-    pyfhd_header, fits_data, _ = extract_header(pyfhd_config, dummy_log)
+    pyfhd_header, fits_data, _, _ = extract_header(pyfhd_config, dummy_log)
     vis_arr, vis_weights = extract_visibilities(pyfhd_header, fits_data, pyfhd_config, dummy_log)
 
     output = get_savs(data_dir,'output.sav')

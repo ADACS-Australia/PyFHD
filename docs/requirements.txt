@@ -6,3 +6,4 @@ astropy
 sphinx-argparse
 colorama
 ConfigArgParse
+myst-parser

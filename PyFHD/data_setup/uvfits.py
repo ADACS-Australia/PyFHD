@@ -2,20 +2,30 @@ import numpy as np
 from astropy.io import fits
 from astropy.time import Time
 from astropy.io.fits.hdu.table import BinTableHDU
+from astropy.io.fits.fitsrec import FITS_rec
+from astropy.io.fits.header import Header
 from pathlib import Path
 import logging
 from typing import Tuple
 from astropy.coordinates import EarthLocation
+import astropy
+from astropy import units as u
 
-def extract_header(pyfhd_config : dict, logger : logging.RootLogger) -> Tuple[dict, np.recarray]:
-    """_summary_
+
+def extract_header(pyfhd_config : dict, logger : logging.RootLogger, model_uvfits = False) -> Tuple[dict, np.recarray, FITS_rec, Header]:
+    """
+    TODO:_summary_
 
     Parameters
     ----------
+    uvfits_path : str
+        Path to the uvfits to open (either the data or the model)
     pyfhd_config : dict
-        This is the config created from the argprase
+        This is the config created from the argparse
     logger : logging.RootLogger
         The PyFHD logger
+    model_uvfits : bool
+        If True, load in the model uvfits. If False, load in a data uvfits file, by default False
 
     Returns
     -------
@@ -23,8 +33,10 @@ def extract_header(pyfhd_config : dict, logger : logging.RootLogger) -> Tuple[di
         The result from the extraction of the header of the UVFITS file
     params_data : np.recarray
         The data from the UVFITS file.
-    antenna_table : astropy.io.fits.hdu.table.BinTableHDU
-        The layout header and data which will be used in the create_layout function
+    antenna_data : astropy.io.fits.fitsrec.FITS_rec
+        The layout data which will be used in the create_layout function
+    antenna_header : astropy.io.fits.header.Header
+        The layout data which will be used in the create_layout function
 
     Raises
     ------
@@ -32,10 +44,22 @@ def extract_header(pyfhd_config : dict, logger : logging.RootLogger) -> Tuple[di
         If the UVFITS file doesn't contain all the data then a KeyError will be raised
     """
 
+    if model_uvfits:
+        uvfits_path = Path(pyfhd_config['model_file_path'])
+        logger.info(f"Reading in model visibilities from: {uvfits_path}")
+    else:
+        uvfits_path = Path(pyfhd_config['input_path'], pyfhd_config['obs_id'] + '.uvfits')
+        logger.info(f"Reading in visibilities from: {uvfits_path}")
+
     # Retrieve all data from the observation
-    observation = fits.open(Path(pyfhd_config['input_path'], pyfhd_config['obs_id'] + '.uvfits'))
-    params_header = observation[0].header
-    params_data = observation[0].data
+    with fits.open(uvfits_path) as observation:
+
+        params_header = observation[0].header
+        params_data = observation[0].data
+        
+        # Keep the layout header and data for the create_layout function
+        antenna_data = observation[1].data
+        antenna_header = observation[1].header
 
     pyfhd_header = {}
     # Retrieve data from the params_header
@@ -47,19 +71,41 @@ def extract_header(pyfhd_config : dict, logger : logging.RootLogger) -> Tuple[di
     pyfhd_header['n_tile'] = 128
     pyfhd_header['naxis'] = params_header['naxis']
     pyfhd_header['n_params'] = params_header['pcount']
-    pyfhd_header['nbaselines'] = params_header['gcount']
+    pyfhd_header['n_baselines'] = params_header['gcount']
     pyfhd_header['n_complex'] = params_header['naxis2']
     pyfhd_header['n_pol'] = params_header['naxis3']
     pyfhd_header['n_freq'] = params_header['naxis4']
     pyfhd_header['freq_ref'] = params_header['crval4']
     pyfhd_header['freq_res'] = params_header['cdelt4']
-    pyfhd_header['date_obs'] = params_header['date-obs']
+    try:
+        pyfhd_header['date_obs'] = params_header['date-obs']
+    except KeyError:
+        pyfhd_header['date_obs'] = params_header['dateobs']
     freq_ref_i = params_header['crpix4'] - 1
     pyfhd_header['frequency_array'] = (np.arange(pyfhd_header['n_freq']) - freq_ref_i) * pyfhd_header['freq_res'] + pyfhd_header['freq_ref']
-    pyfhd_header['obsra'] = params_header['obsra']
-    pyfhd_header['obsdec'] = params_header['obsdec']
+    try:
+        pyfhd_header['obsra'] = params_header['obsra']
+    except KeyError:
+        logger.warning("OBSRA not found in UVFITS file")
+        pyfhd_header['obsra'] = params_header['ra']
+
+    try:
+        pyfhd_header['obsdec'] = params_header['obsdec']
+    except KeyError:
+        logger.warning("OBSDEC not found in UVFITS file")
+        pyfhd_header['obsdec'] = params_header['dec']
     # Put in locations of instrument from FITS file or from Astropy site data
-    location = EarthLocation.of_site(pyfhd_config['instrument'])
+    # If you want to see the list of current site names using EarthLocation.get_site_names()
+    # If you want to use PyFHD with HERA in the future 
+    # and make it compatible you might have to put in the lat/lon/alt yourself
+    try:
+        location = EarthLocation.of_site(pyfhd_config['instrument'])
+    except astropy.coordinates.errors.UnknownSiteException:
+        # If the site isn't known then select MWA, which no longer uses inbuilt corrdinates from the FHD repo.
+        logger.info(f"Failed to load in the {pyfhd_config['instrument']} instrument location from astropy. If lon/lat/alt are not in the UVFITS things will fail.")
+        # Can also do MWA or Murchison Widefield Array
+        location = EarthLocation('mwa')
+
     try: 
         pyfhd_header['lon'] = params_header['lon']
     except KeyError:
@@ -72,6 +118,8 @@ def extract_header(pyfhd_config : dict, logger : logging.RootLogger) -> Tuple[di
         pyfhd_header['alt'] = params_header['alt']
     except KeyError:
         pyfhd_header['alt'] = location.height.value
+
+    logger.info(f"Setting {pyfhd_config['instrument']} instrument location to: lon {pyfhd_header['lon']:.2f}, lat {pyfhd_header['lat']:.2f}, alt {pyfhd_header['alt']:.2f}")
 
     # Setup params list and names
     param_list = []
@@ -102,6 +150,7 @@ def extract_header(pyfhd_config : dict, logger : logging.RootLogger) -> Tuple[di
     
     pyfhd_header['ant1_i'] = 'ANTENNA1' in param_list
     pyfhd_header['ant2_i'] = 'ANTENNA2' in param_list
+    
     if not pyfhd_header['ant1_i'] or not pyfhd_header['ant2_i']:
         pyfhd_header['baseline_i'] = param_list.index('BASELINE')
         if not pyfhd_header['baseline_i']:
@@ -136,10 +185,7 @@ def extract_header(pyfhd_config : dict, logger : logging.RootLogger) -> Tuple[di
         fits_time.format = 'jd'
         pyfhd_header['jd0'] = fits_time.value
 
-    # Keep the layout header and data for the create_layout function
-    antenna_table = observation[1]
-
-    return pyfhd_header, params_data, antenna_table
+    return pyfhd_header, params_data, antenna_header, antenna_data
 
 def create_params(pyfhd_header : dict, params_data : np.recarray, logger : logging.RootLogger) -> dict:
     """_summary_
@@ -177,16 +223,22 @@ def create_params(pyfhd_header : dict, params_data : np.recarray, logger : loggi
         # Astropy has already normalized the values by PZEROx, time in Julian
         params['time'] = params_data['DATE']
         # Get baseline and antenna arrays
-        if pyfhd_header['baseline_i']:
-            params['baseline_arr'] = params_data['BASELINE']
-            params['antenna1'] = params['baseline_arr']
         # The antenna arrays already exist then take those
         if pyfhd_header['ant1_i'] and pyfhd_header['ant2_i']:
             params['antenna1'] = params_data['ANTENNA1']
             params['antenna2'] = params_data['ANTENNA2']
+
+        #TODO I don't think we should ever get to this half-way calc, we
+        #always want antenna1 and antenna2??
+        # # baseline_i should be set if ant1_i and ant2_i are not
+        # elif pyfhd_header['baseline_i']:
+        #     params['baseline_arr'] = params_data['BASELINE']
+        #     params['antenna1'] = params['baseline_arr']
+        
         # Else calculate it from the baseline array
         else:
             # Calculate antenna_mod_index to check for bad fits
+            params['baseline_arr'] = params_data['BASELINE']
             baseline_min = np.min(params['baseline_arr'])
             exponent = np.log(np.min(baseline_min)) / np.log(2)
             antenna_mod_index = 2 ** np.floor(exponent)
@@ -275,25 +327,29 @@ def _check_layout_valid(layout : dict, key : str, logger : logging.RootLogger, c
         logger.error(f"The layout[{key}] array set is not the same size of the number of antennas. Check the UVFITS file for errors.")
     
 
-def create_layout(antenna_table : BinTableHDU, logger : logging.RootLogger) -> dict:
-    """_summary_
+def create_layout(antenna_header: Header, antenna_data: FITS_rec, logger : logging.RootLogger) -> dict:
+    """
+    TODO: _summary_
 
     Parameters
     ----------
-    antenna_table : BinTableHDU
-        The second table 
+    antenna_header : Header
+        The header from the second table of the observation
+    antenna_data : FITS_rec
+        The data from the second table of the observation
+    logger : logging.RootLogger
+        PyFHD's logger
 
     Returns
     -------
-    layout : dict
-        The layout dictionary which wil enable compatibility with pyuvdata
+    layout: dict
+        The antenna layout dictionary compatible with pyuvdata
 
     See Also
     ---------
-    extract_header : Opens the UVFITS file and extracts the header and data, including the antenna_table.
-    """
-    antenna_data = antenna_table.data
-    antenna_header = antenna_table.header
+    extract_header : Opens the UVFITS file and extracts the header and data, including the antenna_header and antenna_data.
+    """    
+
     layout = {}
 
     # Extract data from the header

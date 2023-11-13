@@ -147,3 +147,7 @@ input/**
 !input/README.md
 !input/instrument_config/
 !input/instrument_config/*
+
+# test things to ignore (for now)
+tests/*/__pycache__
+tests/test_source_modelling

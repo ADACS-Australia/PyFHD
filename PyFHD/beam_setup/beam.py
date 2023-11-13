@@ -54,9 +54,9 @@ def create_antenna(pyfhd_config : dict, obs : dict) -> dict:
     frequency_array = obs['baseline_info']['freq']
     freq_bin_i = obs['baseline_info']['fbin_i']
     nfreq_bin = int(np.max(freq_bin_i)) + 1
-    tile_A = obs['baseline_info']['tile_A']
-    tile_B = obs['baseline_info']['tile_B']
-    ant_names = np.unique(tile_A[: obs['nbaselines']])
+    tile_a = obs['baseline_info']['tile_a']
+    tile_b = obs['baseline_info']['tile_b']
+    ant_names = np.unique(tile_a[: obs['n_baselines']])
     if pyfhd_config['beam_offset_time'] is not None:
         jdate_use = obs['jd0'] + pyfhd_config['beam_offset_time'] / 24 / 3600
     else:

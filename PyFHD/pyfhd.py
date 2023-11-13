@@ -5,10 +5,12 @@ import numpy as np
 from PyFHD.pyfhd_tools.pyfhd_setup import pyfhd_parser, pyfhd_setup
 from PyFHD.data_setup.obs import create_obs
 from PyFHD.data_setup.uvfits import extract_header, create_params, extract_visibilities, create_layout
-from PyFHD.pyfhd_tools.pyfhd_utils import simple_deproject_w_term
-from PyFHD.beam_setup.beam import create_psf
+from PyFHD.pyfhd_tools.pyfhd_utils import simple_deproject_w_term, vis_weights_update, vis_noise_calc
+from PyFHD.source_modeling.vis_model_transfer import vis_model_transfer, flag_model_visibilities
+from PyFHD.calibration.calibrate import calibrate, calibrate_qu_mixing
 from PyFHD.use_idl_fhd.run_idl_fhd import run_IDL_calibration_only, run_IDL_convert_gridding_to_healpix_images
 from PyFHD.use_idl_fhd.use_idl_outputs import run_gridding_on_IDL_outputs
+from PyFHD.flagging.flagging import vis_flag, vis_flag_basic
 import logging
 
 def _print_time_diff(start : float, end : float, description : str, logger : RootLogger):
@@ -46,7 +48,7 @@ def main_python_only(pyfhd_config : dict, logger : logging.RootLogger):
 
     header_start = time.time()
     # Get the header
-    pyfhd_header, params_data, antenna_table = extract_header(pyfhd_config, logger)
+    pyfhd_header, params_data, antenna_header, antenna_data = extract_header(pyfhd_config, logger)
     header_end = time.time()
     _print_time_diff(header_start, header_end, 'PyFHD Header Created', logger)
 
@@ -65,18 +67,15 @@ def main_python_only(pyfhd_config : dict, logger : logging.RootLogger):
     # If you wish to average your fits data by time or frequency, insert your functions to do that here
 
     layout_start = time.time()
-    layout = create_layout(antenna_table, logger)
+    layout = create_layout(antenna_header, antenna_data, logger)
     layout_end = time.time()
     _print_time_diff(layout_start, layout_end, 'Layout Dictionary Extracted', logger)
 
     # TODO: Save the layout here later
-
-    # if pyfhd_config['run_simulation']:
-        # TODO: in_situ_sim_input()
     
     # Get obs
     obs_start = time.time()
-    obs = create_obs(pyfhd_header, params, pyfhd_config, logger)
+    obs = create_obs(pyfhd_header, params, layout, pyfhd_config, logger)
     obs_end = time.time()
     _print_time_diff(obs_start, obs_end, 'Obs Dictionary Created', logger)
 
@@ -85,14 +84,69 @@ def main_python_only(pyfhd_config : dict, logger : logging.RootLogger):
         vis_arr = simple_deproject_w_term(obs, params, vis_arr, pyfhd_config['deproject_w_term'], logger)
         w_term_end = time.time()
         _print_time_diff(w_term_start, w_term_end, 'Simple W-Term Deprojection Applied', logger)
-    
-    # Beam Setup
-    beam_start = time.time()
-    psf, antenna = create_psf(pyfhd_config, obs)
-    beam_end = time.time()
-    _print_time_diff(beam_start, beam_end, 'Beam Setup', logger)
 
-    # np.save('../notebooks/pyfhd_config.npy', pyfhd_config, allow_pickle=True)
+    # Peform basic flagging
+    if (pyfhd_config['flag_basic']):
+        basic_flag_start = time.time()
+        vis_weights, obs = vis_flag_basic(vis_weights, obs, pyfhd_config, logger)
+        basic_flag_end = time.time()
+        _print_time_diff(basic_flag_start, basic_flag_end, 'Basic Flagging Completed', logger)
+
+    # Update the visibility weights
+    weight_start = time.time()
+    vis_weights, obs = vis_weights_update(vis_weights, obs, params, pyfhd_config)
+    weight_end = time.time()
+    _print_time_diff(weight_start, weight_end, 'Visibilities Weights Updated After Basic Flagging', logger)
+
+    # Get the vis_model_arr from a UVFITS file or SAV files and flag any issues
+    vis_model_arr_start = time.time()
+    vis_model_arr, params_model = vis_model_transfer(pyfhd_config, obs, logger)
+    vis_model_arr = flag_model_visibilities(vis_model_arr, params, params_model, obs, pyfhd_config, logger)
+    vis_model_arr_end = time.time()
+    _print_time_diff(vis_model_arr_start, vis_model_arr_end, 'Model Imported and Flagged From UVFITS', logger)
+
+    # Skipped initializing the cal structure as it mostly just copies values from the obs, params, config and the skymodel from FHD
+    # However, there is resulting cal structure for logging and output purposes to store the resulting gain and any other associated
+    # arrays
+    if (pyfhd_config['calibrate_visibilities']):
+        logger.info("Beginning Calibration")
+        cal_start = time.time()
+        vis_arr, cal = calibrate(obs, params, vis_arr, vis_weights, vis_model_arr, pyfhd_config, logger)
+        cal_end = time.time()
+        _print_time_diff(cal_start, cal_end, 'Visibilities calibrated and cal dictionary with gains created', logger)
+
+        if (obs['n_pol'] >= 4):
+            qu_mixing_start = time.time()
+            cal["stokes_mix_phase"] = calibrate_qu_mixing(vis_arr, vis_model_arr, vis_weights, obs)
+            qu_mixing_end = time.time()
+            _print_time_diff(qu_mixing_start, qu_mixing_end, 'Calibrate QU-Mixing has finished, result in cal["stokes_mix_phase"]', logger)
+
+        weight_start = time.time()
+        vis_weights, obs = vis_weights_update(vis_weights, obs, params, pyfhd_config)
+        weight_end = time.time()
+        _print_time_diff(weight_start, weight_end, 'Visibilities Weights Updated After Calibration', logger)
+
+    if (pyfhd_config['flag_visibilities']):
+        flag_start = time.time()
+        vis_weights, obs = vis_flag(vis_arr, vis_weights, obs, params)
+        flag_end = time.time()
+        _print_time_diff(flag_start, flag_end, 'Visibilities Flagged', logger)
+
+    noise_start = time.time()
+    obs['vis_noise'] = vis_noise_calc(obs, vis_arr, vis_weights)
+    noise_end = time.time()
+    _print_time_diff(noise_start, noise_end, 'Noise Calculated and added to obs', logger)
+
+
+    grid_start = time.time()
+    # TODO: add the fully python compatible gridding function after calibration testing is finished
+    grid_end = time.time()
+    _print_time_diff(grid_start, grid_end, 'Visibilities gridded', logger)
+
+    # TODO: Translate fhd_quickview and add it here
+
+    # TODO: Translate snapshot_healpix_export and add it here
+    
 
 def main():
 
@@ -102,8 +156,8 @@ def main():
     # Validate options and Create the Logger
     pyfhd_config, logger = pyfhd_setup(options)
 
-    ##If any of the hybrid options have been asked for, circumnavigate the
-    ##main_loop_python_only function, and run the required hybrid options
+    #If any of the hybrid options have been asked for, circumnavigate the
+    #main_loop_python_only function, and run the required hybrid options
     if options.IDL_calibrate or options.grid_IDL_outputs or options.IDL_healpix_gridded_outputs:
 
         idl_output_dir = None

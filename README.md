@@ -39,5 +39,5 @@ Please cite [Sullivan et al 2012](https://arxiv.org/abs/1209.1653) and [Barry et
 ## Maintainers
 FHD was built by Ian Sullivan and the University of Washington radio astronomy team. Maintainance is a group effort split across University of Washington and Brown University, with contributions from University of Melbourne and Arizona State University. 
 
-PyFHD is currently being created by Nichole Barry and Astronomy Data and Computing Services (ADACS) members Joel Dunstan, Paul Hancock, and Jack Line. ADACS is a collaboration between the University of Swinburne and Curtin Institute for Computation (CIC) located in Curtin University.
+PyFHD is currently being created by Nichole Barry and Astronomy Data and Computing Services (ADACS) members Joel Dunstan, Paul Hancock, and Jack Line. ADACS is a collaboration between the University of Swinburne and Curtin Institute for Data Science (CIDS) located in Curtin University.
 

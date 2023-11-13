@@ -22,6 +22,7 @@ beam-clip-floor : true
 interpolate-kernel : true
 dipole-mutual-coupling-factor : true
 beam-nfreq-avg : 16
+psf-dim: 54
 psf-resolution : 100
 beam-model-version : 2
 beam-offset-time : 56
@@ -29,7 +30,7 @@ beam-offset-time : 56
 # Calibration
 calibrate-visibilities : true
 cable-bandpass-fit : true # Depends on instrument cable length text file
-cal-bp-transfer : ~ # 'mwa_eor0_highband_season1_cable_bandpass.fits' (FHD Default)
+cal-bp-transfer : ~
 calibration-polyfit : true
 allow-sidelobe-cal-sources : true
 cal-amp-degree-fit : 2
@@ -37,10 +38,20 @@ cal-phase-degree-fit : 1
 cal-reflection-hyperresolve : true
 cal-reflection-mode-theory : 150
 cal-reflection-mode-delay : false
-cal-reflection-mode-file : ~
+cal-reflection-mode-file : false
+calibration-auto-fit: false
+calibration-auto-initialize: true
+cal-gain-init: 1
+cal-convergence-threshold: 0.0000001
+cal-adaptive-calibration-gain: false
+cal-base-gain: ~ # This is set to None by default to set the default based on cal-adaptive-calibration-gain as per FHD
+cal-phase-fit-iter: 4
 min-cal-baseline : 50.
 vis-baseline-hist : true
 bandpass-calibrate : true
+auto-ratio-calibration: true
+cal-time-average: false
+digital-gain-jump-polyfit: true
 return-cal-visibilities : true
 calibration-flag-iterate : 0
 diffuse-calibrate : ~
@@ -50,10 +61,12 @@ cal-stop : false
 transfer-model-uv : ~
 
 # Flagging
-flag-visibilities : false
-flag-calibration : false
+flag-basic: true
 flag-freq-start : ~
 flag-freq-end : ~
+flag-tiles: []
+flag-calibration : true
+flag-visibilities : false
 transfer-weights : ~
 time-cut: ~
 
@@ -82,7 +95,11 @@ ring-radius-multi : 10.
 description : ~
 
 # Model
-model-visibilities : false
+# Current choices of model-file-type are sav and uvfits
+model-file-type : 'sav'
+# If you set model-file-type to uvfits, set import-model-uvfits to the (ideally absolute) path of the fits file
+# If model-file-type is set to sav then it will look for the sav files as said in the function import_vis_model_from_sav
+model-file-path: './input'
 diffuse-model : ~
 model-catalog-file-path  :  ~ # 'GLEAM_v2_plus_rlb2019.sav' (FHD Default)
 allow-sidelobe-model-sources : false

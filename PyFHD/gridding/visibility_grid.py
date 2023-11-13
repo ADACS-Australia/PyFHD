@@ -139,19 +139,19 @@ def visibility_grid(visibility, vis_weights, obs, status_str, psf, params,
     complex_flag = psf['complex_flag']
     psf_dim = psf['dim'][0]
     psf_resolution = psf['resolution'][0]
-    nbaselines = obs['nbaselines'][0]
+    n_baselines = obs['n_baselines'][0]
     n_samples = obs['n_time'][0]
     # New group_arr code that is consistent with the FHD version
     group_arr = np.squeeze(psf['id'][0][:, freq_bin_i, polarization])
     # REBIN in IDL when expanding dimensions repeats 2D arrays after expanding
-    group_arr = np.expand_dims(rebin(group_arr, (nbaselines, n_f_use)), axis = 0)
+    group_arr = np.expand_dims(rebin(group_arr, (n_baselines, n_f_use)), axis = 0)
     group_arr = np.repeat(group_arr, n_samples, axis = 0) 
-    group_arr = np.reshape(group_arr, (n_samples*nbaselines ,n_f_use))
+    group_arr = np.reshape(group_arr, (n_samples*n_baselines ,n_f_use))
     beam_arr = psf['beam_ptr'][0]
     n_freq_use = frequency_array.size
     psf_dim2 = 2 * psf_dim
     psf_dim3 = psf_dim ** 2
-    bi_use_reduced = bi_use % nbaselines
+    bi_use_reduced = bi_use % n_baselines
     
     # Flags have been defined in the function definition
     # Instead of reading the flags and then setting them.
@@ -250,7 +250,7 @@ def visibility_grid(visibility, vis_weights, obs, status_str, psf, params,
 
         # Calculate the number of selected visibilities and their baseline index
         vis_n = bin_n[bin_i[bi]]
-        baseline_inds = bi_use_reduced[((inds / n_f_use) % nbaselines).astype(int)]
+        baseline_inds = bi_use_reduced[((inds / n_f_use) % n_baselines).astype(int)]
 
         if interp_flag:
             # Calculate the interpolated kernel on the uv-grid given the derivatives to baseline locations

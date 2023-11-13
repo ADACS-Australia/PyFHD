@@ -1,12 +1,17 @@
 import numpy as np
 from numba import njit
 from math import factorial
-from typing import Tuple
+from typing import Tuple, Union
 from astropy.coordinates import SkyCoord, EarthLocation, AltAz, ICRS
 from astropy.time import Time
 from astropy import units as u
 from math import pi
 from logging import RootLogger
+from scipy.stats import median_abs_deviation
+import subprocess
+from scipy.ndimage import median_filter
+from copy import deepcopy
+from sys import exit
 
 @njit
 def get_bins(min, max, bin_size):
@@ -231,9 +236,7 @@ def histogram(data : np.ndarray, bin_size = 1, num_bins = None, min = None, max 
         min = np.min(data)
     # If the maximum has not been set, set it
     # Check if the max argument was used, set to True, if we set max here by data turn it off.
-    max_arg = True
     if max is None:
-        max_arg = False 
         max = np.max(data)
     # If the number of bins has been set use that
     if num_bins is not None:
@@ -242,7 +245,7 @@ def histogram(data : np.ndarray, bin_size = 1, num_bins = None, min = None, max 
     bins = get_bins(min, max, bin_size)
     # However, if we set a max, we must adjust the last bin to max according to IDL specifications
     # And we only do this in the case max was by an argument
-    if (bins[-1] > max and max_arg) or num_bins is not None:
+    if (bins[-1] > max) or num_bins is not None:
         bins = bins[:-1]
     # Flatten the data
     data_flat = data.flatten()
@@ -354,7 +357,6 @@ def rebin_rows(a, ax, shape, old_shape, row_sizer):
     # Add this to the original array that has been repeated to match the size of inference
     row_rebinned = inferences + np.repeat(a, row_sizer, axis = ax)
     return row_rebinned
-
 
 def rebin(a, shape, sample = False):
     """
@@ -507,7 +509,7 @@ def rebin(a, shape, sample = False):
                 rebinned = rebin_columns(row_rebinned, ax, shape, col_sizer)
     return rebinned
 
-def weight_invert(weights, threshold = None):
+def weight_invert(weights : np.ndarray | int | float | np.number, threshold = None, use_abs = False):
     """
     The weights invert function cleans the weights given by removing
     the values that are 0, NaN or Inf ready for additional calculation.
@@ -522,6 +524,9 @@ def weight_invert(weights, threshold = None):
         A real number set as the threshold for the array.
         By default its set to None, in this case function checks
         for zeros.
+    use_abs: bool
+        If True, take the absolute value (sometimes useful for complex numbers)
+        By default this is False, so will leave as a complex number and invert.
 
     Returns
     -------
@@ -529,46 +534,56 @@ def weight_invert(weights, threshold = None):
         The weights array that has had NaNs and Infinities removed, and zeros OR
         values that don't meet the threshold.
     """
-
-    result = np.zeros_like(weights)
-    '''
-    Python and IDL use the where function on complex numbers differently.
-    On Python, if you apply a real threshold, it applies to only the real numbers,
-    and if you apply an imaginary threshold it applies to only imaginary numbers.
-    For example Python:
-    test = np.array([1j, 2 + 2j, 3j])
-    np.where(test >= 2) == array([1])
-    np.where(test >= 2j) == array([1,2])
-    Meanwhile in IDL:
-    test = COMPLEX([0,2,0],[1,2,3]) ;COMPLEX(REAL, IMAGINARY)
-    where(test ge 2) == [1, 2]
-    where(test ge COMPLEX(0,2)) == [1, 2]
-
-    IDL on the otherhand, uses the ABS function on COMPLEX numbers before using WHERE.
-    Hence the behaviour we're seeing above.
-    '''
+    # IDL is able to treat one number as an array (because every number is aprrently an array of size 1?)
+    # As such we need to check if it's a number less than or equal to 0 and make a zeros array of size 1
+    if (np.isscalar(weights)):
+        result = np.zeros(1, dtype = type(weights))
+        weights = np.array([weights], dtype = type(weights))
+    else:
+        result = np.zeros_like(weights, dtype = weights.dtype)
     weights_use = weights
-    if np.iscomplexobj(weights):
+    if use_abs or np.iscomplexobj(weights_use):
+        '''
+        Python and IDL use the where function on complex numbers differently.
+        On Python, if you apply a real threshold, it applies to only the real numbers,
+        and if you apply an imaginary threshold it applies to only imaginary numbers.
+        For example Python:
+        test = np.array([1j, 2 + 2j, 3j])
+        np.where(test >= 2) == array([1])
+        np.where(test >= 2j) == array([1,2])
+        Meanwhile in IDL:
+        test = COMPLEX([0,2,0],[1,2,3]) ;COMPLEX(REAL, IMAGINARY)
+        where(test ge 2) == [1, 2]
+        where(test ge COMPLEX(0,2)) == [1, 2]
+
+        IDL on the otherhand, uses the ABS function on COMPLEX numbers before using WHERE.
+        Hence the behaviour we're seeing above. This is why we also check for a complexobj
+        in the if statement
+        '''
         weights_use = np.abs(weights)
+
     # If threshold has been set then...
     if threshold is not None:
         # Get the indexes which meet the threshold
-        # As indicated IDL applies abs before using where to complex numbers
+        # As indicated before IDL applies abs before using where to complex numbers
         i_use = np.where(weights_use >= threshold)
     else:
         # Otherwise get where they are not zero
-        i_use = np.where(weights_use)
+        i_use = np.nonzero(weights_use)
+
     if np.size(i_use) > 0:
         result[i_use] = 1 / weights[i_use]
+
     # Replace all NaNs with Zeros
     if np.size(np.where(np.isnan(result))) != 0:
         result[np.where(np.isnan(result))] = 0
     # Replace all Infinities with Zeros
     if np.size(np.where(np.isinf(result))) != 0:
         result[np.where(np.isinf(result))] = 0
-    # If the result contains only 1 result, then return the result, not an array
+
+    # If the result is an array containing 1 result, then return the result, not an array
     if np.size(result) == 1:
-        result = result[0]
+        return result[0]
     return result
 
 def array_match(array_1, value_match, array_2 = None) :
@@ -586,9 +601,7 @@ def array_match(array_1, value_match, array_2 = None) :
 
     Returns
     -------
-    indices: array
-        TODO: Add Description for return of array_match
-    matching indices: array
+    match_indices: array
         TODO: Add Description for return of array_match
     
     Raises
@@ -637,7 +650,7 @@ def array_match(array_1, value_match, array_2 = None) :
     
     match_indices = np.nonzero(ind_arr)[0]
     # Return our matching indices
-    return match_indices, match_indices.size
+    return match_indices
 
 def meshgrid(dimension, elements, axis = None, return_integer = False):
     """
@@ -831,4 +844,331 @@ def simple_deproject_w_term(obs : dict, params : dict, vis_arr : np.ndarray, dir
 
     return vis_arr
 
+def resistant_mean(array : np.ndarray, deviations : int, mad_scale = 0.67449999999999999, sigma_coeff = np.array([0.020142000000000000, -0.23583999999999999 , 0.90722999999999998 , -0.15404999999999999])) -> int | float | complex | np.number:
+    """
+    The resistant_mean function translate the IDLAstro function resistant_mean[1]_ from IDL to Python using NumPy.
+    The values mad_scale and sigma_coeff are also retrieved from the same IDLAstro function when running in Double 
+    Precision Mode.
 
+    The resistant_mean gets the mean of an array which has had a median absolute deviation threshold applied to the
+    absolute deviations of the array to exclude outliers.
+
+    If resistant_mean needs to be optimized, it can be vectorized easily enough
+
+    Parameters
+    ----------
+    array : np.ndarray
+        A 1 dimensional array of values, multidimensional arrays should be flattened before use
+    deviations : int
+        The number of median absolute deviations from the median we want use to exclude outliers
+    mad_scale : float, optional
+        The scale factor for the median absolute deviation, by default 0.67449999999999999
+    sigma_coeff : np.ndarray(dtype = np.float64), optional
+        The coefficients applied to the polynomial equation to the standard deviation of the points excluded by the outliers for additional exclusion, by default np.array([0.020142000000000000, -0.23583999999999999 , 0.90722999999999998 , -0.15404999999999999])
+
+    Returns
+    -------
+    resistant_mean : Number
+        The mean of the array with outliers excluded using median absolute deviation
+
+    References
+    ----------
+    .. [1] IDLAstro, RESISTANT_Mean, https://idlastro.gsfc.nasa.gov/ftp/pro/robust/resistant_mean.pro
+    """
+    # Calculate median of the real part of the array
+    median = np.median(array.real)
+    # Get the absolute deviation (residuals)
+    abs_dev = np.abs(array - median)
+    # Calculate Median Absolute Deviation
+    # I could have used scipy's median_abs_deviation to get this, but by doing this manually I can guarantee the same behaviour as IDL
+    mad = np.median(abs_dev) / mad_scale
+    #  Use MAD and the number of deviations 
+    mad_threshold = deviations * mad
+    # Subset the array by the deviations and residuals
+    no_outliers = array[np.where(abs_dev <= mad_threshold)]
+    # If the deviations is less than 4.5, change the sigma (standard deviation of the subarray) by using a polyval with set sigma coefficient
+    # This compensates Sigma for truncation
+    # Calculate the standard deviation of the rela and imag separately
+    sigma = np.std(no_outliers.real) + np.std(no_outliers.imag) * 1j
+    # Set the deviationsX to 1.0 if it's less than 1
+    deviationsX = max(deviations, 1.0)
+    if deviationsX <= 4.5:
+        sigma = sigma / np.polyval(sigma_coeff, deviationsX)
+    sigma_threshold = sigma * deviations
+    # Use the sigma threshold to again remove outliers from the array
+    # Also take the absolute value of sigma_threshold to get the same behaviour as LE in IDL
+    subarray = array[np.where(abs_dev <= np.abs(sigma_threshold))]
+    # Get the mean of the subset array which contains no outliers
+    return np.mean(subarray)
+
+def run_command(cmd : str, dry_run=False):
+    """
+    Runs the command string `cmd` using `subprocess.run`. Returns any text output to stdout
+
+    Parameters
+    ----------
+    cmd : str
+         The command to run on the command line
+    dry_run : bool
+         If True, don't actually run the command. Defaults to False (so defaults to running the command)
+    """
+
+    if dry_run:
+        stdout = "This was a dry run, not launching IDL code\n"
+    else:
+        stdout = subprocess.run(cmd.split(), stdout=subprocess.PIPE,
+                            text = True).stdout
+
+    return stdout
+
+def vis_weights_update(vis_weights : np.ndarray, obs: dict, params: dict, pyfhd_config: dict) -> tuple[np.ndarray, dict]:
+    """
+    TODO: _summary_
+
+    Parameters
+    ----------
+    vis_weights : np.ndarray
+        _description_
+    obs : dict
+        _description_
+    params : dict
+        _description_
+    pyfhd_config : dict
+        _description_
+
+    Returns
+    -------
+    tuple[vis_weights: np.ndarray, obs: dict]
+        The updated vis_weights and the obs dictionary now containing the sums of the flags
+    """
+    kx_arr = params['uu'] / obs['kpix']
+    ky_arr = params['vv'] / obs['kpix']
+    dist_test = np.sqrt(kx_arr ** 2 + ky_arr ** 2) * obs['kpix']
+    dist_test = np.outer(obs['baseline_info']['freq'], dist_test)
+    flag_dist_i = np.where((dist_test < obs['min_baseline']) | (dist_test > obs['max_baseline']))
+    conj_i = np.where(ky_arr > 0)
+    if (conj_i[0].size > 0):
+        kx_arr[conj_i] = -kx_arr[conj_i]
+        ky_arr[conj_i] = -ky_arr[conj_i]
+
+    xcen = np.outer(obs['baseline_info']['freq'], kx_arr)
+    xmin = np.floor(xcen) + obs['dimension'] / 2 - (pyfhd_config['psf_dim'] / 2 - 1)
+    ycen = np.outer(obs['baseline_info']['freq'], ky_arr)
+    ymin = np.floor(ycen) + obs['elements'] / 2 - (pyfhd_config['psf_dim'] / 2 - 1)
+
+    range_test_x_i = np.where((xmin <= 0) | ((xmin + pyfhd_config['psf_dim'] - 1) >= obs['dimension'] - 1))
+    if (range_test_x_i[0].size > 0):
+        xmin[range_test_x_i] = -1
+        ymin[range_test_x_i] = -1
+    range_test_y_i = np.where((ymin <= 0) | ((ymin + pyfhd_config['psf_dim'] - 1) >= obs['elements'] - 1))
+    if (range_test_y_i[0].size > 0):
+        xmin[range_test_y_i] = -1
+        ymin[range_test_y_i] = -1
+    del range_test_x_i
+    del range_test_y_i
+
+    if (flag_dist_i[0].size > 0):
+        xmin[flag_dist_i] = -1
+        ymin[flag_dist_i] = -1
+
+    # no_frequency_flagging isn't set in FHD from what I can see, begin frequency and tile flagging
+    freq_cut_i = np.where(obs['baseline_info']['freq_use'] == 0)
+    if (freq_cut_i[0].size > 0):
+        vis_weights[0 : obs['n_pol'], freq_cut_i[0], :] = 0
+    tile_cut_i = np.where(obs['baseline_info']['tile_use'] == 0)
+    if (tile_cut_i[0].size > 0):
+        bi_cut = array_match(obs['baseline_info']['tile_a'], tile_cut_i[0] + 1, obs['baseline_info']['tile_b'])
+        if (np.size(bi_cut) > 0):
+            vis_weights[0 : obs['n_pol'], : , bi_cut] = 0
+    
+    time_cut_i = np.where(obs['baseline_info']['time_use'] == 0)[0]
+    bin_offset = np.append(obs['baseline_info']['bin_offset'], kx_arr.size)
+    time_bin = np.zeros(kx_arr.size)
+    for ti in range(obs['baseline_info']['time_use'].size):
+        time_bin[bin_offset[ti] : bin_offset[ti + 1]] = ti
+    for ti in range(time_cut_i.size):
+        ti_cut = np.where(time_bin == time_cut_i[ti])
+        if (ti_cut[0].size > 0):
+            vis_weights[0: obs['n_pol'], : , ti_cut] = 0
+    
+    flag_i = np.where(vis_weights[0] <= 0)
+    flag_i_new = np.where(xmin < 0)
+    if (flag_i_new[0].size > 0):
+        vis_weights[0 : obs['n_pol'], flag_i_new[0], flag_i_new[1]] = 0
+    if (flag_i[0].size > 0):
+        xmin[flag_i] = -1
+        ymin[flag_i] = -1
+
+    if (min(np.max(xmin), np.max(ymin)) < 0):
+        obs['n_vis'] = 0
+        return vis_weights, obs
+    
+    bin_n, _, _ = histogram(xmin + ymin * obs['dimension'], min = 0)
+    obs['n_vis'] = np.sum(bin_n)
+
+    obs['n_time_flag'] = np.sum(1 - obs['baseline_info']['time_use'])
+    obs['n_tile_flag'] = np.sum(1 - obs['baseline_info']['tile_use'])
+    obs['n_freq_flag'] = np.sum(1 - obs['baseline_info']['freq_use'])
+
+    return vis_weights, obs
+
+def split_vis_weights(obs: dict, vis_weights: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    """
+    TODO: _summary_
+
+    Parameters
+    ----------
+    obs : dict
+        _description_
+    vis_weights : np.ndarray
+        _description_
+
+    Returns
+    -------
+    tuple[np.ndarray, np.ndarray]
+        _description_
+    """
+    # Not always used in vis_noise_calc requires this check in other cases
+    if (obs["n_time"] < 2):
+        return vis_weights
+
+    # Get the number of baselines, should be the last in this case
+    nb = vis_weights.shape[-1]
+    bin_end = np.zeros(obs['n_time'], dtype=np.int64)
+    bin_end[:obs['n_time']-1] = obs["baseline_info"]["bin_offset"][1:obs['n_time']] - 1
+    bin_end[-1] = int(nb - 1)
+    bin_i = np.full(nb, -1, dtype = np.int64)
+    for t_i in range(obs['n_time'] // 2):
+        bin_i[obs["baseline_info"]["bin_offset"][t_i]:bin_end[t_i]+1] = t_i
+
+    time_start_i = int(np.min(np.nonzero(obs['baseline_info']['time_use'])[0]))
+    nt3 = int(np.floor((obs['n_time'] - time_start_i) / 2) * 2)
+    time_use_0 = obs['baseline_info']['time_use'][time_start_i : time_start_i + nt3 : 2]
+    time_use_1 = obs['baseline_info']['time_use'][time_start_i + 1 : time_start_i + nt3 : 2]
+    time_use_01 = time_use_0 * time_use_1
+    time_use = np.zeros(obs['baseline_info']['time_use'].shape, dtype=np.int64)
+    time_use[time_start_i: time_start_i + nt3 : 2] = time_use_01
+    time_use[time_start_i + 1: time_start_i + nt3 : 2] = time_use_01
+    time_cut_i = np.where(time_use <= 0)[0]
+    if (time_cut_i.size > 0):
+        for cut_i in range(time_cut_i.size):
+            bin_i_cut = np.where(bin_i == time_cut_i[cut_i])[0]
+            if (bin_i_cut.size > 0):
+                bin_i[bin_i_cut] = -1
+
+    bi_use = [np.where(bin_i % 2 == 0)[0], np.where(bin_i % 2 == 1)[0]]
+
+    #Here we ensure that both even and odd samples are the same size by
+    #ensuring both arrays match the smallest size
+    if (bi_use[0].size < bi_use[1].size):
+        bi_use[1] = bi_use[1][0 : bi_use[0].size]
+    elif (bi_use[1].size < bi_use[0].size):
+        bi_use[0] = bi_use[0][0 : bi_use[1].size]
+
+    for pol_i in range(obs['n_pol']):
+        # In IDL they are doing x > y < w < z
+        flag_use = np.minimum(np.maximum(vis_weights[pol_i, : , bi_use[0]], 0) , np.minimum(vis_weights[pol_i, : , bi_use[1]], 1))
+        # Reset vis_weights
+        vis_weights[pol_i] = 0
+        # No keywords used for odd_only or even_only in entirety of FHD
+        vis_weights[pol_i, :, bi_use[0]] = flag_use
+        vis_weights[pol_i, :, bi_use[1]] = flag_use
+
+    return vis_weights, bi_use
+
+def vis_noise_calc(obs: dict, vis_arr: np.ndarray, vis_weights: np.ndarray) -> np.ndarray:
+    noise_arr = np.zeros([obs["n_pol"], obs["n_freq"]])
+
+    if (obs["n_time"] < 2): 
+        return noise_arr
+
+    # bi_use isn't set before running this, so always use split_vis_weights in this case
+    vis_weights_use, bi_use = split_vis_weights(obs, vis_weights)
+
+    for pol_i in range(obs["n_pol"]):
+        data_diff = vis_arr[pol_i, :, bi_use[0]].imag - vis_arr[pol_i, :,  bi_use[1]].imag
+        vis_weight_diff = np.maximum(vis_weights_use[pol_i, :, bi_use[0]], 0) * np.maximum(vis_weights_use[pol_i, :, bi_use[1]], 0)
+        for fi in range(obs["n_freq"]):
+            ind_use = np.where(vis_weight_diff[:, fi])[0]
+            if (ind_use.size > 0):
+                noise_arr[pol_i, fi] = np.std(data_diff[ind_use, fi])/np.sqrt(2)
+    
+    return noise_arr
+    
+def idl_median(x : np.ndarray, width=0, even=False) -> float:
+    """_summary_
+
+    Parameters
+    ----------
+    x : np.ndarray
+        Data to perform median on
+    width : int
+        If set, perform a type of median filtering. 
+    even : bool, optional
+        _description_, by default False
+
+    
+
+    When `width` is set. unfortunately the edge conditions when using cannot be
+    replicated soley with `scipy.ndimage.median_filter` so use `median_filter`    and set the edge cases manually
+
+    Returns
+    -------
+    float
+        _description_
+    """
+
+    if width:
+
+        #IDL median leaves everything within width//2 pixels of the edge alone
+        #So just shove the outputs of median_filter everywhere else. None of
+        #the `modes` in median_filter capture this behaviour
+        output = deepcopy(x)
+
+        hw = width//2
+        output[hw:-hw] = median_filter(x, size=width)[hw:-hw]
+
+        return output
+
+    else:
+
+        if even:
+            return np.median(x)
+        else:
+            med_index = int(np.ceil(len(x)/2))
+
+            return np.sort(x)[med_index]
+
+def reshape_and_average_in_time(vis_array : np.ndarray, n_freq : int,
+                                n_time : int, n_baselines : int,
+                                vis_weights : np.ndarray) -> np.ndarray:
+    """Given a single polarisation 2D `vis_array` of shape (n_freq, n_time*n_baselines),
+    reshape into (n_freq, n_time, n_baselines), and then average in time, weighting
+    by `vis_weights` (must be of shape (n_freq, n_time, n_baselines))
+    Returns the averaged array in shape (n_freq, n_baselines)
+
+    Parameters
+    ----------
+    vis_array : np.ndarray
+       The visibility array
+    n_freq : int
+        Number of frequencies
+    n_time : int
+        Number of time steps
+    n_baselines : int
+        Number of baselines
+    vis_weights : np.ndarray
+        The visibility weights array
+
+    """
+
+    new_shape = (n_freq, n_time, n_baselines)
+
+    if vis_weights.shape != new_shape:
+        exit(f"Attempting to use weights with shape {vis_weights.shape} in `reshape_and_average_in_time`, this is not allowed")
+        
+    reshape_array = np.reshape(vis_array, new_shape)
+    reshape_array = np.sum(reshape_array*vis_weights, axis = 1)
+
+    return reshape_array
+    

@@ -8,7 +8,7 @@ from astropy.io import fits
 from astropy.table import Table
 from astropy.time import Time
 
-def create_obs(pyfhd_header : dict, params : dict, pyfhd_config : dict, logger : logging.RootLogger) -> dict:
+def create_obs(pyfhd_header : dict, params : dict, layout: dict, pyfhd_config : dict, logger : logging.RootLogger) -> dict:
     """
     create_obs takes all the data that has been read in and creates the obs data structure which holds data
     and metadata of the observation we're doing a PyFHD run on. Inside this function the metafits file will
@@ -20,6 +20,8 @@ def create_obs(pyfhd_header : dict, params : dict, pyfhd_config : dict, logger :
         The data from the UVFITS header
     params : dict
         The data from the UVFITS file
+    layout : dict
+        The data dictionary containing data and metadata about the antennas
     pyfhd_config : dict
         PyFHD's configuration dictionary
     logger : logging.RootLogger
@@ -35,7 +37,7 @@ def create_obs(pyfhd_header : dict, params : dict, pyfhd_config : dict, logger :
     baseline_info = {}
 
     # Save the data from the header
-    obs['n_pol'] = pyfhd_header['n_pol']
+    obs['n_pol'] =  pyfhd_config['n_pol'] if pyfhd_config['n_pol'] else pyfhd_header['n_pol']
     obs['n_tile'] = pyfhd_header['n_tile']
     obs['n_freq'] = pyfhd_header['n_freq']
     obs['n_freq_flag'] = 0
@@ -56,7 +58,7 @@ def create_obs(pyfhd_header : dict, params : dict, pyfhd_config : dict, logger :
     if obs['n_time'] > 1:
         baseline_info['bin_offset'][1:] = np.cumsum(bin_width[: obs['n_time'] - 1])
     # Deal with the number of visibilities
-    obs['nbaselines'] = int(bin_width[0])
+    obs['n_baselines'] = int(bin_width[0])
     obs['n_vis'] = time.size * obs['n_freq']
     obs['n_vis_raw'] = obs['n_vis_in'] = obs['n_vis']
     obs['nf_vis'] = np.zeros(obs['n_freq'], dtype = np.int64)
@@ -79,8 +81,8 @@ def create_obs(pyfhd_header : dict, params : dict, pyfhd_config : dict, logger :
     
     antenna_flag = True
     if np.max(params['antenna1']) > 0 and (np.max(params['antenna2']) > 0):
-        baseline_info['tile_A'] = params['antenna1']
-        baseline_info['tile_B'] = params['antenna2']
+        baseline_info['tile_a'] = params['antenna1']
+        baseline_info['tile_b'] = params['antenna2']
         antenna_flag = False
     if antenna_flag:
         # 256 tile upper limit is hard-coded in CASA format
@@ -92,18 +94,44 @@ def create_obs(pyfhd_header : dict, params : dict, pyfhd_config : dict, logger :
         # Check if a bad fit and if autocorrelations or the first tile are missing
         if (tile_B_test > 1) and (baseline_min % 2 == 1):
             antenna_mod_index /= 2 ** np.floor(np.log(np.min(tile_B_test)) / np.log(2))
-        baseline_info['tile_A'] = np.floor(params['baseline_arr'] / antenna_mod_index)
-        baseline_info['tile_B'] = np.fix(params['baseline_arr'] / antenna_mod_index)
-        if max(np.max(baseline_info['tile_A']), np.max(baseline_info['tile_B'])) != obs['n_tile']:
-            logger.warning(f"Mis-matched n_tiles Header: {obs['n_tile']}, Data: {max(np.max(baseline_info['tile_A']), np.max(baseline_info['tile_B']))}, adjusting n_tiles to be same as data")
-            obs['n_tile'] = max(np.max(baseline_info['tile_A']), np.max(baseline_info['tile_B']))
-        params['antenna1'] = baseline_info['tile_A']
-        params['antenna2'] = baseline_info['tile_B']
+        baseline_info['tile_a'] = np.floor(params['baseline_arr'] / antenna_mod_index)
+        baseline_info['tile_b'] = np.fix(params['baseline_arr'] / antenna_mod_index)
+        if max(np.max(baseline_info['tile_a']), np.max(baseline_info['tile_b'])) != obs['n_tile']:
+            logger.warning(f"Mis-matched n_tiles Header: {obs['n_tile']}, Data: {max(np.max(baseline_info['tile_a']), np.max(baseline_info['tile_b']))}, adjusting n_tiles to be same as data")
+            obs['n_tile'] = max(np.max(baseline_info['tile_a']), np.max(baseline_info['tile_b']))
+        params['antenna1'] = baseline_info['tile_a']
+        params['antenna2'] = baseline_info['tile_b']
+
+    # check that all elements in the antenna1 and antenna2 array exist in the antenna numbers
+    # from the uvfits antenna table
+    all_ants = np.hstack([params['antenna1'], params['antenna2']])
+    all_ants = np.unique(all_ants)
+    if not (np.all(np.in1d(all_ants, layout['antenna_numbers']))):
+        logger.warning("Antenna arrays contain number(s) not found in antenna table")
+
+    # fhd expects antenna1 and antenna2 arrays containing indices that are one-indexed. 
+    # Some uvfits files contain actual antenna numbers in these fields, while others  
+    # (particularly, those written by cotter or birli) contain indices.
+    # To account for this, all antenna numbers from the uvfits header are mapped to indices 
+    # using the antenna numbers from the uvfits antenna table.
+    # If the antenna numbers were written into the file as indices, they will be mapped to themselves.
+    for tile_i in range(obs['n_tile']):
+        tile_a_antennas = np.where(layout['antenna_numbers'][tile_i] == params['antenna1'])
+        if (np.size(tile_a_antennas) > 0):
+            baseline_info['tile_a'][tile_a_antennas] = tile_i + 1
+        tile_b_antennas = np.where(layout['antenna_numbers'][tile_i] == params['antenna2'])
+        if(np.size(tile_b_antennas) > 0):
+            baseline_info['tile_b'][tile_b_antennas] = tile_i + 1
+    # Change the type to int to avoid issues with numba
+    baseline_info['tile_a'] = baseline_info['tile_a'].astype(np.int64)
+    baseline_info['tile_b'] = baseline_info['tile_b'].astype(np.int64)
+    params['antenna1'] = baseline_info['tile_a']
+    params['antenna2'] = baseline_info['tile_b']
     
     baseline_info['freq_use'] = np.ones(obs['n_freq'], dtype = np.int64)
 
     # Calculate kx and ky for each baseline at high precision to get most accurate observation information
-    kx_arr = np.outer(baseline_info['freq'] ,params['uu'])
+    kx_arr = np.outer(baseline_info['freq'], params['uu'])
     ky_arr = np.outer(baseline_info['freq'], params['vv'])
     kr_arr = np.sqrt(kx_arr ** 2 + ky_arr ** 2)
     max_baseline = max(np.max(np.abs(kx_arr)), np.max(np.abs(ky_arr)))
@@ -136,7 +164,7 @@ def create_obs(pyfhd_header : dict, params : dict, pyfhd_config : dict, logger :
 
     # Set the max and min baseline
     max_baseline_inds = np.where((np.abs(kx_arr) / obs['kpix'] < obs['dimension'] / 2) & (np.abs(ky_arr) / obs['kpix'] < obs['elements']/2))
-    obs['max_baseline'] = np.max(np.abs(kx_arr[max_baseline_inds]))
+    obs['max_baseline'] = np.max(np.abs(kr_arr[max_baseline_inds]))
     if pyfhd_config['min_baseline'] is None:
         obs['min_baseline'] = np.min(kr_arr[np.nonzero(kr_arr)])
     else:
@@ -146,7 +174,7 @@ def create_obs(pyfhd_header : dict, params : dict, pyfhd_config : dict, logger :
 
     # TODO: antenna indices rewrite PR goes here
 
-    baseline_info['time_use'] = np.ones(obs['n_tile'], dtype = np.int8)
+    baseline_info['time_use'] = np.ones(obs['n_time'], dtype = np.int8)
     # time cut is specified in seconds to cut (rounded up to next time integration point).
     # Specify negative time_cut to cut time off the end. Specify a vector to cut at both the start and end
     if pyfhd_config['time_cut'] is not None:
@@ -162,9 +190,9 @@ def create_obs(pyfhd_header : dict, params : dict, pyfhd_config : dict, logger :
                 baseline_info['time_use'][ti_start:ti_end + 1] = 0
     obs['n_time_flag'] = obs['n_time'] - np.sum(baseline_info['time_use'])
 
-    # Where metadata has tiles flagged, ensure they don't get used in obs.
+    # Flag tiles based on meta data
     baseline_info['tile_use'] = 1 - meta['tile_flag']
-    obs['n_tile_flag'] = np.count_nonzero(baseline_info['tile_use'])
+    obs['n_tile_flag'] = np.count_nonzero(baseline_info['tile_use'] == 0)
     
     # Set the last of obs values
     if pyfhd_config['dft_threshold']:
@@ -188,7 +216,7 @@ def create_obs(pyfhd_header : dict, params : dict, pyfhd_config : dict, logger :
     obs['healpix'] = healpix
 
     # Save the baseline_info into obs
-    baseline_info['Jdate'] = meta['jdate']
+    baseline_info['jdate'] = meta['jdate']
     baseline_info['tile_names'] = meta['tile_names']
     baseline_info['tile_height'] = meta['tile_height']
     baseline_info['tile_flag'] = meta['tile_flag']
@@ -245,7 +273,7 @@ def read_metafits(obs : dict, pyfhd_header : dict, params : dict, pyfhd_config :
         single_i = np.where(data['pol'] == data['pol'][0])
         meta['tile_names'] = data['tile'][single_i]
         meta['tile_height'] = data['height'][single_i] - pyfhd_header['alt']
-        meta['tile_flag'] = data['flag']
+        meta['tile_flag'] = data['flag'][single_i]
         if np.sum(meta['tile_flag']) == meta['tile_flag'].size - 1:
             if pyfhd_config['run_simulation']:
                 logger.warning("All tiles flagged in metadata")
