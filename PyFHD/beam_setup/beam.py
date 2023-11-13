@@ -123,6 +123,8 @@ def create_psf(pyfhd_config: dict, logger: RootLogger) -> dict | File:
         # Take only the first baseline (as it assumes every baseline points to the first i.e. the FFT is done per frequency)
         # Has a bonus of reducing memory use, unless NumPy is really good at using representations, maybe use double memory
         psf['beam_ptr'][0] = psf['beam_ptr'][0][:,:,0]
+        # Transpose the group array
+        psf['id'][0] = psf['id'][0].T
         # Recarray to dict completely unpack object arrays into the dict, although will require the beam_ptr in memory twice potentially temporarily
         psf = recarray_to_dict(psf)
         # The to_chunk is a dictionary of dictionaries which contain the information necessary to chunk the beam_ptr
