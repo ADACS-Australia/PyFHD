@@ -7,3 +7,5 @@ sphinx-argparse
 colorama
 ConfigArgParse
 myst-parser
+h5py
+healpy
