@@ -88,7 +88,7 @@ def calibrate(obs: dict, params: dict, vis_arr: np.array, vis_weights: np.array,
         if(pyfhd_config['auto_ratio_calibration']):
             cal = cal_auto_ratio_remultiply(cal, auto_ratio, auto_tile_i)
     elif (pyfhd_config["calibration_polyfit"]):
-        cal = vis_cal_polyfit(cal, obs)
+        cal = vis_cal_polyfit(cal, obs, None, pyfhd_config, logger)
 
     # Get the gain residuals
     if (pyfhd_config['calibration_auto_fit']):

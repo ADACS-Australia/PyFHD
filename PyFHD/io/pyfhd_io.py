@@ -68,6 +68,10 @@ def _is_string(value: Any) -> bool:
     return type(value) == str
 
 @np.vectorize
+def _is_none(value: Any) -> bool:
+    return value is None
+
+@np.vectorize
 def _decode_byte_arr(value: np.bytes_) -> str:
     """
     Decodes a byte string into a string
@@ -448,7 +452,7 @@ def recarray_to_dict(data: np.recarray | dict) -> dict:
         elif (type(data[key]) == np.ndarray and data[key].dtype == object and type(data[key][0]) == np.ndarray):
             try:
                 # Get all the None values and turn them into NaNs
-                none_values = np.where(data[key] == None)
+                none_values = np.nonzero(_is_none(data[key]))
                 if np.size(none_values) > 0:
                     data[key][none_values] = np.nan
                 # If all of the values were None, then set the array dtype to float64 

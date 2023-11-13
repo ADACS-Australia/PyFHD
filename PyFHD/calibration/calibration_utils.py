@@ -219,8 +219,6 @@ def vis_calibration_flag(obs: dict, cal: dict, pyfhd_config: dict, logger: RootL
         while n_addl_cut > 0 and iter < 3:
             slope_sigma = np.nanstd(phase_slope_arr)
             tile_cut_test1 = (np.abs(phase_slope_arr) - np.median(np.abs(phase_slope_arr))) > phase_sigma_threshold * slope_sigma
-            first_part_tile_cut_test2 = phase_sigma_arr - np.median(phase_sigma_arr)
-            second_part_tile_cut_test2 = phase_sigma_threshold * np.nanstd(phase_sigma_arr)
             tile_cut_test2 = (phase_sigma_arr - np.median(phase_sigma_arr)) > (phase_sigma_threshold * np.nanstd(phase_sigma_arr))
             tile_cut_i = np.where(tile_cut_test1 | tile_cut_test2)[0]
             n_addl_cut = tile_cut_i.size - n_cut
