@@ -1,36 +1,36 @@
 import numpy as np
-import PyFHD.gridding.filters
+import PyFHD.gridding.filters as filters
 from PyFHD.pyfhd_tools.pyfhd_utils import rebin, histogram, array_match, meshgrid
 from scipy.signal import convolve
 from astropy.convolution import Box2DKernel
 from math import pi
+from logging import RootLogger
 
-def interpolate_kernel(kernel_arr, x_offset, y_offset, dx0dy0, dx1dy0, dx0dy1, dx1dy1):
+def interpolate_kernel(kernel_arr: np.ndarray, x_offset: np.ndarray, y_offset: np.ndarray, 
+                       dx0dy0: np.ndarray, dx1dy0: np.ndarray, dx0dy1: np.ndarray, dx1dy1: np.ndarray):
     """
     TODO: Description
 
     Parameters
     ----------
-    kernel_arr: np.array
+    kernel_arr: np.ndarray
         The array we are applying the kernel too
-    x_offset: np.array
-        x_offset array, which will now technically do the y.
-        Will likely change the name of this
-    y_offset: np.array
-        y_offset array, which will now technically do the x
-        Will likely change the name of this
-    dx0dy0: np.array
-        TODO: description
-    dx1dy0: np.array
-        TODO: Description
-    dx0dy1: np.array
-        TODO: Description
-    dx1dy1: np.array
-        TODO: Description
+    x_offset: np.ndarray
+        x_offset array
+    y_offset: np.ndarray
+        y_offset array
+    dx0dy0: np.ndarray
+        TODO: description, derivative I assume?
+    dx1dy0: np.ndarray
+        TODO: Description, derivative I assume?
+    dx0dy1: np.ndarray
+        TODO: Description, derivative I assume?
+    dx1dy1: np.ndarray
+        TODO: Description, derivative I assume?
 
     Returns
     -------
-    kernel: np.array
+    kernel: np.ndarray
         TODO: Description
     """
     # x_offset and y_offset needed to be swapped around as IDL is column-major, while Python is row-major
@@ -41,7 +41,7 @@ def interpolate_kernel(kernel_arr, x_offset, y_offset, dx0dy0, dx1dy0, dx0dy1, d
 
     return kernel
 
-def conjugate_mirror(image):
+def conjugate_mirror(image: np.ndarray):
     """
     This takes a 2D array and mirrors it, shifts it and
     its an array of complex numbers its get the conjugates
@@ -49,12 +49,12 @@ def conjugate_mirror(image):
 
     Parameters
     ----------
-    image: array
+    image: np.ndarray
         A 2D array of real or complex numbers
     
     Returns
     -------
-    conj_mirror_image: array
+    conj_mirror_image: np.ndarray
         The mirrored and shifted image array
     """
     # Flip image left to right (i.e. flips columns) & Flip image up to down (i.e. flips rows)
@@ -66,49 +66,40 @@ def conjugate_mirror(image):
         conj_mirror_image = np.conjugate(conj_mirror_image)
     return conj_mirror_image
 
-def baseline_grid_locations(obs, psf, params, vis_weights, bi_use = None, fi_use = None, 
-                            fill_model_visibilities = False, interp_flag = False, mask_mirror_indices = False):
+def baseline_grid_locations(obs: dict, psf: dict, params: dict, vis_weights: np.ndarray, logger: RootLogger, 
+                            bi_use: np.ndarray|None = None, fi_use: np.ndarray|None = None, fill_model_visibilities: bool = False, 
+                            interp_flag: bool = False, mask_mirror_indices: bool = False):
     """
-    TODO: Docstring
-    [summary]
+    TODO: _summary_
 
     Parameters
     ----------
-    obs : [type]
-        [description]
-    psf : [type]
-        [description]
-    params : [type]
-        [description]
-    vis_weights : [type]
-        [description]
-    bi_use : [type], optional
-        [description], by default None
-    fi_use : [type], optional
-        [description], by default None
+    obs : dict
+        _description_
+    psf : dict
+        _description_
+    params : dict
+        _description_
+    vis_weights : np.ndarray
+        _description_
+    logger : RootLogger
+        _description_
+    bi_use : np.ndarray | None, optional
+        _description_, by default None
+    fi_use : np.ndarray | None, optional
+        _description_, by default None
     fill_model_visibilities : bool, optional
-        [description], by default False
+        _description_, by default False
     interp_flag : bool, optional
-        [description], by default False
+        _description_, by default False
     mask_mirror_indices : bool, optional
-        [description], by default False
+        _description_, by default False
 
     Returns
     -------
-    [type]
-        [description]
-    
-    Raises
-    ------
-    TypeError
-        In the case obs, psf, params or vis_weights is None.
-        TypeError is raised as the function needs to reference
-        obs, psf, params and vis_weights.
+    _type_
+        _description_
     """
-
-    #Check if obs, psf, params or vis_weights None, if so raise TypeError
-    if obs is None or psf is None or params is None or vis_weights is None:
-        raise TypeError("obs, psf, params and vis_weights must not be None")
 
     # Set up the return dictionary
     baselines_dict = {}
@@ -122,22 +113,16 @@ def baseline_grid_locations(obs, psf, params, vis_weights, bi_use = None, fi_use
     min_baseline = obs['min_baseline']
     max_baseline = obs['max_baseline']
     b_info = obs['baseline_info']
-    psf_dim = psf['dim'][0]
-    psf_resolution = psf['resolution'][0]
+    psf_dim = psf['dim']
+    psf_resolution = psf['resolution']
 
     # Frequency information of the visibilities
     if fill_model_visibilities:
         fi_use = np.arange(n_freq)
     elif fi_use is None:
-        fi_use = np.nonzero(b_info[0]['freq_use'][0])[0]
-    frequency_array = b_info[0]['freq'][0]
+        fi_use = np.nonzero(b_info['freq_use'])[0]
+    frequency_array = b_info['freq']
     frequency_array = frequency_array[fi_use]
-
-    # At this point the vis_weight_switch is configured, 
-    # but there's no point to us doing that because its never a pointer!
-    # Is there something we ought to do instead?
-    # What defines vis_weights as valid?
-    # Do we bother with vis_weight_switch?
 
     # Set the bi_use_flag, if we set it here, we need to return it
     bi_use_flag = False
@@ -147,32 +132,26 @@ def baseline_grid_locations(obs, psf, params, vis_weights, bi_use = None, fi_use
         # if the data is being gridded separately for the even/odd time samples
         # then force flagging to be consistent across even/odd sets
         if not fill_model_visibilities:
-            flag_test = np.sum(vis_weights, axis = -1)
-            bi_use = np.where(flag_test > 0)[0]
+            flag_test = np.sum(np.maximum(vis_weights, 0), axis = 0)
+            bi_use = np.nonzero(flag_test)[0]
         else:
             tile_use = np.arange(n_tile) + 1
-            bi_use = array_match(b_info[0]['tile_a'][0].astype(int), tile_use, array_2 = b_info[0]['tile_b'][0].astype(int))
+            bi_use = array_match(b_info['tile_a'].astype(int), tile_use, array_2 = b_info['tile_b'].astype(int))
     
-    # Calculate indices of visibilities to grid during this call (i.e. specific freqs, time sets)
-    # and initialize output arrays
-    n_b_use = bi_use.size
-    n_f_use = fi_use.size
-    # matrix_multiply is not what it seems for 1D arrays, had to do this to replicate!
-    vis_inds_use = (np.outer(np.ones(n_b_use), fi_use) + np.outer(bi_use, np.ones(n_f_use)) * n_freq).astype(np.int64)
-    
-    # Since the indices in vis_inds_use apply to a flattened array, flatten. Leave vis_inds_use as it to have the shape go back to the right shape.
-    vis_weights = vis_weights.flatten()[vis_inds_use]
+    # Rather than calculating the flat indexes we want, lets just index the array
+    # by the frequency use and baseline_use indexes
+    vis_weights = vis_weights[fi_use, :][:, bi_use]
 
     # Units in pixel/Hz
-    kx_arr = params['uu'][0][bi_use] / kbinsize
-    ky_arr = params['vv'][0][bi_use] / kbinsize
+    kx_arr = params['uu'][bi_use] / kbinsize
+    ky_arr = params['vv'][bi_use] / kbinsize
 
     if not fill_model_visibilities:
         # Flag baselines on their maximum and minimum extent in the full frequency range of the observation
         # This prevents the sudden dissapearance of baselines along frequency
         dist_test = np.sqrt(kx_arr ** 2 + ky_arr ** 2) * kbinsize
-        dist_test_max = np.max(obs['baseline_info'][0]['freq'][0]) * dist_test
-        dist_test_min = np.min(obs['baseline_info'][0]['freq'][0]) * dist_test
+        dist_test_max = np.max(obs['baseline_info']['freq']) * dist_test
+        dist_test_min = np.min(obs['baseline_info']['freq']) * dist_test
         flag_dist_baseline = np.where((dist_test_min < min_baseline) | (dist_test_max > max_baseline))
         del(dist_test, dist_test_max, dist_test_min)
     
@@ -183,8 +162,8 @@ def baseline_grid_locations(obs, psf, params, vis_weights, bi_use = None, fi_use
         ky_arr[conj_i] = -ky_arr[conj_i]
 
     # Center of baselines for x and y in units of pixels
-    xcen = np.outer(kx_arr, frequency_array)
-    ycen = np.outer(ky_arr, frequency_array)
+    xcen = np.outer(frequency_array, kx_arr)
+    ycen = np.outer(frequency_array, ky_arr)
 
     # Pixel number offset per baseline for each uv-box subset
     x_offset = np.fix(np.floor((xcen - np.floor(xcen)) * psf_resolution) % psf_resolution).astype(np.int64)
@@ -215,11 +194,11 @@ def baseline_grid_locations(obs, psf, params, vis_weights, bi_use = None, fi_use
 
     # Flag baselines which fall outside the uv plane
     if not fill_model_visibilities:
-        if flag_dist_baseline[0].size > 0:
+        if np.size(flag_dist_baseline) > 0:
             # If baselines fall outside the desired min/max baseline range at all during the frequency range
             # then set their maximum pixel value to -1 to exclude them
-            xmin[flag_dist_baseline, :] = -1
-            ymin[flag_dist_baseline, :] = -1
+            xmin[:, flag_dist_baseline] = -1
+            ymin[:, flag_dist_baseline] = -1
             del(flag_dist_baseline)
     
     # Normally we check vis_weight_switch, but its always true here so... do this
@@ -227,7 +206,7 @@ def baseline_grid_locations(obs, psf, params, vis_weights, bi_use = None, fi_use
     if fill_model_visibilities:
         n_flag = 0
     else:
-        n_flag = flag_i[0].size
+        n_flag = np.size(flag_i)
     if n_flag > 0:
         xmin[flag_i] = -1
         ymin[flag_i] = -1
@@ -235,12 +214,12 @@ def baseline_grid_locations(obs, psf, params, vis_weights, bi_use = None, fi_use
     if mask_mirror_indices:
         # Option to exclude v-axis mirrored baselines
         if conj_i.size > 0:
-            xmin[conj_i, :] = -1
-            ymin[conj_i, :] = -1
+            xmin[:, conj_i] = -1
+            ymin[:, conj_i] = -1
 
     # If xmin or ymin is invalid then adjust the baselines dict as necessary
     if xmin.size == 0 or ymin.size == 0 or np.max([np.max(xmin), np.max(ymin)]) < 0:
-        print('WARNING: All data flagged or cut!')
+        logger.warning('All data flagged or cut!')
         baselines_dict['bin_n'] = 0
         baselines_dict['n_bin_use'] = 0
         baselines_dict['bin_i'] = -1
@@ -260,7 +239,6 @@ def baseline_grid_locations(obs, psf, params, vis_weights, bi_use = None, fi_use
     # Add values to baselines dict
     baselines_dict['xmin'] = xmin
     baselines_dict['ymin'] = ymin
-    baselines_dict['vis_inds_use'] = vis_inds_use
     baselines_dict['x_offset'] = x_offset
     baselines_dict['y_offset'] = y_offset
     if bi_use_flag:
@@ -269,60 +247,60 @@ def baseline_grid_locations(obs, psf, params, vis_weights, bi_use = None, fi_use
     # Return the dictionary
     return baselines_dict
 
-def dirty_image_generate(dirty_image_uv, mask = None, baseline_threshold = 0, normalization = None,
-                         resize = None, width_smooth = None, degpix = None, not_real = False,
-                         image_filter_fn = 'filter_uv_uniform', pad_uv_image = None, filter = None,
-                         vis_count = None, weights = None, beam_ptr = None, obs = None, psf = None, params = None, 
-                         fi_use = None, bi_use = None, mask_mirror_indices = False):
+def dirty_image_generate(
+        dirty_image_uv: np.ndarray,
+        pyfhd_config: dict,
+        logger: RootLogger,
+        mask: float|np.ndarray|None = None,
+        baseline_threshold: int|float = 0,
+        normalization: np.ndarray|None = None,
+        resize: int|None = None,
+        width_smooth: int|float|None = None,
+        degpix: float|None = None,
+        not_real: bool = False,
+        pad_uv_image: int|float|None = None,
+        weights: np.ndarray|None = None,
+        filter: np.ndarray|None = None,
+        beam_ptr: np.ndarray|None = None
+):
     """
-    TODO: Docstring
-    [summary]
+    TODO: _summary_
 
     Parameters
     ----------
-    dirty_image_uv : [type]
-        [description]
-    mask : [type], optional
-        [description], by default None
-    baseline_threshold : int, optional
-        [description], by default 0
-    normalization : [type], optional
-        [description], by default None
-    resize : [type], optional
-        [description], by default None
-    width_smooth : [type], optional
-        [description], by default None
-    degpix : [type], optional
-        [description], by default None
-    real : bool, optional
-        [description], by default False
-    image_filter_fn : str, optional
-        [description], by default 'filter_uv_uniform'
-    pad_uv_image : [type], optional
-        [description], by default None
-    filter : [type], optional
-        [description], by default None
-    vis_count : [type], optional
-        [description], by default None
-    weights : [type], optional
-        [description], by default None
-    beam_ptr : [type], optional
-        [description], by default None
-    obs : [type], optional
-        [description], by default None
-    psf : [type], optional
-        [description], by default None
-    params : [type], optional
-        [description], by default None
-    fi_use : [type], optional
-        [description], by default None
-    bi_use : [type], optional
-        [description], by default None
+    dirty_image_uv : np.ndarray
+        _description_
+    pyfhd_config : dict
+        _description_
+    logger : RootLogger
+        _description_
+    mask : float | np.ndarray | None, optional
+        _description_, by default None
+    baseline_threshold : int | float, optional
+        _description_, by default 0
+    normalization : np.ndarray | None, optional
+        _description_, by default None
+    resize : int | None, optional
+        _description_, by default None
+    width_smooth : int | float, optional
+        _description_, by default None
+    degpix : float | None, optional
+        _description_, by default None
+    not_real : bool, optional
+        _description_, by default False
+    pad_uv_image : int | float | None, optional
+        _description_, by default None
+    weights : np.ndarray | None, optional
+        _description_, by default None
+    filter : np.ndarray | None, optional
+        _description_, by default None
+    beam_ptr : np.ndarray | None, optional
+        _description_, by default None
 
     Returns
     -------
-    [type]
-        [description]
+    _type_
+        _description_
     """
 
     # dimension is columns, elements is rows
@@ -330,7 +308,6 @@ def dirty_image_generate(dirty_image_uv, mask = None, baseline_threshold = 0, no
     di_uv_use = dirty_image_uv
     # If the baseline threshold has been set
     if baseline_threshold is not None:
-        # If width smooth hasn't been set, set it
         if width_smooth is None:
             width_smooth = np.floor(np.sqrt(dimension * elements) / 100)    
         rarray = np.sqrt((meshgrid(dimension, 1) - dimension / 2) ** 2 + (meshgrid(elements, 2) - elements / 2) ** 2)
@@ -345,18 +322,17 @@ def dirty_image_generate(dirty_image_uv, mask = None, baseline_threshold = 0, no
         if np.size(cut_i) > 0:
             mask_bt_flatiter = mask_bt.flat
             mask_bt_flatiter[cut_i] = 0
-        if width_smooth is not None:
-            # Get the kernel width
-            kernel_width = np.max([width_smooth,1])
-            # In IDL if the kernel width is even one is added to make it odd
-            if kernel_width % 2 == 0:
-                kernel_width += 1
-            # Use a box width averaging filter over the mask, use valid so we can insert it in later
-            box_averages = convolve(mask_bt, Box2DKernel(kernel_width), mode = 'valid')
-            # Since IDL SMOOTH edges by default are the edges of the array used, ignore edges (its the reason why we used a valid convolve)
-            start = int(kernel_width // 2)
-            end = int(mask_bt.shape[1] - (kernel_width // 2))
-            mask_bt[start : end, start : end] = box_averages  
+        # Get the kernel width
+        kernel_width = np.max([width_smooth,1])
+        # In IDL if the kernel width is even one is added to make it odd
+        if kernel_width % 2 == 0:
+            kernel_width += 1
+        # Use a box width averaging filter over the mask, use valid so we can insert it in later
+        box_averages = convolve(mask_bt, Box2DKernel(kernel_width), mode = 'valid')
+        # Since IDL SMOOTH edges by default are the edges of the array used, ignore edges (its the reason why we used a valid convolve)
+        start = int(kernel_width // 2)
+        end = int(mask_bt.shape[1] - (kernel_width // 2))
+        mask_bt[start : end, start : end] = box_averages  
         # Apply boxed mask to the dirty image
         di_uv_use *=  mask_bt
     
@@ -372,12 +348,53 @@ def dirty_image_generate(dirty_image_uv, mask = None, baseline_threshold = 0, no
                 di_uv_use *= filter
             # Otherwise use a filter function
             else:
-                di_uv_use, _ = eval("filters.{}(di_uv_use, vis_count = vis_count, obs = obs, psf = psf, params = params, weights = weights, fi_use = fi_use, bi_use = bi_use, mask_mirror_indices = mask_mirror_indices)".format(image_filter_fn))
+                if pyfhd_config["image_filter"] == "filter_uv_uniform":
+                    logger.info("Using filter_uv_uniform for dirty_image_generate")
+                    di_uv_use, _ = filters.filter_uv_uniform(
+                        di_uv_use, 
+                        vis_count = filter, 
+                        weights=weights
+                    )
+                elif pyfhd_config["image_filter"] == "filter_uv_hannning":
+                    logger.warning("filter_uv_hanning hasn't been translated yet using filter_uv_uniform for dirty_image_generate instead")
+                    di_uv_use, _ = filters.filter_uv_uniform(
+                        di_uv_use, 
+                        vis_count = filter, 
+                    )
+                elif pyfhd_config["image_filter"] == "filter_uv_natural":
+                    logger.warning("filter_uv_natural hasn't been translated yet using filter_uv_uniform for dirty_image_generate instead")
+                    di_uv_use, _ = filters.filter_uv_uniform(
+                        di_uv_use, 
+                        vis_count = filter, 
+                    )
+                elif pyfhd_config["image_filter"] == "filter_uv_radial":
+                    logger.warning("filter_uv_radial hasn't been translated yet using filter_uv_uniform for dirty_image_generate instead")
+                    di_uv_use, _ = filters.filter_uv_uniform(
+                        di_uv_use, 
+                        vis_count = filter, 
+                    )
+                elif pyfhd_config["image_filter"] == "filter_uv_tapered_uniform":
+                    logger.warning("filter_uv_tapered_uniform hasn't been translated yet using filter_uv_uniform for dirty_image_generate instead")
+                    di_uv_use, _ = filters.filter_uv_uniform(
+                        di_uv_use, 
+                        vis_count = filter, 
+                    )
+                elif pyfhd_config["image_filter"] == "filter_uv_optimal":
+                    logger.warning("filter_uv_optimal hasn't been translated yet using filter_uv_uniform for dirty_image_generate instead")
+                    di_uv_use, _ = filters.filter_uv_uniform(
+                        di_uv_use, 
+                        vis_count = filter, 
+                    )
+                       
     
     # Resize the dirty image by the factor resize    
     if resize is not None:
         dimension *= resize
         elements *= resize
+        # Ensure elements and dimension are integers as resize should be an int
+        # but if it's not this makes sure dimension and elements are ints afterwards
+        dimension = int(dimension)
+        elements = int(elements)
         di_uv_real = di_uv_use.real
         di_uv_img = di_uv_use.imag
         # Use rebin to resize, apply to real and complex separately
@@ -406,12 +423,12 @@ def dirty_image_generate(dirty_image_uv, mask = None, baseline_threshold = 0, no
     
     # filter_uv_optimal produces images that are weighted by one factor of the beam
     # Weight by an additional factor of the beam to align with FHD's convention
-    if image_filter_fn == 'filter_uv_optimal' and beam_ptr is not None:
+    if pyfhd_config["image_filter"] == 'filter_uv_optimal' and beam_ptr is not None:
         dirty_image *= beam_ptr
     
     # If we are returning complex, make sure its complex
     if not_real:
-        dirty_image = dirty_image.astype("complex")
+        dirty_image = dirty_image.astype(np.complex128)
     else:
         dirty_image = dirty_image.real
     # Normalize by the matrix given, if it was given
@@ -421,74 +438,96 @@ def dirty_image_generate(dirty_image_uv, mask = None, baseline_threshold = 0, no
     #Return
     return dirty_image  
 
-
-def grid_beam_per_baseline(psf, uu, vv, ww, l_mode, m_mode, n_tracked, frequency_array, x, y,
-                           xmin_use, ymin_use, freq_i, bt_index, polarization, fbin, image_bot, 
-                           image_top, psf_dim3, box_matrix, vis_n, beam_clip_floor = False, beam_int = None, 
-                           beam2_int = None, n_grp_use = None, degrid_flag = False, obs = None, params = None,
-                           weights = None, fi_use = None, bi_use = None, mask_mirror_indices = False):
+def grid_beam_per_baseline(
+        psf: dict,
+        pyfhd_config: dict,
+        logger: RootLogger,
+        uu: np.ndarray,
+        vv: np.ndarray,
+        ww: np.ndarray,
+        l_mode: np.ndarray,
+        m_mode: np.ndarray,
+        n_tracked: np.ndarray,
+        frequency_array: np.ndarray,
+        x: np.ndarray,
+        y: np.ndarray,
+        xmin_use: int,
+        ymin_use: int,
+        freq_i: np.ndarray,
+        bt_index: np.ndarray,
+        polarization: int,
+        image_bot: int,
+        image_top: int,
+        psf_dim3: int,
+        box_matrix: np.ndarray,
+        vis_n: int,
+        beam_int: np.ndarray|None = None,
+        beam2_int: np.ndarray|None = None,
+        n_grp_use: np.ndarray|None = None,
+        degrid_flag: bool = False
+    ):
     """
-    TODO: Docstring
+    TODO: _summary_
 
     Parameters
     ----------
-    psf : [type]
-        [description]
-    uu : [type]
-        [description]
-    vv : [type]
-        [description]
-    ww : [type]
-        [description]
-    l_mode : [type]
-        [description]
-    m_mode : [type]
-        [description]
-    n_tracked : [type]
-        [description]
-    frequency_array : [type]
-        [description]
-    x : [type]
-        [description]
-    y : [type]
-        [description]
-    xmin_use : [type]
-        [description]
-    ymin_use : [type]
-        [description]
-    freq_i : [type]
-        [description]
-    bt_index : [type]
-        [description]
-    polarization : [type]
-        [description]
-    fbin : [type]
-        [description]
-    image_bot : [type]
-        [description]
-    image_top : [type]
-        [description]
-    psf_dim3 : [type]
-        [description]
-    box_matrix : [type]
-        [description]
-    vis_n : [type]
-        [description]
-    beam_int : [type], optional
-        [description], by default None
-    beam2_int : [type], optional
-        [description], by default None
-    n_grp_use : [type], optional
-        [description], by default None
+    psf : dict
+        _description_
+    pyfhd_config : dict
+        _description_
+    logger : RootLogger
+        _description_
+    uu : np.ndarray
+        _description_
+    vv : np.ndarray
+        _description_
+    ww : np.ndarray
+        _description_
+    l_mode : np.ndarray
+        _description_
+    m_mode : np.ndarray
+        _description_
+    n_tracked : np.ndarray
+        _description_
+    frequency_array : np.ndarray
+        _description_
+    x : np.ndarray
+        _description_
+    y : np.ndarray
+        _description_
+    xmin_use : int
+        _description_
+    ymin_use : int
+        _description_
+    freq_i : np.ndarray
+        _description_
+    bt_index : np.ndarray
+        _description_
+    polarization : int
+        _description_
+    image_bot : int
+        _description_
+    image_top : int
+        _description_
+    psf_dim3 : int
+        _description_
+    box_matrix : np.ndarray
+        _description_
+    vis_n : int
+        _description_
+    beam_int : np.ndarray | None, optional
+        _description_, by default None
+    beam2_int : np.ndarray | None, optional
+        _description_, by default None
+    n_grp_use : np.ndarray | None, optional
+        _description_, by default None
     degrid_flag : bool, optional
-        [description], by default False
-    beam_clip_floor : bool, optional
-        [description], by default False
-    
+        _description_, by default False
+
     Returns
     -------
-    box_matrix: array
-        [description]
+    box_matrix: np.ndarray
+        _description_
     """
 
     # Make the beams on the fly with corrective phases given the baseline location. 
@@ -498,23 +537,18 @@ def grid_beam_per_baseline(psf, uu, vv, ww, l_mode, m_mode, n_tracked, frequency
     # Loop over all visibilities that fall within the chosen visibility box
     for ii in range(vis_n):
         # Pixel center offset phases
-        deltau_l = l_mode * (uu[bt_index[ii]] * frequency_array[freq_i[ii]] - x[xmin_use + psf['dim'][0] // 2])
-        deltav_m = m_mode * (vv[bt_index[ii]] * frequency_array[freq_i[ii]] - y[ymin_use + psf['dim'][0] // 2])
+        deltau_l = l_mode * (uu[bt_index[ii]] * frequency_array[freq_i[ii]] - x[xmin_use + psf['dim'] // 2])
+        deltav_m = m_mode * (vv[bt_index[ii]] * frequency_array[freq_i[ii]] - y[ymin_use + psf['dim'] // 2])
         # w term offset phase
         w_n_tracked = n_tracked * ww[bt_index[ii]] * frequency_array[freq_i[ii]]
 
         # Generate a UV beam from the image space beam, offset by calculated phases
         psf_base_superres = dirty_image_generate(
-            psf['image_info'][0]['image_power_beam_arr'][fbin[ii]][polarization] * \
-            np.exp(2 * pi * (0 + 1j) * \
-            (-w_n_tracked + deltau_l + deltav_m)),
+            psf['image_info']['image_power_beam_arr'][polarization] * \
+            np.exp(2 * pi * (0 + 1j) * (-w_n_tracked + deltau_l + deltav_m)),
+            pyfhd_config,
+            logger,
             not_real = True,
-            obs = obs,
-            params = params, 
-            weights = weights, 
-            fi_use = fi_use, 
-            bi_use = bi_use,
-            mask_mirror_indices = mask_mirror_indices
         )
         psf_base_superres = psf_base_superres[image_bot: image_top + 1, image_bot : image_top + 1]
 
@@ -534,15 +568,14 @@ def grid_beam_per_baseline(psf, uu, vv, ww, l_mode, m_mode, n_tracked, frequency
         #                      15 16   
         d = psf_base_superres.shape
         # Note columns and rows are swapped from IDL so nx is now rows!
-        nx = d[0] // psf['resolution'][0]
-        ny = d[1] // psf['resolution'][0]
+        nx = d[0] // psf['resolution']
+        ny = d[1] // psf['resolution']
         # The same result of IDL in numpy is np.reshape, with shape swapping rows and columns, then doing transpose of this shape
-        psf_base_superres = np.reshape(psf_base_superres,[psf['resolution'][0] * ny, nx, psf['resolution'][0]])
+        psf_base_superres = np.reshape(psf_base_superres,[psf['resolution'] * ny, nx, psf['resolution']])
         psf_base_superres = np.transpose(psf_base_superres, [1,0,2])
-        psf_base_superres = np.reshape(psf_base_superres, [ny, nx, psf['resolution'][0] ** 2])
+        psf_base_superres = np.reshape(psf_base_superres, [ny, nx, psf['resolution'] ** 2])
         psf_base_superres = np.sum(psf_base_superres, -1)
         psf_base_superres = np.transpose(psf_base_superres)
-
         psf_base_superres = np.reshape(psf_base_superres, psf['dim'] ** 2)
         start = psf_dim3 * ii
         end = start + psf_base_superres.size
@@ -555,7 +588,7 @@ def grid_beam_per_baseline(psf, uu, vv, ww, l_mode, m_mode, n_tracked, frequency
     # Modifications: done per group of baselines that fit within the current box, 
     # rather than individually. region_grow is not used to find a contiguous
     # edge around the beam to cut because it is too slow.
-    if beam_clip_floor:
+    if pyfhd_config["beam_clip_floor"]:
         psf_val_ref = np.sum(box_matrix, 1)
         psf_amp = np.abs(box_matrix)
         psf_mask_threshold_use = np.max(psf_amp) / psf['beam_mask_threshold']
@@ -578,62 +611,57 @@ def grid_beam_per_baseline(psf, uu, vv, ww, l_mode, m_mode, n_tracked, frequency
     
     return box_matrix
 
-def visibility_count(obs, psf, params, vis_weights, fi_use = None, bi_use = None, mask_mirror_indices = False,
-                     file_path_fhd = None, no_conjugate = False, fill_model_visibilities = False):
+def visibility_count(obs: dict, psf: dict, params: dict, vis_weights: np.ndarray, logger: RootLogger, 
+                     fi_use: np.ndarray|None = None, bi_use: np.ndarray|None = None, 
+                     mask_mirror_indices: bool = False, no_conjugate: bool = False, fill_model_visibilities: bool = False):
     """
-    TODO: Docstring
-    [summary]
+    TODO:_summary_
 
     Parameters
     ----------
-    obs : [type]
-        [description]
-    psf : [type]
-        [description]
-    params : [type]
-        [description]
-    vis_weights : [type]
-        [description]
-    xmin : [type]
-        [description]
-    ymin : [type]
-        [description]
-    fi_use : [type]
-        [description]
-    n_freq_use : [type]
-        [description]
-    bi_use : [type]
-        [description]
-    mask_miiror_indices : [type]
-        [description]
-    file_path_fhd : [type], optional
-        [description], by default None
+    obs : dict
+        _description_
+    params : dict
+        _description_
+    vis_weights : np.ndarray
+        _description_
+    pyfhd_config : dict
+        _description_
+    logger : RootLogger
+        _description_
+    fi_use : np.ndarray | None, optional
+        _description_, by default None
+    bi_use : np.ndarray | None, optional
+        _description_, by default None
+    mask_mirror_indices : bool, optional
+        _description_, by default False
     no_conjugate : bool, optional
-        [description], by default True
-    fill_model_vis : bool, optional
-        [description], by default False
+        _description_, by default False
+    fill_model_visibilities : bool, optional
+        _description_, by default False
 
     Returns
     -------
-    [type]
-        [description]
-
-    Raises
-    ------
-    TypeError
-        [description]
+    _type_
+        _description_
     """
     
-    if obs is None or psf is None or params is None or vis_weights is None:
-        raise TypeError("obs, psf, params or vis_weights should not be None")
-    
     #Retrieve info from the data structures
-    dimension = int(obs['dimension'][0])
-    elements = int(obs['elements'][0])
-    psf_dim = psf['dim'][0]
+    dimension = int(obs['dimension'])
+    elements = int(obs['elements'])
+    psf_dim = psf['dim']
 
-    baselines_dict = baseline_grid_locations(obs, psf, params, vis_weights, bi_use = bi_use, fi_use = fi_use,
-                                             mask_mirror_indices = mask_mirror_indices, fill_model_visibilities = fill_model_visibilities)
+    baselines_dict = baseline_grid_locations(
+        obs, 
+        psf,
+        params, 
+        vis_weights, 
+        logger, 
+        bi_use = bi_use, 
+        fi_use = fi_use,
+        mask_mirror_indices = mask_mirror_indices, 
+        fill_model_visibilities = fill_model_visibilities
+    )
     # Retrieve the data we need from baselines_dict
     bin_n = baselines_dict['bin_n']
     bin_i = baselines_dict['bin_i']
@@ -667,6 +695,7 @@ def visibility_count(obs, psf, params, vis_weights, fi_use = None, bi_use = None
 def holo_mapfn_convert(map_fn, psf_dim, dimension, elements = None, norm = 1, threshold = 0):
     """
     TODO: Description
+    Probably ought to be deprecated
 
     Parameters
     ----------
@@ -732,3 +761,23 @@ def holo_mapfn_convert(map_fn, psf_dim, dimension, elements = None, norm = 1, th
                                (('i_use', 'I_USE'), 'int'), (('norm', 'NORM'), 'float'),\
                                (('indexed', 'INDEXED'), '>i2')])
     return mapfn
+
+def crosspol_reformat(image_uv: np.ndarray) -> np.ndarray:
+    """
+    TODO: _summary_
+
+    Parameters
+    ----------
+    image_uv : np.ndarray
+        The image of the uv plane we are crossol formatting
+
+    Returns
+    -------
+    image_uv: np.ndarray
+        The crosspol formatted uv plane
+    """
+    # Stokes -> instrumental, since inverse keyword in FHD wasn't used here
+    crosspol_image = 2 * image_uv[2] - conjugate_mirror(image_uv[3])
+    image_uv[2] = crosspol_image
+    image_uv[3] = conjugate_mirror(crosspol_image)
+    return image_uv

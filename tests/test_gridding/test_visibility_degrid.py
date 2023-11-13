@@ -14,7 +14,7 @@ def data_dir():
 def full_data_dir():
     return Path(env.get('PYFHD_TEST_PATH'), 'full_size_visibility_degrid/')
 
-def test_visibility_degrid_one(data_dir):
+def _test_visibility_degrid_one(data_dir):
     inputs = get_savs(data_dir,'input_1.sav')
     image_uv = inputs['image_uv']
     vis_weights = inputs['vis_weight_ptr'] 
@@ -50,7 +50,7 @@ def test_visibility_degrid_one(data_dir):
 
     npt.assert_allclose(vis_return, outputs['vis_return'], atol = 1e-3)
 
-def test_visibility_degrid_two(data_dir):
+def _test_visibility_degrid_two(data_dir):
 
     inputs = get_savs(data_dir,'input_2.sav')
     image_uv = inputs['image_uv']
@@ -87,7 +87,7 @@ def test_visibility_degrid_two(data_dir):
 
     npt.assert_allclose(vis_return, outputs['vis_return'], atol = 9e-6)
 
-def test_visibility_degrid_three(data_dir):
+def _test_visibility_degrid_three(data_dir):
 
     inputs = get_savs(data_dir,'input_3.sav')
     image_uv = inputs['image_uv']

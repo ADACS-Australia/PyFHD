@@ -99,8 +99,7 @@ def pyfhd_parser():
     parser.add_argument('--n-pol', type = int, default = 2, choices = [0, 2, 4], help = 'Set number of polarizations to use (XX, YY versus XX, YY, XY, YX).')
 
     # Calibration Group
-    calibration.add_argument('-cv', '--calibrate-visibilities', default = True, type=bool,
-    help = 'Turn on the calibration of the visibilities. If turned on, calibration of the dirty, modelling, and subtraction to make a residual occurs. Otherwise, none of these occur and an uncalibrated dirty cube is output.')
+    calibration.add_argument('-cv', '--calibrate-visibilities', default = False, action = 'store_true', help = 'Turn on the calibration of the visibilities. If turned on, calibration of the dirty, modelling, and subtraction to make a residual occurs. Otherwise, none of these occur and an uncalibrated dirty cube is output.')
     calibration.add_argument('--diffuse-calibrate', type = Path, help = 'Path to a file containing a map/model of the diffuse in which to calibrate on.\nThe map/model undergoes a DFT for every pixel, and the contribution from every pixel is added to the model visibilities from which to calibrate on.\nIf no diffuse_model is specified, then this map/model is used for the subtraction model as well. See diffuse_model for information about the formatting of the file.')
     calibration.add_argument('--transfer-calibration', type = Path, help = 'The file path of a calibration to be read-in, if you give a directory PyFHD expects there to be a file called <obs_id>_cal.hdf5 using the same observation as you plan to process.')
     calibration.add_argument('--calibration_catalog-file-path', type = Path, default = None, help = 'The file path to the desired source catalog to be used for calibration')
@@ -136,7 +135,7 @@ def pyfhd_parser():
     # Flagging Group
     flag.add_argument('-fv', '--flag-visibilities', default = False, action = 'store_true', help = 'Flag visibilities based on calculations in vis_flag')
     flag.add_argument('-fc', '--flag-calibration', default = False, action = 'store_true', help = 'Flags antennas based on calculations in vis_calibration_flag')
-    flag.add_argument('-fb', '--flag-basic', default = False, action='store_true', help='Flags Frequencies and Tiles based on your configuration, params and the visibility weights.\nThe freq_use, tile_use arrays of obs will be adjusted and the vis_weights_arr adjusted to be in line with the freq_use and tile_use arrays.\nYou may want to turn this off if you\'re dealing with a simulation in PyFHD')
+    flag.add_argument('-fb', '--flag-basic', default = False, action='store_true', help='Flags Frequencies and Tiles based on your configuration, params and the visibility weights.\nThe freq_use, tile_use arrays of obs will be adjusted and the vis_weights_arr adjusted to be in line with the freq_use and tile_use arrays.\nThis should be True always, the only time you should consider turning off basic flagging is when you\'re dealing with a simulated visibilities and weights in PyFHD')
     flag.add_argument('--flag-freq-start', default = None, type = float, help = 'Frequency in MHz to begin the observation. Flags frequencies less than it. Replaces freq_start from FHD')
     flag.add_argument('--flag-freq-end', default = None, type = float, help = 'Frequency in MHz to end the observation. Flags frequencies greater than it. Replaces freq_end from FHD')
     flag.add_argument('--flag-tiles', default = [], type = list, action = 'append', help = 'A list of tile names to manually flag. I repeat, a list of tile names, NOT tile indices')
@@ -144,13 +143,17 @@ def pyfhd_parser():
     flag.add_argument('--time-cut', type = list, default = None, help = 'Seconds to cut (rounded up to next time integration step) from the beginning of the observation. Can also specify a negative time to cut off the end of the observation. Specify a vector to cut at both the start and end.')
 
     # Beam Setup Group
-    beam.add_argument('-b', '--recalculate-beam', default = False, action = 'store_true', help = "Forces PyFHD to redo the beam setup using PyFHD's beam setup.")
+    beam.add_argument('-b', '--beam-file-path', type = Path, help = "The path to the file containing a sav or fits file")
+    beam.add_argument('--beam-sav-to-npz', default = False, action = 'store_true', help="When using a sav file for the beam-file-path it will automatically sav a npz file of the psf with the exact same contents as the sav file.")
+    beam.add_argument('--recalculate-beam', default = False, action = 'store_true', help = "Forces PyFHD to redo the beam setup using PyFHD's beam setup.")
     beam.add_argument('--beam-nfreq-avg', type = int, default = 16, help = "The number of fine frequency channels to calculate a beam for, using the average of the frequencies.\nThe beam is a function of frequency, and a calculation on the finest level is most correct (beam_nfreq_avg=1).\nHowever, this is computationally difficult for most machines.")
     beam.add_argument('--psf-dim', default = 54, type = int, help = 'Controls the span of the beam in u-v space. Some defaults are 30, 54 (1e6 mask with -2) or 62 (1e7 with -2).')
     beam.add_argument('--psf-resolution', default = 100, type = int, help = 'Super-resolution factor of the psf in UV space. Values greater than 1 increase the resolution of the gridding kernel.')
+    beam.add_argument('--beam-mask-threshold', default=100, type = int, help = 'The factor at which to clip the beam model. For example, a factor of 100 would clip the beam model at 100x down from the maximum value. This removes extraneous and uncertain modelling at low levels.')
     beam.add_argument('--beam-model-version', type = int, default = 2, help = 'A number that indicates the tile beam model calculation.\nThis is dependent on the instrument, and specific calculations are carried out in <instrument>_beam_setup_gain.\nMWA range: 0, 1 (or anything else captured in the else statement), 2\nPAPER range: 1 (or anything else captured in the else statement), 2\nHERA range: 2 (or anything else captured in the else statement)')
     beam.add_argument('--beam-clip-floor', default = False, action = 'store_true', help = 'Set to subtract the minimum non-zero value of the beam model from all pixels.')
     beam.add_argument('--interpolate-kernel', default = False, action = 'store_true', help = "Use interpolation of the gridding kernel while gridding and degridding, rather than selecting the closest super-resolution kernel.")
+    beam.add_argument('--beam-per-baseline', default = False, action = 'store_true', help = 'Set to true if the beams were made with corrective phases given the baseline location, which then enables the gridding to be done per baseline')
     beam.add_argument('--dipole-mutual-coupling-factor', default = False, action = 'store_true', help = 'Allows a modification to the beam as a result of mutual coupling between dipoles calculated in mwa_dipole_mutual_coupling (See Sutinjo 2015 for more details).')
     beam.add_argument('--beam-offset-time', type = float, default = 56, help = "Calculate the beam at a specific time within the observation. 0 seconds indicates the start of the observation, and the # of seconds in an observation indicates the end of the observation.")
 
@@ -158,6 +161,11 @@ def pyfhd_parser():
     gridding.add_argument('-g', '--recalculate-grid', default = False, action ='store_true', help = 'Forces PyFHD to recalculate the gridding function. Replaces grid_recalculate from FHD')
     gridding.add_argument('-map', '--recalculate-mapfn', default = False, action = 'store_true', help = 'Forces PyFHD to recalculate the mapping function. Replaces mapfn_recalculate from FHD')
     gridding.add_argument('--image-filter', default = 'filter_uv_uniform', type = str, choices = ['filter_uv_uniform', 'filter_uv_hanning', 'filter_uv_natural', 'filter_uv_radial', 'filter_uv_tapered_uniform', 'filter_uv_optimal'], help = 'Weighting filter to be applied to resulting snapshot images and fits files. Replaces image_filter_fn from FHD')
+    gridding.add_argument('--mask-mirror-indices', default = False, action= 'store_true', help='Inside baseline_grid_location optionally exclude v-axis mirrored baselines')
+    gridding.add_argument('--grid-weights', default = False, action = 'store_true', help='Grid the weights for the uv plane')
+    gridding.add_argument('--grid-variance', default = False, action = 'store_true', help='Grid the variance for the uv plane'),
+    gridding.add_argument('--grid-uniform', default = False, action = 'store_true', help = "Grid uniformally by applying a uniform weighted filter to all uv-planes"),
+    gridding.add_argument('--grid-spectral', default = False, action = 'store_true', help='Optionally use the spectral index information to scale the uv-plane in gridding')
     gridding.add_argument('--grid_psf_file', nargs='*', default=[],
     help = 'Path(s) to an FHD "psf" object. If running python gridding, this should be n .npz file, as converted from a .sav file. This should contain a gridding kernel matching the pointing of the observation being processed, e.g. for a +1 pointing, --grid-psf-file=/path/to/gauss_beam_pointing1.npz. If only/also running imaging/healpix projection in IDL, a path to the original .sav file should also be included, e.g. --grid-psf-file /path/to/gauss_beam_pointing1.npz /path/to/gauss_beam_pointing1.sav')
 
@@ -175,10 +183,14 @@ def pyfhd_parser():
     export.add_argument('--description', type=str, default = None, help = "A more detailed description of the current task, will get applied to the output directory and logging where all output will be stored.\nBy default the date and time is used")
     export.add_argument('--export-images', help = 'Export fits files and images of the sky.', action = 'store_true',  default = True)
     export.add_argument('--cleanup', help = 'Deletes some intermediate data products that are easy to recalculate in order to save disk space', default = False, action='store_true')
-    export.add_argument('--save-visibilities', default = False, action = 'store_true', help = 'Save the calibrated data visibilities, the model visibilities, and the visibility flags.')
     export.add_argument('--snapshot-healpix-export', default = False, action = 'store_true', help = 'Save model/dirty/residual/weights/variance cubes as healpix arrays, split into even and odd time samples, in preparation for epsilon.')
     export.add_argument('--pad-uv-image', type = float, default = 1.0, help = "Pad the UV image by this factor with 0's along the outside so that output images are at a higher resolution.")
     export.add_argument('--ring-radius-multi', type = float, default = 10, help = 'Sets the multiplier for the size of the rings around sources in the restored images.\nRing Radius will equal pad-uv-image * ring-radius-multi.\nTo generate restored images without rings, set ring_radius = 0.')
+    export.add_argument('--save-obs', default = False, action = 'store_true', help = "Save the obs dictionary created during PyFHD's run")
+    export.add_argument('--save-params', default = False, action = 'store_true', help = "Save the params dictionary created during PyFHD's run")
+    export.add_argument('--save-cal', default = False, action='store_true', help = "Save the calibration dictionary created during PyFHD's run")
+    export.add_argument('--save-visibilities', default = False, action = 'store_true', help = 'Save the calibrated data visibilities, the model visibilities, and the visibility flags.')
+
 
     # Model Group
     model.add_argument('-m', '--model-file-type', default = 'sav', choices = ['sav', 'uvfits'], help = 'Set the file type of the model, by default it looks for sav files of format <obs_id>_params.sav and <obs_id>_vis_model_<pol_name>.sav.\nIf you set uvfits you must put set path using --import-model-uvfits.\nThis argument is required as PyFHD currently cannot produce a model.')
@@ -333,6 +345,7 @@ def pyfhd_setup(options : argparse.Namespace) -> Tuple[dict, logging.RootLogger]
     pyfhd_config = vars(options)
     # Start the logger
     logger, output_dir = pyfhd_logger(pyfhd_config)
+    pyfhd_config['output_dir'] = output_dir
     pyfhd_config['top_level_dir'] = str(output_dir).split('/')[-1]
     # Check input_path exists and obs_id uvfits and metafits files exist (Error)
     if not pyfhd_config['input_path'].exists():
@@ -370,6 +383,11 @@ def pyfhd_setup(options : argparse.Namespace) -> Tuple[dict, logging.RootLogger]
         pyfhd_config['beam_offset_time'] = 0
         logger.warning("You set the offset time to less than 0, it was reset to 0.")
         warnings += 1
+
+    # If both beam and interp_flag leave a warning, prioritise beam_per_baseline
+    if pyfhd_config['beam_per_baseline'] and pyfhd_config['interpolate_kernel']:
+        logger.warning("Cannot have beam per baseline and interpolation at the same time, turning off interpolation")
+        pyfhd_config['interpolate_kernel'] = False
 
     # If cable_bandpass_fit has been enabled an instrument text file should also exist. (Error)
     #TODO get this as a template file during pip install

@@ -17,6 +17,8 @@ n-pol : 2
 deproject-w-term : ~
 
 # Beam Setup
+beam-file-path: './input'
+beam-sav-to-npz: true
 recalculate-beam : true
 beam-clip-floor : true
 interpolate-kernel : true
@@ -24,8 +26,10 @@ dipole-mutual-coupling-factor : true
 beam-nfreq-avg : 16
 psf-dim: 54
 psf-resolution : 100
+beam-mask-threshold: 100
 beam-model-version : 2
 beam-offset-time : 56
+beam-per-baseline: false
 
 # Calibration
 calibrate-visibilities : true
@@ -74,6 +78,11 @@ time-cut: ~
 recalculate-grid : false
 recalculate-mapfn : false
 image-filter : 'filter_uv_uniform'
+mask-mirror-indices: false
+grid-spectral: false
+grid-weights: True
+grid-variance: True
+grid-uniform: False
 
 # Deconvolution
 deconvolve : false

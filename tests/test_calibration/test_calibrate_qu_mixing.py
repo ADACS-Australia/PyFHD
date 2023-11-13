@@ -81,6 +81,7 @@ def test_qu_mixing(before_file, after_file):
     h5_after = dd.io.load(after_file)
 
     obs = h5_before['obs']
+    obs['n_baselines'] = obs['nbaselines']
     vis_ptr = h5_before['vis_ptr']
     vis_model_ptr = h5_before['vis_model_ptr']
     vis_weight_ptr = h5_before['vis_weight_ptr']

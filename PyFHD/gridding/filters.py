@@ -1,58 +1,59 @@
 import numpy as np
 from PyFHD.pyfhd_tools.pyfhd_utils import weight_invert
 import PyFHD.gridding.gridding_utils as gridding_utils
+from logging import RootLogger
 
-def filter_uv_uniform(image_uv, vis_count = None, obs = None, psf = None, params = None, weights = None, fi_use = None, bi_use = None, 
-                      mask_mirror_indices = False, name = "uniform", return_name_only = False):
+def filter_uv_uniform(image_uv, vis_count: np.ndarray | None, 
+                      obs: dict|None = None, params: dict|None = None, pyfhd_config: dict|None = None, 
+                      logger: RootLogger|None = None,weights: dict|None = None, fi_use: dict|None = None, 
+                      bi_use: dict|None = None, mask_mirror_indices: bool = False):
     """
-    TODO: Docstring
+    TODO:_summary_
 
     Parameters
     ----------
-    image_uv : [type]
-        [description]
-    vis_count : [type], optional
-        [description], by default None
-    obs : [type], optional
-        [description], by default None
-    psf : [type], optional
-        [description], by default None
-    params : [type], optional
-        [description], by default None
-    weights : [type], optional
-        [description], by default None
-    fi_use : [type], optional
-        [description], by default None
-    bi_use : [type], optional
-        [description], by default None
-    mask_mirror_indices : [type], optional
-        [description], by default None
-    name : str, optional
-        [description], by default "uniform"
-    return_name_only : bool, optional
-        [description], by default False
+    image_uv : np.ndarray
+        An image, usually a dirty image from dirty_image_generate
+    vis_count : np.ndarray | None
+        TODO: _description_
+    obs : dict | None, optional
+        The observation dictonary, by default None
+    params : dict | None, optional
+        The params dictionary containg uu, vv, by default None
+    pyfhd_config : dict | None, optional
+        PyFHD's configuration dictionary, by default None
+    logger : RootLogger | None, optional
+        PyFHD's logger, by default None
+    weights : dict | None, optional
+        The weights array (aka vis_weights), by default None
+    fi_use : dict | None, optional
+        The frequency use index array, by default None
+    bi_use : dict | None, optional
+        The baseline use index array, by default None
+    mask_mirror_indices : bool, optional
+        TODO: _description_, by default False
 
     Returns
     -------
-    [type]
-        [description]
+    tuple[image_uv_filtered: np.ndarray, filter_use: np.ndarray]
+        The filtered image and the filter used to filter the image as NumPy arrays
 
     Raises
     ------
     TypeError
-        [description]
+        In the case obs or params is None and vis_count is also None
     """
 
-    # Return the name now, if that has been set
-    if return_name_only:
-        # Why do you want this?
-        return image_uv, name
+    # If you need the name, grab it from pyfhd_config where needed
+
     # This does not make use of fine-grained flagging, but relies on coarse flags from the obs structure 
     # (i.e. a list of tiles completely flagged, and of frequencies completely flagged)
     if vis_count is None:
-        if obs is None or psf is None or params is None:
-            raise TypeError("obs, psf and params must not be None")
-        vis_count = gridding_utils.visibility_count(obs, psf, params, weights, fi_use, bi_use, mask_mirror_indices)
+        if obs is None or params is None:
+            raise TypeError("obs and params must not be None when vis_count is None")
+        vis_count = gridding_utils.visibility_count(
+            obs, params, weights, pyfhd_config, logger, fi_use, bi_use, mask_mirror_indices
+        )
     # Get the parts of the filter we're using
     filter_use = weight_invert(vis_count, threshold = 1)
     # Get the weights index as well

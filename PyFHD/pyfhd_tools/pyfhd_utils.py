@@ -295,9 +295,9 @@ def l_m_n(obs, psf, obsdec = None, obsra = None,  declination_arr = None, right_
     if obsra is None:
         obsra = obs['obsra']
     if  declination_arr is None:
-        declination_arr = psf['image_info'][0]['dec_arr'][0]
+        declination_arr = psf['image_info']['dec_arr']
     if right_ascension_arr  is None:
-        right_ascension_arr = psf['image_info'][0]['ra_arr'][0]
+        right_ascension_arr = psf['image_info']['ra_arr']
 
     # Convert all the degrees given into radians
     obsdec = np.radians(obsdec)
@@ -638,7 +638,7 @@ def array_match(array_1, value_match, array_2 = None) :
     n_match = vals.size
 
     if n_match == 0:
-        return -1, n_match
+        return -1
     
     ind_arr = np.zeros_like(array_1)
     for vi in range(n_match):
@@ -921,7 +921,7 @@ def run_command(cmd : str, dry_run=False):
 
     return stdout
 
-def vis_weights_update(vis_weights : np.ndarray, obs: dict, params: dict, pyfhd_config: dict) -> tuple[np.ndarray, dict]:
+def vis_weights_update(vis_weights : np.ndarray, obs: dict, psf: dict, params: dict) -> tuple[np.ndarray, dict]:
     """
     TODO: _summary_
 
@@ -931,9 +931,9 @@ def vis_weights_update(vis_weights : np.ndarray, obs: dict, params: dict, pyfhd_
         _description_
     obs : dict
         _description_
-    params : dict
+    psf: dict
         _description_
-    pyfhd_config : dict
+    params : dict
         _description_
 
     Returns
@@ -952,15 +952,15 @@ def vis_weights_update(vis_weights : np.ndarray, obs: dict, params: dict, pyfhd_
         ky_arr[conj_i] = -ky_arr[conj_i]
 
     xcen = np.outer(obs['baseline_info']['freq'], kx_arr)
-    xmin = np.floor(xcen) + obs['dimension'] / 2 - (pyfhd_config['psf_dim'] / 2 - 1)
+    xmin = np.floor(xcen) + obs['dimension'] / 2 - (psf['dim'] / 2 - 1)
     ycen = np.outer(obs['baseline_info']['freq'], ky_arr)
-    ymin = np.floor(ycen) + obs['elements'] / 2 - (pyfhd_config['psf_dim'] / 2 - 1)
+    ymin = np.floor(ycen) + obs['elements'] / 2 - (psf['dim'] / 2 - 1)
 
-    range_test_x_i = np.where((xmin <= 0) | ((xmin + pyfhd_config['psf_dim'] - 1) >= obs['dimension'] - 1))
+    range_test_x_i = np.where((xmin <= 0) | ((xmin + psf['dim'] - 1) >= obs['dimension'] - 1))
     if (range_test_x_i[0].size > 0):
         xmin[range_test_x_i] = -1
         ymin[range_test_x_i] = -1
-    range_test_y_i = np.where((ymin <= 0) | ((ymin + pyfhd_config['psf_dim'] - 1) >= obs['elements'] - 1))
+    range_test_y_i = np.where((ymin <= 0) | ((ymin + psf['dim'] - 1) >= obs['elements'] - 1))
     if (range_test_y_i[0].size > 0):
         xmin[range_test_y_i] = -1
         ymin[range_test_y_i] = -1
