@@ -239,13 +239,13 @@ def healpix_cnv_generate(obs: dict, mask: np.ndarray, hpx_radius: float, pyfhd_c
 def beam_image_cube(
     obs: dict, 
     psf: dict | h5py.File, 
+    logger: RootLogger,
     freq_i_arr: np.ndarray | None = None, 
     pol_i_arr: np.ndarray | None = None,
     n_freq_bin: np.ndarray | None = None,
     beam_mask: np.ndarray | None = None,
     square: bool = True,
-    beam_threshold: float | None = None,
-    logger: RootLogger
+    beam_threshold: float | None = None
 ) -> np.ndarray:
     """
     TODO: _summary_
@@ -288,8 +288,26 @@ def beam_image_cube(
         sys.exit(1)
     if n_freq_bin is None and freq_i_arr is not None:
         n_freq_bin = freq_i_arr.size
+
+    if np.median(freq_i_arr) > obs['n_freq']:
+        freq_i_use = np.interp(np.arange(obs['n_freq']), obs['baseline_info']['freq'], freq_i_arr)
+    else:
+        freq_i_use = freq_i_arr
     
     # TODO What is the shape of this eventually?
-    beam_arr = np.empty([obs['n_pol'], n_freq_bin])
+    beam_arr = np.zeros([obs['n_pol'], n_freq_bin])
+
+    bin_arr = obs['baseline_info']['fbin_i'][freq_i_use]
+    bin_hist, _, bri = histogram(bin_arr, min = 0)
+    bin_use = np.nonzero(bin_hist)
+    if np.size(bin_use) == 0:
+        return beam_arr
+    bin_n = bin_hist[bin_use]
+    beam_mask = np.ones(obs['dimension'], obs['elements'])
+    for pol_i in range(obs['n_pol']):
+        for fb_i in np.size(bin_use):
+            f_i_i = bri[bri[bin_use[fb_i] : bri[bin_use[fb_i]]]]
+            f_i = freq_i_use[f_i_i[0]]
+            # beam_single 
 
     return beam_arr

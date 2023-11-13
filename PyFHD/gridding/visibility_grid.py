@@ -129,7 +129,12 @@ def visibility_grid(
     n_baselines = obs['n_baselines']
     n_samples = obs['n_time']
     # New group_arr code that is consistent with the FHD version
-    group_arr = group_arr[polarization, freq_bin_i, :]
+    # We go upto n_baselines in the case we have less baselines in the
+    # observation than the transferred in beam. In most cases we're only 
+    # using one beam so this is fine, you might have issues if you're using
+    # many beams across the baselines with this code. It passes the tests where
+    # beams have been done per baseline so if you get an error, sorry!
+    group_arr = group_arr[polarization, freq_bin_i, :n_baselines]
     # REBIN in IDL when expanding dimensions repeats 2D arrays after expanding
     group_arr = np.expand_dims(rebin(group_arr, (n_f_use, n_baselines)), axis = 0)
     group_arr = np.repeat(group_arr, n_samples, axis = 0) 
