@@ -404,7 +404,7 @@ def project_slant_orthographic(meta : dict, obs : dict, epoch = 2000) -> dict:
 
     return astr, zenx, zeny
 
-def update_obs(obs: dict, dimension: int, kbinsize: float|int) -> dict:
+def update_obs(obs: dict, dimension: int, kbinsize: float|int, beam_nfreq_avg: float | None = None, fov: float | None = None) -> dict:
     """
     Inside the quickview function for exporting files we need to update the obs
     dictionary based on the new dimension and kbinsize given. This differs slightly from
@@ -419,13 +419,18 @@ def update_obs(obs: dict, dimension: int, kbinsize: float|int) -> dict:
         The new dimension for the size of each axes
     kbinsize : float | int
         The new kbin
+    beam_nfreq_avg: float | None
+        Set the new factor to average up the frequency resolution,by default None
+    fov: float | None
+        Set a new field of view, by default None
 
     Returns
     -------
     obs: dict
         The new updated obs dictionary
     """
-    beam_nfreq_avg = np.round(obs["n_freq"] / np.max(obs["baseline_info"]["fbin_i"]) + 1)
+    if beam_nfreq_avg is None:
+        beam_nfreq_avg = np.round(obs["n_freq"] / np.max(obs["baseline_info"]["fbin_i"]) + 1)
     freq_bin = beam_nfreq_avg * obs["freq_res"]
     freq_hist,_, freq_ri = histogram(obs["baseline_info"]["freq"], bin_size = freq_bin)
     freq_bin_i = np.zeros(obs["n_freq"])
@@ -435,9 +440,9 @@ def update_obs(obs: dict, dimension: int, kbinsize: float|int) -> dict:
     # Adjust the obs dictionary based on the new dimension and kbinsize
     obs['dimension'] = dimension
     obs['elements'] = dimension
-    obs['kpix'] = kbinsize
-    obs['degpix'] = (180 / np.pi) / (kbinsize * dimension)
-    obs["max_baseline"] = min(obs["max_baseline"], (dimension * kbinsize) / np.sqrt(2))
+    obs['kpix'] = kbinsize if fov is None else (180 / np.pi) / fov
+    obs['degpix'] = (180 / np.pi) / (obs['kpix'] * dimension)
+    obs["max_baseline"] = min(obs["max_baseline"], (dimension * obs['kpix']) / np.sqrt(2))
     obs['astr']['naxis'] =  np.array([dimension, dimension])
     obs['astr']['cdelt'] = np.full(2, obs['degpix'])
     obs["baseline_info"]["fbin_i"] = freq_bin_i

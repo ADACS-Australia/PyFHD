@@ -7,7 +7,6 @@ disable-log : false
 conserve-memory : false
 instrument : 'mwa'
 memory-threshold : 100000000
-n-avg : 2
 dimension : 2048
 elements : 2048
 kbinsize : 0.5
@@ -129,7 +128,14 @@ remove-sim-flags : false
 
 # HEALPIX
 ps-kbinsize : 0.5
-ps-kspan : 600.
+ps-kspan : 600
+ps-beam-threshold: 0
+ps-fov: ~
+ps-dimension: ~
+ps-degpix: ~
+ps-nfreq-avg: ~
+n-avg : 2
+rephase-weights: True
 restrict-healpix-inds : true
 healpix-inds: ~
 split-ps-export : true

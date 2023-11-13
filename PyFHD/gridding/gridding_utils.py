@@ -5,6 +5,7 @@ from scipy.signal import convolve
 from astropy.convolution import Box2DKernel
 from math import pi
 from logging import RootLogger
+import h5py
 
 def interpolate_kernel(kernel_arr: np.ndarray, x_offset: np.ndarray, y_offset: np.ndarray, 
                        dx0dy0: np.ndarray, dx1dy0: np.ndarray, dx0dy1: np.ndarray, dx1dy1: np.ndarray):
@@ -115,6 +116,9 @@ def baseline_grid_locations(obs: dict, psf: dict, params: dict, vis_weights: np.
     b_info = obs['baseline_info']
     psf_dim = psf['dim']
     psf_resolution = psf['resolution']
+    if isinstance(psf, h5py.File):
+        psf_dim = psf_dim[0]
+        psf_resolution = psf_resolution[0]
 
     # Frequency information of the visibilities
     if fill_model_visibilities:
@@ -520,11 +524,16 @@ def grid_beam_per_baseline(
     # Will need to be rerun for every baseline, so speed is key.
     # For more information, see Jack Line's thesis
 
+    psf_dim = psf['dim']
+    psf_resolution = psf['resolution']
+    if isinstance(psf, h5py.File):
+        psf_dim = psf_dim[0]
+        psf_resolution = psf_resolution[0]
     # Loop over all visibilities that fall within the chosen visibility box
     for ii in range(vis_n):
         # Pixel center offset phases
-        deltau_l = l_mode * (uu[bt_index[ii]] * frequency_array[freq_i[ii]] - x[xmin_use + psf['dim'] // 2])
-        deltav_m = m_mode * (vv[bt_index[ii]] * frequency_array[freq_i[ii]] - y[ymin_use + psf['dim'] // 2])
+        deltau_l = l_mode * (uu[bt_index[ii]] * frequency_array[freq_i[ii]] - x[xmin_use + psf_dim // 2])
+        deltav_m = m_mode * (vv[bt_index[ii]] * frequency_array[freq_i[ii]] - y[ymin_use + psf_dim // 2])
         # w term offset phase
         w_n_tracked = n_tracked * ww[bt_index[ii]] * frequency_array[freq_i[ii]]
 
@@ -554,15 +563,15 @@ def grid_beam_per_baseline(
         #                      15 16   
         d = psf_base_superres.shape
         # Note columns and rows are swapped from IDL so nx is now rows!
-        nx = d[0] // psf['resolution']
-        ny = d[1] // psf['resolution']
+        nx = d[0] // psf_resolution
+        ny = d[1] // psf_resolution
         # The same result of IDL in numpy is np.reshape, with shape swapping rows and columns, then doing transpose of this shape
-        psf_base_superres = np.reshape(psf_base_superres,[psf['resolution'] * ny, nx, psf['resolution']])
+        psf_base_superres = np.reshape(psf_base_superres,[psf_resolution * ny, nx, psf_resolution])
         psf_base_superres = np.transpose(psf_base_superres, [1,0,2])
-        psf_base_superres = np.reshape(psf_base_superres, [ny, nx, psf['resolution'] ** 2])
+        psf_base_superres = np.reshape(psf_base_superres, [ny, nx, psf_resolution ** 2])
         psf_base_superres = np.sum(psf_base_superres, -1)
         psf_base_superres = np.transpose(psf_base_superres)
-        psf_base_superres = np.reshape(psf_base_superres, psf['dim'] ** 2)
+        psf_base_superres = np.reshape(psf_base_superres, psf_dim ** 2)
         start = psf_dim3 * ii
         end = start + psf_base_superres.size
         box_matrix_iter = box_matrix.flat
@@ -587,7 +596,6 @@ def grid_beam_per_baseline(
     
     if degrid_flag and beam_int is not None and beam2_int is not None and n_grp_use is not None:
         # Calculate the beam and beam^2 integral (degridding)
-        psf_resolution = psf['resolution']
         beam_int_temp = np.sum(box_matrix, 0) / psf_resolution ** 2
         beam2_int_temp = np.sum(np.abs(box_matrix) ** 2, 0) / psf_resolution ** 2
         for ii in range(np.size(freq_i)):
@@ -636,6 +644,8 @@ def visibility_count(obs: dict, psf: dict, params: dict, vis_weights: np.ndarray
     dimension = int(obs['dimension'])
     elements = int(obs['elements'])
     psf_dim = psf['dim']
+    if isinstance(psf, h5py.File):
+        psf_dim = psf_dim[0]
 
     baselines_dict = baseline_grid_locations(
         obs, 

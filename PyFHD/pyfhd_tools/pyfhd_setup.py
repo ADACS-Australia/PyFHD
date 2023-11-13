@@ -94,7 +94,6 @@ def pyfhd_parser():
     parser.add_argument('--deproject_w_term', type = float, default = None, help = 'Enables the function for simple_deproject_w_term and uses the parameter value for the direction value in the function')
     parser.add_argument('--conserve-memory', default = False, action = 'store_true', help = 'Optionally split many loops into chunks in the case of high memory usage.')
     parser.add_argument('--memory-threshold', type = int, default = 1e8, help = 'Set a memory threshold for each chunk in set in bytes. By default it is set at ~100MB')
-    parser.add_argument('--n-avg', type = int, default = 2, help = 'Number of frequencies to average over to smooth the frequency band.')
     parser.add_argument('--min-baseline', type = float, default = 1.0, help = 'The minimum baseline length in wavelengths to include in the analysis')
     parser.add_argument('--n-pol', type = int, default = 2, choices = [0, 2, 4], help = 'Set number of polarizations to use (XX, YY versus XX, YY, XY, YX).')
 
@@ -212,7 +211,14 @@ def pyfhd_parser():
 
     # HEALPIX Group
     healpix.add_argument('--ps-kbinsize', type = float, default = 0.5, help = 'UV pixel size in wavelengths to grid for Healpix cube generation. Overrides ps_fov and the kpix in the obs structure if set.')
-    healpix.add_argument('--ps-kspan', type = float, default = 0, help = 'UV plane dimension in wavelengths for Healpix cube generation.\nOverrides ps_dimension and ps_degpix if set.\nIf ps_kspan, ps_dimension, or ps_degpix are not set, the UV plane dimension is calculated from the FoV and the degpix from the obs structure.')
+    healpix.add_argument('--ps-kspan', type = int, default = 0, help = 'UV plane dimension in wavelengths for Healpix cube generation.\nOverrides ps_dimension and ps_degpix if set.\nIf ps_kspan, ps_dimension, or ps_degpix are not set, the UV plane dimension is calculated from the FoV and the degpix from the obs structure.')
+    healpix.add_argument('--ps-beam-threshold', type = float, default = 0, help = 'Minimum value to which to calculate the beam out to in image space. The beam in UV space is pre-calculated and may have its own beam_threshold (see that keyword for more information), and this is only an additional cut in image space.')
+    healpix.add_argument('--ps-fov', type = float, default = None, help = 'Field of view in degrees for Healpix cube generation. Overrides kpix in the obs dictionary if set.')
+    healpix.add_argument('--ps-dimension', type = int, default = None, help = 'UV plane dimension in pixel number for Healpix cube generation. Overrides ps_degpix if set. If ps_kspan, ps_dimension, or ps_degpix are not set, the UV plane dimension is calculated from the FoV and the degpix from the obs dictionary.')
+    healpix.add_argument('--ps-degpix', type = float, default = None, help = 'Degrees per pixel for Healpix cube generation. If ps_kspan, ps_dimension, or ps_degpix are not set, the UV plane dimension is calculated from the FoV and the degpix from the obs dictionary.')
+    healpix.add_argument('--ps-nfreq-avg', type = float, default = None, help = 'A factor to average up the frequency resolution of the HEALPix cubes from the analysis frequency resolution. By default averages by a factor of 2 when this is set to None.')
+    healpix.add_argument('--n-avg', type = float, default = 2, help = "Number of frequencies to average over to smooth the frequency band.")
+    healpix.add_argument('--rephase-weights', default = False, action = 'store_true', help = 'If turned off, target phase center is the pointing center (as defined by Cotter). Setting to False overrides override_target_phasera and override_target_phasedec')
     healpix.add_argument('--restrict-healpix-inds', default = False, action= "store_true", help = "Only allow gridding of the output healpix cubes to include the healpix pixels specified in a file.\nThis is useful for restricting many observations to have consistent healpix pixels during integration, and saves on memory and walltime.")
     healpix.add_argument('--healpix-inds', default = None, type = Path, help = "In the event you want to restrict the healpix indices to a specified file, use a combination of restrict-healpix-inds and this argument to restrict the healpix indexes to your given file rather than a predetermined one from the obs dictionary.")
     healpix.add_argument('--split-ps-export', default = False, action = 'store_true', help = 'Split up the Healpix outputs into even and odd time samples.\nThis is essential to propogating errors in εppsilon.\nRequires more than one time sample.')

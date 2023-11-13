@@ -6,6 +6,8 @@ import importlib_resources
 from healpy.pixelfunc import pix2vec, vec2ang, ang2vec
 from healpy import query_disc
 from PyFHD.pyfhd_tools.unit_conv import radec_to_pixel, radec_to_altaz
+import h5py
+import sys
 
 def healpix_cnv_apply(image: np.ndarray, hpx_cnv: dict, transpose = True, mask = False) -> np.ndarray:
     """
@@ -233,3 +235,61 @@ def healpix_cnv_generate(obs: dict, mask: np.ndarray, hpx_radius: float, pyfhd_c
     obs['healpix']['n_zero'] = np.size(mask_test_i0[0])
 
     return hpx_cnv, obs
+
+def beam_image_cube(
+    obs: dict, 
+    psf: dict | h5py.File, 
+    freq_i_arr: np.ndarray | None = None, 
+    pol_i_arr: np.ndarray | None = None,
+    n_freq_bin: np.ndarray | None = None,
+    beam_mask: np.ndarray | None = None,
+    square: bool = True,
+    beam_threshold: float | None = None,
+    logger: RootLogger
+) -> np.ndarray:
+    """
+    TODO: _summary_
+
+    Parameters
+    ----------
+    obs : dict
+        _description_
+    psf : dict | h5py.File
+        _description_
+    freq_i_arr : np.ndarray | None, optional
+        _description_, by default None
+    pol_i_arr : np.ndarray | None, optional
+        _description_, by default None
+    n_freq_bin : np.ndarray | None, optional
+        _description_, by default None
+    beam_mask : np.ndarray | None, optional
+        _description_, by default None
+    square : bool, optional
+        _description_, by default True
+    beam_threshold : float | None, optional
+        _description_, by default None
+
+    Returns
+    -------
+    np.ndarray
+        _description_
+    """
+
+    if beam_threshold is None:
+        beam_threshold = 0.05
+    
+    if pol_i_arr is None:
+        pol_i_arr = np.arange(obs['n_pol'])
+    
+    if n_freq_bin is not None:
+        freq_i_arr = np.floor(np.arange(n_freq_bin) * (obs['n_freq'] / n_freq_bin)).astype(np.int64)
+    if freq_i_arr is None:
+        logger.error("beam_image_cube requires n_freq_bin or freq_i_arr to be set")
+        sys.exit(1)
+    if n_freq_bin is None and freq_i_arr is not None:
+        n_freq_bin = freq_i_arr.size
+    
+    # TODO What is the shape of this eventually?
+    beam_arr = np.empty([obs['n_pol'], n_freq_bin])
+
+    return beam_arr
