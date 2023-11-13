@@ -69,6 +69,20 @@ def _is_string(value: Any) -> bool:
 
 @np.vectorize
 def _is_none(value: Any) -> bool:
+    """
+    Checks for a none object and is vectorized to work across any numpy array
+    even if it's an object array.
+
+    Parameters
+    ----------
+    value : Any
+        A value to be checked if None
+
+    Returns
+    -------
+    bool
+        True if value is None, otherwise False
+    """
     return value is None
 
 @np.vectorize
