@@ -1,11 +1,12 @@
 import numpy as np
 from logging import RootLogger
 from PyFHD.io.pyfhd_io import load
-from PyFHD.pyfhd_tools.pyfhd_utils import angle_difference, histogram
+from PyFHD.pyfhd_tools.pyfhd_utils import angle_difference, histogram, region_grow
 import importlib_resources
 from healpy.pixelfunc import pix2vec, vec2ang, ang2vec
 from healpy import query_disc
 from PyFHD.pyfhd_tools.unit_conv import radec_to_pixel, radec_to_altaz
+from PyFHD.beam_setup.beam_utils import beam_image
 import h5py
 import sys
 
@@ -246,7 +247,7 @@ def beam_image_cube(
     beam_mask: np.ndarray | None = None,
     square: bool = True,
     beam_threshold: float | None = None
-) -> np.ndarray:
+) -> tuple[np.ndarray, np.ndarray]:
     """
     TODO: _summary_
 
@@ -255,6 +256,8 @@ def beam_image_cube(
     obs : dict
         _description_
     psf : dict | h5py.File
+        _description_
+    logger : RootLogger
         _description_
     freq_i_arr : np.ndarray | None, optional
         _description_, by default None
@@ -271,7 +274,7 @@ def beam_image_cube(
 
     Returns
     -------
-    np.ndarray
+    tuple[np.ndarray, np.ndarray]
         _description_
     """
 
@@ -295,6 +298,7 @@ def beam_image_cube(
         freq_i_use = freq_i_arr
     
     # TODO What is the shape of this eventually?
+    # TODO: Change shape of this based on beam_gaussian_params
     beam_arr = np.zeros([obs['n_pol'], n_freq_bin])
 
     bin_arr = obs['baseline_info']['fbin_i'][freq_i_use]
@@ -308,6 +312,12 @@ def beam_image_cube(
         for fb_i in np.size(bin_use):
             f_i_i = bri[bri[bin_use[fb_i] : bri[bin_use[fb_i]]]]
             f_i = freq_i_use[f_i_i[0]]
-            # beam_single 
-
-    return beam_arr
+            beam_single = beam_image(psf, obs, pol_i, f_i,  square = square)
+            for bi in range(bin_n[fb_i]):
+                beam_arr[pol_i, f_i_i[bi]] = beam_single
+            b_i = obs['obsx'] + obs['obsy'] * obs['dimension']
+            beam_i = region_grow(beam_single, b_i, low = beam_threshold ** (square + 1), max = np.max(beam_single))
+            beam_mask1 = np.zeros([obs['dimension'], obs['elements']])
+            beam_mask1[beam_i] = 1
+            beam_mask *= beam_mask1
+    return beam_arr, beam_mask

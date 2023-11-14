@@ -3,7 +3,7 @@ from PyFHD.io.pyfhd_io import save, load
 from logging import RootLogger
 import h5py
 from PyFHD.data_setup.obs import update_obs
-from PyFHD.healpix.healpix_utils import healpix_cnv_generate
+from PyFHD.healpix.healpix_utils import healpix_cnv_generate, beam_image_cube
 
 def healpix_snapshot_cube_generate(obs: dict, psf: dict | h5py.File, cal: dict, params: dict, vis_arr: np.ndarray, vis_model_arr: np.ndarray, vis_weights: np.ndarray, pyfhd_config: dict, logger: RootLogger) -> None:
     """
@@ -72,5 +72,5 @@ def healpix_snapshot_cube_generate(obs: dict, psf: dict | h5py.File, cal: dict, 
     # To have a psf that has reacted to the new beam_nfreq_avg you have set that isn't
     # the default, tell PyFHD to re-create the psf here once beam_setup has been translated
 
-    beam_arr = 
+    beam_arr, beam_mask = beam_image_cube(obs, psf, logger, square = True, beam_threshold = pyfhd_config['ps_beam_threshold'])
 

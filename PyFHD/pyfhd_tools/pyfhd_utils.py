@@ -82,6 +82,10 @@ def get_hist(data, bins, min, max):
     n = bin_l - 1
     bin_min = bins[0]
     bin_max = bins[-1]
+    if (bin_min == bin_max):
+        # Assume all values are the same, return the histogram
+        # as a single value array containing the size of the array
+        return np.array([data.size], dtype = np.int64)
     # Now loop through the data
     for idx in range(data.size):
         # Check if its inside the range we set
@@ -173,6 +177,11 @@ def get_ri(data, bins, hist, min, max):
     # Setup the reverse indices 
     ri = np.zeros(bin_l + 1 + data.size, dtype = np.int64)
     ri[0 : bin_l + 1] = first_v
+    # In the case of min being max, all values are the same
+    # so the ri is just the range of indexes
+    if (min == max):
+        ri[ri[0]:] = np.arange(data.size, dtype = np.int64)
+        return ri
     # Create a tracking array to keep track of where we are in the data indexing
     tracker = np.array(first_v)
     # Setup the things required for the indexing

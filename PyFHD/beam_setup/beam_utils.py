@@ -4,6 +4,71 @@ from PyFHD.pyfhd_tools.pyfhd_utils import histogram
 import logging
 import h5py
 
+def gaussian_decomp(
+        x: np.ndarray, 
+        y: np.ndarray, 
+        p: np.ndarray, 
+        ftransform: bool = False,  
+        model_npix: float | None = None,
+        model_res: float | None = None,
+) -> tuple[np.ndarray, float, float]:
+    decomp_beam = np.zeros([x.size, y.size])
+    i = 1j
+    # Expand the p vector into readable names
+    var = np.reshape(p, [5, p.size // 5])
+    amp = var[0]
+    offset_x = var[1]
+    sigma_x = var[2]
+    offset_y = var[3]
+    sigma_y = var[4]
+    n_lobes = var[0].size
+
+    # If the parameters were built on a different grid, then put on new grid
+    # Npix only affects the offset params
+    if model_npix is not None:
+        if model_npix < x.size:
+            offset = np.abs(x.size / 2 - model_npix / 2)
+            offset_x += offset
+            offset_y += offset
+        else:
+            offset = np.abs(model_npix / 2 - x.size / 2)
+            offset_x -= offset
+            offset_y -= offset
+    # Resolution affects gaussian sigma and offsets
+    if model_res is not None:
+        sigma_x *= model_res
+        sigma_y *= model_res
+        offset_x = ((offset_x - x.size / 2) * model_res) + x.size / 2
+        offset_y = ((offset_y - y.size / 2) * model_res) + y.size / 2
+    if not ftransform:
+        # Full image model with all the gaussian components
+        # TODO: check that the below code is correct, it does a matrix multiply
+        # on a per lobe basis, but only indexes one at a time, which means matrix
+        # multiply does basic multiplication
+        decomp_beam += amp * np.exp(-(x - offset_x) ** 2 / (2 * sigma_x ** 2)) * np.exp(-(y - offset_y) ** 2 / (2 * sigma_y ** 2))
+        volume_beam = 0
+        sq_volume_beam = 0
+    else:
+        # Full uv model with all the gaussian components
+        decomp_beam = decomp_beam.astype(np.complex128)
+        volume_beam = np.sum(amp)
+        sq_volume_beam = np.pi * np.sum(sigma_x * sigma_y * amp ** 2) / (x.size * y.size)
+
+        offset_x -= x.size / 2
+        offset_y -= y.size / 2
+
+        kx = np.outer(np.arange(x.size) - x.size / 2, np.ones(y.size))
+        ky = np.outer(np.ones(x.size), np.arange(y.size) - y.size / 2)
+        decomp_beam += amp ** 2 * \
+            np.pi / (x.size * y.size) *\
+            sigma_x * sigma_y * \
+            np.exp(
+                (2 * np.pi ** 2 / (x.size * y.size) * sigma_x ** 2 kx **2 + sigma_y ** 2 * ky ** 2) - 
+                (2 * np.pi / x.size * 1j * (offset_x * kx + offset_y * ky))
+            )
+
+    return decomp_beam, volume_beam, sq_volume_beam
+
 def beam_image(psf: dict | h5py.File, obs: dict, pol_i: int, freq_i: int, abs = False, square = False) -> np.ndarray:
     """
     TODO: _summary_
@@ -41,7 +106,7 @@ def beam_image(psf: dict | h5py.File, obs: dict, pol_i: int, freq_i: int, abs = 
     # If we lazy loaded psf, get actual numbers out of the datasets
     if isinstance(psf, h5py.File):
         psf_dim = psf_dim[0]
-        freq_norm = freq_norm[0]
+        freq_norm = freq_norm[:]
         pix_horizon = pix_horizon[0]
     dimension = elements = obs['dimension']
     xl = dimension / 2 - psf_dim / 2 + 1
@@ -51,6 +116,8 @@ def beam_image(psf: dict | h5py.File, obs: dict, pol_i: int, freq_i: int, abs = 
 
     group_n, _, ri_id = histogram(group_id, min = 0)
     gi_use = np.nonzero(group_n)
+    # Most likely going to be 1 as PyFHD does only one beam mostly
+    n_groups = np.count_nonzero(group_n)
     gi_ref = ri_id[ri_id[gi_use]]
 
     if beam_gaussian_params is not None:
@@ -67,17 +134,72 @@ def beam_image(psf: dict | h5py.File, obs: dict, pol_i: int, freq_i: int, abs = 
     n_bin_use = 0
 
     if square:
+        # Do note here since freq_i is assigned to freq_i_use in FHD we just use freq_i
+        # A lot of the code in FHD assumes that freq_i_use could be an array, where here it's always
+        # pointing to one bin due to the exclusive use of freq_i, so there will be differences due to
+        # this behaviour, for example nbin is always 1 now, so no loop is required
         beam_base = np.zeros([dimension, elements])
-        
+        freq_bin_use = freq_bin_i[freq_i]
+        if beam_gaussian_params is not None:
+            beam_single = np.zeros([dimension, elements])
+            for gi in range(n_groups):
+                beam_single += gaussian_decomp(
+                    np.arange(dimension), 
+                    np.arange(elements),
+                    # TODO: Check the shape of beam_gaussian_params, should be pol, freq, n_params
+                    beam_gaussian_params[pol_i, freq_bin_use, gi_ref[gi]],
+                    model_npix = model_npix,
+                    model_res = model_res
+                ) * group_n[gi_use[gi]]
+            beam_single /= np.sum(group_n[gi_use])
+            # Because nf_bin is only referring to one frequency, nf_bin is 1, don't bother putting it in
+            beam_base += beam_single ** 2  
+        else:
+            beam_single = np.zeros([psf_dim, psf_dim], dtype = np.complex128)
+            for gi in range(n_groups):
+                beam_single += (psf['beam_ptr'][0, freq_i, rbin, rbin] * group_n[gi_use[gi]]).reshape([psf_dim, psf_dim])
+            beam_single /= np.sum(group_n[gi_use])
+            if abs:
+                beam_single = np.abs(beam_single)
+            beam_base_uv1 = np.zeros([dimension, elements], np.complex128)
+            # TODO: Chekc the indexing as IDL may include the last indexes, hence the +1
+            beam_base_uv1[xl : xh + 1, yl : yh + 1] = beam_single
+            beam_base_single = np.fft.fftshift(np.fft.ifftn(np.fft.fftshift(beam_base_uv1)))
+            beam_base += beam_base_single * np.conjugate(beam_base_single)
+        # TODO: check this, because we assume we're only dealing one frequency, that we only have one bin
+        n_bin_use += freq_norm[freq_bin_use[0]]
     else:
         if beam_gaussian_params is not None:
             beam_base_uv = np.zeros([dimension, elements])
             beam_single = np.zeros([dimension, elements])
         else:
-            beam_base_uv = np.zeros([psf_dim, psf_dim])
-            beam_single = np.zeros([psf_dim, psf_dim])
-
-    return beam_base
+            beam_base_uv = np.zeros([psf_dim, psf_dim], dtype = np.complex128)
+            beam_single = np.zeros([psf_dim, psf_dim], dtype = np.complex128)
+        if beam_gaussian_params is not None:
+            for gi in range(n_groups):
+                beam_single += gaussian_decomp(
+                    np.arange(dimension), 
+                    np.arange(elements),
+                    beam_gaussian_params[pol_i, freq_bin_use, gi_ref[gi]],
+                    model_npix = model_npix,
+                    model_res = model_res
+                ) * group_n[gi_use[gi]]
+        else:
+            for gi in range(n_groups):
+                beam_single += (psf['beam_ptr'][0, freq_i, rbin, rbin] * group_n[gi_use[gi]]).reshape([psf_dim, psf_dim])
+        beam_single /= np.sum(group_n[gi_use])
+        beam_base_uv += beam_single
+        # TODO: check this, because we assume we're only dealing one frequency, that we only have one bin
+        n_bin_use += freq_norm[freq_bin_use[0]]
+        if beam_gaussian_params is None:
+            beam_base_uv1 = np.zeros([dimension, elements], dtype = np.complex128)
+            beam_base_uv1[xl : xh + 1, yl : yh + 1] = beam_base_uv
+            beam_base = np.fft.fftshift(np.fft.ifftn(np.fft.fftshift(beam_base_uv1)))
+        else:
+            beam_base = beam_base_uv
+    
+    beam_base /= n_bin_use
+    return beam_base.real
 
 
 
