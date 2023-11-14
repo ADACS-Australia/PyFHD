@@ -1,63 +1,86 @@
 import numpy as np
-from typing import Tuple
 from astropy.constants import c
-from PyFHD.pyfhd_tools.pyfhd_utils import meshgrid
+from PyFHD.pyfhd_tools.pyfhd_utils import histogram
 import logging
+import h5py
 
-def mwa_beam_setup_init(pyfhd_config : dict, obs : dict, antenna : dict) -> dict:
+def beam_image(psf: dict | h5py.File, obs: dict, pol_i: int, freq_i: int, abs = False, square = False) -> np.ndarray:
     """
-    Initializes the antenna dictionary for a MWA observation.
+    TODO: _summary_
 
     Parameters
     ----------
-    pyfhd_config : dict
-        PyFHD config
+    psf : dict
+        _description_
     obs : dict
-        The observation dictionary containing observation metadata
-    antenna : dict
-        The basic antenna dictionary
+        _description_
+    pol_i : int
+        _description_
+    freq_i : int
+        _description_
+    abs : bool, optional
+        _description_, by default False
+    square : bool, optional
+        _description_, by default False
 
     Returns
     -------
-    antenna : dict
-        The antenna dictionary setup for MWA
+    beam_base : np.ndarray
+        _description_
     """
 
-    n_dipoles = 16
-    n_ant_pol = antenna['n_ant_pol']
-    n_tiles = obs['n_tiles']
-    nfreq_bin = antenna['nfreq_bin']
-    delay_settings = obs['delays']
-    # meters (MWA groundscreen size)
-    antenna_size = 5
-    # meters (Same as M&C SetDelays script) Was 1.071 before? Verified in Tingay et al 2013
-    antenna_spacing = 1.1
-    # meters (June 2014 e-mail from Brian Crosse) Was 0.35 before
-    antenna['height'] = 0.29
-    # 435 picoseconds is base delay length unit [units in seconds]
-    base_delay_unit = 4.35e-10
+    psf_dim = psf['dim']
+    freq_norm = psf['fnorm']
+    pix_horizon = psf['pix_horizon']
+    group_id = psf['id'][pol_i, 0, :]
+    if "beam_gaussian_params" in psf:
+        beam_gaussian_params = psf['beam_gaussian_params'][:]
+    else: 
+        beam_gaussian_params = None
+    rbin = 0
+    # If we lazy loaded psf, get actual numbers out of the datasets
+    if isinstance(psf, h5py.File):
+        psf_dim = psf_dim[0]
+        freq_norm = freq_norm[0]
+        pix_horizon = pix_horizon[0]
+    dimension = elements = obs['dimension']
+    xl = dimension / 2 - psf_dim / 2 + 1
+    xh = dimension / 2 - psf_dim / 2 + psf_dim
+    yl = elements / 2 - psf_dim / 2 + 1
+    yh = elements / 2 - psf_dim / 2 + psf_dim
 
-    antenna['coords'] = np.zeros((3, 16))
-    # dipole east position (meters)
-    xc_arr = (meshgrid(4,4,1) * antenna_spacing).flatten()
-    antenna['coords'][0, :] = xc_arr - np.mean(xc_arr)
-    # dipole north position (meters)
-    yc_arr = np.flipud(meshgrid(4,4,2) * antenna_spacing).flatten()
-    antenna['coords'][1, :] = yc_arr - np.mean(yc_arr)
-    antenna['coords'][2, :] = np.zeros(16, dtype = np.float64)
+    group_n, _, ri_id = histogram(group_id, min = 0)
+    gi_use = np.nonzero(group_n)
+    gi_ref = ri_id[ri_id[gi_use]]
 
-    if delay_settings is None:
-        D_d = xc_arr * np.sin(np.radians(90 - obs['obsalt'])) * np.sin(np.radians(obs['obsaz'])) + yc_arr * np.sin(np.radians(90 - obs['obsalt'])) * np.cos(np.radians(obs['obsaz']))
-        D_d /= c.value * base_delay_unit
-    antenna['delays'] *= base_delay_unit
+    if beam_gaussian_params is not None:
+        # 1.3 is the padding factor for the gaussian fitting procedure
+        # (2.*obs.kpix) is the ratio of full sky (2 in l,m) to the analysis range (1/obs.kpix)
+        # (2.*obs.kpix*dimension/psf.pix_horizon) is the scale factor between the psf pixels-to-horizon and the 
+        # analysis pixels-to-horizon 
+        # (0.5/obs.kpix) is the resolution scaling of what the beam model was made at and the current res 
+        model_npix = pix_horizon * 1.3
+        model_res = (2 * obs['kpix'] * dimension) / pix_horizon * (0.5 / obs['kpix'])
+    
+    freq_bin_i = obs["baseline_info"]["fbin_i"]
+    n_freq = obs["n_freq"]
+    n_bin_use = 0
 
-    if pyfhd_config['dipole_mutual_coupling_factor']:
-        antenna['coupling'] = mwa_dipole_mutual_coupling(antenna['freq'])
+    if square:
+        beam_base = np.zeros([dimension, elements])
+        
+    else:
+        if beam_gaussian_params is not None:
+            beam_base_uv = np.zeros([dimension, elements])
+            beam_single = np.zeros([dimension, elements])
+        else:
+            beam_base_uv = np.zeros([psf_dim, psf_dim])
+            beam_single = np.zeros([psf_dim, psf_dim])
 
-    return antenna
-
-def mwa_dipole_mutual_coupling(freq_arr : np.ndarray) -> np.ndarray:
+    return beam_base
 
 
-    zmat = np.zeros(10)
-    return zmat
+
+    
+    
+    
