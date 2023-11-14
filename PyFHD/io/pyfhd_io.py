@@ -118,6 +118,9 @@ def find_none_and_replace(array: np.ndarray) -> np.ndarray:
     array: np.ndarray
         Array without None objects and in the correct dtype
     """
+    # Got an error with the vectorized functions on empty arrays
+    if array.size == 0:
+        return array
     if np.any(_is_string(array)):
         array = np.where(array == None, '', array).astype(bytes)
     else:
@@ -195,6 +198,10 @@ def save_dataset(h5py_obj: h5py.File | h5py.Group,  key: str, value: Any, to_chu
             value = np.array(value)
             value = find_none_and_replace(value)
             h5py_obj.create_dataset(key, data = value)
+        case Path():
+            # If we find a Path object, convert it to a string
+            value = str(value)
+            h5py_obj.create_dataset(key, shape = (1), data = value)
         case None:
             is_none = True
             # In the case we get something that is none, create empty dataset

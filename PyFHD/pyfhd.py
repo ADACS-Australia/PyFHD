@@ -86,7 +86,7 @@ def main_python_only(pyfhd_config : dict, logger : logging.RootLogger):
     psf_end = time.time()
     _print_time_diff(psf_start, psf_end, 'Beam and PSF dictionary imported.', logger)
 
-    if len(psf['image_info']['image_power_beam_arr'].shape) == 1:
+    if psf['image_info']['image_power_beam_arr'] is not None and psf['image_info']['image_power_beam_arr'].shape == 1:
         # Turn off beam_per_baseline if image_power_beam_arr is 
         # only one value
         pyfhd_config['beam_per_baseline'] = False
