@@ -1,7 +1,7 @@
 import time
 from datetime import timedelta
 import numpy as np
-from PyFHD.pyfhd_tools.pyfhd_setup import pyfhd_parser, pyfhd_setup
+from PyFHD.pyfhd_tools.pyfhd_setup import pyfhd_parser, pyfhd_setup, write_collated_yaml_config
 from PyFHD.data_setup.obs import create_obs
 from PyFHD.data_setup.uvfits import extract_header, create_params, extract_visibilities, create_layout
 from PyFHD.pyfhd_tools.pyfhd_utils import simple_deproject_w_term, vis_weights_update, vis_noise_calc
@@ -210,6 +210,9 @@ def main_python_only(pyfhd_config : dict, logger : logging.RootLogger):
     # Close all open h5 files
     if isinstance(psf, h5py.File):
         psf.close()
+
+    # Write a final collated yaml for the final pyfhd_config
+    write_collated_yaml_config(pyfhd_config, pyfhd_config['output_dir'], "-final")
 
 def main():
 

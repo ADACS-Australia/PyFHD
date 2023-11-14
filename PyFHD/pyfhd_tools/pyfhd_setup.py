@@ -274,8 +274,9 @@ def _check_file_exists(config : dict, key : str) -> int:
             config[key] = Path(os.path.abspath(config[key]))
     return 0
 
-def _write_collated_yaml_config(pyfhd_config: dict, output_dir : str):
-    """After all inputs have been validated using `PyFHD.pyfhd_tools.pyfhd_setup`,
+def write_collated_yaml_config(pyfhd_config: dict, output_dir : str, description: str = ''):
+    """
+    After all inputs have been validated using `PyFHD.pyfhd_tools.pyfhd_setup`,
     write out all the arguments gather in `pyfhd_config` and write out to 
     a yaml configuration file. This yaml file can then be fed back into
     `pyfhd` to exactly duplicate the current run.
@@ -293,7 +294,7 @@ def _write_collated_yaml_config(pyfhd_config: dict, output_dir : str):
     # group_dict={a.dest:getattr(args,a.dest,None) for a in group._group_actions}
     # arg_groups[group.title]=argparse.Namespace(**group_dict)
 
-    with open(f"{output_dir}/{pyfhd_config['log_name']}.yaml", 'w') as outfile:
+    with open(f"{output_dir}/{pyfhd_config['log_name']}{description}.yaml", 'w') as outfile:
         outfile.write(f"# input options used for run {pyfhd_config['log_name']}\n")
         outfile.write("# git hash for this run: {}\n".format(pyfhd_config['commit']))
         for key in pyfhd_config.keys():
@@ -577,7 +578,7 @@ def pyfhd_setup(options : argparse.Namespace) -> Tuple[dict, logging.RootLogger]
 
     logger.info('Input validated, starting PyFHD run now')
 
-    _write_collated_yaml_config(pyfhd_config, output_dir)
+    write_collated_yaml_config(pyfhd_config, output_dir)
 
     return pyfhd_config, logger
 
