@@ -226,6 +226,9 @@ def vis_calibration_flag(obs: dict, cal: dict, pyfhd_config: dict, logger: RootL
             iter += 1
         if (tile_cut_i.size > 0):
             obs["baseline_info"]["tile_use"][tile_use_i[tile_cut_i]] = 0
+    # If we decide not to flag the frequencies, ignore any frequency flagging
+    if not pyfhd_config['flag_frequency']:
+        obs["baseline_info"]["freq_use"] = np.ones(obs['n_freq'], dtype = np.int64)
     # Return the obs with an updated baseline_info on the use of tiles and frequency
     return obs
 

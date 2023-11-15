@@ -100,7 +100,7 @@ def main_python_only(pyfhd_config : dict, logger : logging.RootLogger):
     # Peform basic flagging
     if (pyfhd_config['flag_basic']):
         basic_flag_start = time.time()
-        vis_weights, obs = vis_flag_basic(vis_weights, obs, pyfhd_config, logger)
+        vis_weights, obs = vis_flag_basic(vis_weights, vis_arr, obs, pyfhd_config, logger)
         basic_flag_end = time.time()
         _print_time_diff(basic_flag_start, basic_flag_end, 'Basic Flagging Completed', logger)
 

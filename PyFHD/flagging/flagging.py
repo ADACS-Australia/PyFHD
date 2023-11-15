@@ -2,7 +2,7 @@ import numpy as np
 from logging import RootLogger
 from PyFHD.pyfhd_tools.pyfhd_utils import idl_median, histogram
 
-def vis_flag_basic(vis_weight_arr: np.ndarray, obs: dict, pyfhd_config: dict, logger: RootLogger) -> tuple[np.ndarray, dict]:
+def vis_flag_basic(vis_weight_arr: np.ndarray, vis_arr: np.ndarray, obs: dict, pyfhd_config: dict, logger: RootLogger) -> tuple[np.ndarray, dict]:
     """
     Do some basic flagging on frequencies and tiles based on the confgiruation given by pyfhd_config 
     such as `flag_freq_start`, `flag_freq_end`, `instrument` and `flag_tile_names`. To flag the frequencies and
@@ -14,6 +14,8 @@ def vis_flag_basic(vis_weight_arr: np.ndarray, obs: dict, pyfhd_config: dict, lo
     ----------
     vis_weight_arr : np.ndarray
         The visibility weights array
+    vis_arr : np.ndarray
+        The visibilities array
     obs : dict
         The observation dictionary containing the frequency and tile flag arrays
     params : dict
@@ -75,13 +77,14 @@ def vis_flag_basic(vis_weight_arr: np.ndarray, obs: dict, pyfhd_config: dict, lo
     # Here I'm going to assume the mwa data you're using is more than 32 tiles
     # If you wish to implement flagging for mwa when it had 32 tiles, do that here
     # Flagging based on channel width
-    freq_avg = 768 // obs['n_freq']
-    channel_edge_flag_width = np.ceil(2 / freq_avg)
-    coarse_channel_width = 32 // freq_avg
-    fine_channel_i = np.arange(obs['n_freq']) % coarse_channel_width
-    channel_edge_flag = np.where(np.minimum(fine_channel_i, (coarse_channel_width - 1) - fine_channel_i) < channel_edge_flag_width)
-    if (np.size(channel_edge_flag) > 0):
-        vis_weight_arr[:, channel_edge_flag, :] = 0
+    if pyfhd_config["flag_frequencies"]:
+        freq_avg = 768 // obs['n_freq']
+        channel_edge_flag_width = np.ceil(2 / freq_avg)
+        coarse_channel_width = 32 // freq_avg
+        fine_channel_i = np.arange(obs['n_freq']) % coarse_channel_width
+        channel_edge_flag = np.where(np.minimum(fine_channel_i, (coarse_channel_width - 1) - fine_channel_i) < channel_edge_flag_width)
+        if (np.size(channel_edge_flag) > 0):
+            vis_weight_arr[:, channel_edge_flag, :] = 0
 
     tile_a_i = obs["baseline_info"]['tile_a'] - 1
     tile_b_i = obs["baseline_info"]["tile_b"] - 1
@@ -103,6 +106,27 @@ def vis_flag_basic(vis_weight_arr: np.ndarray, obs: dict, pyfhd_config: dict, lo
             tile_use_temp[tile_a_i[bi_use]] = 1
             tile_use_temp[tile_b_i[bi_use]] = 1
         tile_use *= tile_use_temp
+
+    # In the case we choose to not flag any frequencies
+    # if pre-processing has flagged frequencies, need to unflag them if the data are nonzero 
+    # (but DON'T unflag tiles that should be flagged)
+    if not pyfhd_config["flag_frequencies"]:
+        freq_cut_i = np.where(freq_use == 0)
+        if np.size(freq_cut_i) > 0:
+            for pol_i in range(obs['n_pol']):
+                freq_flag = np.maximum(np.max(vis_weight_arr[pol_i], axis = -1), 0)
+                freq_flag = np.minimum(freq_flag, 1)
+                freq_unflag_i = np.where(freq_flag == 0)[0]
+                if np.size(freq_unflag_i) > 0:
+                    baseline_flag = np.maximum(np.max(vis_weight_arr[pol_i], axis = 0), 0)
+                    bi_use = np.where(baseline_flag > 0)[0]
+                    for fi in range(np.size(freq_unflag_i)):
+                        data_test = np.abs(vis_arr[pol_i][freq_unflag_i[fi], bi_use])
+                        data_test = data_test.T
+                        unflag_i = np.where(data_test > 0)
+                        if np.size(unflag_i) > 0:
+                            vis_weight_arr[pol_i][freq_unflag_i[fi],bi_use[unflag_i]] = 1
+        freq_use = np.ones(obs["n_freq"], dtype = np.int64)
 
     # Time based flagging
     if (np.min(obs['baseline_info']['time_use']) <= 0):

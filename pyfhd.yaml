@@ -68,6 +68,7 @@ flag-basic: true
 flag-freq-start : ~
 flag-freq-end : ~
 flag-tiles: []
+flag-frequencies: true
 flag-model: true
 flag-calibration : true
 flag-visibilities : false

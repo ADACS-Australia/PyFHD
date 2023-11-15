@@ -981,7 +981,7 @@ def vis_weights_update(vis_weights : np.ndarray, obs: dict, psf: dict | h5py.Fil
         xmin[flag_dist_i] = -1
         ymin[flag_dist_i] = -1
 
-    # no_frequency_flagging isn't set in FHD from what I can see, begin frequency and tile flagging
+    # If flag_frequencies is false, freq_use should be all 1's anyway, so this shouldn't affect anything
     freq_cut_i = np.where(obs['baseline_info']['freq_use'] == 0)
     if (freq_cut_i[0].size > 0):
         vis_weights[0 : obs['n_pol'], freq_cut_i[0], :] = 0

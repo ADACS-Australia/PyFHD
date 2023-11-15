@@ -136,9 +136,10 @@ def pyfhd_parser():
     flag.add_argument('-fv', '--flag-visibilities', default = False, action = 'store_true', help = 'Flag visibilities based on calculations in vis_flag')
     flag.add_argument('-fc', '--flag-calibration', default = False, action = 'store_true', help = 'Flags antennas based on calculations in vis_calibration_flag')
     flag.add_argument('-fb', '--flag-basic', default = False, action='store_true', help='Flags Frequencies and Tiles based on your configuration, params and the visibility weights.\nThe freq_use, tile_use arrays of obs will be adjusted and the vis_weights_arr adjusted to be in line with the freq_use and tile_use arrays.\nThis should be True always, the only time you should consider turning off basic flagging is when you\'re dealing with a simulated visibilities and weights in PyFHD')
+    flag.add_argument('-ft', '--flag-tiles', default = [], type = list, action = 'append', help = 'A list of tile names to manually flag. I repeat, a list of tile names, NOT tile indices')
+    flag.add_argument('-ff', '--flag-frequencies', default = False, action = 'store_true', help = "When set to False, PyFHD will not flag any frequencies inside of `vis_flag_basic`, `vis_weights_update` or `vis_calibration_flag`.")
     flag.add_argument('--flag-freq-start', default = None, type = float, help = 'Frequency in MHz to begin the observation. Flags frequencies less than it. Replaces freq_start from FHD')
     flag.add_argument('--flag-freq-end', default = None, type = float, help = 'Frequency in MHz to end the observation. Flags frequencies greater than it. Replaces freq_end from FHD')
-    flag.add_argument('--flag-tiles', default = [], type = list, action = 'append', help = 'A list of tile names to manually flag. I repeat, a list of tile names, NOT tile indices')
     flag.add_argument('--transfer-weights', type = Path, default = None, help = 'Transfer weights information from another PyFHD run.')
     flag.add_argument('--time-cut', type = list, default = None, help = 'Seconds to cut (rounded up to next time integration step) from the beginning of the observation. Can also specify a negative time to cut off the end of the observation. Specify a vector to cut at both the start and end.')
 
