@@ -65,7 +65,7 @@ def _is_string(value: Any) -> bool:
     bool
         True if value is a str, False otherwise
     """
-    return type(value) == str
+    return isinstance(value, str)
 
 @np.vectorize
 def _is_none(value: Any) -> bool:
@@ -102,11 +102,14 @@ def _decode_byte_arr(value: np.bytes_) -> str:
     """
     return value.decode()
 
-def find_none_and_replace(array: np.ndarray) -> np.ndarray:
+def format_array(array: np.ndarray) -> np.ndarray:
     """
-    Find any `None` values in an array and replaces them with empty
+    Find any `None` values in an object array and replaces them with empty
     strings if we're dealing with a string array, or `NaN`s if we're 
     dealing with a Number array. If complex, the NaN will be nan + nanj.
+    If a string array is found, convert the string array to a bytes array,
+    in all other cases leave the array alone as it should be ready to save
+    into a HDF5 file.
 
     Parameters
     ----------
@@ -119,22 +122,29 @@ def find_none_and_replace(array: np.ndarray) -> np.ndarray:
         Array without None objects and in the correct dtype
     """
     # Got an error with the vectorized functions on empty arrays
-    if array.size == 0:
-        return array
+    if array.size == 0 or array.dtype != object:
+        if np.issubdtype(array.dtype, np.str_):
+            return array.astype(np.bytes_)
+        else:
+            return array
     if np.any(_is_string(array)):
-        array = np.where(array == None, '', array).astype(bytes)
+        # This avoids the np.where deprecation warning
+        # Also replaces any None values in place, no copies of the array are made
+        array[array == None] = '' 
+        array = array.astype(bytes)
     else:
         try:
-            dtype = array.dtype
-            array = np.where(array == None, np.nan, array)
-            # In the case no nans were inserted, then leave the array as it was, ensure the dtype is the same
-            if np.count_nonzero(np.isnan(array)) == 0:
-                array = array.astype(dtype)
-            elif np.any(_is_complex(array)):
-                array = array.astype(np.complex128)
-                array[np.isnan(array.real)] = np.nan*0j
-            else:
-                array = array.astype(np.float64)
+            if array.dtype == object:
+                # Replace any Nones with NaN's in place, no copies made
+                array[array == None] = np.nan
+                if np.any(_is_complex(array)):
+                    # Set the type to complex128 to be sure its double precision complex
+                    array = array.astype(np.complex128)
+                    # Replace with complex NaNs in place
+                    array[np.isnan(array.real)] = np.nan*0j
+                else:
+                    # Ensure it's a float array if we do have
+                    array = array.astype(np.float64)
         except TypeError:
             # Sometimes we deal with structured/record arrays like
             # astropy's FITS_rec, let's leave them alone as we intend 
@@ -187,7 +197,7 @@ def save_dataset(h5py_obj: h5py.File | h5py.Group,  key: str, value: Any, to_chu
             dict_to_group(group, value, to_chunk, logger)
         case np.ndarray():
             # Find and replace all None objects
-            value = find_none_and_replace(value)
+            value = format_array(value)
             # If we want it to be chunked do that, always compress it
             if key in to_chunk:
                 h5py_obj.create_dataset(key, shape=to_chunk[key]['shape'], data = value, dtype = dtype_picker(value.dtype), chunks = to_chunk[key]['chunk'], compression = 'gzip')
@@ -196,7 +206,7 @@ def save_dataset(h5py_obj: h5py.File | h5py.Group,  key: str, value: Any, to_chu
         case list():
             # Was easier to convert to a NumPy array to get vectorization
             value = np.array(value)
-            value = find_none_and_replace(value)
+            value = format_array(value)
             h5py_obj.create_dataset(key, data = value)
         case Path():
             # If we find a Path object, convert it to a string
@@ -266,7 +276,7 @@ def save(file_name: Path, to_save: np.ndarray | dict, dataset_name: str, logger:
     PyFHD.io.pyfhd_io.dict_to_group : Converts a dictionary to a h5py Group Object
     PyFHD.io.pyfhd_io.recarray_to_dict : Turns any record arrays into dicts, also formats object arrays into the correct dtype array
     PyFHD.io.pyfhd_io.save_dataset : Saves a single dataset based off a dictionary key-value pair
-    PyFHD.io.pyfhd_io.find_none_and_replace : Finds any None is an array and replaces them appropriately
+    PyFHD.io.pyfhd_io.format_array : Finds any None is an array and replaces them appropriately
     """
     # Create a custom vectorized function to check for complex numbers
     # is_complex_vectorized = np.vectorize(is_complex)
