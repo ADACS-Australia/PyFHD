@@ -1086,14 +1086,35 @@ def split_vis_weights(obs: dict, vis_weights: np.ndarray) -> tuple[np.ndarray, n
 
     return vis_weights, bi_use
 
-def vis_noise_calc(obs: dict, vis_arr: np.ndarray, vis_weights: np.ndarray) -> np.ndarray:
+def vis_noise_calc(obs: dict, vis_arr: np.ndarray, vis_weights: np.ndarray, bi_use: np.ndarray | None = None) -> np.ndarray:
+    """
+    TODO: _summary_
+
+    Parameters
+    ----------
+    obs : dict
+        The observation metadata dictionary
+    vis_arr : np.ndarray
+        The vsisibility array
+    vis_weights : np.ndarray
+        The visibility weights array
+    bi_use : np.ndarray | None, optional
+        If provided, indexes for the baselines to use, by default None
+
+    Returns
+    -------
+    noise_arr: np.ndarray
+        TODO: _description_
+    """
     noise_arr = np.zeros([obs["n_pol"], obs["n_freq"]])
 
     if (obs["n_time"] < 2): 
         return noise_arr
 
-    # bi_use isn't set before running this, so always use split_vis_weights in this case
-    vis_weights_use, bi_use = split_vis_weights(obs, vis_weights)
+    if bi_use is None:
+        vis_weights_use, bi_use = split_vis_weights(obs, vis_weights)
+    else:
+        vis_weights_use = vis_weights
 
     for pol_i in range(obs["n_pol"]):
         data_diff = vis_arr[pol_i, :, bi_use[0]].imag - vis_arr[pol_i, :,  bi_use[1]].imag
@@ -1106,7 +1127,8 @@ def vis_noise_calc(obs: dict, vis_arr: np.ndarray, vis_weights: np.ndarray) -> n
     return noise_arr
     
 def idl_median(x : np.ndarray, width=0, even=False) -> float:
-    """_summary_
+    """
+    TODO:_summary_
 
     Parameters
     ----------

@@ -71,6 +71,7 @@ flag-tiles: []
 flag-frequencies: true
 flag-model: true
 flag-calibration : true
+flag-calibration_frequencies: false
 flag-visibilities : false
 transfer-weights : ~
 time-cut: ~
@@ -135,6 +136,7 @@ ps-fov: ~
 ps-dimension: ~
 ps-degpix: ~
 ps-nfreq-avg: ~
+ps-tile-flag-list: []
 n-avg : 2
 rephase-weights: True
 restrict-healpix-inds : true

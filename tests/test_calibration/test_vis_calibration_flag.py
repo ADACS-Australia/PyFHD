@@ -50,6 +50,9 @@ def before_file(tag, run, data_dir):
     pyfhd_config = {}
     pyfhd_config['cal_amp_degree_fit'] = sav_dict['amp_degree']
     pyfhd_config['cal_phase_degree_fit'] = sav_dict['phase_degree']
+    # This is set the opposite to FHD, which is no_calibration_frequency_flagging
+    # Let's avoid double negatives, they're confusing
+    pyfhd_config['flag_calibration_frequencies'] = False
     
     #super dictionary to save everything in
     h5_save_dict = {}

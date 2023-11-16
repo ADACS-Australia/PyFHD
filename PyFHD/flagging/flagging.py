@@ -2,6 +2,53 @@ import numpy as np
 from logging import RootLogger
 from PyFHD.pyfhd_tools.pyfhd_utils import idl_median, histogram
 
+def vis_flag_tiles(obs: dict, vis_weight_arr: np.ndarray, tiles_to_flag: np.ndarray | list, logger: RootLogger) -> np.ndarray:
+    """
+    Flag tiles in the visibility weights array with a given array or list of tiles to flag 
+    containing the names of the tiles, NOT the indexes.
+
+    Parameters
+    ----------
+    obs : dict
+        The observation metadata dictionary
+    vis_weight_arr : np.ndarray
+        The visibility weight array
+    tiles_to_flag : np.ndarray | list
+        The tiles to flag
+    logger : RootLogger
+        PyFHD's Logger
+
+    Returns
+    -------
+    flagged_vis_weight_arr: np.ndarray
+        A vis_weight_arr where the tiles to flag have been set to 0
+    """
+    tile_flag_list_use = np.array([], dtype=np.int64)
+    for flag in tiles_to_flag:
+        if type(flag) == str and flag.strip() in obs['baseline_info']['tile_names']:
+            logger.info(f"Manually flagging tile {flag}")
+            flag_idx = np.where(obs['baseline_info']['tile_names'] == flag.strip())[0][0]
+            tile_flag_list_use.append(flag_idx + 1)
+        else:
+            logger.warning(f"{flag} wasn't found in obs['baseline_info']['tile_names'], skipping it")
+    hist_a, _, ra = histogram(obs['baseline_info']['tile_a'], min=1)
+    hist_b, _, rb = histogram(obs['baseline_info']['tile_b'], min=1)
+    hist_c, _, _ = histogram(tile_flag_list_use, min=1)
+    # hist_A and hist_b should be the same size
+    hist_ab = hist_a + hist_b
+    n_bin = min(np.size(hist_ab), np.size(hist_c))
+    tile_cut_i = np.where((hist_ab[0:n_bin] > 0) | (hist_c[0:n_bin] > 0))[0]
+    if (np.size(tile_cut_i) > 0):
+        for cut_idx in range(np.size(tile_cut_i)):
+            ti = tile_cut_i[cut_idx]
+            na = ra[ra[ti + 1] - 1] - ra[ra[ti]]
+            if na > 0:
+                vis_weight_arr[:, :, ra[ra[ti] : ra[ti + 1] - 1]] = 0
+            nb = rb[rb[ti + 1] - 1] - rb[rb[ti]]
+            if nb > 0:
+                vis_weight_arr[:, :, rb[rb[ti] : rb[ti + 1] - 1]] = 0
+    return vis_weight_arr
+
 def vis_flag_basic(vis_weight_arr: np.ndarray, vis_arr: np.ndarray, obs: dict, pyfhd_config: dict, logger: RootLogger) -> tuple[np.ndarray, dict]:
     """
     Do some basic flagging on frequencies and tiles based on the confgiruation given by pyfhd_config 
@@ -50,30 +97,7 @@ def vis_flag_basic(vis_weight_arr: np.ndarray, vis_arr: np.ndarray, obs: dict, p
             vis_weight_arr[:, freq_end_cut, :] = 0
     # This section replaces the function vis_flag_tile
     if (len(pyfhd_config['flag_tiles']) > 0):
-        tile_flag_list_use = np.array([], dtype=np.int64)
-        for flag in pyfhd_config['flag_tiles']:
-            if type(flag) == str and flag.strip() in obs['baseline_info']['tile_names']:
-                logger.info(f"Manually flagging tile {flag}")
-                flag_idx = np.where(obs['baseline_info']['tile_names'] == flag.strip())[0][0]
-                tile_flag_list_use.append(flag_idx + 1)
-            else:
-                logger.warning(f"{flag} wasn't found in obs['baseline_info']['tile_names'], skipping it")
-        hist_a, _, ra = histogram(obs['baseline_info']['tile_a'], min=1)
-        hist_b, _, rb = histogram(obs['baseline_info']['tile_b'], min=1)
-        hist_c, _, _ = histogram(tile_flag_list_use, min=1)
-        # hist_A and hist_b should be the same size
-        hist_ab = hist_a + hist_b
-        n_bin = min(np.size(hist_ab), np.size(hist_c))
-        tile_cut_i = np.where((hist_ab[0:n_bin] > 0) | (hist_c[0:n_bin] > 0))[0]
-        if (np.size(tile_cut_i) > 0):
-            for cut_idx in range(np.size(tile_cut_i)):
-                ti = tile_cut_i[cut_idx]
-                na = ra[ra[ti + 1] - 1] - ra[ra[ti]]
-                if na > 0:
-                    vis_weight_arr[:, :, ra[ra[ti] : ra[ti + 1] - 1]] = 0
-                nb = rb[rb[ti + 1] - 1] - rb[rb[ti]]
-                if nb > 0:
-                    vis_weight_arr[:, :, rb[rb[ti] : rb[ti + 1] - 1]] = 0
+        vis_weight_arr = vis_flag_tiles(obs, vis_weight_arr, pyfhd_config['flag_tiles'], logger)
     # Here I'm going to assume the mwa data you're using is more than 32 tiles
     # If you wish to implement flagging for mwa when it had 32 tiles, do that here
     # Flagging based on channel width

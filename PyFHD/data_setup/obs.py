@@ -203,7 +203,7 @@ def create_obs(pyfhd_header : dict, params : dict, layout: dict, pyfhd_config : 
     obs['grid_spectral_terms'] = 0
     obs['alpha'] = -0.8
     obs['pol_names'] = ['XX','YY','XY','YX','I','Q','U','V']
-    obs['residual'] = 0
+    obs['residual'] = False
     
 
     # Setup healpix structure for obs

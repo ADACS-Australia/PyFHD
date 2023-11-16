@@ -4,6 +4,8 @@ from logging import RootLogger
 import h5py
 from PyFHD.data_setup.obs import update_obs
 from PyFHD.healpix.healpix_utils import healpix_cnv_generate, beam_image_cube
+from PyFHD.flagging.flagging import vis_flag_tiles
+from PyFHD.pyfhd_tools.pyfhd_utils import vis_weights_update, split_vis_weights, vis_noise_calc
 
 def healpix_snapshot_cube_generate(obs: dict, psf: dict | h5py.File, cal: dict, params: dict, vis_arr: np.ndarray, vis_model_arr: np.ndarray, vis_weights: np.ndarray, pyfhd_config: dict, logger: RootLogger) -> None:
     """
@@ -74,4 +76,34 @@ def healpix_snapshot_cube_generate(obs: dict, psf: dict | h5py.File, cal: dict, 
 
     beam_arr, beam_mask = beam_image_cube(obs, psf, logger, square = True, beam_threshold = pyfhd_config['ps_beam_threshold'])
 
+    hpx_radius = fov_use / np.sqrt(2)
+
+    hpx_cnv = healpix_cnv_generate(obs_out, beam_mask, hpx_radius, pyfhd_config, logger, nside = nside)
+    hpx_inds = hpx_cnv['inds']
+
+    if len(pyfhd_config['ps_tile_flag_list']) > 0:
+        vis_weights = vis_flag_tiles(obs_out, vis_weights, pyfhd_config['ps_tile_flag_list'], logger)
     
+    vis_weights, obs_out = vis_weights_update(vis_weights, obs_out, psf, params)
+
+    if pyfhd_config['split_ps_export']:
+        n_iter = 2
+        vis_weights_use, bi_use = split_vis_weights(obs_out, vis_weights)
+        obs_out['vis_noise'] = vis_noise_calc(obs_out, vis_arr, vis_weights, bi_use = bi_use)
+        uvf_name = ['even', 'odd']
+    else:
+        n_iter = 1
+        uvf_name = ['']
+        obs_out['vis_noise'] = vis_noise_calc(obs_out, vis_arr, vis_weights)
+        bi_use = np.zeros(1, dtype = np.int64)
+
+    # Looks like this is set to False by default?
+    residual_flag = obs_out['residual']
+    # Since the model is imported by default, dirty_flag is usually True
+    dirty_flag = not residual_flag and vis_model_arr is not None
+
+    t_hpx = 0
+    for iter in range(n_iter):
+        # freq_split = 
+
+
