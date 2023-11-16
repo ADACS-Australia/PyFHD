@@ -3,7 +3,7 @@ from PyFHD.io.pyfhd_io import save, load
 from logging import RootLogger
 import h5py
 from PyFHD.data_setup.obs import update_obs
-from PyFHD.healpix.healpix_utils import healpix_cnv_generate, beam_image_cube
+from PyFHD.healpix.healpix_utils import healpix_cnv_generate, beam_image_cube, vis_model_freq_split
 from PyFHD.flagging.flagging import vis_flag_tiles
 from PyFHD.pyfhd_tools.pyfhd_utils import vis_weights_update, split_vis_weights, vis_noise_calc
 
@@ -69,11 +69,13 @@ def healpix_snapshot_cube_generate(obs: dict, psf: dict | h5py.File, cal: dict, 
     pix_sky = (4 * np.pi * (180 / np.pi) ** 2) / degpix_use ** 2
     # Below should = 1024 for 0.1119 degrees/pixel
     nside = 2 ** (np.ceil(np.log(np.sqrt(pix_sky / 12)) / np.log(2)))
+    n_freq_use = np.floor(obs['n_freq'] / pyfhd_config['n_avg'])
     
     obs_out = update_obs(obs, dimension_use, obs['kbinsize'], beam_nfreq_avg = ps_nfreq_avg, fov = fov_use)
     # To have a psf that has reacted to the new beam_nfreq_avg you have set that isn't
     # the default, tell PyFHD to re-create the psf here once beam_setup has been translated
 
+    # TODOL Add n_freq_bin and apply n_freq_use to it
     beam_arr, beam_mask = beam_image_cube(obs, psf, logger, square = True, beam_threshold = pyfhd_config['ps_beam_threshold'])
 
     hpx_radius = fov_use / np.sqrt(2)
@@ -101,9 +103,32 @@ def healpix_snapshot_cube_generate(obs: dict, psf: dict | h5py.File, cal: dict, 
     residual_flag = obs_out['residual']
     # Since the model is imported by default, dirty_flag is usually True
     dirty_flag = not residual_flag and vis_model_arr is not None
-
-    t_hpx = 0
     for iter in range(n_iter):
-        # freq_split = 
+        split = vis_model_freq_split(
+            obs_out, 
+            psf, 
+            params, 
+            vis_weights_use, 
+            vis_model_arr, 
+            vis_arr, 
+            pyfhd_config, 
+            logger, 
+            uvf_name = uvf_name[iter],
+            bi_use = bi_use[iter]
+        )
+        if dirty_flag:
+            # TODO: Check this is what I meant to do
+            dirty_arr = split['residual_arr']
+            residual_flag = False
+        else:
+            residual_flag = True
+        nf_vis = split['obs']['nf_vis']
+        nf_vis_use = np.zeros(n_freq_use)
+        for freq_i in range(n_freq_use)
+            nf_vis_use[freq_i] = np.sum(nf_vis[freq_i * pyfhd_config['n_avg'] : (freq_i + 1) * pyfhd_config['n_avg']])
+
+         
+
+
 
 

@@ -322,3 +322,54 @@ def beam_image_cube(
             beam_mask1[beam_i] = 1
             beam_mask *= beam_mask1
     return beam_arr, beam_mask
+
+def vis_model_freq_split(
+    obs: dict, 
+    psf: dict, 
+    params: dict, 
+    vis_weights: np.ndarray,
+    vis_model_arr: np.ndarray,
+    vis_arr: np.ndarray,
+    pyfhd_confg: dict,
+    logger: RootLogger,
+    fft: bool = True,
+    save_uvf = True,
+    uvf_name = None,
+    bi_use = None
+) -> dict:
+    """
+    TODO: _summary_
+
+    Parameters
+    ----------
+    obs : dict
+        _description_
+    psf : dict
+        _description_
+    params : dict
+        _description_
+    vis_weights : np.ndarray
+        _description_
+    vis_model_arr : np.ndarray
+        _description_
+    vis_arr : np.ndarray
+        _description_
+    pyfhd_confg : dict
+        _description_
+    logger : RootLogger
+        _description_
+    fft : bool, optional
+        _description_, by default True
+    save_uvf : bool, optional
+        _description_, by default True
+    uvf_name : _type_, optional
+        _description_, by default None
+    bi_use : _type_, optional
+        _description_, by default None
+
+    Returns
+    -------
+    dict
+        _description_
+    """
+    
