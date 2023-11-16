@@ -71,7 +71,7 @@ flag-tiles: []
 flag-frequencies: true
 flag-model: true
 flag-calibration : true
-flag-calibration_frequencies: false
+flag-calibration-frequencies: false
 flag-visibilities : false
 transfer-weights : ~
 time-cut: ~

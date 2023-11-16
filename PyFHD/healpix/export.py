@@ -1,9 +1,10 @@
 import numpy as np
-from PyFHD.io.pyfhd_io import save, load
 from logging import RootLogger
 import h5py
+from pathlib import Path
+from PyFHD.io.pyfhd_io import save
 from PyFHD.data_setup.obs import update_obs
-from PyFHD.healpix.healpix_utils import healpix_cnv_generate, beam_image_cube, vis_model_freq_split
+from PyFHD.healpix.healpix_utils import healpix_cnv_generate, healpix_cnv_apply, beam_image_cube, vis_model_freq_split
 from PyFHD.flagging.flagging import vis_flag_tiles
 from PyFHD.pyfhd_tools.pyfhd_utils import vis_weights_update, split_vis_weights, vis_noise_calc
 
@@ -75,8 +76,7 @@ def healpix_snapshot_cube_generate(obs: dict, psf: dict | h5py.File, cal: dict, 
     # To have a psf that has reacted to the new beam_nfreq_avg you have set that isn't
     # the default, tell PyFHD to re-create the psf here once beam_setup has been translated
 
-    # TODOL Add n_freq_bin and apply n_freq_use to it
-    beam_arr, beam_mask = beam_image_cube(obs, psf, logger, square = True, beam_threshold = pyfhd_config['ps_beam_threshold'])
+    beam_arr, beam_mask = beam_image_cube(obs, psf, logger, square = True, beam_threshold = pyfhd_config['ps_beam_threshold'], n_freq_bin = n_freq_use)
 
     hpx_radius = fov_use / np.sqrt(2)
 
@@ -103,6 +103,9 @@ def healpix_snapshot_cube_generate(obs: dict, psf: dict | h5py.File, cal: dict, 
     residual_flag = obs_out['residual']
     # Since the model is imported by default, dirty_flag is usually True
     dirty_flag = not residual_flag and vis_model_arr is not None
+    # Create the healpix dir Path
+    healpix_dir = Path(pyfhd_config['output_dir'], 'healpix')
+    healpix_dir.mkdir(exist_ok = True)
     for iter in range(n_iter):
         split = vis_model_freq_split(
             obs_out, 
@@ -117,15 +120,43 @@ def healpix_snapshot_cube_generate(obs: dict, psf: dict | h5py.File, cal: dict, 
             bi_use = bi_use[iter]
         )
         if dirty_flag:
-            # TODO: Check this is what I meant to do
-            dirty_arr = split['residual_arr']
             residual_flag = False
         else:
             residual_flag = True
         nf_vis = split['obs']['nf_vis']
         nf_vis_use = np.zeros(n_freq_use)
-        for freq_i in range(n_freq_use)
+        for freq_i in range(n_freq_use):
             nf_vis_use[freq_i] = np.sum(nf_vis[freq_i * pyfhd_config['n_avg'] : (freq_i + 1) * pyfhd_config['n_avg']])
+        
+        beam_squared_cube = np.zeros([hpx_inds.size , n_freq_use])
+        weights_cube = np.zeros([hpx_inds, n_freq_use])
+        variance_cube = np.zeros([hpx_inds.size, n_freq_use])
+        model_cube = np.zeros([hpx_inds.size, n_freq_use])
+        dirty_or_res_cube = np.zeros([hpx_inds.size, n_freq_use])
+        
+        for pol_i in range(obs['n_pol']):
+            for freq_i in range(n_freq_use):
+                # TODO: check the indexing, I don't think it will work for Python
+                beam_squared_cube[hpx_inds.size * freq_i] = healpix_cnv_apply(beam_arr[pol_i, freq_i] * nf_vis_use[freq_i], hpx_cnv)
+                weights_cube[hpx_inds.size * freq_i] = healpix_cnv_apply(split['weights_arr'][pol_i, freq_i], hpx_cnv)
+                variance_cube[hpx_inds.size * freq_i] = healpix_cnv_apply(split['variance_arr'][pol_i, freq_i], hpx_cnv)
+                model_cube[hpx_inds.size * freq_i] = healpix_cnv_apply(split['model_arr'][pol_i, freq_i], hpx_cnv)
+                dirty_or_res_cube[hpx_inds.size * freq_i] = healpix_cnv_apply(split['residual_arr'][pol_i, freq_i], hpx_cnv)
+            healpix_pol_dict = {
+                "obs": split['obs'],
+                "hpx_inds": hpx_inds,
+                "n_avg": pyfhd_config["n_avg"],
+                "beam_squared_cube" : beam_squared_cube,
+                "weights_cube" : weights_cube,
+                "variance_cube" : variance_cube,
+                "model_cube" : model_cube,
+            }
+            if residual_flag:
+                healpix_pol_dict['res_cube'] = dirty_or_res_cube
+            elif dirty_flag:
+                healpix_pol_dict['dirty_cube'] = dirty_or_res_cube
+            save(healpix_dir / f"healpix_{cube_name[iter]}_{obs['pol_names'][pol_i]}.h5", healpix_pol_dict, f"healpix_{cube_name[iter]}_{obs['pol_names'][pol_i]}", logger = logger)
+        
 
          
 

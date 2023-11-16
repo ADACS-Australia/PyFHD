@@ -244,7 +244,7 @@ def beam_image_cube(
     logger: RootLogger,
     freq_i_arr: np.ndarray | None = None, 
     pol_i_arr: np.ndarray | None = None,
-    n_freq_bin: np.ndarray | None = None,
+    n_freq_bin: float | None = None,
     beam_mask: np.ndarray | None = None,
     square: bool = True,
     beam_threshold: float | None = None
@@ -264,7 +264,7 @@ def beam_image_cube(
         _description_, by default None
     pol_i_arr : np.ndarray | None, optional
         _description_, by default None
-    n_freq_bin : np.ndarray | None, optional
+    n_freq_bin : float | None, optional
         _description_, by default None
     beam_mask : np.ndarray | None, optional
         _description_, by default None
@@ -372,4 +372,7 @@ def vis_model_freq_split(
     dict
         _description_
     """
+    model_split = {}
     
+
+    return model_split
