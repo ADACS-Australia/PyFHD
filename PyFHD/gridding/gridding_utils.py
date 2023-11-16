@@ -772,8 +772,11 @@ def crosspol_reformat(image_uv: np.ndarray) -> np.ndarray:
     image_uv: np.ndarray
         The crosspol formatted uv plane
     """
-    # Stokes -> instrumental, since inverse keyword in FHD wasn't used here
-    crosspol_image = 2 * image_uv[2] - conjugate_mirror(image_uv[3])
+    # instrumental -> Stokes
+    # Since inverse keyword in FHD isn't used or explained
+    # anywhere else, if you want it, add it as an option to 
+    # the pyfhd_config with some help text
+    crosspol_image = (image_uv[2] - conjugate_mirror(image_uv[3])) / 2
     image_uv[2] = crosspol_image
     image_uv[3] = conjugate_mirror(crosspol_image)
     return image_uv
