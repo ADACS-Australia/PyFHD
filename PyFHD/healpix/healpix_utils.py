@@ -47,7 +47,7 @@ def healpix_cnv_apply(image: np.ndarray, hpx_cnv: dict, transpose = True, mask =
             hpx_map[i] = np.outer(x1, np.reshape(hpx_cnv['sa'][i], [np.size(hpx_cnv['sa'][i]), 1]))
     return hpx_map
 
-def healpix_cnv_generate(obs: dict, mask: np.ndarray, hpx_radius: float, pyfhd_config: dict, logger: RootLogger) -> dict:
+def healpix_cnv_generate(obs: dict, mask: np.ndarray, hpx_radius: float, pyfhd_config: dict, logger: RootLogger, nside: float = None) -> dict:
     """
     TODO:_summary_
 
@@ -66,6 +66,8 @@ def healpix_cnv_generate(obs: dict, mask: np.ndarray, hpx_radius: float, pyfhd_c
         _description_
     logger : RootLogger
         _description_
+    nside : float
+        _description_
 
     Returns
     -------
@@ -78,7 +80,6 @@ def healpix_cnv_generate(obs: dict, mask: np.ndarray, hpx_radius: float, pyfhd_c
     # we will assume that a value for hpx_radius is supplied, if you want to add it
     # yourself you can do that here
     hpx_inds = None
-    nside = None
     # Fill hpx_inds and nside with values from a file if restrict_healpix_inds has been activated
     if (pyfhd_config["restrict_healpix_inds"]):
         if pyfhd_config["healpix_inds"] is None:

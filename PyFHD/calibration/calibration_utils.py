@@ -138,9 +138,10 @@ def vis_calibration_flag(obs: dict, cal: dict, pyfhd_config: dict, logger: RootL
     amp_sigma_threshold = 5
     amp_threshold = 2
     phase_sigma_threshold = 5
+    freq_use = obs["baseline_info"]["freq_use"].copy()
     for pol_i in range(cal["n_pol"]):
         tile_use_i = np.nonzero(obs["baseline_info"]["tile_use"])[0]
-        freq_use_i = np.nonzero(obs["baseline_info"]["freq_use"])[0]
+        freq_use_i = np.nonzero(freq_use)[0]
         gain = cal["gain"][pol_i]
         phase = np.arctan2(gain.imag, gain.real)
         amp = np.abs(gain)
@@ -166,7 +167,7 @@ def vis_calibration_flag(obs: dict, cal: dict, pyfhd_config: dict, logger: RootL
         freq_cut_i = np.where(gain_freq_fom == 0)[0]
         freq_uncut_i = np.nonzero(gain_freq_fom)[0]
         if (freq_cut_i.size > 0):
-            obs["baseline_info"]["freq_use"][freq_use_i][freq_cut_i] = 0
+            freq_use[freq_use_i][freq_cut_i] = 0
         tile_cut_i = np.where(gain_tile_fom == 0)[0]
         tile_uncut_i = np.nonzero(gain_tile_fom)[0]
         if (tile_cut_i.size > 0):
@@ -192,13 +193,13 @@ def vis_calibration_flag(obs: dict, cal: dict, pyfhd_config: dict, logger: RootL
             n_cut = freq_cut_i.size + tile_cut_i.size
             iter+=1
         if (freq_cut_i.size) > 0:
-            obs["baseline_info"]["freq_use"][freq_use_i[freq_cut_i]] = 0
+            freq_use[freq_use_i[freq_cut_i]] = 0
         if (tile_cut_i.size) > 0:
             obs["baseline_info"]["tile_use"][tile_use_i[tile_cut_i]] = 0
 
         # Reset freq_use_i and tile_use_i for flagging based on phase
         tile_use_i = np.nonzero(obs["baseline_info"]["tile_use"])[0]
-        freq_use_i = np.nonzero(obs["baseline_info"]["freq_use"])[0]
+        freq_use_i = np.nonzero(freq_use)[0]
 
         # Start flagging based on phase
         phase_sub = phase[:, tile_use_i][freq_use_i, :]
@@ -227,8 +228,8 @@ def vis_calibration_flag(obs: dict, cal: dict, pyfhd_config: dict, logger: RootL
         if (tile_cut_i.size > 0):
             obs["baseline_info"]["tile_use"][tile_use_i[tile_cut_i]] = 0
     # If we decide not to flag the frequencies, ignore any frequency flagging
-    if not pyfhd_config['flag_frequency']:
-        obs["baseline_info"]["freq_use"] = np.ones(obs['n_freq'], dtype = np.int64)
+    if pyfhd_config['flag_calibration_frequencies']:
+        obs["baseline_info"]["freq_use"] = freq_use
     # Return the obs with an updated baseline_info on the use of tiles and frequency
     return obs
 
@@ -676,9 +677,6 @@ def vis_cal_polyfit(obs: dict, cal: dict, auto_ratio: np.ndarray | None, pyfhd_c
                 phase_fit += phase_params[di] * np.arange(obs['n_freq'])**di
             gain_arr[:, tile_i] = gain_fit * np.exp(1j * phase_fit)
         cal['gain'][pol_i] = gain_arr
-    remainder_nans = np.nonzero(np.isnan(cal['gain']))
-    remainder_freq_idxs = np.unique(remainder_nans[1])
-    remainder_tile_idxs = np.unique(remainder_nans[2])
     # Cable Reflection Fitting
     if (cal_mode_fit):
         if (pyfhd_config['cal_reflection_mode_file']):

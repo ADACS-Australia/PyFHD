@@ -89,6 +89,7 @@ def vis_calibrate_subroutine(vis_arr: np.ndarray, vis_model_ptr: np.ndarray, vis
     cal['conv_iter'] = np.zeros([n_pol, n_freq, n_tile])
     cal['n_converged'] = np.zeros(n_pol)
     for pol_i in range(n_pol):
+        logger.info(f"Beginning Calibration for polarization {pol_i} ({obs['pol_names'][pol_i]})")
         convergence = np.zeros((n_freq, n_tile))
         conv_iter_arr = np.zeros((n_freq, n_tile))
         # Want to ensure we're not affecting the current array till we overwrite it
