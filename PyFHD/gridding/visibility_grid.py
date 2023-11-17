@@ -134,11 +134,12 @@ def visibility_grid(
     # using one beam so this is fine, you might have issues if you're using
     # many beams across the baselines with this code. It passes the tests where
     # beams have been done per baseline so if you get an error, sorry!
-    group_arr = group_arr[polarization, freq_bin_i, :n_baselines]
+    group_arr_baselines = np.min([n_baselines, group_arr.shape[-1]])
+    group_arr = group_arr[polarization, freq_bin_i, :group_arr_baselines]
     # REBIN in IDL when expanding dimensions repeats 2D arrays after expanding
-    group_arr = np.expand_dims(rebin(group_arr, (n_f_use, n_baselines)), axis = 0)
+    group_arr = np.expand_dims(rebin(group_arr, (n_f_use, group_arr_baselines)), axis = 0)
     group_arr = np.repeat(group_arr, n_samples, axis = 0) 
-    group_arr = np.reshape(group_arr, (n_f_use, n_samples*n_baselines))
+    group_arr = np.reshape(group_arr, (n_f_use, n_samples*group_arr_baselines))
     n_freq_use = frequency_array.size
     psf_dim2 = 2 * psf_dim
     psf_dim3 = psf_dim ** 2

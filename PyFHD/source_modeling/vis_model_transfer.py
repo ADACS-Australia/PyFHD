@@ -63,7 +63,11 @@ def import_vis_model_from_sav(pyfhd_config : dict, obs : dict, logger : logging.
         pol_i = 0
         path = Path(pyfhd_config['model_file_path'], f"{pyfhd_config['obs_id']}_vis_model_{obs['pol_names'][pol_i]}.sav")
         curr_vis_model = readsav(path)
-        curr_vis_model = curr_vis_model.vis_model_ptr.transpose().astype(np.complex128)
+        if isinstance(curr_vis_model, dict):
+            curr_vis_model = curr_vis_model['vis_model_ptr'][0]
+        elif isinstance(curr_vis_model, np.recarray):
+            curr_vis_model = curr_vis_model.vis_model_ptr
+        curr_vis_model = curr_vis_model.transpose().astype(np.complex128)
         # The shape should be n_pol, n_freq, n_time * n_baselines
         vis_model_shape = [obs['n_pol']] + list(curr_vis_model.shape)
         vis_model_arr = np.empty(vis_model_shape, dtype=np.complex128)
@@ -71,8 +75,11 @@ def import_vis_model_from_sav(pyfhd_config : dict, obs : dict, logger : logging.
         for pol_i in range(1, obs['n_pol']):
             path = Path(pyfhd_config['model_file_path'], f"{pyfhd_config['obs_id']}_vis_model_{obs['pol_names'][pol_i]}.sav")
             curr_vis_model = readsav(path)
-            # Should be a rec array containing one item vis_model_ptr
-            curr_vis_model = curr_vis_model.vis_model_ptr
+            if isinstance(curr_vis_model, dict):
+                curr_vis_model = curr_vis_model['vis_model_ptr'][0]
+            elif isinstance(curr_vis_model, np.recarray):
+                # Should be a rec array containing one item vis_model_ptr
+                curr_vis_model = curr_vis_model.vis_model_ptr
             vis_model_arr[pol_i] = curr_vis_model.transpose().astype(np.complex128)
     except FileNotFoundError as e:
             logger.error(f"PyFHD failed to load in the model visibilities while trying to transfer in file: {path} as the file wasn't found. PyFHD is exiting execution")
