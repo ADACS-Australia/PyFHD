@@ -17,29 +17,32 @@ from PyFHD.pyfhd_tools.pyfhd_utils import resistant_mean, reshape_and_average_in
 
 def calibrate(obs: dict, params: dict, vis_arr: np.array, vis_weights: np.array, vis_model_arr: np.ndarray, pyfhd_config: dict, logger: RootLogger) -> tuple[np.array, dict, dict] :
     """
-    TODO: Docstring
+    Solve for the amplitude and phase of the electronic response of each tile or station, and apply these 
+    calibration solutions to the raw, data visiblities. Various options for initial estimates, time/tile averaging,
+    and polynomial/cable reflections fitting are available. 
 
     Parameters
     ----------
     obs : dict
-        _description_
+        Observation metadata dictionary
     params : dict
-        _description_
+        Visibility metadata dictionary
     vis_arr : np.array
-        _description_
-    vis_weights : np.array
-        _description_
+        Uncalibrated data visiblities
+    vis_weights : np.ndarray
+        Weights (flags) of the visibilities 
     vis_model_arr : np.array
-        _description_
+        Simulated model visibilites
     pyfhd_config : dict
-        _description_
+        Run option dictionary
     logger : RootLogger
-        _description_
+        PyFHD's logger for displaying errors and info to the log files
 
     Returns
     -------
-    Tuple[np.array, np.array, dict]
-        _description_
+    (vis_cal, cal, obs) : Tuple[np.array, np.array, dict]
+        Tuple of 1) the calibrated data visibilities, 2) the updated calibration dictionary and 3) the
+        updated observation metadata dictionary
     """
     # Initialize cal dict
     cal = {}
@@ -150,23 +153,26 @@ def calibrate(obs: dict, params: dict, vis_arr: np.array, vis_weights: np.array,
 
 def calibrate_qu_mixing(vis_arr: np.ndarray, vis_model_arr : np.ndarray, vis_weights: np.ndarray, obs : dict) -> float:
     """
-    TODO: _summary_
+    Solve for the degenerate phase between pseudo Q (YY - XX) and pseudo U (YX + XY) for the calibrated data and 
+    the simulated model separately, and return their difference. This difference represents the excess mixing
+    angle between Q and U due to the instrumental beam not captured in a typical polarization-independent 
+    calibration.
 
     Parameters
     ----------
     vis_arr : np.ndarray
-        The visibility array
+        Uncalibrated data visiblities
     vis_model_arr : np.ndarray
-        The array containing the model for the visibilities
+        Simulated model visibilites
     vis_weights : np.ndarray
-        The visibility weights array
+        Weights (flags) of the visibilities 
     obs : dict
-        The observation dictionary
+        Observation metadata dictionary
 
     Returns
     -------
     stokes_mix_phase : float
-        TODO: _description_
+        The excess mixing angle between Q and U from instrumental effects
     """
 
     n_freq = obs['n_freq']

@@ -8,31 +8,33 @@ def vis_calibrate_subroutine(vis_arr: np.ndarray, vis_model_ptr: np.ndarray, vis
                              obs: dict, cal: dict, params: dict, pyfhd_config: dict, logger: RootLogger, 
                              calibration_weights = False,  no_ref_tile = False):
     """
-    TODO:_summary_
+    Perform a linear least-squares regression between the data visilbities and the simulated model
+    visiblities to solve for an amplitude and phase for each tile for each frequency channel.
 
     Parameters
     ----------
     vis_arr : np.ndarray
-        _description_
+        Uncalibrated data visiblities
     vis_model_ptr : np.ndarray
-        _description_
+        Simulated model visibilites
     vis_weight_ptr : np.ndarray
-        _description_
+        Weights (flags) of the visibilities 
     obs : dict
-        _description_
+        Observation metadata dictionary
     cal : dict
-        _description_
+        Calibration dictionary
     pyfhd_config : dict
-        _description_
+        Run option dictionary
     calibration_weights : bool, optional
-        _description_, by default False
+        Weight the visibilities at the minimum and maximum baseline by a soft taper for 
+        calibration purposes only, by default False
     no_ref_tile : bool, optional
-        _description_, by default False
+        Do not reference calibration phases at this stage, by default False
 
     Returns
     -------
-    _type_
-        _description_
+    cal : dict
+        Calibration dictionary
 
     Raises
     ------
