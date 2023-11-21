@@ -172,8 +172,6 @@ def create_obs(pyfhd_header : dict, params : dict, layout: dict, pyfhd_config : 
 
     meta = read_metafits(obs, pyfhd_header, params, pyfhd_config, logger)
 
-    # TODO: antenna indices rewrite PR goes here
-
     baseline_info['time_use'] = np.ones(obs['n_time'], dtype = np.int8)
     # time cut is specified in seconds to cut (rounded up to next time integration point).
     # Specify negative time_cut to cut time off the end. Specify a vector to cut at both the start and end
@@ -310,6 +308,10 @@ def read_metafits(obs : dict, pyfhd_header : dict, params : dict, pyfhd_config :
         meta['phasedec'] = pyfhd_header['obsdec']
         meta['delays'] = None
     
+    # Store an origin/target phase ra/dec
+    meta['orig_phasera'] = pyfhd_config['override_target_phasera'] if pyfhd_config['override_target_phasera'] is not None else meta['phasera']
+    meta['orig_phasedec'] = pyfhd_config['override_target_phasedec'] if pyfhd_config['override_target_phasedec'] is not None else meta['phasedec']
+
     # Get the Zenith RA and DEC from the location and time
     zenra, zendec = altaz_to_radec(90, 0, pyfhd_header['lat'], pyfhd_header['lon'], pyfhd_header['alt'], meta['jd0'])
     meta['zenra'] = zenra

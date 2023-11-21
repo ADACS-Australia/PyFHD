@@ -31,6 +31,7 @@ def pyfhd_parser():
         formatter_class= configargparse.RawTextHelpFormatter,
     )
     # Add All the Groups
+    instrument = parser.add_argument_group('Instrument', 'Adjust parameters specific to your instrument')
     calibration = parser.add_argument_group('Calibration', 'Adjust Parameters for Calibration')
     flag = parser.add_argument_group('Flagging', 'Adjust Parameters for Flagging')
     beam = parser.add_argument_group('Beam Setup', 'Adjust Parameters for the Beam Setup')
@@ -96,6 +97,10 @@ def pyfhd_parser():
     parser.add_argument('--memory-threshold', type = int, default = 1e8, help = 'Set a memory threshold for each chunk in set in bytes. By default it is set at ~100MB')
     parser.add_argument('--min-baseline', type = float, default = 1.0, help = 'The minimum baseline length in wavelengths to include in the analysis')
     parser.add_argument('--n-pol', type = int, default = 2, choices = [0, 2, 4], help = 'Set number of polarizations to use (XX, YY versus XX, YY, XY, YX).')
+
+    # Instrument Group
+    instrument.add_argument('--override-target-phasera', default = None, type = float, help = "RA of the target phase center, which overrides the value supplied in the metafits under the header keyword RAPHASE. If the metafits doesn't exist, it ovverides the value supplied in the uvfits under the header keyword RA")
+    instrument.add_argument('--override-target-phasedec', default = None, type = float, help = "dec of the target phase center, which overrides the value supplied in the metafits under the header keyword DECPHASE. If the metafits doesn't exist, it overrides the value supplied in the uvfits under the header keyword Dec.")
 
     # Calibration Group
     calibration.add_argument('-cv', '--calibrate-visibilities', default = False, action = 'store_true', help = 'Turn on the calibration of the visibilities. If turned on, calibration of the dirty, modelling, and subtraction to make a residual occurs. Otherwise, none of these occur and an uncalibrated dirty cube is output.')

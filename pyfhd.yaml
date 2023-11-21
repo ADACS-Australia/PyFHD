@@ -15,6 +15,11 @@ min-baseline : 1.
 n-pol : 2
 deproject-w-term : ~
 
+# Instrument
+override-target-phasera: ~
+override-target-phasedec: ~
+
+
 # Beam Setup
 beam-file-path: './input'
 lazy-load-beam: false
