@@ -206,6 +206,8 @@ def visibility_grid(
         if model is not None:
             spectral_model_A = np.zeros([elements, dimension], dtype = np.complex128)
 
+    frequency_cache: dict[int, np.ndarray] = {}
+
     for bi in range(n_bin_use):
         # Cycle through sets of visibilities which contribute to the same data/model uv-plane pixels, and perform
         # the gridding operation per set using each visibilities' hyperresolved kernel 
@@ -249,9 +251,14 @@ def visibility_grid(
 
             box_matrix = np.zeros((vis_n, psf_dim3), dtype = arr_type)
             for ii in range(vis_n):
+                if fbin[ii] not in frequency_cache:
+                    to_interp = psf['beam_ptr'][polarization, fbin[ii]]
+                    frequency_cache[fbin[ii]] = to_interp
+                else:
+                    to_interp = frequency_cache[fbin[ii]]
                 # For each visibility, calculate the kernel values on the static uv-grid given the
                 # hyperresolved kernel and an interpolation involving the derivatives
-                box_matrix[ii] = interpolate_kernel(psf['beam_ptr'][polarization, fbin[ii]],
+                box_matrix[ii] = interpolate_kernel(to_interp,
                                                     x_off[ii], y_off[ii], dx0dy0[ii], dx1dy0[ii], dx0dy1[ii], dx1dy1[ii])
         else:
             # Calculate the beam kernel at each baseline location given the hyperresolved pre-calculated
@@ -329,9 +336,14 @@ def visibility_grid(
                                                     image_bot, image_top, psf_dim3, box_matrix, vis_n)
             else:
                 for ii in range(vis_n):
+                    if fbin[ii] not in frequency_cache:
+                        box_mat = psf['beam_ptr'][polarization, fbin[ii]]
+                        frequency_cache[fbin[ii]] = box_mat
+                    else:
+                        box_mat = frequency_cache[fbin[ii]]
                     # For each visibility, calculate the kernel values on the static uv-grid given the
                     # hyperresolved kernel
-                    box_matrix[ii, :] = psf['beam_ptr'][polarization, fbin[ii]][y_off[ii], x_off[ii]]
+                    box_matrix[ii, :] = box_mat[y_off[ii], x_off[ii]]
         
         #  Calculate the conjugate transpose (dagger) of the uv-pixels that the current beam kernel contributes to
         box_matrix_dag = np.conj(box_matrix)
@@ -380,9 +392,9 @@ def visibility_grid(
         
         if uniform_flag:
             uniform_filter[ymin_use : ymin_use + psf_dim, xmin_use : xmin_use + psf_dim] += bin_n[bin_i[bi]]
-        
+
     # Free Up Memory
-    del(vis_arr_use, xmin, ymin, ri, inds, x_offset, y_offset, bin_i, bin_n)
+    del(vis_arr_use, xmin, ymin, ri, inds, x_offset, y_offset, bin_i, bin_n, frequency_cache)
 
     if model is not None:
         del(model_use)

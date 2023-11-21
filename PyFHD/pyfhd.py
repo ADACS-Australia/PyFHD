@@ -15,6 +15,7 @@ from PyFHD.gridding.visibility_grid import visibility_grid
 from PyFHD.gridding.gridding_utils import crosspol_reformat
 import logging
 import h5py
+import sys
 
 def _print_time_diff(start : float, end : float, description : str, logger : logging.RootLogger):
     """
@@ -185,14 +186,18 @@ def main_python_only(pyfhd_config : dict, logger : logging.RootLogger):
                 no_conjugate = no_conjugate, 
                 model = vis_model_arr[pol_i]
             )
-            image_uv[pol_i] = gridding_dict['image_uv']
-            weights_uv[pol_i] = gridding_dict['weights']
-            variance_uv[pol_i] = gridding_dict['variance']
-            uniform_filter_uv[pol_i] = gridding_dict['uniform_filter']
-            obs['nf_vis'] = gridding_dict["obs"]["nf_vis"]
-            if vis_model_arr is not None:
-                model_uv[pol_i] = gridding_dict['model_return']
-            logger.info(f"Gridding has finished for polarization {pol_i}")
+            if len(gridding_dict.keys()) != 0:
+                image_uv[pol_i] = gridding_dict['image_uv']
+                weights_uv[pol_i] = gridding_dict['weights']
+                variance_uv[pol_i] = gridding_dict['variance']
+                uniform_filter_uv[pol_i] = gridding_dict['uniform_filter']
+                obs['nf_vis'] = gridding_dict["obs"]["nf_vis"]
+                if vis_model_arr is not None:
+                    model_uv[pol_i] = gridding_dict['model_return']
+                logger.info(f"Gridding has finished for polarization {pol_i}")
+            else:
+                logger.error("All data was flagged during gridding, exiting")
+                sys.exit(1)
         if obs["n_pol"] == 4:
             logger.info("Performing Crosspol reformatting")
             image_uv = crosspol_reformat(image_uv)
@@ -248,7 +253,7 @@ def main():
 
     pyfhd_end = time.time()
     runtime = timedelta(seconds = pyfhd_end - pyfhd_start)
-    logger.info(f'PyFHD Run Completed\nTotal Runtime (Days:Hours:Minutes:Seconds.Millseconds): {runtime}')
+    logger.info(f'PyFHD Run Completed for {pyfhd_config["obs_id"]}\nTotal Runtime (Days:Hours:Minutes:Seconds.Millseconds): {runtime}')
     # Close the handlers in the log
     for handler in logger.handlers:
         handler.close()
