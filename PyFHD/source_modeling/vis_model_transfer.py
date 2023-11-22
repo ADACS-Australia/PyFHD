@@ -17,14 +17,19 @@ def vis_model_transfer(pyfhd_config: dict, obs : dict, logger: logging.RootLogge
     Parameters
     ----------
     pyfhd_config : dict
-        _description_
+        PyFHD's configuration dictionary containing all the options for a PyFHD run
     obs : dict
-        _description_
+        The Observation Metadata dictionary
 
     Returns
     -------
-    tuple[np.array, dict]
-        _description_
+    (vis_model_arr, params_model) : tuple[np.array, dict]
+        1) The simulated model for the visibilities 2) The parameters for the model used for flagging the model
+
+    See Also
+    --------
+    PyFHD.source_modeling.vis_model_transfer.import_vis_model_from_sav : Import model from a sav file
+    PyFHD.source_modeling.vis_model_transfer.import_vis_model_from_uvfits : Import model from a uvfits file
     """
     if (pyfhd_config['model_file_type'] == 'sav'):
         return import_vis_model_from_sav(pyfhd_config, obs, logger)
@@ -36,7 +41,8 @@ def vis_model_transfer(pyfhd_config: dict, obs : dict, logger: logging.RootLogge
     
 
 def import_vis_model_from_sav(pyfhd_config : dict, obs : dict, logger : logging.RootLogger) -> tuple[np.ndarray, dict]:
-    """Read a model visibility array in from multiple IDL sav files which are in a directory
+    """
+    Read a model visibility array in from multiple IDL sav files which are in a directory
     given by pyfhd_config['model-file-path']. The data is assumed to be in the format of
     <obs_id>_params.sav, <obs_id>_vis_model_<pol_name>.sav. The pol_name follows the pol_names
     in the obs dictionary which are ['XX','YY','XY','YX','I','Q','U','V'].
@@ -52,8 +58,8 @@ def import_vis_model_from_sav(pyfhd_config : dict, obs : dict, logger : logging.
 
     Returns
     -------
-    tuple[vis_model_arr: np.ndarray, params_model: dict]
-       A tuple containing the vis_model_arr and params_model (which is used for flagging)
+    (vis_model_arr, params_model) : tuple[np.ndarray, dict]
+        1) The simulated model for the visibilities 2) The parameters for the model used for flagging the model
     """
     try: 
         path = Path(pyfhd_config['model_file_path'], f"{pyfhd_config['obs_id']}_params.sav")
@@ -183,14 +189,13 @@ class _FlaggingInfoCounter(object):
 
         self.ant1_single_time = params['antenna1'][:self.num_visi_per_time_step]
         self.ant2_single_time = params['antenna2'][:self.num_visi_per_time_step]
-    
-
 
 def flag_model_visibilities(vis_model_arr : np.ndarray,
                             params_data : dict, params_model : dict,
                             obs : dict, pyfhd_config : dict,
                             logger : logging.RootLogger) -> np.ndarray:
-    """Account for time offset and tile flags, and check that the uvfits
+    """
+    Account for time offset and tile flags, and check that the uvfits
     and compatible. Needs to check if auto-correlations are present
 
     Parameters
