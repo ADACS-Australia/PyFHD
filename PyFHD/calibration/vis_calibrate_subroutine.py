@@ -1,10 +1,11 @@
 import numpy as np
+from numpy.typing import NDArray
 import warnings
 from logging import Logger
 from PyFHD.calibration.calibration_utils import calculate_adaptive_gain
 from PyFHD.pyfhd_tools.pyfhd_utils import weight_invert, histogram, idl_median
 
-def vis_calibrate_subroutine(vis_arr: np.ndarray, vis_model_ptr: np.ndarray, vis_weight_ptr: np.ndarray, 
+def vis_calibrate_subroutine(vis_arr: NDArray[np.complex128], vis_model_ptr: NDArray[np.complex128], vis_weight_ptr: NDArray[np.float64], 
                              obs: dict, cal: dict, params: dict, pyfhd_config: dict, logger: Logger, 
                              calibration_weights = False,  no_ref_tile = False):
     """
@@ -13,11 +14,11 @@ def vis_calibrate_subroutine(vis_arr: np.ndarray, vis_model_ptr: np.ndarray, vis
 
     Parameters
     ----------
-    vis_arr : np.ndarray
+    vis_arr : NDArray[np.complex128]
         Uncalibrated data visiblities
-    vis_model_ptr : np.ndarray
+    vis_model_ptr : NDArray[np.complex128]
         Simulated model visibilites
-    vis_weight_ptr : np.ndarray
+    vis_weight_ptr : NDArray[np.float64]
         Weights (flags) of the visibilities 
     obs : dict
         Observation metadata dictionary

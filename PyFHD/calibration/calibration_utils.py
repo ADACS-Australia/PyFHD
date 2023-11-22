@@ -1,5 +1,5 @@
 import numpy as np
-from typing import Tuple
+from numpy.typing import NDArray
 from logging import Logger
 from PyFHD.pyfhd_tools.pyfhd_utils import resistant_mean, weight_invert, rebin, histogram
 from copy import deepcopy
@@ -9,7 +9,7 @@ from pathlib import Path
 from scipy.ndimage import uniform_filter
 import importlib_resources
 
-def vis_extract_autocorr(obs: dict, vis_arr: np.array, pyfhd_config: dict, auto_tile_i = None) -> Tuple[np.array, np.array]:
+def vis_extract_autocorr(obs: dict, vis_arr: NDArray[np.complex128], pyfhd_config: dict, auto_tile_i: NDArray[np.int_] | None = None) -> tuple[NDArray[np.float64], NDArray[np.int_]]:
     """
     Extract the auto-correlations if they exist from the full visibility array. 
 
@@ -17,16 +17,16 @@ def vis_extract_autocorr(obs: dict, vis_arr: np.array, pyfhd_config: dict, auto_
     ----------
     obs : dict
         Observation metadata dictionary
-    vis_arr : np.array
+    vis_arr : NDArray[np.complex128]
         Uncalibrated data visiblities
     pyfhd_config : dict
         PyFHD's configuration dictionary containing all the options set for a PyFHD run
-    auto_tile_i : _type_, optional
+    auto_tile_i : NDArray[np.int_] | None, optional
         Index array for auto-correlation visibilities, by default None
 
     Returns
     -------
-    Tuple[autocorr: np.array, auto_tile_i: np.array]
+    (autocorr, auto_tile_i) : tuple[NDArray[np.float64], NDArray[np.int_]]
         Tuple of 1) the auto-correlation visibilities and 2) the index array for auto-correlation visibilities
     """
 
@@ -72,7 +72,7 @@ def vis_extract_autocorr(obs: dict, vis_arr: np.array, pyfhd_config: dict, auto_
         # Return auto_corr as 0 and auto_tile_i as an empty array
         return np.zeros(1), np.zeros(0)
 
-def vis_cal_auto_init(obs : dict, cal : dict, vis_arr: np.array, vis_model_arr: np.array, vis_auto: np.array, vis_auto_model: np.array, auto_tile_i: np.array) -> np.ndarray:
+def vis_cal_auto_init(obs : dict, cal : dict, vis_arr: NDArray[np.complex128], vis_model_arr: NDArray[np.complex128], vis_auto: NDArray[np.float64], vis_auto_model: NDArray[np.float64], auto_tile_i: NDArray[np.int_]) -> NDArray[np.complex128]:
     """
     Initialize the calibration solutions using the autocorrelations prior to the linear least squares fit 
     for faster convergence. The auto-correlations and cross-correlations have separate formulisms for the
@@ -91,20 +91,20 @@ def vis_cal_auto_init(obs : dict, cal : dict, vis_arr: np.array, vis_model_arr: 
         Observation metadata dictionary
     cal : dict
         Calibration dictionary
-    vis_arr : np.array
+    vis_arr : NDArray[np.complex128]
         Uncalibrated data visiblities
-    vis_model_arr : np.array
+    vis_model_arr : NDArray[np.complex128]
         Simulated model visibilites
-    vis_auto : np.array
+    vis_auto : NDArray[np.float64]
         Data auto-correlations 
-    vis_auto_model : np.array
+    vis_auto_model : NDArray[np.float64]
         Simulated model auto-correlations
-    auto_tile_i : np.array
+    auto_tile_i : NDArray[np.int_]
         Index array for auto-correlation visibilities
 
     Returns
     -------
-    auto_gain : np.array
+    auto_gain : NDArray[np.complex128]
         Initialization gain array 
     """
     # Set out the 
@@ -246,7 +246,7 @@ def vis_calibration_flag(obs: dict, cal: dict, pyfhd_config: dict, logger: Logge
     # Return the obs with an updated baseline_info on the use of tiles and frequency
     return obs
 
-def transfer_bandpass(obs: dict, cal: dict, pyfhd_config: dict, logger: Logger) -> Tuple[dict, dict]:
+def transfer_bandpass(obs: dict, cal: dict, pyfhd_config: dict, logger: Logger) -> tuple[dict, dict]:
     """
     Apply a previously saved bandpass via a calfits file (github:pyuvdata). Check adherance to standards, 
     and match the polarizations, frequencies, timing, pointings, and tiles.
@@ -264,7 +264,7 @@ def transfer_bandpass(obs: dict, cal: dict, pyfhd_config: dict, logger: Logger) 
 
     Returns
     -------
-    (cal_bandpass, cal_remainder) : Tuple[dict, dict]
+    (cal_bandpass, cal_remainder) : tuple[dict, dict]
         Tuple of 1) calibration dictionary with bandpass gains and 2) calibration dictionary with residuals
         after removing the bandpass gains
     """
@@ -488,7 +488,7 @@ def transfer_bandpass(obs: dict, cal: dict, pyfhd_config: dict, logger: Logger) 
     cal_remainder["gain"][0 : cal["n_pol"], :, :] = cal["gain"][0 : cal["n_pol"], :, :] / cal_bandpass["gain"][0 : cal["n_pol"], :, :]
     return cal_bandpass, cal_remainder
 
-def vis_cal_bandpass(obs: dict, cal: dict, pyfhd_config: dict, logger: Logger) -> Tuple[dict, dict]:
+def vis_cal_bandpass(obs: dict, cal: dict, pyfhd_config: dict, logger: Logger) -> tuple[dict, dict]:
     """
     Reduce the degrees of freedom on the per-frequency calibration amplitudes by averaging solutions
     together. Options include averaging over tiles which use a particular beamformer-to-receiver cable 
@@ -507,7 +507,7 @@ def vis_cal_bandpass(obs: dict, cal: dict, pyfhd_config: dict, logger: Logger) -
 
     Returns
     -------
-    (cal_bandpass, cal_remainder) : Tuple[dict, dict]
+    (cal_bandpass, cal_remainder) : tuple[dict, dict]
         Tuple of 1) calibration dictionary with bandpass gains and 2) calibration dictionary with residuals
         after removing the bandpass gains
     """
@@ -637,7 +637,7 @@ def vis_cal_bandpass(obs: dict, cal: dict, pyfhd_config: dict, logger: Logger) -
     cal_remainder["gain"] = cal_remainder_gain
     return cal_bandpass, cal_remainder
 
-def vis_cal_polyfit(obs: dict, cal: dict, auto_ratio: np.ndarray | None, pyfhd_config: dict, logger: Logger) -> dict:
+def vis_cal_polyfit(obs: dict, cal: dict, auto_ratio: NDArray[np.float64] | None, pyfhd_config: dict, logger: Logger) -> dict:
     """
     Reduce the degrees of freedom on the per-frequency calibration amplitudes and phases by fitting
     the full frequency band with polynomials of a specified degree, with options for split polynomials
@@ -657,8 +657,9 @@ def vis_cal_polyfit(obs: dict, cal: dict, auto_ratio: np.ndarray | None, pyfhd_c
         Observation metadata dictionary
     cal : dict
         Calibration dictionary
-    auto_ratio: np.ndarray
-        stuff
+    auto_ratio: NDArray[np.float64] | None
+        The estimation of the antenna-dependent bias through the square root of the autocorrelation 
+        visibilities normalized via a reference tile
     pyfhd_config : dict
         PyFHD's configuration dictionary containing all the options set for a PyFHD run
     logger : Logger
@@ -913,7 +914,7 @@ def vis_cal_polyfit(obs: dict, cal: dict, auto_ratio: np.ndarray | None, pyfhd_c
                     cal['mode_params'][pol_i, tile_i] = np.array([mode_i, amp_use, phase_use])
     return cal
 
-def vis_cal_auto_fit(obs: dict, cal: dict, vis_auto : np.ndarray, vis_auto_model: np.ndarray, auto_tile_i: np.ndarray) -> dict:
+def vis_cal_auto_fit(obs: dict, cal: dict, vis_auto : NDArray[np.float64], vis_auto_model: NDArray[np.float64], auto_tile_i: NDArray[np.int_]) -> dict:
     """
     Solve for each tile's calibration amplitude via the square root of the ratio of the data autocorrelation
     to the model autocorrelation using the definition of a gain. Then, remove dependence on the correlated
@@ -927,11 +928,11 @@ def vis_cal_auto_fit(obs: dict, cal: dict, vis_auto : np.ndarray, vis_auto_model
         Observation metadata dictionary
     cal : dict
         Calibration dictionary
-    vis_auto : np.ndarray
+    vis_auto : NDArray[np.float64]
         Data autocorrelations
-    vis_auto_model : np.ndarray
+    vis_auto_model : NDArray[np.float64]
         Simulated model autocorrelations
-    auto_tile_i : np.ndarray
+    auto_tile_i : NDArray[np.int_]
         Index array of the tile array that have defined autocorrelations
 
     Returns
@@ -992,7 +993,7 @@ def vis_cal_auto_fit(obs: dict, cal: dict, vis_auto : np.ndarray, vis_auto_model
     cal['auto_params'][1, :, :] = fit_slope
     return cal
 
-def vis_calibration_apply(vis_arr: np.ndarray, obs: dict, cal: dict, vis_model_arr: np.ndarray, vis_weights: np.ndarray, logger: Logger) -> tuple[np.ndarray, dict]:
+def vis_calibration_apply(vis_arr: NDArray[np.complex128], obs: dict, cal: dict, vis_model_arr: NDArray[np.complex128], vis_weights: NDArray[np.float64], logger: Logger) -> tuple[NDArray[np.complex128], dict]:
     """
     Apply the calibration solutions to the input, data visibilities to create calibrated, data visibilities using
     the definition of the gains. 
@@ -1006,22 +1007,22 @@ def vis_calibration_apply(vis_arr: np.ndarray, obs: dict, cal: dict, vis_model_a
 
     Parameters
     ----------
-    vis_arr : np.array
+    vis_arr : NDArray[np.complex128]
         Uncalibrated data visiblities
     obs : dict
         Observation metadata dictionary
     cal : dict
         Calibration dictionary
-    vis_model_arr : np.array
+    vis_model_arr : NDArray[np.complex128]
         Simulated model visibilites
-    vis_weights : np.ndarray
+    vis_weights : NDArray[np.float64]
         Weights (flags) of the visibilities 
     logger : Logger
         PyFHD's logger for displaying errors and info to the log files
         
     Returns
     -------
-    (vis_arr, cal) : Tuple[np.ndarray, dict]
+    (vis_arr, cal) : Tuple[NDArray[np.complex128], dict]
         Tuple of 1) calibrated data visibilities and 2) calibration dictionary 
     """
     # tile numbering starts at 1
@@ -1103,7 +1104,7 @@ def vis_calibration_apply(vis_arr: np.ndarray, obs: dict, cal: dict, vis_model_a
 
     return vis_arr, cal
 
-def vis_baseline_hist(obs: dict, params: dict, vis_cal: np.ndarray, vis_model_arr: np.ndarray) -> dict:
+def vis_baseline_hist(obs: dict, params: dict, vis_cal: NDArray[np.complex128], vis_model_arr: NDArray[np.complex128]) -> dict:
     """
     Create diagnostic histograms of both the mean and sigma for the percent difference between calibrated 
     data and simulated model visibilities as a function of baseline length.
@@ -1114,9 +1115,9 @@ def vis_baseline_hist(obs: dict, params: dict, vis_cal: np.ndarray, vis_model_ar
         Observation metadata dictionary
     params : dict
         Visibility metadata dictionary
-    vis_cal : np.ndarray
+    vis_cal : NDArray[np.complex128]
         Calibrated data visibilities
-    vis_model_arr : np.ndarray
+    vis_model_arr : NDArray[np.complex128]
         Simulated model visibilites
 
     Returns
@@ -1162,7 +1163,7 @@ def vis_baseline_hist(obs: dict, params: dict, vis_cal: np.ndarray, vis_model_ar
         'vis_res_sigma' : vis_res_sigma
     }
     
-def cal_auto_ratio_divide(obs: dict, cal: dict, vis_auto: np.ndarray, auto_tile_i: np.ndarray) -> Tuple[dict, np.ndarray]:
+def cal_auto_ratio_divide(obs: dict, cal: dict, vis_auto: NDArray[np.float64], auto_tile_i: NDArray[np.int_]) -> tuple[dict, NDArray[np.float64]]:
     """
     Remove antenna-dependent parameters (i.e. cable reflections) from the calculated gains 
     to reduce the bias on individual tile variation before the creation of averaged quantities 
@@ -1175,19 +1176,18 @@ def cal_auto_ratio_divide(obs: dict, cal: dict, vis_auto: np.ndarray, auto_tile_
         Observation metadata dictionary
     cal : dict
         Calibration dictionary
-    vis_auto : np.ndarray        
+    vis_auto : NDArray[np.float64]        
         Data autocorrelations
-    auto_tile_i : np.ndarray
+    auto_tile_i : NDArray[np.int_]
         Index array of the tile array that have defined autocorrelations
 
     Returns
     -------
-    (cal: dict, auto_ratio: np.ndarray) : Tuple[dict, np.ndarray]
+    (cal, auto_ratio) : tuple[dict, NDArray[np.float64]]
         Tuple of 1) calibration dictionary with gains that have reduced antenna-dependent bias and
         2) the estimation of the antenna-dependent bias through the square root of the autocorrelation 
         visibilities normalized via a reference tile.
     """
-
 
     auto_ratio = np.empty([cal['n_pol'], obs['n_freq'], obs['n_tile']])
     # TODO: Vectorize
@@ -1198,7 +1198,7 @@ def cal_auto_ratio_divide(obs: dict, cal: dict, vis_auto: np.ndarray, auto_tile_
         cal['gain'][pol_i] = cal['gain'][pol_i] * weight_invert(auto_ratio[pol_i])
     return cal, auto_ratio
 
-def cal_auto_ratio_remultiply(cal: dict, auto_ratio: np.ndarray, auto_tile_i: np.ndarray) -> dict:
+def cal_auto_ratio_remultiply(cal: dict, auto_ratio: NDArray[np.float64], auto_tile_i: NDArray[np.int_]) -> dict:
     """
     Return antenna-dependent parameters to the calculated gains after averaged quantities
     have been calculated. The antenna-dependent parameters are captured via the square root of
@@ -1210,9 +1210,9 @@ def cal_auto_ratio_remultiply(cal: dict, auto_ratio: np.ndarray, auto_tile_i: np
         Observation metadata dictionary
     cal : dict
         Calibration dictionary
-    auto_ratio : np.ndarray
+    auto_ratio : NDArray[np.float64]
         Square root of the autocorrelation visibilities normalized via a reference tile
-    auto_tile_i : np.ndarray
+    auto_tile_i : NDArray[np.int_]
         Index array of the tile array that have defined autocorrelations
 
     Returns
@@ -1224,7 +1224,7 @@ def cal_auto_ratio_remultiply(cal: dict, auto_ratio: np.ndarray, auto_tile_i: np
     cal['gain'][:cal['n_pol'], :, auto_tile_i] = cal['gain'][:cal['n_pol'], :, auto_tile_i] * np.abs(auto_ratio[:cal['n_pol'], :, auto_tile_i])
     return cal
 
-def calculate_adaptive_gain(gain_list: np.ndarray, convergence_list: np.ndarray, iter: int, base_gain: int|float, final_convergence_estimate: float|None = None):
+def calculate_adaptive_gain(gain_list: NDArray[np.float64], convergence_list: NDArray[np.float64], iter: int, base_gain: int|float, final_convergence_estimate: float|None = None):
     """
     Perform a Kalman filter to calculate the best weighting to use in the next iteration of the 
     linear least squares fitting between the data and simulated model, which reduces the number
@@ -1240,10 +1240,10 @@ def calculate_adaptive_gain(gain_list: np.ndarray, convergence_list: np.ndarray,
 
     Parameters
     ----------
-    gain_list : np.ndarray
+    gain_list : NDArray[np.float64]
         Relative weighting between the previous iteration and new iteration in the linear least squares 
         solver for calibration solutions
-    convergence_list : np.ndarray
+    convergence_list : NDArray[np.float64]
         An array of the percent change in the calibration solutions between one iteration and the next
     iter : int
         The current iteration in the linear least squares solver

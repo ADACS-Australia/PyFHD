@@ -1,4 +1,5 @@
 import numpy as np
+from numpy.typing import NDArray
 from logging import Logger
 from PyFHD.calibration.calibration_utils import (
     vis_extract_autocorr, 
@@ -15,7 +16,7 @@ from PyFHD.calibration.calibration_utils import (
 from PyFHD.calibration.vis_calibrate_subroutine import vis_calibrate_subroutine
 from PyFHD.pyfhd_tools.pyfhd_utils import resistant_mean, reshape_and_average_in_time
 
-def calibrate(obs: dict, params: dict, vis_arr: np.array, vis_weights: np.array, vis_model_arr: np.ndarray, pyfhd_config: dict, logger: Logger) -> tuple[np.array, dict, dict] :
+def calibrate(obs: dict, params: dict, vis_arr: NDArray[np.complex128], vis_weights: NDArray[np.float64], vis_model_arr: NDArray[np.complex128], pyfhd_config: dict, logger: Logger) -> tuple[NDArray[np.complex128], dict, dict] :
     """
     Solve for the amplitude and phase of the electronic response of each tile or station, and apply these 
     calibration solutions to the raw, data visiblities. Various options for initial estimates, time/tile averaging,
@@ -27,11 +28,11 @@ def calibrate(obs: dict, params: dict, vis_arr: np.array, vis_weights: np.array,
         Observation metadata dictionary
     params : dict
         Visibility metadata dictionary
-    vis_arr : np.array
+    vis_arr : NDArray[np.complex128]
         Uncalibrated data visiblities
-    vis_weights : np.ndarray
+    vis_weights : NDArray[np.float64]
         Weights (flags) of the visibilities 
-    vis_model_arr : np.array
+    vis_model_arr : NDArray[np.complex128]
         Simulated model visibilites
     pyfhd_config : dict
         PyFHD's configuration dictionary containing all the options set for a PyFHD run
@@ -40,7 +41,7 @@ def calibrate(obs: dict, params: dict, vis_arr: np.array, vis_weights: np.array,
 
     Returns
     -------
-    (vis_cal, cal, obs) : tuple[np.array, np.array, dict]
+    (vis_cal, cal, obs) : tuple[NDArray[np.complex128], dict, dict]
         Tuple of 1) the calibrated data visibilities, 2) the updated calibration dictionary and 3) the
         updated observation metadata dictionary
     """
@@ -149,7 +150,7 @@ def calibrate(obs: dict, params: dict, vis_arr: np.array, vis_weights: np.array,
     # Return the calibrated visibility array
     return vis_cal, cal, obs
 
-def calibrate_qu_mixing(vis_arr: np.ndarray, vis_model_arr : np.ndarray, vis_weights: np.ndarray, obs : dict) -> float:
+def calibrate_qu_mixing(vis_arr: NDArray[np.complex128], vis_model_arr : NDArray[np.complex128], vis_weights: NDArray[np.float64], obs : dict) -> float:
     """
     Solve for the degenerate phase between pseudo Q (YY - XX) and pseudo U (YX + XY) for the calibrated data and 
     the simulated model separately, and return their difference. This difference represents the excess mixing
