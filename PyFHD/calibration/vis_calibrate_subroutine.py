@@ -24,7 +24,7 @@ def vis_calibrate_subroutine(vis_arr: np.ndarray, vis_model_ptr: np.ndarray, vis
     cal : dict
         Calibration dictionary
     pyfhd_config : dict
-        Run option dictionary
+        PyFHD's configuration dictionary containing all the options set for a PyFHD run
     calibration_weights : bool, optional
         Weight the visibilities at the minimum and maximum baseline by a soft taper for 
         calibration purposes only, by default False
@@ -39,7 +39,8 @@ def vis_calibrate_subroutine(vis_arr: np.ndarray, vis_model_ptr: np.ndarray, vis
     Raises
     ------
     ValueError
-        _description_
+        Should almost never happen, only gets raised for max_cal_iter has been set to less than 5, however
+        since it's currently hardcoded in here it's more of an exception for any developers of PyFHD
     """
     # Retrieve values from data structures
     # There is a few hardcoded values in here that were previously hardcoded in fhd_struct_init_cal

@@ -20,7 +20,7 @@ def vis_extract_autocorr(obs: dict, vis_arr: np.array, pyfhd_config: dict, auto_
     vis_arr : np.array
         Uncalibrated data visiblities
     pyfhd_config : dict
-        Run option dictionary
+        PyFHD's configuration dictionary containing all the options set for a PyFHD run
     auto_tile_i : _type_, optional
         Index array for auto-correlation visibilities, by default None
 
@@ -139,7 +139,7 @@ def vis_calibration_flag(obs: dict, cal: dict, pyfhd_config: dict, logger: RootL
     cal : dict
         Calibration dictionary
     pyfhd_config : dict
-        Run option dictionary
+        PyFHD's configuration dictionary containing all the options set for a PyFHD run
     logger : RootLogger
         PyFHD's logger for displaying errors and info to the log files
 
@@ -256,7 +256,7 @@ def transfer_bandpass(obs: dict, cal: dict, pyfhd_config: dict, logger: RootLogg
     cal : dict
         Calibration dictionary
     pyfhd_config : dict
-        Run option dictionary
+        PyFHD's configuration dictionary containing all the options set for a PyFHD run
     logger : RootLogger
         PyFHD's logger for displaying errors and info to the log files
 
@@ -499,7 +499,7 @@ def vis_cal_bandpass(obs: dict, cal: dict, pyfhd_config: dict, logger: RootLogge
     cal : dict
         Calibration dictionary
     pyfhd_config : dict
-        Run option dictionary
+        PyFHD's configuration dictionary containing all the options set for a PyFHD run
     logger : RootLogger
         PyFHD's logger for displaying errors and info to the log files
 
@@ -658,7 +658,7 @@ def vis_cal_polyfit(obs: dict, cal: dict, auto_ratio: np.ndarray | None, pyfhd_c
     auto_ratio: np.ndarray
         stuff
     pyfhd_config : dict
-        Run option dictionary
+        PyFHD's configuration dictionary containing all the options set for a PyFHD run
     logger : RootLogger
         PyFHD's logger for displaying errors and info to the log files
 

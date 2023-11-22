@@ -34,13 +34,13 @@ def calibrate(obs: dict, params: dict, vis_arr: np.array, vis_weights: np.array,
     vis_model_arr : np.array
         Simulated model visibilites
     pyfhd_config : dict
-        Run option dictionary
+        PyFHD's configuration dictionary containing all the options set for a PyFHD run
     logger : RootLogger
         PyFHD's logger for displaying errors and info to the log files
 
     Returns
     -------
-    (vis_cal, cal, obs) : Tuple[np.array, np.array, dict]
+    (vis_cal, cal, obs) : tuple[np.array, np.array, dict]
         Tuple of 1) the calibrated data visibilities, 2) the updated calibration dictionary and 3) the
         updated observation metadata dictionary
     """
