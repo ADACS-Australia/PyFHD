@@ -20,46 +20,60 @@ def visibility_grid(
         bi_use: np.ndarray|None = None
     ):
     """
-    TODO: _summary_
+    Put visibilities on a discrete, hyperresolved 2D plane in {u,v}-space with the Fourier-transform of the 
+    beam sensitivity as the kernel (or spreading function). This can done per frequency to create 3D {u,v,f} 
+    cubes that can generate power spectrum statistics, or this can be done once for all frequencies to create
+    a single 2D {u,v} plane for continuum images. These {u,v} planes are the slant-orthographic projection of
+    the sky when Fourier transformed.
+
+    Gridding is done for calibrated data visibilities, (optionally) simulated model visibilities, weights, and
+    variances. Weights and variances are crucial for propogating uncertainty estimates in the power spectrum
+    space and for properly weighted images. The model is crucial for subtraction. 
+
+    The kernel is a extremely hyperresolved look-up table, which is (optionally) interpolated even further. 
+    Since the {u,v} pixels are discrete and the baseline locations are not, the kernel will populate the pixels
+    in a unique way for each individual baseline. This code is optimized to provide the best estimate for each
+    baseline whilst maintaining speed. 
 
     Parameters
     ----------
     visibility : np.ndarray
-        _description_
+        Calibrated and flagged data visibilities 
     vis_weights : np.ndarray
-        _description_
+        Weights (flags) of the visibilities 
     obs : dict
-        _description_
+        Observation metadata dictionary
     psf : dict | h5py.File
-        _description_
+        Beam metadata dictionary 
     params : dict
-        _description_
+        Visibility metadata dictionary
     polarization : int
-        _description_
+        Index of the current polarization
     pyfhd_config : dict
-        _description_
+        PyFHD's configuration dictionary containing all the options for a run
     logger : RootLogger
-        _description_
+        FHD logger
     uniform_flag : bool, optional
-        _description_, by default False
+        Grid a number count for contributing baselines per pixel, by default False
     no_conjugate : bool, optional
-        _description_, by default False
+        Do not perform the conjugate mirror to fill half of the {u,v} plane, by default False
     model : np.ndarray | None, optional
-        _description_, by default None
+        Simulated model visibilites, by default None
     fi_use : np.ndarray | None, optional
-        _description_, by default None
+        Frequency index array for gridding, i.e. gridding all frequencies for continuum images, by default None
     bi_use : np.ndarray | None, optional
-        _description_, by default None
+        Baseline index array for gridding, i.e even vs odd time stamps, by default None
 
     Returns
     -------
-    _type_
-        _description_
+    gridding_dict : dict
+        A dictionary with all the gridded {u,v} planes, updated observation metadata dic, and the number of 
+        visibilties that where gridded.
 
     Raises
     ------
     ValueError
-        _description_
+        Raised in the case the model provided was not a NumPy Array when a model is not None
     """
 
     # Get information from the data structures

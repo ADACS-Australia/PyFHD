@@ -8,35 +8,35 @@ def filter_uv_uniform(image_uv, vis_count: np.ndarray | None,
                       logger: RootLogger|None = None,weights: dict|None = None, fi_use: dict|None = None, 
                       bi_use: dict|None = None, mask_mirror_indices: bool = False) -> tuple[np.ndarray, np.ndarray]:
     """
-    TODO:_summary_
+    Perform uniform weighting in {u,v} space.
 
     Parameters
     ----------
     image_uv : np.ndarray
-        An image, usually a dirty image from dirty_image_generate
+        A 2D {u,v} gridded plane to be filtered
     vis_count : np.ndarray | None
-        TODO: _description_
+        2D array of number of contributing visibilities per pixel on the {u,v} grid
     obs : dict | None, optional
-        The observation dictonary, by default None
+        Observation metadata dictionary, by default None
     params : dict | None, optional
-        The params dictionary containg uu, vv, by default None
+        Visibility metadata dictionary, by default None
     pyfhd_config : dict | None, optional
-        PyFHD's configuration dictionary, by default None
+        Run option dictionary, by default None
     logger : RootLogger | None, optional
         PyFHD's logger, by default None
     weights : dict | None, optional
         The weights array (aka vis_weights), by default None
     fi_use : dict | None, optional
-        The frequency use index array, by default None
+        Frequency index array for gridding, i.e. gridding all frequencies for continuum images, by default None
     bi_use : dict | None, optional
-        The baseline use index array, by default None
+        Baseline index array for gridding, i.e even vs odd time stamps, by default None
     mask_mirror_indices : bool, optional
-        TODO: _description_, by default False
+        Exclude baselines mirrored along the v-axis, by default False
 
     Returns
     -------
     tuple[image_uv_filtered: np.ndarray, filter_use: np.ndarray]
-        The filtered image and the filter used to filter the image as NumPy arrays
+        The filtered 2D {u,v} plane and the filter used
 
     Raises
     ------
