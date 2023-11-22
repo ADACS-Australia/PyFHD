@@ -49,7 +49,7 @@ def visibility_grid(
     polarization : int
         Index of the current polarization
     pyfhd_config : dict
-        Run option dictionary
+        PyFHD's configuration dictionary containing all the options for a run
     logger : RootLogger
         FHD logger
     uniform_flag : bool, optional
@@ -72,7 +72,7 @@ def visibility_grid(
     Raises
     ------
     ValueError
-        _description_
+        Raised in the case the model provided was not a NumPy Array when a model is not None
     """
 
     # Get information from the data structures

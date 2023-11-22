@@ -28,7 +28,7 @@ def interpolate_kernel(kernel_arr: np.ndarray, x_offset: np.ndarray, y_offset: n
     dx1dy0: np.ndarray
         (derivative to pixel edge in x) * (1 - derivative to pixel edge in y) for selected baselines
     dx0dy1: np.ndarray
-        (1 - derivative to pixel edge in x) * (derivative to pixel edge in y) for aselected baselines
+        (1 - derivative to pixel edge in x) * (derivative to pixel edge in y) for selected baselines
     dx1dy1: np.ndarray
         (derivative to pixel edge in x) * (derivative to pixel edge in y) for selected baselines
 
@@ -89,7 +89,7 @@ def baseline_grid_locations(obs: dict, psf: dict, params: dict, vis_weights: np.
     vis_weights : np.ndarray
         Weights (flags) of the visibilities 
     logger : RootLogger
-        FHD logger
+        PyFHD's logger
     bi_use : np.ndarray | None, optional
         Baseline index array for gridding, i.e even vs odd time stamps, by default None
     fi_use : np.ndarray | None, optional
@@ -279,9 +279,9 @@ def dirty_image_generate(
     dirty_image_uv : np.ndarray
         A 2D {u,v} plane which generally includes the beam via a gridding kernel
     pyfhd_config : dict
-        Run option dictionary
+        PyFHD's configuration dictionary containing all the options set for a PyFHD run
     logger : RootLogger
-        FHD logger
+        PyFHD's logger
     mask : float | np.ndarray | None, optional
         A 2D {u,v} mask to apply before image creation, by default None
     baseline_threshold : int | float, optional
@@ -484,9 +484,9 @@ def grid_beam_per_baseline(
     psf : dict
         Beam metadata dictionary
     pyfhd_config : dict
-        Run option dictionary
+        PyFHD's configuration dictionary containing all the options set for a PyFHD run
     logger : RootLogger
-        FHD logger
+        PyFHD's logger
     uu : np.ndarray
         1D array of the u-coordinate of selected baselines in light travel time
     vv : np.ndarray
@@ -632,9 +632,9 @@ def visibility_count(obs: dict, psf: dict, params: dict, vis_weights: np.ndarray
     vis_weights : np.ndarray
         Weights (flags) of the visibilities
     pyfhd_config : dict
-        Run option dictionary
+        PyFHD's configuration dictionary containing all the options set for a PyFHD run
     logger : RootLogger
-        FHD logger
+        PyFHD's logger
     fi_use : np.ndarray | None, optional
         Frequency index array for gridding, i.e. gridding all frequencies for continuum images, by default None
     bi_use : np.ndarray | None, optional
@@ -702,6 +702,9 @@ def visibility_count(obs: dict, psf: dict, params: dict, vis_weights: np.ndarray
 def holo_mapfn_convert(map_fn, psf_dim, dimension, elements = None, norm = 1, threshold = 0):
     """
     Convert pointer array holographic map function to a sparse matrix. May need to be depreciated.
+    The mapping functions were not translated into `visibility_grid` at the time of translation as
+    it wasn't clear what PyFHD was going to use for sparse/large arrays at the time. If you wish to
+    implement the mapping functions, I suggest using HDF5 chunk loading for the mapping function.
 
     Parameters
     ----------
