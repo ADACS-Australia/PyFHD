@@ -13,8 +13,6 @@ def interpolate_kernel(kernel_arr: np.ndarray, x_offset: np.ndarray, y_offset: n
     hyperresolved pixel edge in {u,v} space. This will provide a quadratic estimate at the sample 
     location to smooth out the dependence on hyperresolved pixel size. 
 
-    2D derivatives are defined as follows:
-
     Parameters
     ----------
     kernel_arr: np.ndarray
@@ -775,17 +773,18 @@ def holo_mapfn_convert(map_fn, psf_dim, dimension, elements = None, norm = 1, th
 
 def crosspol_reformat(image_uv: np.ndarray) -> np.ndarray:
     """
-    TODO: _summary_
+    Reformat the cross-polarizations (i.e. XY and YX) as pseudo Stokes Q and U. This helps to 
+    avoid complex numbers in creating images -- however, this is an imperfect assumption.
 
     Parameters
     ----------
     image_uv : np.ndarray
-        The image of the uv plane we are crossol formatting
+        A 2D {u,v} plane in four linear polarizations.  
 
     Returns
     -------
     image_uv: np.ndarray
-        The crosspol formatted uv plane
+        A 2D {u,v} plane in two linear polarizations, pseudo Stokes Q, and pseudo Stokes U.
     """
     # Stokes -> instrumental, since inverse keyword in FHD wasn't used here
     crosspol_image = 2 * image_uv[2] - conjugate_mirror(image_uv[3])
