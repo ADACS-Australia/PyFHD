@@ -82,6 +82,9 @@ def calibrate(obs: dict, params: dict, vis_arr: np.array, vis_weights: np.array,
             cal_polyfit = vis_cal_polyfit(obs, cal_remainder, auto_ratio, pyfhd_config, logger)
             # Replace vis_cal_combine with this line as the gain is the same size for polyfit and bandpass
             cal['gain'] = cal_polyfit['gain'] * cal_bandpass['gain']
+            for key in cal_polyfit:
+                if key not in cal:
+                    cal[key] = cal_polyfit[key]
         else:
             cal = cal_bandpass
         
@@ -108,7 +111,7 @@ def calibrate(obs: dict, params: dict, vis_arr: np.array, vis_weights: np.array,
     # Apply Calibration
     logger.info("Applying the calibration")
     vis_cal, cal = vis_calibration_apply(vis_arr, obs, cal, vis_model_arr, vis_weights, logger)
-    cal["gain_resolution"] = cal_res_gain.copy()
+    cal["gain_residual"] = cal_res_gain
 
     # Save the ratio and sigma average variance related to vis_cal
     logger.info("Saving the ratio and sigma average variance")
@@ -135,15 +138,10 @@ def calibrate(obs: dict, params: dict, vis_arr: np.array, vis_weights: np.array,
         cal_res_restrict[pol_i] = res_mean
         cal_res_stddev[pol_i] = np.std(np.abs(gain_res))
     
-    if ("mean_gain" in cal):
-        cal["mean_gain"] = cal_gain_avg
-    if ("mean_gain_residual" in cal):
-        cal["mean_gain_residual"] = cal_res_avg
-    if ("mean_gain_restrict" in cal):
-        cal["mean_gain_restrict"] = cal_res_restrict
-    if ("stddev_gain_residual" in cal):
-        cal["stddev_gain_residual"] = cal_res_stddev
-
+    cal["mean_gain"] = cal_gain_avg
+    cal["mean_gain_residual"] = cal_res_avg
+    cal["mean_gain_restrict"] = cal_res_restrict
+    cal["stddev_gain_residual"] = cal_res_stddev
 
     # Return the calibrated visibility array
     return vis_cal, cal, obs

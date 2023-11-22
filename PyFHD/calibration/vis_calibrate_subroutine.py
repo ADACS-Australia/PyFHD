@@ -51,10 +51,14 @@ def vis_calibrate_subroutine(vis_arr: np.ndarray, vis_model_ptr: np.ndarray, vis
     max_cal_baseline = min(pyfhd_config['max_cal_baseline'], obs['max_baseline']) if pyfhd_config['max_cal_baseline'] else obs['max_baseline']
     # minimum number of calibration equations needed to solve for the gain of one baseline
     min_cal_solutions = 5
+    # For record keeping
+    cal['min_cal_solutions'] = min_cal_solutions
     # average the visibilities across time steps before solving for the gains
     time_average = pyfhd_config['cal_time_average']
     # maximum iterations to perform for the linear least-squares solver
     max_cal_iter = 100
+    # For record keeping
+    cal['max_cal_iter'] = 100
     # Leave a warning if its less than 5 iterations, or an Error if its less than 1
     if max_cal_iter < 5:
         warnings.warn("At Least 5 calibrations iterations is recommended.\nYou're currently using {} iterations".format(int(max_cal_iter)))
@@ -67,6 +71,9 @@ def vis_calibrate_subroutine(vis_arr: np.ndarray, vis_model_ptr: np.ndarray, vis
     divergence_history = 3
     # halt if the convergence gets significantly worse by a factor of x in one iteration
     divergence_factor = 1.5
+    # For record keeping
+    cal['divergence_history'] = 3
+    cal['divergence_factor'] = 1.5
     n_pol = cal['n_pol']
     n_freq = obs['n_freq']
     n_tile = obs['n_tile']
