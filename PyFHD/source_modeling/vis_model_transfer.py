@@ -12,7 +12,8 @@ from pathlib import Path
 import sys
 
 def vis_model_transfer(pyfhd_config: dict, obs : dict, logger: logging.RootLogger) -> tuple[np.array, dict]:
-    """_summary_
+    """
+    Transfer in a simulated model of the visibilities from either a sav file or uvfits file.
 
     Parameters
     ----------
