@@ -5,9 +5,7 @@ from pathlib import Path
 from PyFHD.calibration.calibration_utils import vis_baseline_hist
 from PyFHD.use_idl_fhd.use_idl_outputs import convert_sav_to_dict
 from PyFHD.pyfhd_tools.test_utils import sav_file_vis_arr_swap_axes
-import numpy as np
 from PyFHD.io.pyfhd_io import save, load
-from logging import RootLogger
 import numpy.testing as npt
 import matplotlib.pyplot as plt
 

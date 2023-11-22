@@ -1,11 +1,11 @@
 import numpy as np
 from PyFHD.pyfhd_tools.pyfhd_utils import weight_invert
 import PyFHD.gridding.gridding_utils as gridding_utils
-from logging import RootLogger
+from logging import Logger
 
 def filter_uv_uniform(image_uv, vis_count: np.ndarray | None, 
                       obs: dict|None = None, params: dict|None = None, pyfhd_config: dict|None = None, 
-                      logger: RootLogger|None = None,weights: dict|None = None, fi_use: dict|None = None, 
+                      logger: Logger|None = None,weights: dict|None = None, fi_use: dict|None = None, 
                       bi_use: dict|None = None, mask_mirror_indices: bool = False) -> tuple[np.ndarray, np.ndarray]:
     """
     Perform uniform weighting in {u,v} space.
@@ -22,7 +22,7 @@ def filter_uv_uniform(image_uv, vis_count: np.ndarray | None,
         Visibility metadata dictionary, by default None
     pyfhd_config : dict | None, optional
         Run option dictionary, by default None
-    logger : RootLogger | None, optional
+    logger : Logger | None, optional
         PyFHD's logger, by default None
     weights : dict | None, optional
         The weights array (aka vis_weights), by default None

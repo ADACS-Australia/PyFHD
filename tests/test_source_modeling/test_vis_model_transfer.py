@@ -6,7 +6,7 @@ from pathlib import Path
 from PyFHD.source_modeling.vis_model_transfer import vis_model_transfer, flag_model_visibilities
 from PyFHD.io.pyfhd_io import save, load, recarray_to_dict
 from PyFHD.use_idl_fhd.use_idl_outputs import convert_sav_to_dict
-from logging import RootLogger
+from logging import Logger
 
 @pytest.fixture
 def data_dir():
@@ -76,7 +76,7 @@ def test_model_transfer(before_file, after_file):
     h5_before = load(before_file)
     expected_vis_model_arr = load(after_file)
 
-    vis_model_arr, params_model = vis_model_transfer(h5_before["pyfhd_config"], h5_before["obs"], RootLogger(1))
+    vis_model_arr, params_model = vis_model_transfer(h5_before["pyfhd_config"], h5_before["obs"], Logger(1))
     if (h5_before["pyfhd_config"]["flag_model"]):
-        vis_model_arr = flag_model_visibilities(vis_model_arr, h5_before["params"], params_model, h5_before["obs"], h5_before["pyfhd_config"], RootLogger(1))
+        vis_model_arr = flag_model_visibilities(vis_model_arr, h5_before["params"], params_model, h5_before["obs"], h5_before["pyfhd_config"], Logger(1))
     npt.assert_allclose(vis_model_arr, expected_vis_model_arr, atol = 1e-8)

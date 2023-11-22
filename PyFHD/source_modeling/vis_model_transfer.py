@@ -11,7 +11,7 @@ from scipy.io import readsav
 from pathlib import Path
 import sys
 
-def vis_model_transfer(pyfhd_config: dict, obs : dict, logger: logging.RootLogger) -> tuple[np.array, dict]:
+def vis_model_transfer(pyfhd_config: dict, obs : dict, logger: logging.Logger) -> tuple[np.ndarray, dict]:
     """
     Transfer in a simulated model of the visibilities from either a sav file or uvfits file.
 
@@ -41,7 +41,7 @@ def vis_model_transfer(pyfhd_config: dict, obs : dict, logger: logging.RootLogge
         sys.exit()
     
 
-def import_vis_model_from_sav(pyfhd_config : dict, obs : dict, logger : logging.RootLogger) -> tuple[np.ndarray, dict]:
+def import_vis_model_from_sav(pyfhd_config : dict, obs : dict, logger : logging.Logger) -> tuple[np.ndarray, dict]:
     """
     Read a model visibility array in from multiple IDL sav files which are in a directory
     given by pyfhd_config['model-file-path']. The data is assumed to be in the format of
@@ -54,7 +54,7 @@ def import_vis_model_from_sav(pyfhd_config : dict, obs : dict, logger : logging.
         The PyFHD config dictionary
     obs : dict
         The dictionary containing observation data and metadata
-    logger : logging.RootLogger
+    logger : logging.Logger
         PyFHD's logger
 
     Returns
@@ -102,7 +102,7 @@ def import_vis_model_from_sav(pyfhd_config : dict, obs : dict, logger : logging.
 
 
 def import_vis_model_from_uvfits(pyfhd_config : dict, obs : dict,
-                                 logger : logging.RootLogger) -> tuple[np.ndarray, dict]:
+                                 logger : logging.Logger) -> tuple[np.ndarray, dict]:
     """Read a model visibility array in from a `uvfits` with filepath given
     by pyfhd_config['model_file_path']. Reads data in via 
     `PyFHD.data_setup.uvfits import extract_visibilities`.
@@ -194,7 +194,7 @@ class _FlaggingInfoCounter(object):
 def flag_model_visibilities(vis_model_arr : np.ndarray,
                             params_data : dict, params_model : dict,
                             obs : dict, pyfhd_config : dict,
-                            logger : logging.RootLogger) -> np.ndarray:
+                            logger : logging.Logger) -> np.ndarray:
     """
     Account for time offset and tile flags, and check that the uvfits
     and compatible. Needs to check if auto-correlations are present
@@ -211,7 +211,7 @@ def flag_model_visibilities(vis_model_arr : np.ndarray,
         The observaton dictionary containing all the data from the observation uvfits file
     pyfhd_config : dict
         The PyFHD configuration dictionary
-    logger : logging.RootLogger
+    logger : logging.Logger
         The PyFHD logger
 
     Returns
@@ -386,7 +386,7 @@ def flag_model_visibilities(vis_model_arr : np.ndarray,
 
 def convert_vis_model_arr_to_sav(vis_model_arr : np.ndarray,
                                  pyfhd_config : dict,
-                                 logger : logging.RootLogger,
+                                 logger : logging.Logger,
                                  model_vis_dir : str, n_pol : int):
     """Converts the contents of `vis_model_arr` into an FHD .sav file format
     so we can import into existing IDL code with ease. First writes data to
@@ -400,7 +400,7 @@ def convert_vis_model_arr_to_sav(vis_model_arr : np.ndarray,
     pyfhd_config : dict
         The options from argparse in a dictionary, that have been verified using
         `PyFHD.pyfhd_tools.pyfhd_setup.pyfhd_setup`.
-    logger : logging.RootLogger
+    logger : logging.Logger
         PyFHD logger to feed information to
     model_vis_dir : str
         Directory location to write the output files to

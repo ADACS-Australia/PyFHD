@@ -9,7 +9,7 @@ from PyFHD.pyfhd_tools.test_utils import sav_file_vis_arr_swap_axes
 import numpy as np
 from PyFHD.io.pyfhd_io import save, load
 import numpy.testing as npt
-from logging import RootLogger
+from logging import Logger
 # import matplotlib.pyplot as plt
 
 @pytest.fixture
@@ -133,7 +133,7 @@ def test_vis_calibration_apply(before_file, after_file):
 
     exptected_vis_cal_ptr = h5_after['vis_cal_ptr']
 
-    logger = RootLogger(1)
+    logger = Logger(1)
 
     return_vis_cal_ptr, return_cal = vis_calibration_apply(vis_ptr, obs, cal,
                                                            vis_model_ptr,

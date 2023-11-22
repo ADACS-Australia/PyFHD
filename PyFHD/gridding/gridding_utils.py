@@ -4,7 +4,7 @@ from PyFHD.pyfhd_tools.pyfhd_utils import rebin, histogram, array_match, meshgri
 from scipy.signal import convolve
 from astropy.convolution import Box2DKernel
 from math import pi
-from logging import RootLogger
+from logging import Logger
 import h5py
 
 def interpolate_kernel(kernel_arr: np.ndarray, x_offset: np.ndarray, y_offset: np.ndarray, 
@@ -68,7 +68,7 @@ def conjugate_mirror(image: np.ndarray):
         conj_mirror_image = np.conjugate(conj_mirror_image)
     return
 
-def baseline_grid_locations(obs: dict, psf: dict, params: dict, vis_weights: np.ndarray, logger: RootLogger, 
+def baseline_grid_locations(obs: dict, psf: dict, params: dict, vis_weights: np.ndarray, logger: Logger, 
                             bi_use: np.ndarray|None = None, fi_use: np.ndarray|None = None, fill_model_visibilities: bool = False, 
                             interp_flag: bool = False, mask_mirror_indices: bool = False):
     """
@@ -87,7 +87,7 @@ def baseline_grid_locations(obs: dict, psf: dict, params: dict, vis_weights: np.
         Visibility metadata dictionary
     vis_weights : np.ndarray
         Weights (flags) of the visibilities 
-    logger : RootLogger
+    logger : Logger
         PyFHD's logger
     bi_use : np.ndarray | None, optional
         Baseline index array for gridding, i.e even vs odd time stamps, by default None
@@ -260,7 +260,7 @@ def baseline_grid_locations(obs: dict, psf: dict, params: dict, vis_weights: np.
 def dirty_image_generate(
         dirty_image_uv: np.ndarray,
         pyfhd_config: dict,
-        logger: RootLogger,
+        logger: Logger,
         mask: float|np.ndarray|None = None,
         baseline_threshold: int|float = 0,
         normalization: np.ndarray|None = None,
@@ -283,7 +283,7 @@ def dirty_image_generate(
         A 2D {u,v} plane which generally includes the beam via a gridding kernel
     pyfhd_config : dict
         PyFHD's configuration dictionary containing all the options set for a PyFHD run
-    logger : RootLogger
+    logger : Logger
         PyFHD's logger
     mask : float | np.ndarray | None, optional
         A 2D {u,v} mask to apply before image creation, by default None
@@ -439,7 +439,7 @@ def dirty_image_generate(
 def grid_beam_per_baseline(
         psf: dict,
         pyfhd_config: dict,
-        logger: RootLogger,
+        logger: Logger,
         uu: np.ndarray,
         vv: np.ndarray,
         ww: np.ndarray,
@@ -475,7 +475,7 @@ def grid_beam_per_baseline(
         Beam metadata dictionary
     pyfhd_config : dict
         PyFHD's configuration dictionary containing all the options set for a PyFHD run
-    logger : RootLogger
+    logger : Logger
         PyFHD's logger
     uu : np.ndarray
         1D array of the u-coordinate of selected baselines in light travel time
@@ -611,7 +611,7 @@ def grid_beam_per_baseline(
     
     return box_matrix
 
-def visibility_count(obs: dict, psf: dict, params: dict, vis_weights: np.ndarray, logger: RootLogger, 
+def visibility_count(obs: dict, psf: dict, params: dict, vis_weights: np.ndarray, logger: Logger, 
                      fi_use: np.ndarray|None = None, bi_use: np.ndarray|None = None, 
                      mask_mirror_indices: bool = False, no_conjugate: bool = False, fill_model_visibilities: bool = False):
     """
@@ -627,7 +627,7 @@ def visibility_count(obs: dict, psf: dict, params: dict, vis_weights: np.ndarray
         Weights (flags) of the visibilities
     pyfhd_config : dict
         PyFHD's configuration dictionary containing all the options set for a PyFHD run
-    logger : RootLogger
+    logger : Logger
         PyFHD's logger
     fi_use : np.ndarray | None, optional
         Frequency index array for gridding, i.e. gridding all frequencies for continuum images, by default None

@@ -1,6 +1,6 @@
 import numpy as np
 from typing import Tuple
-from logging import RootLogger
+from logging import Logger
 from PyFHD.pyfhd_tools.pyfhd_utils import resistant_mean, weight_invert, rebin, histogram
 from copy import deepcopy
 from astropy.io import fits
@@ -124,7 +124,7 @@ def vis_cal_auto_init(obs : dict, cal : dict, vis_arr: np.array, vis_model_arr: 
         auto_gain[pol_i, :, :][auto_gain[pol_i, :, :] <= 0] = 1
     return auto_gain
 
-def vis_calibration_flag(obs: dict, cal: dict, pyfhd_config: dict, logger: RootLogger) -> dict:
+def vis_calibration_flag(obs: dict, cal: dict, pyfhd_config: dict, logger: Logger) -> dict:
     """
     Flag tile and frequency outliers based on the calibration solutions. First, iteratively flag a maximum of three 
     times on amplitude with three tests: 1) flag frequencies above 5 sigma, 2) flag tiles above 5 sigma, and 3) flag
@@ -140,7 +140,7 @@ def vis_calibration_flag(obs: dict, cal: dict, pyfhd_config: dict, logger: RootL
         Calibration dictionary
     pyfhd_config : dict
         PyFHD's configuration dictionary containing all the options set for a PyFHD run
-    logger : RootLogger
+    logger : Logger
         PyFHD's logger for displaying errors and info to the log files
 
     Returns
@@ -246,7 +246,7 @@ def vis_calibration_flag(obs: dict, cal: dict, pyfhd_config: dict, logger: RootL
     # Return the obs with an updated baseline_info on the use of tiles and frequency
     return obs
 
-def transfer_bandpass(obs: dict, cal: dict, pyfhd_config: dict, logger: RootLogger) -> Tuple[dict, dict]:
+def transfer_bandpass(obs: dict, cal: dict, pyfhd_config: dict, logger: Logger) -> Tuple[dict, dict]:
     """
     Apply a previously saved bandpass via a calfits file (github:pyuvdata). Check adherance to standards, 
     and match the polarizations, frequencies, timing, pointings, and tiles.
@@ -259,7 +259,7 @@ def transfer_bandpass(obs: dict, cal: dict, pyfhd_config: dict, logger: RootLogg
         Calibration dictionary
     pyfhd_config : dict
         PyFHD's configuration dictionary containing all the options set for a PyFHD run
-    logger : RootLogger
+    logger : Logger
         PyFHD's logger for displaying errors and info to the log files
 
     Returns
@@ -488,7 +488,7 @@ def transfer_bandpass(obs: dict, cal: dict, pyfhd_config: dict, logger: RootLogg
     cal_remainder["gain"][0 : cal["n_pol"], :, :] = cal["gain"][0 : cal["n_pol"], :, :] / cal_bandpass["gain"][0 : cal["n_pol"], :, :]
     return cal_bandpass, cal_remainder
 
-def vis_cal_bandpass(obs: dict, cal: dict, pyfhd_config: dict, logger: RootLogger) -> Tuple[dict, dict]:
+def vis_cal_bandpass(obs: dict, cal: dict, pyfhd_config: dict, logger: Logger) -> Tuple[dict, dict]:
     """
     Reduce the degrees of freedom on the per-frequency calibration amplitudes by averaging solutions
     together. Options include averaging over tiles which use a particular beamformer-to-receiver cable 
@@ -502,7 +502,7 @@ def vis_cal_bandpass(obs: dict, cal: dict, pyfhd_config: dict, logger: RootLogge
         Calibration dictionary
     pyfhd_config : dict
         PyFHD's configuration dictionary containing all the options set for a PyFHD run
-    logger : RootLogger
+    logger : Logger
         PyFHD's logger for displaying errors and info to the log files
 
     Returns
@@ -637,7 +637,7 @@ def vis_cal_bandpass(obs: dict, cal: dict, pyfhd_config: dict, logger: RootLogge
     cal_remainder["gain"] = cal_remainder_gain
     return cal_bandpass, cal_remainder
 
-def vis_cal_polyfit(obs: dict, cal: dict, auto_ratio: np.ndarray | None, pyfhd_config: dict, logger: RootLogger) -> dict:
+def vis_cal_polyfit(obs: dict, cal: dict, auto_ratio: np.ndarray | None, pyfhd_config: dict, logger: Logger) -> dict:
     """
     Reduce the degrees of freedom on the per-frequency calibration amplitudes and phases by fitting
     the full frequency band with polynomials of a specified degree, with options for split polynomials
@@ -661,7 +661,7 @@ def vis_cal_polyfit(obs: dict, cal: dict, auto_ratio: np.ndarray | None, pyfhd_c
         stuff
     pyfhd_config : dict
         PyFHD's configuration dictionary containing all the options set for a PyFHD run
-    logger : RootLogger
+    logger : Logger
         PyFHD's logger for displaying errors and info to the log files
 
     Returns
@@ -992,7 +992,7 @@ def vis_cal_auto_fit(obs: dict, cal: dict, vis_auto : np.ndarray, vis_auto_model
     cal['auto_params'][1, :, :] = fit_slope
     return cal
 
-def vis_calibration_apply(vis_arr: np.ndarray, obs: dict, cal: dict, vis_model_arr: np.ndarray, vis_weights: np.ndarray, logger: RootLogger) -> tuple[np.ndarray, dict]:
+def vis_calibration_apply(vis_arr: np.ndarray, obs: dict, cal: dict, vis_model_arr: np.ndarray, vis_weights: np.ndarray, logger: Logger) -> tuple[np.ndarray, dict]:
     """
     Apply the calibration solutions to the input, data visibilities to create calibrated, data visibilities using
     the definition of the gains. 
@@ -1016,7 +1016,7 @@ def vis_calibration_apply(vis_arr: np.ndarray, obs: dict, cal: dict, vis_model_a
         Simulated model visibilites
     vis_weights : np.ndarray
         Weights (flags) of the visibilities 
-    logger : RootLogger
+    logger : Logger
         PyFHD's logger for displaying errors and info to the log files
         
     Returns

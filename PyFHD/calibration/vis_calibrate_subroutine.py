@@ -1,11 +1,11 @@
 import numpy as np
 import warnings
-from logging import RootLogger
+from logging import Logger
 from PyFHD.calibration.calibration_utils import calculate_adaptive_gain
 from PyFHD.pyfhd_tools.pyfhd_utils import weight_invert, histogram, idl_median
 
 def vis_calibrate_subroutine(vis_arr: np.ndarray, vis_model_ptr: np.ndarray, vis_weight_ptr: np.ndarray, 
-                             obs: dict, cal: dict, params: dict, pyfhd_config: dict, logger: RootLogger, 
+                             obs: dict, cal: dict, params: dict, pyfhd_config: dict, logger: Logger, 
                              calibration_weights = False,  no_ref_tile = False):
     """
     Perform a linear least-squares regression between the data visilbities and the simulated model

@@ -7,7 +7,7 @@ from pathlib import Path
 from PyFHD.pyfhd_tools.test_utils import get_data, get_data_items, sav_file_vis_arr_swap_axes
 from PyFHD.gridding.gridding_utils import baseline_grid_locations
 from PyFHD.io.pyfhd_io import save, load
-from logging import RootLogger
+from logging import Logger
 
 @pytest.fixture
 def data_dir():
@@ -89,7 +89,7 @@ def test_baselines(baseline_before: Path, baseline_after: Path):
         h5_before["psf"],
         h5_before["params"], 
         h5_before["vis_weights"], 
-        RootLogger(1),
+        Logger(1),
         bi_use = h5_before["bi_use"],
         fi_use = h5_before["fi_use"], 
         fill_model_visibilities = h5_before["fill_model_visibilities"],

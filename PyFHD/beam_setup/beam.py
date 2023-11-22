@@ -1,6 +1,6 @@
 import numpy as np
 from astropy.constants import c
-from logging import RootLogger
+from logging import Logger
 from scipy.interpolate import interp1d
 from scipy.io import readsav
 from PyFHD.io.pyfhd_io import recarray_to_dict
@@ -95,7 +95,7 @@ import sys
 
 #     return antenna
 
-def create_psf(pyfhd_config: dict, logger: RootLogger) -> dict | File:
+def create_psf(pyfhd_config: dict, logger: Logger) -> dict | File:
     """
     Creates the psf dictionary by loading in a `sav` or `HDF5` file
 
@@ -103,7 +103,7 @@ def create_psf(pyfhd_config: dict, logger: RootLogger) -> dict | File:
     ----------
     pyfhd_config : dict
         _description_
-    logger : RootLogger
+    logger : Logger
         _description_
 
     Returns

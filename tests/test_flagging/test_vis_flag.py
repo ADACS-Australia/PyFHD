@@ -8,7 +8,7 @@ from PyFHD.use_idl_fhd.use_idl_outputs import convert_sav_to_dict
 from PyFHD.pyfhd_tools.test_utils import sav_file_vis_arr_swap_axes
 import numpy as np
 from PyFHD.io.pyfhd_io import save, load
-from logging import RootLogger
+from logging import Logger
 import numpy.testing as npt
 
 @pytest.fixture
@@ -84,7 +84,7 @@ def test_zenith_offzenith(before_file, after_file):
     expected_vis_weight_ptr = h5_after['vis_weight_ptr']
 
 
-    logger = RootLogger(1)
+    logger = Logger(1)
 
     result_vis_weights, result_obs = vis_flag(vis_arr, vis_weight_ptr,
                                               obs, params, logger)

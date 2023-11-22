@@ -12,7 +12,7 @@ import astropy
 from astropy import units as u
 
 
-def extract_header(pyfhd_config : dict, logger : logging.RootLogger, model_uvfits = False) -> Tuple[dict, np.recarray, FITS_rec, Header]:
+def extract_header(pyfhd_config : dict, logger : logging.Logger, model_uvfits = False) -> Tuple[dict, np.recarray, FITS_rec, Header]:
     """
     TODO:_summary_
 
@@ -22,7 +22,7 @@ def extract_header(pyfhd_config : dict, logger : logging.RootLogger, model_uvfit
         Path to the uvfits to open (either the data or the model)
     pyfhd_config : dict
         This is the config created from the argparse
-    logger : logging.RootLogger
+    logger : logging.Logger
         The PyFHD logger
     model_uvfits : bool
         If True, load in the model uvfits. If False, load in a data uvfits file, by default False
@@ -187,7 +187,7 @@ def extract_header(pyfhd_config : dict, logger : logging.RootLogger, model_uvfit
 
     return pyfhd_header, params_data, antenna_header, antenna_data
 
-def create_params(pyfhd_header : dict, params_data : np.recarray, logger : logging.RootLogger) -> dict:
+def create_params(pyfhd_header : dict, params_data : np.recarray, logger : logging.Logger) -> dict:
     """_summary_
 
     Parameters
@@ -196,7 +196,7 @@ def create_params(pyfhd_header : dict, params_data : np.recarray, logger : loggi
         The resulting header fom the fits file stored in a dictonary 
     params_data : np.recarray
         The data from the fits file as taken from astropy.io.fits.getdata
-    logger : logging.RootLogger
+    logger : logging.Logger
         The PyFHD logger
 
     Returns
@@ -256,7 +256,7 @@ def create_params(pyfhd_header : dict, params_data : np.recarray, logger : loggi
 
     return params
 
-def extract_visibilities(pyfhd_header : dict, params_data : np.recarray, pyfhd_config : dict, logger : logging.RootLogger) -> Tuple[np.ndarray, np.ndarray]:
+def extract_visibilities(pyfhd_header : dict, params_data : np.recarray, pyfhd_config : dict, logger : logging.Logger) -> Tuple[np.ndarray, np.ndarray]:
     """
     Extract the visibilities and their weights from the UVFITS data.
 
@@ -268,7 +268,7 @@ def extract_visibilities(pyfhd_header : dict, params_data : np.recarray, pyfhd_c
         The data from the fits file as taken from astropy.io.fits.getdata
     pyfhd_config : dict
         This is the config created from the argprase
-    logger : logging.RootLogger
+    logger : logging.Logger
         The PyFHD Logger
 
     Returns
@@ -303,7 +303,7 @@ def extract_visibilities(pyfhd_header : dict, params_data : np.recarray, pyfhd_c
     # in double precision
     return vis_arr.transpose().astype(np.complex128), vis_weights.transpose().astype(np.float64)
 
-def _check_layout_valid(layout : dict, key : str, logger : logging.RootLogger, check_min_max = False):
+def _check_layout_valid(layout : dict, key : str, logger : logging.Logger, check_min_max = False):
     """
     Check if the key given is a valid part of the layout, if not give an error in the log.
     The errors do not stop the run as it might only affect compatibility with other packages and
@@ -315,7 +315,7 @@ def _check_layout_valid(layout : dict, key : str, logger : logging.RootLogger, c
         The current layout
     key : str
         The key we're interested in validating
-    logger : logging.RootLogger
+    logger : logging.Logger
         The logger
     check_min_max : bool, optional
         When True check if the min is the same as max, if so changes the value so its only one number, by default False
@@ -329,7 +329,7 @@ def _check_layout_valid(layout : dict, key : str, logger : logging.RootLogger, c
         logger.error(f"The layout[{key}] array set is not the same size of the number of antennas. Check the UVFITS file for errors.")
     
 
-def create_layout(antenna_header: Header, antenna_data: FITS_rec, logger : logging.RootLogger) -> dict:
+def create_layout(antenna_header: Header, antenna_data: FITS_rec, logger : logging.Logger) -> dict:
     """
     TODO: _summary_
 
@@ -339,7 +339,7 @@ def create_layout(antenna_header: Header, antenna_data: FITS_rec, logger : loggi
         The header from the second table of the observation
     antenna_data : FITS_rec
         The data from the second table of the observation
-    logger : logging.RootLogger
+    logger : logging.Logger
         PyFHD's logger
 
     Returns

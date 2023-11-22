@@ -7,7 +7,7 @@ from pathlib import Path
 from PyFHD.gridding.visibility_grid import visibility_grid
 from PyFHD.pyfhd_tools.test_utils import get_savs
 from PyFHD.io.pyfhd_io import save, load
-from logging import RootLogger
+from logging import Logger
 
 @pytest.fixture
 def data_dir():
@@ -120,7 +120,7 @@ def test_visibility_grid(before_gridding: Path, after_gridding: Path):
         h5_before['params'],
         h5_before['polarization'],
         h5_before["pyfhd_config"],
-        RootLogger(1),
+        Logger(1),
         uniform_flag = h5_before["uniform_flag"],
         no_conjugate = h5_before["no_conjugate"],
         model = h5_before["model_ptr"],
@@ -246,7 +246,7 @@ def test_full_visibility_grid(full_before_gridding: Path, full_after_gridding: P
         h5_before['params'],
         h5_before['polarization'],
         h5_before["pyfhd_config"],
-        RootLogger(1),
+        Logger(1),
         uniform_flag = h5_before["uniform_flag"],
         no_conjugate = h5_before["no_conjugate"],
         model = h5_before["model_ptr"],

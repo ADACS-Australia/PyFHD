@@ -6,7 +6,7 @@ from PyFHD.gridding.gridding_utils import grid_beam_per_baseline
 from PyFHD.pyfhd_tools.test_utils import get_data, get_data_items
 from PyFHD.io.pyfhd_io import save, load
 from numpy.testing import assert_allclose
-from logging import RootLogger
+from logging import Logger
 
 @pytest.fixture
 def data_dir():
@@ -115,7 +115,7 @@ def test_grid_per_baseline(before_grid_per_baseline: Path, after_grid_per_baseli
     output_box_matrix = grid_beam_per_baseline(
         h5_before["psf"], 
         h5_before["pyfhd_config"],
-        RootLogger(1),
+        Logger(1),
         h5_before["uu"], 
         h5_before["vv"],
         h5_before["ww"],

@@ -9,7 +9,7 @@ from PyFHD.pyfhd_tools.test_utils import sav_file_vis_arr_swap_axes
 import numpy as np
 from PyFHD.io.pyfhd_io import save, load
 
-from logging import RootLogger
+from logging import Logger
 
 @pytest.fixture
 def data_dir():
@@ -103,7 +103,7 @@ def test_vis_calibration_flag(before_file, after_file):
     cal = h5_before['cal']
     pyfhd_config = h5_before['pyfhd_config']
     
-    logger = RootLogger(1)
+    logger = Logger(1)
     
     result_obs = vis_calibration_flag(obs_in, cal, pyfhd_config, logger)
 

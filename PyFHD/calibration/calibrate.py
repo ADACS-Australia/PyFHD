@@ -1,5 +1,5 @@
 import numpy as np
-from logging import RootLogger
+from logging import Logger
 from PyFHD.calibration.calibration_utils import (
     vis_extract_autocorr, 
     vis_cal_auto_init, 
@@ -15,7 +15,7 @@ from PyFHD.calibration.calibration_utils import (
 from PyFHD.calibration.vis_calibrate_subroutine import vis_calibrate_subroutine
 from PyFHD.pyfhd_tools.pyfhd_utils import resistant_mean, reshape_and_average_in_time
 
-def calibrate(obs: dict, params: dict, vis_arr: np.array, vis_weights: np.array, vis_model_arr: np.ndarray, pyfhd_config: dict, logger: RootLogger) -> tuple[np.array, dict, dict] :
+def calibrate(obs: dict, params: dict, vis_arr: np.array, vis_weights: np.array, vis_model_arr: np.ndarray, pyfhd_config: dict, logger: Logger) -> tuple[np.array, dict, dict] :
     """
     Solve for the amplitude and phase of the electronic response of each tile or station, and apply these 
     calibration solutions to the raw, data visiblities. Various options for initial estimates, time/tile averaging,
@@ -35,7 +35,7 @@ def calibrate(obs: dict, params: dict, vis_arr: np.array, vis_weights: np.array,
         Simulated model visibilites
     pyfhd_config : dict
         PyFHD's configuration dictionary containing all the options set for a PyFHD run
-    logger : RootLogger
+    logger : Logger
         PyFHD's logger for displaying errors and info to the log files
 
     Returns

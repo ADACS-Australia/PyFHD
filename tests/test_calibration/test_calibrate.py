@@ -9,7 +9,7 @@ from PyFHD.use_idl_fhd.use_idl_outputs import convert_sav_to_dict
 from numpy.testing import assert_allclose
 from PyFHD.source_modeling.vis_model_transfer import vis_model_transfer, flag_model_visibilities
 from PyFHD.io.pyfhd_io import save, load
-from logging import RootLogger
+from logging import Logger
 
 @pytest.fixture
 def data_dir():
@@ -95,10 +95,10 @@ def before_file(tag, run, data_dir):
     h5_save_dict['pyfhd_config'] = pyfhd_config
 
     # Read the vis_model_arr
-    vis_model_arr, params_model = vis_model_transfer(pyfhd_config, h5_save_dict['obs'], RootLogger(1))
+    vis_model_arr, params_model = vis_model_transfer(pyfhd_config, h5_save_dict['obs'], Logger(1))
     # No flagging was done for point zenith or point offzenith
     if tag == "1088716296":
-        vis_model_arr = flag_model_visibilities(vis_model_arr, h5_save_dict['params'], params_model, h5_save_dict['obs'], pyfhd_config, RootLogger(1))
+        vis_model_arr = flag_model_visibilities(vis_model_arr, h5_save_dict['params'], params_model, h5_save_dict['obs'], pyfhd_config, Logger(1))
 
     h5_save_dict['vis_model_arr'] = vis_model_arr
 
@@ -175,7 +175,7 @@ def test_calibrate(before_file, after_file):
         h5_before['vis_weights'],
         h5_before['vis_model_arr'],
         h5_before['pyfhd_config'],
-        RootLogger(1)
+        Logger(1)
     )
     actual_nan = np.nonzero(~np.isnan(cal['gain']))
     expected_nan = np.nonzero(np.isnan(h5_after['cal']['gain']))

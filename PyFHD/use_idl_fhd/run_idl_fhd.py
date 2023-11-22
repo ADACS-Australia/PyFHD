@@ -178,7 +178,7 @@ def write_run_FHD_calibration_pro(pyfhd_config : dict,
 
 
 def run_IDL_calibration_only(pyfhd_config : dict,
-                             logger : logging.RootLogger):
+                             logger : logging.Logger):
     """Run the IDL FHD code up to and including calibration, based on all the
     keywords in `pyfhd_config`. The function assumes IDL FHD is installed with
     all the necessary paths and environment variables defined. To run IDL,
@@ -194,7 +194,7 @@ def run_IDL_calibration_only(pyfhd_config : dict,
     pyfhd_config : dict
         The options from argparse in a dictionary, that have been verified using
         `PyFHD.pyfhd_tools.pyfhd_setup.pyfhd_setup`.
-    logger : logging.RootLogger
+    logger : logging.Logger
         The logger to output info and errors to
 
     Returns
@@ -369,7 +369,7 @@ def write_run_FHD_healpix_imaging_pro(pyfhd_config : dict,
 
 
 def run_IDL_convert_gridding_to_healpix_images(pyfhd_config : dict,
-                                              logger : logging.RootLogger):
+                                              logger : logging.Logger):
     """Assuming that `run_gridding_on_IDL_outputs` has been run to create gridding visibility hdf5 files, run IDL code to make image slices,
     and project them into healpix.
 
@@ -378,7 +378,7 @@ def run_IDL_convert_gridding_to_healpix_images(pyfhd_config : dict,
     pyfhd_config : dict
         The options from argparse in a dictionary, that have been verified using
         `PyFHD.pyfhd_tools.pyfhd_setup.pyfhd_setup`.
-    logger : logging.RootLogger
+    logger : logging.Logger
         The logger to output info and errors to
     """
     

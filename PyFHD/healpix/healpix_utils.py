@@ -1,5 +1,5 @@
 import sys
-from logging import RootLogger
+from logging import Logger
 from pathlib import Path
 import h5py
 import importlib_resources
@@ -52,7 +52,7 @@ def healpix_cnv_apply(image: np.ndarray, hpx_cnv: dict, transpose = True, mask =
             hpx_map[i] = np.outer(x1, np.reshape(hpx_cnv['sa'][i], [np.size(hpx_cnv['sa'][i]), 1]))
     return hpx_map
 
-def healpix_cnv_generate(obs: dict, mask: np.ndarray, hpx_radius: float, pyfhd_config: dict, logger: RootLogger, nside: float = None) -> dict:
+def healpix_cnv_generate(obs: dict, mask: np.ndarray, hpx_radius: float, pyfhd_config: dict, logger: Logger, nside: float = None) -> dict:
     """
     TODO:_summary_
 
@@ -69,7 +69,7 @@ def healpix_cnv_generate(obs: dict, mask: np.ndarray, hpx_radius: float, pyfhd_c
         _description_
     pyfhd_config : dict
         _description_
-    logger : RootLogger
+    logger : Logger
         _description_
     nside : float
         _description_
@@ -246,7 +246,7 @@ def healpix_cnv_generate(obs: dict, mask: np.ndarray, hpx_radius: float, pyfhd_c
 def beam_image_cube(
     obs: dict, 
     psf: dict | h5py.File, 
-    logger: RootLogger,
+    logger: Logger,
     freq_i_arr: np.ndarray | None = None, 
     pol_i_arr: np.ndarray | None = None,
     n_freq_bin: float | None = None,
@@ -263,7 +263,7 @@ def beam_image_cube(
         _description_
     psf : dict | h5py.File
         _description_
-    logger : RootLogger
+    logger : Logger
         _description_
     freq_i_arr : np.ndarray | None, optional
         _description_, by default None
@@ -375,7 +375,7 @@ def vis_model_freq_split(
     vis_model_arr: np.ndarray,
     vis_arr: np.ndarray,
     pyfhd_config: dict,
-    logger: RootLogger,
+    logger: Logger,
     fft: bool = True,
     save_uvf = True,
     uvf_name = '',
@@ -400,7 +400,7 @@ def vis_model_freq_split(
         _description_
     pyfhd_config : dict
         _description_
-    logger : RootLogger
+    logger : Logger
         _description_
     fft : bool, optional
         _description_, by default True

@@ -1,7 +1,7 @@
 import numpy as np
 from PyFHD.gridding.gridding_utils import interpolate_kernel, baseline_grid_locations, grid_beam_per_baseline, conjugate_mirror
 from PyFHD.pyfhd_tools.pyfhd_utils import weight_invert, rebin, l_m_n, idl_argunique
-from logging import RootLogger
+from logging import Logger
 import h5py
 
 def visibility_grid(
@@ -12,7 +12,7 @@ def visibility_grid(
         params: dict,
         polarization: int,
         pyfhd_config: dict,
-        logger: RootLogger,
+        logger: Logger,
         uniform_flag: bool = False,
         no_conjugate: bool = False,
         model: np.ndarray|None = None,
@@ -51,8 +51,8 @@ def visibility_grid(
         Index of the current polarization
     pyfhd_config : dict
         PyFHD's configuration dictionary containing all the options for a run
-    logger : RootLogger
-        FHD logger
+    logger : Logger
+        PyFHD's logger
     uniform_flag : bool, optional
         Grid a number count for contributing baselines per pixel, by default False
     no_conjugate : bool, optional

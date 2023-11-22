@@ -4,7 +4,7 @@ from math import factorial
 from astropy.coordinates import SkyCoord
 from astropy import units as u
 from math import pi
-from logging import RootLogger
+from logging import Logger
 import subprocess
 from scipy.ndimage import median_filter
 from copy import deepcopy
@@ -820,7 +820,7 @@ def parallactic_angle(latitude : float, hour_angle : float, dec : float) -> floa
     x_term = np.cos(np.radians(dec)) * np.tan(np.radians(latitude)) - np.sin(np.radians(dec)) * np.cos(np.radians(hour_angle))
     return np.degrees(np.arctan(y_term/ x_term))
 
-def simple_deproject_w_term(obs : dict, params : dict, vis_arr : np.ndarray, direction : float, logger : RootLogger) -> np.ndarray:
+def simple_deproject_w_term(obs : dict, params : dict, vis_arr : np.ndarray, direction : float, logger : Logger) -> np.ndarray:
     """
     Applies a w-term deprojection to the visibility array
 

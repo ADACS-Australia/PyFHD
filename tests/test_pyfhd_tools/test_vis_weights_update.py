@@ -1,6 +1,6 @@
 from PyFHD.io.pyfhd_io import recarray_to_dict
 import pytest
-from logging import RootLogger
+from logging import Logger
 from pathlib import Path
 from os import environ as env
 from PyFHD.use_idl_fhd.use_idl_outputs import convert_sav_to_dict

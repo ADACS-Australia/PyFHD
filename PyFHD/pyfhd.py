@@ -17,7 +17,7 @@ import logging
 import h5py
 import sys
 
-def _print_time_diff(start : float, end : float, description : str, logger : logging.RootLogger):
+def _print_time_diff(start : float, end : float, description : str, logger : logging.Logger):
     """
     Print the time difference in a nice format between start and end time
 
@@ -37,7 +37,7 @@ def _print_time_diff(start : float, end : float, description : str, logger : log
     else:
         logger.info(f'{description} completed in: {round(runtime,5)} seconds')
 
-def main_python_only(pyfhd_config : dict, logger : logging.RootLogger):
+def main_python_only(pyfhd_config : dict, logger : logging.Logger):
     """One day, this python only loop will just be main. For now, only try and
     run it if none of the IDL options are asked for.
 
@@ -46,7 +46,7 @@ def main_python_only(pyfhd_config : dict, logger : logging.RootLogger):
     pyfhd_config : dict
         _The options from argparse in a dictionary, that have been verified using
         `PyFHD.pyfhd_tools.pyfhd_setup.pyfhd_setup`.
-    logger : logging.RootLogger
+    logger : logging.Logger
         _The logger to output info and errors to
     """
 

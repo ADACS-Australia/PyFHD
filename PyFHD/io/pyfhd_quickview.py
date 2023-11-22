@@ -1,6 +1,6 @@
 import numpy as np
 from PyFHD.io.pyfhd_io import save
-from logging import RootLogger
+from logging import Logger
 from pathlib import Path
 from astropy.io import fits
 from datetime import datetime
@@ -15,7 +15,7 @@ def get_image_renormalization(
     beam_base: np.ndarray, 
     filter_arr: np.ndarray, 
     pyfhd_config: dict, 
-    logger: RootLogger
+    logger: Logger
 ) -> np.ndarray:
     """
     TODO: _summary_
@@ -32,7 +32,7 @@ def get_image_renormalization(
         _description_
     pyfhd_config : dict
         _description_
-    logger : RootLogger
+    logger : Logger
         _description_
 
     Returns
@@ -69,7 +69,7 @@ def quickview(
     uniform_filter_uv: np.ndarray,
     model_uv: np.ndarray,
     pyfhd_config: dict,
-    logger: RootLogger
+    logger: Logger
  ) -> None:
     # Save all the things into the output directory
     if pyfhd_config["save_obs"]:

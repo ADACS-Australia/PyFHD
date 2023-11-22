@@ -8,7 +8,7 @@ from astropy.io import fits
 from astropy.table import Table
 from astropy.time import Time
 
-def create_obs(pyfhd_header : dict, params : dict, layout: dict, pyfhd_config : dict, logger : logging.RootLogger) -> dict:
+def create_obs(pyfhd_header : dict, params : dict, layout: dict, pyfhd_config : dict, logger : logging.Logger) -> dict:
     """
     create_obs takes all the data that has been read in and creates the obs data structure which holds data
     and metadata of the observation we're doing a PyFHD run on. Inside this function the metafits file will
@@ -24,7 +24,7 @@ def create_obs(pyfhd_header : dict, params : dict, layout: dict, pyfhd_config : 
         The data dictionary containing data and metadata about the antennas
     pyfhd_config : dict
         PyFHD's configuration dictionary
-    logger : logging.RootLogger
+    logger : logging.Logger
         The PyFHD logger
 
     Returns
@@ -227,7 +227,7 @@ def create_obs(pyfhd_header : dict, params : dict, layout: dict, pyfhd_config : 
     
     return obs
 
-def read_metafits(obs : dict, pyfhd_header : dict, params : dict, pyfhd_config : dict, logger : logging.RootLogger) -> dict:
+def read_metafits(obs : dict, pyfhd_header : dict, params : dict, pyfhd_config : dict, logger : logging.Logger) -> dict:
     """
     Reads the metafits file provided inside the same input directory as the UVFITS file.
     It will process the data found in the METAFITS file and then returns a meta dictionary.
@@ -243,7 +243,7 @@ def read_metafits(obs : dict, pyfhd_header : dict, params : dict, pyfhd_config :
         The data from the UVFITS file
     pyfhd_config : dict
         PyFHD's configuration dictionary
-    logger : logging.RootLogger
+    logger : logging.Logger
         PyFHD's logger
 
     Returns

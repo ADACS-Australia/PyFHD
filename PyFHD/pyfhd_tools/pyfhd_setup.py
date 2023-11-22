@@ -337,7 +337,7 @@ def write_collated_yaml_config(pyfhd_config: dict, output_dir : str, description
 
 
 
-def pyfhd_setup(options : argparse.Namespace) -> Tuple[dict, logging.RootLogger]:
+def pyfhd_setup(options : argparse.Namespace) -> Tuple[dict, logging.Logger]:
     """
     Check for any incompatibilities among the options given for starting the PyFHD pipeline as some options
     do conflict with each other or have dependencies on other options. This function should catch all of those
@@ -353,7 +353,7 @@ def pyfhd_setup(options : argparse.Namespace) -> Tuple[dict, logging.RootLogger]
     -------
     pyfhd_config : dict
         The configuration dictionary for PyFHD containing all the options.
-    logger : logging.RootLogger
+    logger : logging.Logger
         The logger with the appropriate handlers added.
     """
     # Keep track of the errors and warnings.
@@ -590,7 +590,7 @@ def pyfhd_setup(options : argparse.Namespace) -> Tuple[dict, logging.RootLogger]
 
     return pyfhd_config, logger
 
-def pyfhd_logger(pyfhd_config: dict) -> Tuple[logging.RootLogger, str]:
+def pyfhd_logger(pyfhd_config: dict) -> Tuple[logging.Logger, str]:
     '''
     Creates the the logger for PyFHD. If silent is True in the pyfhd_config then
     the StreamHandler won't be added to logger meaning there will be no terminal output
@@ -605,7 +605,7 @@ def pyfhd_logger(pyfhd_config: dict) -> Tuple[logging.RootLogger, str]:
 
     Returns
     -------
-    logger : logging.RootLogger
+    logger : logging.Logger
         The logger with the appropriate handlers added.
     output_dir : str
         Where the log and FHD outputs are being written to

@@ -1,8 +1,8 @@
 import numpy as np
-from logging import RootLogger
+from logging import Logger
 from PyFHD.pyfhd_tools.pyfhd_utils import idl_median, histogram
 
-def vis_flag_tiles(obs: dict, vis_weight_arr: np.ndarray, tiles_to_flag: np.ndarray | list, logger: RootLogger) -> np.ndarray:
+def vis_flag_tiles(obs: dict, vis_weight_arr: np.ndarray, tiles_to_flag: np.ndarray | list, logger: Logger) -> np.ndarray:
     """
     Flag tiles in the visibility weights array with a given array or list of tiles to flag 
     containing the names of the tiles, NOT the indexes.
@@ -15,7 +15,7 @@ def vis_flag_tiles(obs: dict, vis_weight_arr: np.ndarray, tiles_to_flag: np.ndar
         The visibility weight array
     tiles_to_flag : np.ndarray | list
         The tiles to flag
-    logger : RootLogger
+    logger : Logger
         PyFHD's Logger
 
     Returns
@@ -49,7 +49,7 @@ def vis_flag_tiles(obs: dict, vis_weight_arr: np.ndarray, tiles_to_flag: np.ndar
                 vis_weight_arr[:, :, rb[rb[ti] : rb[ti + 1] - 1]] = 0
     return vis_weight_arr
 
-def vis_flag_basic(vis_weight_arr: np.ndarray, vis_arr: np.ndarray, obs: dict, pyfhd_config: dict, logger: RootLogger) -> tuple[np.ndarray, dict]:
+def vis_flag_basic(vis_weight_arr: np.ndarray, vis_arr: np.ndarray, obs: dict, pyfhd_config: dict, logger: Logger) -> tuple[np.ndarray, dict]:
     """
     Do some basic flagging on frequencies and tiles based on the confgiruation given by pyfhd_config 
     such as `flag_freq_start`, `flag_freq_end`, `instrument` and `flag_tile_names`. To flag the frequencies and
@@ -69,7 +69,7 @@ def vis_flag_basic(vis_weight_arr: np.ndarray, vis_arr: np.ndarray, obs: dict, p
         _description_
     pyfhd_config : dict
         PyFHD's configuration dictionary
-    logger : RootLogger
+    logger : Logger
         PyFHD's logger
 
     Returns
@@ -176,7 +176,7 @@ def vis_flag_basic(vis_weight_arr: np.ndarray, vis_arr: np.ndarray, obs: dict, p
 
     return vis_weight_arr, obs
 
-def vis_flag(vis_arr : np.ndarray, vis_weights: np.ndarray, obs: dict, params: dict, logger: RootLogger) -> tuple[np.ndarray, dict] :
+def vis_flag(vis_arr : np.ndarray, vis_weights: np.ndarray, obs: dict, params: dict, logger: Logger) -> tuple[np.ndarray, dict] :
     """
     TODO: __summary__
 
@@ -190,7 +190,7 @@ def vis_flag(vis_arr : np.ndarray, vis_weights: np.ndarray, obs: dict, params: d
         The observation dictionary
     params : dict
         The dictionary containing uu, vv, ww
-    logger : RootLogger
+    logger : Logger
         PyFHD's Logger
 
     Returns

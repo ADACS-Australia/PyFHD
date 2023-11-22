@@ -7,7 +7,7 @@ import numpy as np
 import time
 import h5py
 
-def convert_sav_to_dict(sav_path : str, logger : logging.RootLogger,
+def convert_sav_to_dict(sav_path : str, logger : logging.Logger,
                         tmp_dir = "temp_pyfhd"):
     """
     Given a path to an IDL style .sav file, load into a python dictionary
@@ -25,7 +25,7 @@ def convert_sav_to_dict(sav_path : str, logger : logging.RootLogger,
     ----------
     sav_path : str
         Filepath for an IDL .sav file
-    logger : logging.RootLogger
+    logger : logging.Logger
         The logger to output any error messages to
     tmp_dir : str
         Dir to place temporary files, creates the directory if doesn't exist.
@@ -61,7 +61,7 @@ def convert_sav_to_dict(sav_path : str, logger : logging.RootLogger,
         exit()
 
 def convert_IDL_calibration_outputs(pyfhd_config : dict, IDL_output_dir : str,
-                                    logger : logging.RootLogger,
+                                    logger : logging.Logger,
                                     save_npz = False, read_npz = False):
     """Convert IDL FHD .sav files output after calibration into dictionaries,
     in preparation to run gridding on them with the Python code.
@@ -85,7 +85,7 @@ def convert_IDL_calibration_outputs(pyfhd_config : dict, IDL_output_dir : str,
         `PyFHD.pyfhd_tools.pyfhd_setup.pyfhd_setup`.
     IDL_output_dir : str
         Parent directory in which all IDL FHD outputs reside
-    logger : logging.RootLogger
+    logger : logging.Logger
         The logger to output info and errors to
     save_npz : bool, optional
         Save the converted dictionary outputs into .npz files. Useful if you want to quickly load them up in future. By default False.
@@ -177,7 +177,7 @@ def convert_IDL_calibration_outputs(pyfhd_config : dict, IDL_output_dir : str,
 
 
 def run_gridding_on_IDL_outputs(pyfhd_config : dict, IDL_output_dir : str,
-                                logger : logging.RootLogger):
+                                logger : logging.Logger):
     """Assuming that `run_IDL_calibration_only` has been run to create IDL
     FHD outputs, read in those outputs, and grid them, according to the
     paramaters defined in `pyfhd_config`.
@@ -189,7 +189,7 @@ def run_gridding_on_IDL_outputs(pyfhd_config : dict, IDL_output_dir : str,
         `PyFHD.pyfhd_tools.pyfhd_setup.pyfhd_setup`.
     IDL_output_dir : str
         Parent directory in which all IDL FHD outputs reside
-    logger : logging.RootLogger
+    logger : logging.Logger
         The logger to output info and errors to
     """
 

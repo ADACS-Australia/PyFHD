@@ -1,6 +1,6 @@
 import numpy as np
 import h5py
-from logging import RootLogger
+from logging import Logger
 from pathlib import Path
 from typing import Any
 
@@ -152,7 +152,7 @@ def format_array(array: np.ndarray) -> np.ndarray:
             pass
     return array
 
-def save_dataset(h5py_obj: h5py.File | h5py.Group,  key: str, value: Any, to_chunk: dict[str, dict], logger: RootLogger | None) -> bool:
+def save_dataset(h5py_obj: h5py.File | h5py.Group,  key: str, value: Any, to_chunk: dict[str, dict], logger: Logger | None) -> bool:
     """
     A general function for saving a dataset inside a HDF5 File or Group. It's used exclusively for saving
     a dictionary into a HDF5 file, hence why we take a `key` and `value` pair. The `to_chunk` parameter is
@@ -174,7 +174,7 @@ def save_dataset(h5py_obj: h5py.File | h5py.Group,  key: str, value: Any, to_chu
         which should contain two key-value pairs, `shape` which should be the `shape` of the array and `chunk` which tells
         hdf5 how to chunk the dataset when it's being read/written. If you're not sure how to `chunk` the dataset, set `chunk` 
         to True which enables h5py to guess the chunk size for you. By default {}
-    logger : RootLogger | None
+    logger : Logger | None
         PyFHD's Logger
 
     Returns
@@ -225,7 +225,7 @@ def save_dataset(h5py_obj: h5py.File | h5py.Group,  key: str, value: Any, to_chu
                     logger.error(f"Failed to save {key}, the type of key was {type(value)}")
     return is_none
 
-def dict_to_group(group: h5py.Group, to_convert: dict, to_chunk: dict[str, dict], logger: RootLogger | None) -> None:
+def dict_to_group(group: h5py.Group, to_convert: dict, to_chunk: dict[str, dict], logger: Logger | None) -> None:
     """
     Converts a dictionary to a HDF5 group. This is called in the event a dictionary is found inside
     a dictionary that is being saved in a HDF5 file. Creates a subgroup for the hdf5 file with everything
@@ -237,13 +237,13 @@ def dict_to_group(group: h5py.Group, to_convert: dict, to_chunk: dict[str, dict]
         The created group to save the dictionary in
     to_convert : dict
         The dictionary to save into the group
-    logger : RootLogger
+    logger : Logger
        PyFHD's Logger
     """
     for key in to_convert:
         group.attrs[key] = save_dataset(group, key, to_convert[key], to_chunk, logger)
 
-def save(file_name: Path, to_save: np.ndarray | dict, dataset_name: str, logger: RootLogger | None = None, to_chunk: dict[str, dict] = {}) -> None:
+def save(file_name: Path, to_save: np.ndarray | dict, dataset_name: str, logger: Logger | None = None, to_chunk: dict[str, dict] = {}) -> None:
     """
     Saves a numpy array or dictionary into a hdf5 file using h5py, with compression applied to all arrays/datasets. 
     An array will be saved as a single dataset, while a dictionary will be saved where each key will be a dataset
@@ -262,7 +262,7 @@ def save(file_name: Path, to_save: np.ndarray | dict, dataset_name: str, logger:
     dataset_name : str
         Used in the case that the to_save variable is an array, this name will 
         be used as the key for the dataset in the hdf5 file.
-    logger : RootLogger, optional
+    logger : Logger, optional
         PyFHD's Logger, by default None (in case you don't want to use the logger for testing)
     to_chunk : dict[str, dict], optional
         A dictionary where each key-value pair represents a key in the to_save dictionary, and the value is a dictionary
@@ -362,7 +362,7 @@ def group_to_dict(group: h5py.Group) -> dict:
                 return_dict[key] = group_to_dict(group[key])
     return return_dict
 
-def load(file_name: Path, logger: RootLogger | None = None, lazy_load: bool = False) -> dict | np.ndarray | h5py.File:
+def load(file_name: Path, logger: Logger | None = None, lazy_load: bool = False) -> dict | np.ndarray | h5py.File:
     """
     Loads a HDF5 file into PyFHD, it reads the HDF5 into an array if the 
     HDF5 file contains a single dataset, while a HDF5 which contains multiple
@@ -373,7 +373,7 @@ def load(file_name: Path, logger: RootLogger | None = None, lazy_load: bool = Fa
     ----------
     file_name : Path
         The /path/to/the/hdf5.h5
-    logger : RootLogger
+    logger : Logger
         PyFHD's Logger
     lazy_load : bool, optional
         Set to true if you wish to lazy load the file, currently the only file that will be

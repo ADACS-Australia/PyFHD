@@ -6,7 +6,7 @@ from pathlib import Path
 from PyFHD.pyfhd_tools.test_utils import get_data, get_data_items, sav_file_vis_arr_swap_axes
 from PyFHD.gridding.gridding_utils import visibility_count
 from PyFHD.io.pyfhd_io import save, load
-from logging import RootLogger
+from logging import Logger
 from numpy.testing import assert_allclose
 
 @pytest.fixture
@@ -97,7 +97,7 @@ def test_vis_count(vis_count_before: Path, vis_count_after: Path):
         h5_before["psf"],
         h5_before["params"],
         h5_before["vis_weights"],
-        RootLogger(1),
+        Logger(1),
         fi_use = h5_before["fi_use"],
         bi_use = h5_before["bi_use"],
         mask_mirror_indices = h5_before["mask_mirror_indices"],
