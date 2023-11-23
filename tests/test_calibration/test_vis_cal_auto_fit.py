@@ -117,7 +117,6 @@ def test_vis_cal_auto_fit(before_file, after_file, data_dir):
     # name_split = before_file.name.split('_')
     # tag = f"{name_split[0]}_{name_split[1]}"
     # run = name_split[2]
-    # #TODO get this stored somewhere as a test input
     # actual_gains = np.load(Path(data_dir, f"{tag}_gains_applied_woden.npz"))
     # gx = actual_gains['gx'].transpose()
     # gy = actual_gains['gy'].transpose()

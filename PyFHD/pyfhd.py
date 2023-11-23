@@ -1,21 +1,29 @@
+import logging
+import sys
 import time
 from datetime import timedelta
+import h5py
 import numpy as np
-from PyFHD.pyfhd_tools.pyfhd_setup import pyfhd_parser, pyfhd_setup, write_collated_yaml_config
-from PyFHD.data_setup.obs import create_obs
-from PyFHD.data_setup.uvfits import extract_header, create_params, extract_visibilities, create_layout
-from PyFHD.pyfhd_tools.pyfhd_utils import simple_deproject_w_term, vis_weights_update, vis_noise_calc
-from PyFHD.source_modeling.vis_model_transfer import vis_model_transfer, flag_model_visibilities
+from pathlib import Path
 from PyFHD.beam_setup.beam import create_psf
 from PyFHD.calibration.calibrate import calibrate, calibrate_qu_mixing
-from PyFHD.use_idl_fhd.run_idl_fhd import run_IDL_calibration_only, run_IDL_convert_gridding_to_healpix_images
-from PyFHD.use_idl_fhd.use_idl_outputs import run_gridding_on_IDL_outputs
+from PyFHD.data_setup.obs import create_obs
+from PyFHD.data_setup.uvfits import (create_layout, create_params,
+                                     extract_header, extract_visibilities)
 from PyFHD.flagging.flagging import vis_flag, vis_flag_basic
-from PyFHD.gridding.visibility_grid import visibility_grid
 from PyFHD.gridding.gridding_utils import crosspol_reformat
-import logging
-import h5py
-import sys
+from PyFHD.gridding.visibility_grid import visibility_grid
+from PyFHD.pyfhd_tools.pyfhd_setup import (pyfhd_parser, pyfhd_setup,
+                                           write_collated_yaml_config)
+from PyFHD.pyfhd_tools.pyfhd_utils import (simple_deproject_w_term,
+                                           vis_noise_calc, vis_weights_update)
+from PyFHD.source_modeling.vis_model_transfer import (flag_model_visibilities,
+                                                      vis_model_transfer)
+from PyFHD.io.pyfhd_io import save, load
+from PyFHD.use_idl_fhd.run_idl_fhd import (
+    run_IDL_calibration_only, run_IDL_convert_gridding_to_healpix_images)
+from PyFHD.use_idl_fhd.use_idl_outputs import run_gridding_on_IDL_outputs
+
 
 def _print_time_diff(start : float, end : float, description : str, logger : logging.Logger):
     """
@@ -50,36 +58,57 @@ def main_python_only(pyfhd_config : dict, logger : logging.Logger):
         _The logger to output info and errors to
     """
 
-    header_start = time.time()
-    # Get the header
-    pyfhd_header, params_data, antenna_header, antenna_data = extract_header(pyfhd_config, logger)
-    header_end = time.time()
-    _print_time_diff(header_start, header_end, 'PyFHD Header Created', logger)
+    if pyfhd_config['obs_checkpoint'] is None:
+        header_start = time.time()
+        # Get the header
+        pyfhd_header, params_data, antenna_header, antenna_data = extract_header(pyfhd_config, logger)
+        header_end = time.time()
+        _print_time_diff(header_start, header_end, 'PyFHD Header Created', logger)
 
-    params_start = time.time()
-    # Get params
-    params = create_params(pyfhd_header, params_data, logger)
-    params_end = time.time()
-    _print_time_diff(params_start, params_end, 'Params Created', logger)
+        params_start = time.time()
+        # Get params
+        params = create_params(pyfhd_header, params_data, logger)
+        params_end = time.time()
+        _print_time_diff(params_start, params_end, 'Params Created', logger)
 
-    visibility_start = time.time()
-    vis_arr, vis_weights = extract_visibilities(pyfhd_header, params_data, pyfhd_config, logger)
-    visibility_end = time.time()
-    _print_time_diff(visibility_start, visibility_end, 'Visibilities Extracted', logger)
+        visibility_start = time.time()
+        vis_arr, vis_weights = extract_visibilities(pyfhd_header, params_data, pyfhd_config, logger)
+        visibility_end = time.time()
+        _print_time_diff(visibility_start, visibility_end, 'Visibilities Extracted', logger)
 
-    # If you wish to reorder your visibilities, insert your function to do that here.
-    # If you wish to average your fits data by time or frequency, insert your functions to do that here
+        # If you wish to reorder your visibilities, insert your function to do that here.
+        # If you wish to average your fits data by time or frequency, insert your functions to do that here
 
-    layout_start = time.time()
-    layout = create_layout(antenna_header, antenna_data, logger)
-    layout_end = time.time()
-    _print_time_diff(layout_start, layout_end, 'Layout Dictionary Extracted', logger)
-    
-    # Get obs
-    obs_start = time.time()
-    obs = create_obs(pyfhd_header, params, layout, pyfhd_config, logger)
-    obs_end = time.time()
-    _print_time_diff(obs_start, obs_end, 'Obs Dictionary Created', logger)
+        layout_start = time.time()
+        layout = create_layout(antenna_header, antenna_data, pyfhd_config, logger)
+        layout_end = time.time()
+        _print_time_diff(layout_start, layout_end, 'Layout Dictionary Extracted', logger)
+        
+        # Get obs
+        obs_start = time.time()
+        obs = create_obs(pyfhd_header, params, layout, pyfhd_config, logger)
+        obs_end = time.time()
+        _print_time_diff(obs_start, obs_end, 'Obs Dictionary Created', logger)
+
+        # If you decide to use the PyFHD checkpoint system, save the uncalibrated visibility & 
+        # observation data and metadata now
+        if pyfhd_config['save_checkpoints']:
+            checkpoint = {
+                'obs': obs,
+                'params': params,
+                'vis_arr': vis_arr,
+                'vis_weights': vis_weights
+            }
+            logger.info("Checkpoint Saved: Uncalibrated visibility parameters, array and weights and the observation metadata dictionary saved into obs_checkpoint.h5")
+            save(Path(pyfhd_config['output_dir'], 'obs_checkpoint.h5'), checkpoint, 'obs_checkpoint', logger = logger)
+
+    else:
+        # Load the checkpoint and initialize the required variables
+        obs_checkpoint = load(pyfhd_config['obs_checkpoint'], logger = logger)
+        obs = obs_checkpoint['obs']
+        params = obs_checkpoint['params']
+        vis_arr = obs_checkpoint['vis_arr']
+        vis_weights = obs_checkpoint['vis_weights']
 
     # Read in the beam from a file returning a psf dictionary
     psf_start = time.time()

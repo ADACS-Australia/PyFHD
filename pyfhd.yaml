@@ -15,10 +15,14 @@ min-baseline : 1.
 n-pol : 2
 deproject-w-term : ~
 
+# Checkpointing
+save-checkpoints: true
+obs-checkpoint: ~
+
+
 # Instrument
 override-target-phasera: ~
 override-target-phasedec: ~
-
 
 # Beam Setup
 beam-file-path: './input'

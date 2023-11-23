@@ -31,6 +31,7 @@ def pyfhd_parser():
         formatter_class= configargparse.RawTextHelpFormatter,
     )
     # Add All the Groups
+    checkpoints = parser.add_argument_group('Checkpoints', 'Activate checkpoints and Load up checkpoints')
     instrument = parser.add_argument_group('Instrument', 'Adjust parameters specific to your instrument')
     calibration = parser.add_argument_group('Calibration', 'Adjust Parameters for Calibration')
     flag = parser.add_argument_group('Flagging', 'Adjust Parameters for Flagging')
@@ -97,6 +98,10 @@ def pyfhd_parser():
     parser.add_argument('--memory-threshold', type = int, default = 1e8, help = 'Set a memory threshold for each chunk in set in bytes. By default it is set at ~100MB')
     parser.add_argument('--min-baseline', type = float, default = 1.0, help = 'The minimum baseline length in wavelengths to include in the analysis')
     parser.add_argument('--n-pol', type = int, default = 2, choices = [0, 2, 4], help = 'Set number of polarizations to use (XX, YY versus XX, YY, XY, YX).')
+
+    # Checkpoints
+    checkpoints.add_argument('-sc', '--save-checkpoints', default = False, action = 'store_true', help = "Activates PyFHD's checkpointing system and saves them into the output directory")
+    checkpoints.add_argument('--obs-checkpoint', default = None, type = Path, help = "Load the checkpoint just after creating the obs, should contain the obs dict, uncalibrated visibility parameters, array and weights")
 
     # Instrument Group
     instrument.add_argument('--override-target-phasera', default = None, type = float, help = "RA of the target phase center, which overrides the value supplied in the metafits under the header keyword RAPHASE. If the metafits doesn't exist, it ovverides the value supplied in the uvfits under the header keyword RA")

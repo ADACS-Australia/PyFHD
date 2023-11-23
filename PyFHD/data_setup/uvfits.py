@@ -2,14 +2,13 @@ import numpy as np
 from numpy.typing import NDArray
 from astropy.io import fits
 from astropy.time import Time
-from astropy.io.fits.hdu.table import BinTableHDU
 from astropy.io.fits.fitsrec import FITS_rec
 from astropy.io.fits.header import Header
 from pathlib import Path
 import logging
 from astropy.coordinates import EarthLocation
 import astropy
-from astropy import units as u
+from PyFHD.io.pyfhd_io import save
 
 
 def extract_header(pyfhd_config : dict, logger : logging.Logger, model_uvfits = False) -> tuple[dict, np.recarray, FITS_rec, Header]:
@@ -318,7 +317,7 @@ def _check_layout_valid(layout : dict, key : str, logger : logging.Logger, check
     if type(layout[key]) == np.ndarray and (layout[key].size != layout['n_antenna']):
         logger.error(f"The layout[{key}] array set is not the same size of the number of antennas. Check the UVFITS file for errors.")
     
-def create_layout(antenna_header: Header, antenna_data: FITS_rec, logger : logging.Logger) -> dict:
+def create_layout(antenna_header: Header, antenna_data: FITS_rec, pyfhd_config: dict, logger : logging.Logger) -> dict:
     """
     TODO: _summary_
 
@@ -328,6 +327,8 @@ def create_layout(antenna_header: Header, antenna_data: FITS_rec, logger : loggi
         The header from the second table of the observation
     antenna_data : FITS_rec
         The data from the second table of the observation
+    pyfhd_config : dict
+        PyFHD's configuration dictionary containing all the options for a run
     logger : logging.Logger
         PyFHD's logger
 
@@ -540,5 +541,7 @@ def create_layout(antenna_header: Header, antenna_data: FITS_rec, logger : loggi
     _check_layout_valid(layout, 'pola_orientation', logger, check_min_max = True)
     _check_layout_valid(layout, 'polb', logger)
     _check_layout_valid(layout, 'polb_orientation', logger, check_min_max = True)
+
+    save(Path(pyfhd_config['output_dir'], 'layout.h5'), layout, "layout", logger)
 
     return layout
