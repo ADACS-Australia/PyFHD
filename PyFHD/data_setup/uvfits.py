@@ -1,4 +1,5 @@
 import numpy as np
+from numpy.typing import NDArray
 from astropy.io import fits
 from astropy.time import Time
 from astropy.io.fits.hdu.table import BinTableHDU
@@ -6,15 +7,14 @@ from astropy.io.fits.fitsrec import FITS_rec
 from astropy.io.fits.header import Header
 from pathlib import Path
 import logging
-from typing import Tuple
 from astropy.coordinates import EarthLocation
 import astropy
 from astropy import units as u
 
 
-def extract_header(pyfhd_config : dict, logger : logging.Logger, model_uvfits = False) -> Tuple[dict, np.recarray, FITS_rec, Header]:
+def extract_header(pyfhd_config : dict, logger : logging.Logger, model_uvfits = False) -> tuple[dict, np.recarray, FITS_rec, Header]:
     """
-    TODO:_summary_
+    Extract data from the uvfits header, the data extracted will contain metadata about the observation, antennas, visibilities
 
     Parameters
     ----------
@@ -29,14 +29,11 @@ def extract_header(pyfhd_config : dict, logger : logging.Logger, model_uvfits = 
 
     Returns
     -------
-    pyfhd_header : dict
-        The result from the extraction of the header of the UVFITS file
-    params_data : np.recarray
-        The data from the UVFITS file.
-    antenna_data : astropy.io.fits.fitsrec.FITS_rec
-        The layout data which will be used in the create_layout function
-    antenna_header : astropy.io.fits.header.Header
-        The layout data which will be used in the create_layout function
+    (pyfhd_header, params_data, antenna_data, antenna_header) : tuple[dict, np.recarray, FITS_rec, Header]
+        1) The result from the extraction of the header of the UVFITS file, containing observation metadata mostly
+        2) The data from the UVFITS file, containing the visibility metadata
+        3) The layout data which will be used in the create_layout function, mostly antenna metadata
+        4) The layout header which will be used in the create_layout function, mostly antenna metadatas
 
     Raises
     ------
@@ -188,7 +185,9 @@ def extract_header(pyfhd_config : dict, logger : logging.Logger, model_uvfits = 
     return pyfhd_header, params_data, antenna_header, antenna_data
 
 def create_params(pyfhd_header : dict, params_data : np.recarray, logger : logging.Logger) -> dict:
-    """_summary_
+    """
+    Given the extarcted header, params data from the uvfits file, create the params dictionary to store
+    the relevant visibility metadata
 
     Parameters
     ----------
@@ -202,7 +201,7 @@ def create_params(pyfhd_header : dict, params_data : np.recarray, logger : loggi
     Returns
     -------
     params : dict
-        The PyFHD params stored as a dictionary (instead of recarray as a dict is faster)
+        The visibility metadata stored as a dictionary (instead of recarray as a dict is faster)
 
     Raises
     ======
@@ -227,14 +226,6 @@ def create_params(pyfhd_header : dict, params_data : np.recarray, logger : loggi
         if pyfhd_header['ant1_i'] and pyfhd_header['ant2_i']:
             params['antenna1'] = params_data['ANTENNA1']
             params['antenna2'] = params_data['ANTENNA2']
-
-        #TODO I don't think we should ever get to this half-way calc, we
-        #always want antenna1 and antenna2??
-        # # baseline_i should be set if ant1_i and ant2_i are not
-        # elif pyfhd_header['baseline_i']:
-        #     params['baseline_arr'] = params_data['BASELINE']
-        #     params['antenna1'] = params['baseline_arr']
-        
         # Else calculate it from the baseline array
         else:
             # Calculate antenna_mod_index to check for bad fits
@@ -256,7 +247,7 @@ def create_params(pyfhd_header : dict, params_data : np.recarray, logger : loggi
 
     return params
 
-def extract_visibilities(pyfhd_header : dict, params_data : np.recarray, pyfhd_config : dict, logger : logging.Logger) -> Tuple[np.ndarray, np.ndarray]:
+def extract_visibilities(pyfhd_header : dict, params_data : np.recarray, pyfhd_config : dict, logger : logging.Logger) -> tuple[NDArray[np.complex128], NDArray[np.float64]]:
     """
     Extract the visibilities and their weights from the UVFITS data.
 
@@ -273,10 +264,9 @@ def extract_visibilities(pyfhd_header : dict, params_data : np.recarray, pyfhd_c
 
     Returns
     -------
-    vis_arr : np.ndarray
-        The visibility array
-    vis_weights : np.ndarray
-        The visibility weights array
+    (vis_arr, vis_weights) : tuple[NDArray[np.complex128], NDArray[np.float64]]
+        1) The visibility array
+        2) The visibility weights array
 
     See Also
     ========

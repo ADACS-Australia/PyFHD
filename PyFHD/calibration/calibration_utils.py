@@ -162,7 +162,6 @@ def vis_calibration_flag(obs: dict, cal: dict, pyfhd_config: dict, logger: Logge
         # first flag based on overall amplitude
         # extract_subarray is not being used as it was FHD's way of taking the fact that
         # IDL's indexing can be weird and won't allow to index the result
-        # TODO: May need to adjust the indexing to match IDL as tile_use_i and freq_use_i 
         # use np.where on gain, which will be multidimensional as well
         amp_sub = amp[: , tile_use_i][freq_use_i, :]
         gain_freq_fom = np.std(amp_sub, axis = 1)
@@ -268,7 +267,6 @@ def transfer_bandpass(obs: dict, cal: dict, pyfhd_config: dict, logger: Logger) 
         Tuple of 1) calibration dictionary with bandpass gains and 2) calibration dictionary with residuals
         after removing the bandpass gains
     """
-    # TODO: Get bandpass from fits file and process the data_array
     cal_bandpass = {}
     try:  
         calfits = fits.open(Path(pyfhd_config['input_path'], pyfhd_config["cal_bp_transfer"]))
@@ -373,7 +371,7 @@ def transfer_bandpass(obs: dict, cal: dict, pyfhd_config: dict, logger: Logger) 
             elif (freq_factor < 1):
                 logger.warning(f"Calfits input freq channel width is different by a factor of {freq_factor}. Using linear interpolation")
                 # The IDL code has 5 nested loops, and I can't think of the vectorization right now in a reasonable ampount of time
-                # TODO: Please vectorize this later
+                # Someone please vectorize laster if you can
                 data_array_temp = np.zeros((data_dims[4], obs['n_freq'], n_time, n_jones, 2))
                 for data_i in range(2):
                     for jones_i in range(n_jones):
@@ -586,7 +584,7 @@ def vis_cal_bandpass(obs: dict, cal: dict, pyfhd_config: dict, logger: Logger) -
                 bandpass_col_count += 1
                 # Fill temporary variable gain2, set equal to final bandpass per cable group for each tile that will use that bandpass.
 
-                #TODO cannot get this to work in a vector
+                # Vectorize later if possible
                 for tile_i in range(tile_use_cable.size):
                     gain2[pol_i, freq_use, tile_use_cable[tile_i]] = bandpass_single
 
@@ -625,7 +623,7 @@ def vis_cal_bandpass(obs: dict, cal: dict, pyfhd_config: dict, logger: Logger) -
             # Work out the gain for the bandpass
             gain2 = np.zeros(gain.shape, dtype = np.complex128)
             gain3 = deepcopy(gain)
-            #TODO cannot get this to work in a vector
+            # Vectorize later if possible
             for tile_i in range(cal['n_tile']):
                 gain2[freq_use, tile_i] = bandpass_single
                 gain3[freq_use, tile_i] /= bandpass_single
@@ -1050,7 +1048,7 @@ def vis_calibration_apply(vis_arr: NDArray[np.complex128], obs: dict, cal: dict,
 
         vis_arr[pol_i, :, :] *= weight_invert(vis_gain, use_abs=False)
 
-    # TODO we haven't run FHD in a way that uses 4 pols yet so this is all
+    # We haven't run FHD in a way that uses 4 pols yet so this is all
     # untested
     if (n_pol_vis == 4):
         if type(vis_model_arr) == np.ndarray and type(vis_weights) == np.ndarray:
@@ -1190,7 +1188,7 @@ def cal_auto_ratio_divide(obs: dict, cal: dict, vis_auto: NDArray[np.float64], a
     """
 
     auto_ratio = np.empty([cal['n_pol'], obs['n_freq'], obs['n_tile']])
-    # TODO: Vectorize
+    # This should be possible to Vectorize if it's slow
     for pol_i in range(cal['n_pol']):
         # fhd_struct_init_cal puts the ref_antenna as 1 if it's not set, which is never appears to be
         v0 = vis_auto[pol_i, :, auto_tile_i[cal['ref_antenna']]]
