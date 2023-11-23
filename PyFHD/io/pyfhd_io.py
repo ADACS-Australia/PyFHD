@@ -3,8 +3,9 @@ import h5py
 from logging import Logger
 from pathlib import Path
 from typing import Any
+from numpy.typing import NDArray, DTypeLike
 
-def dtype_picker(dtype: type) -> type:
+def dtype_picker(dtype: DTypeLike) -> type:
     """
     Picks the double precision type for the given dtype for saving the hdf5 file to ensure everything
     is saved without losing information.
@@ -86,13 +87,13 @@ def _is_none(value: Any) -> bool:
     return value is None
 
 @np.vectorize
-def _decode_byte_arr(value: np.bytes_) -> str:
+def _decode_byte_arr(value: NDArray[np.byte]) -> str:
     """
     Decodes a byte string into a string
 
     Parameters
     ----------
-    value : np.bytes_
+    value : NDArray[np.byte]
         Value to decode
 
     Returns
@@ -102,7 +103,7 @@ def _decode_byte_arr(value: np.bytes_) -> str:
     """
     return value.decode()
 
-def format_array(array: np.ndarray) -> np.ndarray:
+def format_array(array: NDArray[Any]) -> NDArray[Any]:
     """
     Find any `None` values in an object array and replaces them with empty
     strings if we're dealing with a string array, or `NaN`s if we're 
@@ -113,12 +114,12 @@ def format_array(array: np.ndarray) -> np.ndarray:
 
     Parameters
     ----------
-    array : np.ndarray
+    array : NDArray[Any]
         The array to find None in and if so convert from object array
 
     Returns
     -------
-    array: np.ndarray
+    array: NDArray[Any]
         Array without None objects and in the correct dtype
     """
     # Got an error with the vectorized functions on empty arrays
@@ -243,7 +244,7 @@ def dict_to_group(group: h5py.Group, to_convert: dict, to_chunk: dict[str, dict]
     for key in to_convert:
         group.attrs[key] = save_dataset(group, key, to_convert[key], to_chunk, logger)
 
-def save(file_name: Path, to_save: np.ndarray | dict, dataset_name: str, logger: Logger | None = None, to_chunk: dict[str, dict] = {}) -> None:
+def save(file_name: Path, to_save: NDArray[Any] | dict, dataset_name: str, logger: Logger | None = None, to_chunk: dict[str, dict] = {}) -> None:
     """
     Saves a numpy array or dictionary into a hdf5 file using h5py, with compression applied to all arrays/datasets. 
     An array will be saved as a single dataset, while a dictionary will be saved where each key will be a dataset
@@ -257,7 +258,7 @@ def save(file_name: Path, to_save: np.ndarray | dict, dataset_name: str, logger:
     ----------
     file_name : Path
         The file to save as hdf5 should be /path/to/file_name.h5 (or .hdf5)
-    to_save : np.ndarray | dict
+    to_save : NDArray[Any] | dict
         The dictionary or numpy array to save into the hdf5 file
     dataset_name : str
         Used in the case that the to_save variable is an array, this name will 
@@ -362,7 +363,7 @@ def group_to_dict(group: h5py.Group) -> dict:
                 return_dict[key] = group_to_dict(group[key])
     return return_dict
 
-def load(file_name: Path, logger: Logger | None = None, lazy_load: bool = False) -> dict | np.ndarray | h5py.File:
+def load(file_name: Path, logger: Logger | None = None, lazy_load: bool = False) -> dict | NDArray[Any] | h5py.File:
     """
     Loads a HDF5 file into PyFHD, it reads the HDF5 into an array if the 
     HDF5 file contains a single dataset, while a HDF5 which contains multiple
@@ -383,7 +384,7 @@ def load(file_name: Path, logger: Logger | None = None, lazy_load: bool = False)
 
     Returns
     -------
-    return_dict | array | h5_file: dict | np.ndarray | h5py.File
+    return_dict | array | h5_file: dict | NDArray[Any] | h5py.File
         Returns a dict in the case the HDF5 file contains multple datasets, 
         An array if the HDF5 contains one dataset or h5py File object if the 
         file is lazy loaded to conserve memory. 

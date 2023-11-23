@@ -1,4 +1,5 @@
 import numpy as np
+from numpy.typing import NDArray
 from logging import Logger
 import h5py
 from pathlib import Path
@@ -8,7 +9,7 @@ from PyFHD.healpix.healpix_utils import healpix_cnv_generate, healpix_cnv_apply,
 from PyFHD.flagging.flagging import vis_flag_tiles
 from PyFHD.pyfhd_tools.pyfhd_utils import vis_weights_update, split_vis_weights, vis_noise_calc
 
-def healpix_snapshot_cube_generate(obs: dict, psf: dict | h5py.File, cal: dict, params: dict, vis_arr: np.ndarray, vis_model_arr: np.ndarray, vis_weights: np.ndarray, pyfhd_config: dict, logger: Logger) -> None:
+def healpix_snapshot_cube_generate(obs: dict, psf: dict | h5py.File, cal: dict, params: dict, vis_arr: NDArray[np.complex128], vis_model_arr: NDArray[np.complex128], vis_weights: NDArray[np.float64], pyfhd_config: dict, logger: Logger) -> None:
     """
     TODO: _summary_
 
@@ -22,11 +23,11 @@ def healpix_snapshot_cube_generate(obs: dict, psf: dict | h5py.File, cal: dict, 
         _description_
     params : dict
         _description_
-    vis_arr : np.ndarray
+    vis_arr : NDArray[np.complex128]
         _description_
-    vis_model_arr : np.ndarray
+    vis_model_arr : NDArray[np.complex128]
         _description_
-    vis_weights : np.ndarray
+    vis_weights : NDArray[np.float64]
         _description_
     pyfhd_config : dict
         _description_

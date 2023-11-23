@@ -1,19 +1,19 @@
-import numpy as np
-from numba import njit
-from math import factorial
-from astropy.coordinates import SkyCoord
-from astropy import units as u
-from math import pi
-from logging import Logger
 import subprocess
-from scipy.ndimage import median_filter
 from copy import deepcopy
+from logging import Logger
+from math import factorial, pi
 from sys import exit
-from scipy.ndimage import label
 import h5py
+import numpy as np
+from astropy import units as u
+from astropy.coordinates import SkyCoord
+from numba import njit
+from numpy.typing import ArrayLike, NDArray
+from scipy.ndimage import label, median_filter
+
 
 @njit
-def get_bins(min, max, bin_size):
+def get_bins(min: int | float, max: int | float, bin_size: int) -> NDArray[np.float64 | np.int64]:
     """
     Calculates the bins for the histogram and reverse indices based on a 
     minimum and maximum value, plus a given bin size. It mirrors IDL's way of
@@ -23,17 +23,17 @@ def get_bins(min, max, bin_size):
 
     Parameters
     ----------
-    min : int, float
+    min : int | float
         The minimum chosen for the histogram
-    max : int, float
+    max : int | float
         The maximum chosen for the histogram
-    bin_size : int, float
+    bin_size : int
         The bin size chosen for the histogram. This histogram always uses bins
         of equal widths.
 
     Returns
     -------
-    bins
+    bins: NDArray[np.float64 | np.int64]
         A NumPy array of all the bins ranging from min (bin[0]) to the max (bin[-1]). The step
         is bin_size.
 
@@ -47,25 +47,25 @@ def get_bins(min, max, bin_size):
     return np.arange(min , max + bin_size, bin_size)
 
 @njit
-def get_hist(data, bins, min, max):
+def get_hist(data: NDArray[np.float_ | np.int_ | np.complex_], bins: NDArray[np.float64 | np.int64], min: int | float, max: int | float) -> NDArray[np.int64]:
     """
     Calculates the histogram based on the given bins and data, taking into account
     the minimum and maximum
 
     Parameters
     ----------
-    data : np.array
+    data : NDArray[np.float_ | np.int_ | np.complex_]
         A NumPy array that is of one dtype float, int, or complex. Cannot be object
-    bins : np.array
+    bins : NDArray[np.float64 | np.int64]
         A NumPy array of bins for the histogram
-    min : int, float
+    min : int | float
         The minimum set for the data
-    max : int, float
+    max : int | float
         The maximum set for the data
 
     Returns
     -------
-    hist
+    hist: NDArray[np.int64]
         A histogram of the data using the bins found in the bins array.
 
     See Also
@@ -98,7 +98,7 @@ def get_hist(data, bins, min, max):
     return hist
 
 @njit
-def get_ri(data, bins, hist, min, max):
+def get_ri(data: NDArray[np.float_ | np.int_ | np.complex_], bins: NDArray[np.float64 | np.int64], hist: NDArray[np.int64], min: int | float, max: int | float) -> NDArray[np.int64]:
     """
     Calculates the reverse indices of a data and histogram. 
     The function replicates IDL's REVERSE_INDICES keyword within
@@ -138,20 +138,20 @@ def get_ri(data, bins, hist, min, max):
 
     Parameters
     ----------
-    data : np.array
+    data : NDArray[np.float_ | np.int_ | np.complex_]
         A NumPy array of the data
-    bins : np.array
+    bins : NDArray[np.float64 | np.int64]
         A NumPy array containing the bins for the histogram
-    hist : np.array
+    hist : NDArray[np.int64]
         A NumPy array containing the histogram
-    min : int, float
+    min : int | float
         The minimum for the dataset
-    max : int, float
+    max : int | float
         The maximum for the dataset
 
     Returns
     -------
-    ri : np.array
+    ri : NDArray[np.int64]
         An array containing the reverse indices, which is two vectors, the first vector containing indexes for the second vector.
         The second vector contains indexes for the data.
 
@@ -203,7 +203,7 @@ def get_ri(data, bins, hist, min, max):
     ri = ri[:ri.size - counter]
     return ri
 
-def histogram(data : np.ndarray, bin_size = 1, num_bins = None, min = None, max = None):
+def histogram(data : NDArray[np.float_ | np.int_ | np.complex_], bin_size: int = 1, num_bins: int | None = None, min: int | float | None = None, max: int | float | None = None) -> tuple[NDArray[np.int64], NDArray[np.float64 | np.int64], NDArray[np.int64]]:
     """
     The histogram function combines the use of the get_bins, get_hist and get_ri
     functions into one function. For the descriptions and docs of those functions
@@ -212,26 +212,24 @@ def histogram(data : np.ndarray, bin_size = 1, num_bins = None, min = None, max 
 
     Parameters
     ----------
-    data : np.array
+    data : NDArray[np.float_ | np.int_ | np.complex_]
         A NumPy array containing the data we want a histogram of
     bin_size : int, optional
         Sets the bin size for this histogram, by default 1
-    num_bins : int, optional
+    num_bins : int | None, optional
         Set the number of bins this does override bin_size completely, by default None
-    min : int, float, optional
+    min :  int | float | None, optional
         Set a minimum for the dataset, by default None
-    max : int, float, optional
+    max :  int | float | None, optional
         Set a maximum for the dataset, by default None
 
     Returns
     -------
-    hist : np.ndarray
-        The histogram
-    bins : np.ndarray
-        The bins used for the histogram
-    ri : np.ndarray
-        The reverse indices array
-
+    (hist, bins, ri) : tuple[NDArray[np.int64], NDArray[np.float64 | np.int64], NDArray[np.int64]]
+        1) The histogram of the data
+        2) The bins of the histogram
+        3) The reverse indices array for the histogram and data
+    
     See Also
     --------
     get_bins: Calculates the bins only
@@ -264,7 +262,7 @@ def histogram(data : np.ndarray, bin_size = 1, num_bins = None, min = None, max 
     # Return
     return hist, bins, ri
 
-def l_m_n(obs, psf, obsdec = None, obsra = None,  declination_arr = None, right_ascension_arr = None) :
+def l_m_n(obs: dict, psf: dict | h5py.File , obsdec: float | None = None, obsra: float | None = None,  declination_arr: NDArray[np.float_] | None = None, right_ascension_arr: NDArray[np.float_] | None = None) -> tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]]:
     """
     Calculates the l mode, m mode and the n_tracked
     TODO: Add Detailed Description of l_m_n
@@ -273,29 +271,27 @@ def l_m_n(obs, psf, obsdec = None, obsra = None,  declination_arr = None, right_
     ----------
     obs: dict
 
-    psf: dict
+    psf: dict | h5py.File 
 
-    obsdec: array, optional
+    obsdec: float | None, optional
         By default is set to None, as such by default this value will be set to
         obs['obsdec']
-    obsra: array, optional
+    obsra: float | None, optional
         By default is set to None, as such by default this value will be set to
         obs['obsra']
-    declination_arr: array, optional
+    declination_arr: NDArray[np.float_] | None, optional
         By default is set to None, as such by default this value will be set to
         psf['image_info']['dec_arr']
-    right_ascension_arr: array, optional
+    right_ascension_arr: NDArray[np.float_] | None, optional
         By default is set to None, as such by default this value will be set to
         psf['image_info']['ra_arr']
 
     Returns
     -------
-    l_mode: array
-        TODO: Add description for l_mode
-    m_mode: array
-        TODO: Add description for m_mode
-    n_tracked: array
-        TODO: Add description for n_tracked.
+    (l_mode, m_mode, n_tracked) : tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]]
+        1) TODO: Add description for l_mode
+        2) TODO: Add description for m_mode
+        3) TODO: Add description for n_tracked.
     """
     # If the variables passed through are None them
     if obsdec is None:
@@ -336,7 +332,33 @@ def l_m_n(obs, psf, obsdec = None, obsra = None,  declination_arr = None, right_
     # Return the modes
     return l_mode, m_mode, n_tracked
 
-def rebin_columns(a, ax, shape, col_sizer):
+def rebin_columns(a: NDArray[np.int_ | np.float_ | np.complex_], ax: int, shape: tuple, col_sizer: int) -> NDArray[np.int_ | np.float_ | np.complex_]:
+    """
+    Performs expansion on the columns of a 1D or 2D array using interpolation to fill in the values that are created
+    by expanding in the space between existing values. This function assumes the rows have already been expanded
+    to the required number.
+
+    Parameters
+    ----------
+    a : NDArray[np.int_  |  np.float_  |  np.complex_]
+        An array to be expanded
+    ax : int
+        The axis we're expanding, almost always set to 1
+    shape : tuple
+        The shape of the original array
+    col_sizer : int
+        The number of columns we're adding in
+
+    Returns
+    -------
+    rebinned : NDArray[np.int_ | np.float_ | np.complex_]
+        An interpolated array of a containing shape[1] * col_sizer columns
+
+    See Also
+    --------
+    PyFHD.pyfhd_tools.pyfhd_utils.rebin_rows : Expand the number of rows through interpolation
+    PyFHD.pyfhd_tools.pyfhd_utils.rebin : Expand or Contract an array based on a given shape 
+    """
     # tile the range of col_sizer
     tiles = np.tile(np.arange(col_sizer), (shape[0], shape[1] // col_sizer-1))
     # Get the differences between the columns
@@ -351,7 +373,34 @@ def rebin_columns(a, ax, shape, col_sizer):
     rebinned = inferences + np.repeat(a, col_sizer, axis = ax)
     return rebinned
 
-def rebin_rows(a, ax, shape, old_shape, row_sizer):
+def rebin_rows(a: NDArray[np.int_ | np.float_ | np.complex_], ax: int, shape: tuple, old_shape: tuple, row_sizer: int) -> NDArray[np.int_ | np.float_ | np.complex_]:
+    """
+    Performs expansion on the rows of array `a` to the number of rows in shape[0] using interpolation to fill between any
+    new values added when adding new rows between existing values.
+
+    Parameters
+    ----------
+    a : NDArray[np.int_  |  np.float_  |  np.complex_]
+        The array to be rebinned
+    ax : int
+        The axis we're expanding, almost always set to 0
+    shape : tuple
+        The new shape we're expanding to
+    old_shape : tuple
+        The shape of the array a
+    row_sizer : int
+        The number of rows we're expanding by
+
+    Returns
+    -------
+    row_rebinned : NDArray[np.int_ | np.float_ | np.complex_]
+        The interpolated array with row_sizer extra columns between existing rows
+
+    See Also
+    --------
+    PyFHD.pyfhd_tools.pyfhd_utils.rebin_columns : Expand the number of columns through interpolation
+    PyFHD.pyfhd_tools.pyfhd_utils.rebin : Expand or Contract an array based on a given shape 
+    """
     # Tile the range of row_sizer
     tiles = np.tile(np.array_split(np.arange(row_sizer), row_sizer), ((shape[0]- row_sizer) // row_sizer, old_shape[1]))
     # Get the differences between values
@@ -366,21 +415,21 @@ def rebin_rows(a, ax, shape, old_shape, row_sizer):
     row_rebinned = inferences + np.repeat(a, row_sizer, axis = ax)
     return row_rebinned
 
-def rebin(a, shape, sample = False):
+def rebin(a: NDArray[np.int_ | np.float_ | np.complex_], shape: ArrayLike, sample: bool = False):
     """
-    Resizes a 2d array by averaging or repeating elements, new dimensions must be integral factors of original dimensions.
+    Resizes a 2D array by averaging or repeating elements, new dimensions must be integral factors of original dimensions.
 
     In the case of expanding an existing array, rebin will interpolate between the original values with a linear function.
     In the case of compressing an existing array, rebin will average
 
     Parameters
     ----------
-    a : array_like
+    a : NDArray[np.int_ | np.float_ | np.complex_]
         Input array.
-    new_shape : tuple of int
+    new_shape : ArrayLike
         Shape of the output array in (rows, columns)
         Must be a factor or multiple of a.shape
-    sample: bool optional
+    sample: bool, optional
         Use this to get samples using rebin, rather than interpolation, by default False.
         
     Returns
@@ -427,6 +476,11 @@ def rebin(a, shape, sample = False):
     References
     ----------
     [1] https://stackoverflow.com/a/8090605
+
+    See Also
+    --------
+    PyFHD.pyfhd_tools.pyfhd_utils.rebin_rows : Expand the number of rows through interpolation
+    PyFHD.pyfhd_tools.pyfhd_utils.rebin_columns : Expand the number of columns through interpolation
     """
     old_shape  = a.shape
     # Prevent more processing than needed if we want the same shape
@@ -517,7 +571,7 @@ def rebin(a, shape, sample = False):
                 rebinned = rebin_columns(row_rebinned, ax, shape, col_sizer)
     return rebinned
 
-def weight_invert(weights : np.ndarray | int | float | np.number, threshold = None, use_abs = False):
+def weight_invert(weights : NDArray[np.int_ | np.float_ | np.complex_] | int | float | np.number, threshold: float | None = None, use_abs: bool = False) -> NDArray[np.int_ | np.float_ | np.complex_] | int | float | np.number:
     """
     The weights invert function cleans the weights given by removing
     the values that are 0, NaN or Inf ready for additional calculation.
@@ -526,19 +580,19 @@ def weight_invert(weights : np.ndarray | int | float | np.number, threshold = No
 
     Parameters
     ----------
-    weights: Complex
+    weights: NDArray[np.int_ | np.float_ | np.complex_] | int | float | np.number
         An array of values of some dtype
-    threshold: float
+    threshold: float | None, optional
         A real number set as the threshold for the array.
         By default its set to None, in this case function checks
-        for zeros.
-    use_abs: bool
+        for zeros, by default None
+    use_abs: bool, optional
         If True, take the absolute value (sometimes useful for complex numbers)
-        By default this is False, so will leave as a complex number and invert.
+        By default this is False, so will leave as a complex number and invert, by default False
 
     Returns
     -------
-    result: array
+    result: NDArray[np.int_ | np.float_ | np.complex_] | int | float | np.number
         The weights array that has had NaNs and Infinities removed, and zeros OR
         values that don't meet the threshold.
     """
@@ -594,22 +648,22 @@ def weight_invert(weights : np.ndarray | int | float | np.number, threshold = No
         return result[0]
     return result
 
-def array_match(array_1, value_match, array_2 = None) :
+def array_match(array_1: NDArray[np.int_ | np.float_ | np.complex_], value_match: NDArray[np.int_ | np.float_ | np.complex_], array_2: NDArray[np.int_ | np.float_ | np.complex_] | None = None) -> NDArray[np.int64]:
     """
     TODO: Description for array match
 
     Parameters
     ----------
-    array_1: array
+    array_1: NDArray[np.int_ | np.float_ | np.complex_]
         TODO: Add Description for Array_1
-    value_match: array
+    value_match: NDArray[np.int_ | np.float_ | np.complex_]
         TODO: Add Description for Value_Match
-    array_2: array, optional
-        TODO: Add Description for Array_2, default is None
+    array_2: NDArray[np.int_ | np.float_ | np.complex_] | None, optional
+        TODO: Add Description for Array_2, by default is None
 
     Returns
     -------
-    match_indices: array
+    match_indices: NDArray[np.int64]
         TODO: Add Description for return of array_match
     
     Raises
@@ -660,7 +714,7 @@ def array_match(array_1, value_match, array_2 = None) :
     # Return our matching indices
     return match_indices
 
-def meshgrid(dimension, elements, axis = None, return_integer = False):
+def meshgrid(dimension: int, elements: int, axis: int | None = None, return_integer: bool = False) -> NDArray[np.int64 | np.float64]:
     """
     Generates a 2D array of X or Y values. Could be replaced by a another function 
 
@@ -670,15 +724,15 @@ def meshgrid(dimension, elements, axis = None, return_integer = False):
         Sets the column size of the array to return
     elements: int
         Sets the row size of the array to return
-    axis = int, optional
-        Set axis = 1 for X values, set axis = 2 for Y values, default is None
-    return_float: bool, optional
-        The default is False, dtype is implied by dimension and/or elements
-        by default. If True, sets return array to float.
+    axis = int | None, optional
+        Set axis = 1 for X values, set axis = 2 for Y values, by default is None
+    return integer: bool, optional
+        dtype is implied by dimension and/or elements
+        by default. If True, sets return array to int, by default is False
     
     Returns
     -------
-    result: ndarray
+    result: NDArray[np.int64 | np.float64]
         A numpy array of shape (elements, dimension) that is 
         a modified np.arange(elements * dimension).
     """
@@ -699,7 +753,7 @@ def meshgrid(dimension, elements, axis = None, return_integer = False):
     else:
         return result
 
-def deriv_coefficients(n, divide_factorial = False):
+def deriv_coefficients(n: int, divide_factorial: bool = False) -> NDArray[np.float64]:
     """
     Computes an array of coefficients resulting in taking the 
     n-th derivative of a function of the form x^a (a must not 
@@ -709,12 +763,12 @@ def deriv_coefficients(n, divide_factorial = False):
     ----------
     n: int
         Decides the length of coefficients
-    divide_factorial: bool
-        Determine if we need to divide by the factorial
+    divide_factorial: bool, optional
+        Determine if we need to divide by the factorial, by default is False
 
     Returns
     -------
-    coeff: ndarray
+    coeff: NDArray[np.float64]
         An array of coefficients
     """
     if n <= 0:
@@ -735,7 +789,7 @@ def deriv_coefficients(n, divide_factorial = False):
     # Return coefficients
     return coeff
 
-def idl_argunique(arr : np.ndarray) -> np.ndarray:
+def idl_argunique(arr : NDArray[np.int_ | np.float_ | np.complex_]) -> NDArray[np.int64]:
     """
     In IDL the UNIQ function returns the indexes of the unique values within
     an array (that is assumed to be sorted beforehand). In NumPy they use the first
@@ -743,12 +797,12 @@ def idl_argunique(arr : np.ndarray) -> np.ndarray:
 
     Parameters
     ----------
-    arr : np.ndarray
+    arr : NDArray[np.int_ | np.float_ | np.complex_]
         A sorted numpy array of any type.
 
     Returns
     -------
-    np.ndarray
+    NDArray[np.int64]
         An array containing indexes of the last occurence of the unique value in arr
 
     Examples
@@ -759,7 +813,7 @@ def idl_argunique(arr : np.ndarray) -> np.ndarray:
     """
     return np.searchsorted(arr, np.unique(arr), side = 'right') - 1
 
-def angle_difference(ra1 : float, dec1 : float, ra2 : float, dec2 : float, degree = False, nearest = False) -> float:
+def angle_difference(ra1 : float, dec1 : float, ra2 : float, dec2 : float, degree: bool = False, nearest: bool = False) -> float:
     """
     Calculates the angle difference between two given celestial coordinates.
 
@@ -820,7 +874,7 @@ def parallactic_angle(latitude : float, hour_angle : float, dec : float) -> floa
     x_term = np.cos(np.radians(dec)) * np.tan(np.radians(latitude)) - np.sin(np.radians(dec)) * np.cos(np.radians(hour_angle))
     return np.degrees(np.arctan(y_term/ x_term))
 
-def simple_deproject_w_term(obs : dict, params : dict, vis_arr : np.ndarray, direction : float, logger : Logger) -> np.ndarray:
+def simple_deproject_w_term(obs : dict, params : dict, vis_arr : NDArray[np.complex128], direction : float, logger : Logger) -> NDArray[np.complex128]:
     """
     Applies a w-term deprojection to the visibility array
 
@@ -830,14 +884,14 @@ def simple_deproject_w_term(obs : dict, params : dict, vis_arr : np.ndarray, dir
         The observation data structure
     params : dict
         The data from the UVFITS file
-    vis_arr : np.ndarray
+    vis_arr : NDArray[np.complex128]
         The visibility array
     direction : float
         The direction we apply to the phase
 
     Returns
     -------
-    vis_arr : np.ndarray
+    vis_arr : NDArray[np.complex128]
         The visibility array with the deprojection applied
     """
 
@@ -852,7 +906,7 @@ def simple_deproject_w_term(obs : dict, params : dict, vis_arr : np.ndarray, dir
 
     return vis_arr
 
-def resistant_mean(array : np.ndarray, deviations : int, mad_scale = 0.67449999999999999, sigma_coeff = np.array([0.020142000000000000, -0.23583999999999999 , 0.90722999999999998 , -0.15404999999999999])) -> int | float | complex | np.number:
+def resistant_mean(array : NDArray[np.int_ | np.float_ | np.complex_], deviations : int, mad_scale: float = 0.67449999999999999, sigma_coeff: NDArray[np.float64] = np.array([0.020142000000000000, -0.23583999999999999 , 0.90722999999999998 , -0.15404999999999999])) -> int | float | complex | np.number:
     """
     The resistant_mean function translate the IDLAstro function resistant_mean[1]_ from IDL to Python using NumPy.
     The values mad_scale and sigma_coeff are also retrieved from the same IDLAstro function when running in Double 
@@ -865,13 +919,13 @@ def resistant_mean(array : np.ndarray, deviations : int, mad_scale = 0.674499999
 
     Parameters
     ----------
-    array : np.ndarray
+    array : NDArray[np.int_ | np.float_ | np.complex_]
         A 1 dimensional array of values, multidimensional arrays should be flattened before use
     deviations : int
         The number of median absolute deviations from the median we want use to exclude outliers
     mad_scale : float, optional
         The scale factor for the median absolute deviation, by default 0.67449999999999999
-    sigma_coeff : np.ndarray(dtype = np.float64), optional
+    sigma_coeff : NDArray[np.float64], optional
         The coefficients applied to the polynomial equation to the standard deviation of the points excluded by the outliers for additional exclusion, by default np.array([0.020142000000000000, -0.23583999999999999 , 0.90722999999999998 , -0.15404999999999999])
 
     Returns
@@ -929,24 +983,24 @@ def run_command(cmd : str, dry_run=False):
 
     return stdout
 
-def vis_weights_update(vis_weights : np.ndarray, obs: dict, psf: dict | h5py.File, params: dict) -> tuple[np.ndarray, dict]:
+def vis_weights_update(vis_weights : NDArray[np.float64], obs: dict, psf: dict | h5py.File, params: dict) -> tuple[NDArray[np.float64], dict]:
     """
     TODO: _summary_
 
     Parameters
     ----------
-    vis_weights : np.ndarray
+    vis_weights : NDArray[np.float64]
         _description_
     obs : dict
         _description_
-    psf: dict
+    psf: dict | h5py.File
         _description_
     params : dict
         _description_
 
     Returns
     -------
-    tuple[vis_weights: np.ndarray, obs: dict]
+    (vis_weights, obs) : tuple[NDArray[np.float64], dict]
         The updated vis_weights and the obs dictionary now containing the sums of the flags
     """
     kx_arr = params['uu'] / obs['kpix']
@@ -1022,7 +1076,7 @@ def vis_weights_update(vis_weights : np.ndarray, obs: dict, psf: dict | h5py.Fil
 
     return vis_weights, obs
 
-def split_vis_weights(obs: dict, vis_weights: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+def split_vis_weights(obs: dict, vis_weights: NDArray[np.float64]) -> tuple[NDArray[np.float64], NDArray[np.int64]]:
     """
     TODO: _summary_
 
@@ -1030,12 +1084,12 @@ def split_vis_weights(obs: dict, vis_weights: np.ndarray) -> tuple[np.ndarray, n
     ----------
     obs : dict
         _description_
-    vis_weights : np.ndarray
+    vis_weights : NDArray[np.float64]
         _description_
 
     Returns
     -------
-    tuple[np.ndarray, np.ndarray]
+    tuple[NDArray[np.float64], NDArray[np.int64]]
         _description_
     """
     # Not always used in vis_noise_calc requires this check in other cases
@@ -1086,7 +1140,7 @@ def split_vis_weights(obs: dict, vis_weights: np.ndarray) -> tuple[np.ndarray, n
 
     return vis_weights, bi_use
 
-def vis_noise_calc(obs: dict, vis_arr: np.ndarray, vis_weights: np.ndarray, bi_use: np.ndarray | None = None) -> np.ndarray:
+def vis_noise_calc(obs: dict, vis_arr: NDArray[np.complex128], vis_weights: NDArray[np.float64], bi_use: NDArray[np.int64] | None = None) -> NDArray[np.float64]:
     """
     TODO: _summary_
 
@@ -1094,16 +1148,16 @@ def vis_noise_calc(obs: dict, vis_arr: np.ndarray, vis_weights: np.ndarray, bi_u
     ----------
     obs : dict
         The observation metadata dictionary
-    vis_arr : np.ndarray
+    vis_arr : NDArray[np.complex128]
         The vsisibility array
-    vis_weights : np.ndarray
+    vis_weights : NDArray[np.float64]
         The visibility weights array
-    bi_use : np.ndarray | None, optional
+    bi_use : NDArray[np.int64] | None, optional
         If provided, indexes for the baselines to use, by default None
 
     Returns
     -------
-    noise_arr: np.ndarray
+    noise_arr: NDArray[np.float64]
         TODO: _description_
     """
     noise_arr = np.zeros([obs["n_pol"], obs["n_freq"]])
@@ -1126,13 +1180,13 @@ def vis_noise_calc(obs: dict, vis_arr: np.ndarray, vis_weights: np.ndarray, bi_u
     
     return noise_arr
     
-def idl_median(x : np.ndarray, width=0, even=False) -> float:
+def idl_median(x : NDArray[np.int_ | np.float_ | np.complex_], width: int = 0, even: bool = False) -> float:
     """
     TODO:_summary_
 
     Parameters
     ----------
-    x : np.ndarray
+    x : NDArray[np.int_ | np.float_ | np.complex_]
         Data to perform median on
     width : int
         If set, perform a type of median filtering. 
@@ -1171,9 +1225,9 @@ def idl_median(x : np.ndarray, width=0, even=False) -> float:
 
             return np.sort(x)[med_index]
 
-def reshape_and_average_in_time(vis_array : np.ndarray, n_freq : int,
+def reshape_and_average_in_time(vis_array : NDArray[np.complex128], n_freq : int,
                                 n_time : int, n_baselines : int,
-                                vis_weights : np.ndarray) -> np.ndarray:
+                                vis_weights : NDArray[np.float64]) -> NDArray[np.complex128]:
     """Given a single polarisation 2D `vis_array` of shape (n_freq, n_time*n_baselines),
     reshape into (n_freq, n_time, n_baselines), and then average in time, weighting
     by `vis_weights` (must be of shape (n_freq, n_time, n_baselines))
@@ -1181,7 +1235,7 @@ def reshape_and_average_in_time(vis_array : np.ndarray, n_freq : int,
 
     Parameters
     ----------
-    vis_array : np.ndarray
+    vis_array : NDArray[np.complex128]
        The visibility array
     n_freq : int
         Number of frequencies
@@ -1189,9 +1243,13 @@ def reshape_and_average_in_time(vis_array : np.ndarray, n_freq : int,
         Number of time steps
     n_baselines : int
         Number of baselines
-    vis_weights : np.ndarray
+    vis_weights : NDArray[np.float64]
         The visibility weights array
 
+    Returns
+    -------
+    reshape_array: NDArray[np.complex128]
+        The reshaped visibility array the same shape as the visibility weights array
     """
 
     new_shape = (n_freq, n_time, n_baselines)
@@ -1204,7 +1262,7 @@ def reshape_and_average_in_time(vis_array : np.ndarray, n_freq : int,
 
     return reshape_array
     
-def region_grow(image: np.ndarray, roiPixels: np.ndarray, low: int|float|None = None, high: int|float|None = None) -> np.ndarray:
+def region_grow(image: NDArray[np.int_ | np.float_ | np.complex_], roiPixels: NDArray[np.int_], low: int|float|None = None, high: int|float|None = None) -> NDArray[np.int_ | np.float_ | np.complex_] | None:
     """
     Replicates IDL's Region Grow, where a region of interest will grow based upon a given threshold
     within a 2D array. It finds all the pixels within the array that are connected neighbors via the 
@@ -1216,9 +1274,9 @@ def region_grow(image: np.ndarray, roiPixels: np.ndarray, low: int|float|None = 
 
     Parameters
     ----------
-    image : np.ndarray
+    image : NDArray[np.int_ | np.float_ | np.complex_]
         A 2D array of pixels
-    roiPixels : np.ndarray
+    roiPixels : NDArray[np.int_]
         The region of interest given as FLAT indexes i.e. array.flat
     low : int | float | None, optional
         The low threshold, any number below this is considered background, 
@@ -1229,14 +1287,13 @@ def region_grow(image: np.ndarray, roiPixels: np.ndarray, low: int|float|None = 
 
     Returns
     -------
-    growROIPixels: np.ndarray | None
+    growROIPixels: NDArray[np.int_ | np.float_ | np.complex_] | None
         The grown region of interest that has connected neighbours by using the threshold
 
     See Also
     --------
     scipy.ndimage.label: Labels an image based off a given kernel
     
-
     Notes
     -----
     'scikit-image Blob Detection' : https://scikit-image.org/docs/stable/auto_examples/features_detection/plot_blob.html
@@ -1295,20 +1352,20 @@ def region_grow(image: np.ndarray, roiPixels: np.ndarray, low: int|float|None = 
     # Return the flat indexes
     return growROIPixels
 
-def crosspol_split_real_imaginary(image: np.ndarray, pol_names: list[str]|None = None) -> tuple[np.ndarray, list[str]|None]:
+def crosspol_split_real_imaginary(image: NDArray[np.complex128], pol_names: list[str]|None = None) -> tuple[NDArray[np.complex128], list[str]|None]:
     """
     TODO: _summary_
 
     Parameters
     ----------
-    image : np.ndarray
+    image : NDArray[np.complex128]
         _description_
     pol_names : list[str] | None, optional
         _description_, by default None
 
     Returns
     -------
-    tuple[np.ndarray, list[str]|None]
+    tuple[NDArray[np.complex128], list[str]|None]
         _description_
     """
     crosspol_image: np.ndarray = image[2]

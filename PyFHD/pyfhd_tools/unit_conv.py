@@ -3,6 +3,7 @@ from astropy.wcs import WCS
 from astropy.time import Time
 from astropy import units as u
 import numpy as np
+from numpy.typing import NDArray
 
 def altaz_to_radec(alt : float, az : float, lat : float, lon : float, height : float, time : float, time_format = 'jd') -> tuple[float, float]:
     """
@@ -28,7 +29,7 @@ def altaz_to_radec(alt : float, az : float, lat : float, lon : float, height : f
 
     Returns
     -------
-    ra, dec : float, float
+    (ra, dec) : tuple[float, float]
         The corresponding Equatorial Coordinates from the given location and time with altitude and azimuth
     """
 
@@ -60,7 +61,7 @@ def radec_to_altaz(ra : float, dec : float, lat : float, lon : float, height : f
 
     Returns
     -------
-    alt, az
+    (alt, az) : tuple[float, float]
         The corresponding Altitude and Azimuth coordinates for the given location, time and celestial coordinates
     """
 
@@ -87,7 +88,7 @@ def radec_to_pixel(ra : float, dec : float, astr : dict) -> tuple[float, float]:
 
     Returns
     -------
-    x, y : float, float
+    (x, y) : tuple[float, float]
         The pixel coordinates for the given celestial coordinate.
     """
 
@@ -102,7 +103,7 @@ def radec_to_pixel(ra : float, dec : float, astr : dict) -> tuple[float, float]:
     # AstroPy returns values as an array, cast to float
     return float(x), float(y)
 
-def pixel_to_radec(x: float | np.ndarray, y: float | np.ndarray, astr: dict) -> tuple[float, float]:
+def pixel_to_radec(x: float | NDArray[np.float64], y: float | NDArray[np.float64], astr: dict) -> tuple[float | NDArray[np.float64], float | NDArray[np.float64]]:
     """
     Turn Pixel coordinates (X & Y) into Celestial Coordinates based off a WCS. 
     The astr dictionary should contain cdelt, ctype, crpix and crval as per the 
@@ -119,7 +120,7 @@ def pixel_to_radec(x: float | np.ndarray, y: float | np.ndarray, astr: dict) -> 
 
     Returns
     -------
-    ra, dec : tuple[float | np.ndarray, float | np.ndarray]
+    (ra, dec) : tuple[float | NDArray[np.float64], float | NDArray[np.float64]]
         The corresponding celestial cooridnates
     """
     wcs_astr = WCS(naxis  = 2)

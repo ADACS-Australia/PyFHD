@@ -1,4 +1,5 @@
 import numpy as np
+from numpy.typing import NDArray
 import PyFHD.gridding.filters as filters
 from PyFHD.pyfhd_tools.pyfhd_utils import rebin, histogram, array_match, meshgrid
 from scipy.signal import convolve
@@ -7,8 +8,8 @@ from math import pi
 from logging import Logger
 import h5py
 
-def interpolate_kernel(kernel_arr: np.ndarray, x_offset: np.ndarray, y_offset: np.ndarray, 
-                       dx0dy0: np.ndarray, dx1dy0: np.ndarray, dx0dy1: np.ndarray, dx1dy1: np.ndarray):
+def interpolate_kernel(kernel_arr: NDArray[np.complex128], x_offset: NDArray[np.int_], y_offset: NDArray[np.int_], 
+                       dx0dy0: NDArray[np.float64], dx1dy0: NDArray[np.float64], dx0dy1: NDArray[np.float64], dx1dy1: NDArray[np.float64]) -> NDArray[np.complex128]:
     """
     Perform a bilinear interpolation given the 2D derivatives of the baseline center to the nearest 
     hyperresolved pixel edge in {u,v} space. This will provide a quadratic estimate at the sample 
@@ -16,24 +17,24 @@ def interpolate_kernel(kernel_arr: np.ndarray, x_offset: np.ndarray, y_offset: n
 
     Parameters
     ----------
-    kernel_arr: np.ndarray
+    kernel_arr: NDArray[np.complex128]
         The 2D kernel for bilinear interpolation
-    x_offset: np.ndarray
+    x_offset: NDArray[np.int_]
         The nearest pixel offset in the x (u) direction
-    y_offset: np.ndarray
+    y_offset: NDArray[np.int_]
         The nearest pixel offset in the y (v) direction
-    dx0dy0: np.ndarray
+    dx0dy0: NDArray[np.float64]
        (1 - derivative to pixel edge in x) * (1 - derivative to pixel edge in y) for selected baselines
-    dx1dy0: np.ndarray
+    dx1dy0: NDArray[np.float64]
         (derivative to pixel edge in x) * (1 - derivative to pixel edge in y) for selected baselines
-    dx0dy1: np.ndarray
+    dx0dy1: NDArray[np.float64]
         (1 - derivative to pixel edge in x) * (derivative to pixel edge in y) for selected baselines
-    dx1dy1: np.ndarray
+    dx1dy1: NDArray[np.float64]
         (derivative to pixel edge in x) * (derivative to pixel edge in y) for selected baselines
 
     Returns
     -------
-    kernel: np.ndarray
+    kernel: NDArray[np.complex128]
         The interpolated 2D kernel
     """
     # x_offset and y_offset needed to be swapped around as IDL is column-major, while Python is row-major
@@ -44,19 +45,19 @@ def interpolate_kernel(kernel_arr: np.ndarray, x_offset: np.ndarray, y_offset: n
 
     return kernel
 
-def conjugate_mirror(image: np.ndarray):
+def conjugate_mirror(image: NDArray[np.complex128 | np.float64]) -> NDArray[np.complex128 | np.float64]:
     """
     Mirror an image about the origin and take the complex conjugate. The origin is considered to be the first
     row, and thus is not repeated in the conjugate mirror. 
 
     Parameters
     ----------
-    image: np.ndarray
+    image: NDArray[np.complex128 | np.float64]
         A 2D array of real or complex numbers
     
     Returns
     -------
-    conj_mirror_image: np.ndarray
+    conj_mirror_image: NDArray[np.complex128 | np.float64]
         The 2D conjugate mirror of the input without the origin 
     """
     # Flip image left to right (i.e. flips columns) & Flip image up to down (i.e. flips rows)
@@ -66,11 +67,11 @@ def conjugate_mirror(image: np.ndarray):
     # If any of the array is complex, or its a complex array, get the conjugates
     if np.iscomplexobj(image):   
         conj_mirror_image = np.conjugate(conj_mirror_image)
-    return
+    return conj_mirror_image
 
-def baseline_grid_locations(obs: dict, psf: dict, params: dict, vis_weights: np.ndarray, logger: Logger, 
-                            bi_use: np.ndarray|None = None, fi_use: np.ndarray|None = None, fill_model_visibilities: bool = False, 
-                            interp_flag: bool = False, mask_mirror_indices: bool = False):
+def baseline_grid_locations(obs: dict, psf: dict, params: dict, vis_weights: NDArray[np.float64], logger: Logger, 
+                            bi_use: NDArray[np.int_]|None = None, fi_use: NDArray[np.int_]|None = None, fill_model_visibilities: bool = False, 
+                            interp_flag: bool = False, mask_mirror_indices: bool = False) -> dict:
     """
     Calculate the histogram of baseline grid locations in units of pixels whilst also
     returning the minimum pixel number that an unflagged baseline contributes to (depending on the 
@@ -85,13 +86,13 @@ def baseline_grid_locations(obs: dict, psf: dict, params: dict, vis_weights: np.
         Beam metadata dictionary 
     params : dict
         Visibility metadata dictionary
-    vis_weights : np.ndarray
+    vis_weights : NDArray[np.float64]
         Weights (flags) of the visibilities 
     logger : Logger
         PyFHD's logger
-    bi_use : np.ndarray | None, optional
+    bi_use : NDArray[np.int_] | None, optional
         Baseline index array for gridding, i.e even vs odd time stamps, by default None
-    fi_use : np.ndarray | None, optional
+    fi_use : NDArray[np.int_] | None, optional
         Frequency index array for gridding, i.e. gridding all frequencies for continuum images, by default None
     fill_model_visibilities : bool, optional
         Calculate baseline grid locations for all baselines, regardless of flags, by default False
@@ -258,38 +259,38 @@ def baseline_grid_locations(obs: dict, psf: dict, params: dict, vis_weights: np.
     return baselines_dict
 
 def dirty_image_generate(
-        dirty_image_uv: np.ndarray,
+        dirty_image_uv: NDArray[np.complex128],
         pyfhd_config: dict,
         logger: Logger,
-        mask: float|np.ndarray|None = None,
+        mask: NDArray[np.int_]|None = None,
         baseline_threshold: int|float = 0,
-        normalization: np.ndarray|None = None,
+        normalization: float | NDArray[np.float64] | None = None,
         resize: int|None = None,
         width_smooth: int|float|None = None,
         degpix: float|None = None,
         not_real: bool = False,
         pad_uv_image: int|float|None = None,
-        weights: np.ndarray|None = None,
-        filter: np.ndarray|None = None,
-        beam_ptr: np.ndarray|None = None
-) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+        weights: NDArray[np.float64]|None = None,
+        filter: NDArray[np.float64]|None = None,
+        beam_ptr: NDArray[np.complex128]|None = None
+) -> tuple[NDArray[np.complex128], NDArray[np.float64], float | NDArray[np.float64] | None]:
     """
     Generate a projected image from an input {u,v} plane through a 2D FFT. Optionally apply padding, masking, 
     filtering, and more. 
 
     Parameters
     ----------
-    dirty_image_uv : np.ndarray
+    dirty_image_uv : NDArray[np.complex128]
         A 2D {u,v} plane which generally includes the beam via a gridding kernel
     pyfhd_config : dict
         PyFHD's configuration dictionary containing all the options set for a PyFHD run
     logger : Logger
         PyFHD's logger
-    mask : float | np.ndarray | None, optional
+    mask : NDArray[np.int_] | None, optional
         A 2D {u,v} mask to apply before image creation, by default None
     baseline_threshold : int | float, optional
         The maximum baseline length to include in units of pixels, by default 0
-    normalization : np.ndarray | None, optional
+    normalization : float | NDArray[np.float64] | None, optional
         A value by which to normalize the image by, by default None
     resize : int | None, optional
         Increase the number of pixels by a factor and rebin the input {u,v} plane, by default None
@@ -301,16 +302,16 @@ def dirty_image_generate(
         Flag to return a complex image, by default False
     pad_uv_image : int | float | None, optional
         Pad the {u,v} plane by this pixel amount to increase perceived resolution of the image, by default None
-    weights : np.ndarray | None, optional
+    weights : NDArray[np.float64] | None, optional
         Gridded {u,v} plane of visibility weights, necessary in some filtering schemes, by default None
-    filter : np.ndarray | None, optional
+    filter : NDArray[np.float64] | None, optional
         Image filter to apply, by default None
-    beam_ptr : np.ndarray | None, optional
+    beam_ptr : NDArray[np.complex128] | None, optional
         Weight by an additional factor of the beam for optimal weighting, by default None
 
     Returns
     -------
-    (dirty_image, filter, normalization) : tuple[np.ndarray, np.ndarray, np.ndarray]
+    (dirty_image, filter, normalization) : tuple[NDArray[np.complex128], NDArray[np.float64], float | NDArray[np.float64] | None]
         1) A 2D {l,m} directional-cosine image plane 
         2) The filter applied to the dirty image 
         3) The normalization (if any) applied to the dirty image
@@ -440,28 +441,28 @@ def grid_beam_per_baseline(
         psf: dict,
         pyfhd_config: dict,
         logger: Logger,
-        uu: np.ndarray,
-        vv: np.ndarray,
-        ww: np.ndarray,
-        l_mode: np.ndarray,
-        m_mode: np.ndarray,
-        n_tracked: np.ndarray,
-        frequency_array: np.ndarray,
-        x: np.ndarray,
-        y: np.ndarray,
+        uu: NDArray[np.float64],
+        vv: NDArray[np.float64],
+        ww: NDArray[np.float64],
+        l_mode: NDArray[np.float64],
+        m_mode: NDArray[np.float64],
+        n_tracked: NDArray[np.float64],
+        frequency_array: NDArray[np.float64],
+        x: NDArray[np.float64],
+        y: NDArray[np.float64],
         xmin_use: int,
         ymin_use: int,
-        freq_i: np.ndarray,
-        bt_index: np.ndarray,
+        freq_i: NDArray[np.int_],
+        bt_index: NDArray[np.int_],
         polarization: int,
         image_bot: int,
         image_top: int,
         psf_dim3: int,
-        box_matrix: np.ndarray,
+        box_matrix: NDArray[np.complex128],
         vis_n: int,
-        beam_int: np.ndarray|None = None,
-        beam2_int: np.ndarray|None = None,
-        n_grp_use: np.ndarray|None = None,
+        beam_int: NDArray[np.complex128]|None = None,
+        beam2_int: NDArray[np.complex128]|None = None,
+        n_grp_use: NDArray[np.int_]|None = None,
         degrid_flag: bool = False
     ):
     """
@@ -477,31 +478,31 @@ def grid_beam_per_baseline(
         PyFHD's configuration dictionary containing all the options set for a PyFHD run
     logger : Logger
         PyFHD's logger
-    uu : np.ndarray
+    uu : NDArray[np.float64]
         1D array of the u-coordinate of selected baselines in light travel time
-    vv : np.ndarray
+    vv : NDArray[np.float64]
         1D array of the v-coordinate of selected baselines in light travel time
-    ww : np.ndarray
+    ww : NDArray[np.float64]
         1D array of the w-coordinate of selected baselines in light travel time
-    l_mode : np.ndarray
+    l_mode : NDArray[np.float64]
         Directional-cosine l of pixel centers of the hyperresolved beam
-    m_mode : np.ndarray
+    m_mode : NDArray[np.float64]
         Directional-cosine m of pixel centers of the hyperresolved beam
-    n_tracked : np.ndarray
+    n_tracked : NDArray[np.float64]
         Directional-cosine n of pixel centers of the phase-tracked hyperresolved beam
-    frequency_array : np.ndarray
+    frequency_array : NDArray[np.float64]
         Array of selected frequencies in Hz
-    x : np.ndarray
+    x : NDArray[np.float64]
         1D array of gridding extent and resolution in the x-direction in wavelengths
-    y : np.ndarray
+    y : NDArray[np.float64]
         1D array of gridding extent and resolution in the y-direction in wavelengths
     xmin_use : int
         The minimum x-pixel that each selected baseline contributes to
     ymin_use : int
         The minimum y-pixel that each selected baseline contributes to
-    freq_i : np.ndarray
+    freq_i : NDArray[np.int_]
         The current frequency index
-    bt_index : np.ndarray
+    bt_index : NDArray[np.int_]
         The current baseline/time index
     polarization : int
         The current polarization index
@@ -511,22 +512,22 @@ def grid_beam_per_baseline(
         The top-most pixel index that the image-space hyperresolved beam contributes to
     psf_dim3 : int
         The pixel area of the psf footprint on the {u,v} grid
-    box_matrix : np.ndarray
+    box_matrix : NDArray[np.complex128]
         A 2D array of the number of visibilities to grid and the area of each visibility on the static {u,v} grid
     vis_n : int
         The number of visibilities to grid
-    beam_int : np.ndarray | None, optional
+    beam_int : NDArray[np.complex128] | None, optional
         The integral of the beam sensitivity in {u,v} space, by default None
-    beam2_int : np.ndarray | None, optional
+    beam2_int : NDArray[np.complex128] | None, optional
         The integral of the squared beam sensitivity in {u,v} space, by default None
-    n_grp_use : np.ndarray | None, optional
+    n_grp_use : NDArray[np.int_] | None, optional
         The number of baselines in the current grouping, by default None
     degrid_flag : bool, optional
         Perform degridding instead of gridding, by default False
 
     Returns
     -------
-    box_matrix: np.ndarray
+    box_matrix: NDArray[np.complex128]
         The kernel values on the static {u,v} grid for each visibility
     """
 
@@ -611,9 +612,9 @@ def grid_beam_per_baseline(
     
     return box_matrix
 
-def visibility_count(obs: dict, psf: dict, params: dict, vis_weights: np.ndarray, logger: Logger, 
-                     fi_use: np.ndarray|None = None, bi_use: np.ndarray|None = None, 
-                     mask_mirror_indices: bool = False, no_conjugate: bool = False, fill_model_visibilities: bool = False):
+def visibility_count(obs: dict, psf: dict, params: dict, vis_weights: NDArray[np.float64], logger: Logger, 
+                     fi_use: NDArray[np.int_]|None = None, bi_use: NDArray[np.int_]|None = None, 
+                     mask_mirror_indices: bool = False, no_conjugate: bool = False, fill_model_visibilities: bool = False) -> NDArray[np.float64]:
     """
     Calculate the number of contributing visibilities per pixel on the static {u,v} grid
     
@@ -623,15 +624,15 @@ def visibility_count(obs: dict, psf: dict, params: dict, vis_weights: np.ndarray
         Observation metadata dictionary
     params : dict
         Visibility metadata dictionary
-    vis_weights : np.ndarray
+    vis_weights : NDArray[np.float64]
         Weights (flags) of the visibilities
     pyfhd_config : dict
         PyFHD's configuration dictionary containing all the options set for a PyFHD run
     logger : Logger
         PyFHD's logger
-    fi_use : np.ndarray | None, optional
+    fi_use : NDArray[np.int_] | None, optional
         Frequency index array for gridding, i.e. gridding all frequencies for continuum images, by default None
-    bi_use : np.ndarray | None, optional
+    bi_use : NDArray[np.int_] | None, optional
         Baseline index array for gridding, i.e even vs odd time stamps, by default None
     mask_mirror_indices : bool, optional
         Exclude baselines mirrored along the v-axis, by default False
@@ -642,7 +643,7 @@ def visibility_count(obs: dict, psf: dict, params: dict, vis_weights: np.ndarray
 
     Returns
     -------
-    uniform_filter : np.ndarray 
+    uniform_filter : NDArray[np.float64] 
         2D array of number of contributing visibilities per pixel on the {u,v} grid
     """
 
@@ -689,9 +690,6 @@ def visibility_count(obs: dict, psf: dict, params: dict, vis_weights: np.ndarray
         
     if not no_conjugate:
         uniform_filter = (uniform_filter + conjugate_mirror(uniform_filter)) / 2
-
-    # TODO: Write uniform_filter to file? 
-    # fhd_save_io
     
     return uniform_filter
 
@@ -769,19 +767,19 @@ def holo_mapfn_convert(map_fn, psf_dim, dimension, elements = None, norm = 1, th
                                (('indexed', 'INDEXED'), '>i2')])
     return mapfn
 
-def crosspol_reformat(image_uv: np.ndarray) -> np.ndarray:
+def crosspol_reformat(image_uv: NDArray[np.complex128]) -> NDArray[np.complex128]:
     """
     Reformat the cross-polarizations (i.e. XY and YX) as pseudo Stokes Q and U. This helps to 
     avoid complex numbers in creating images -- however, this is an imperfect assumption.
 
     Parameters
     ----------
-    image_uv : np.ndarray
+    image_uv : NDArray[np.complex128]
         A 2D {u,v} plane in four linear polarizations.  
 
     Returns
     -------
-    image_uv: np.ndarray
+    image_uv: NDArray[np.complex128]
         A 2D {u,v} plane in two linear polarizations, pseudo Stokes Q, and pseudo Stokes U.
     """
     # instrumental -> Stokes

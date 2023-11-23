@@ -4,6 +4,7 @@ from pathlib import Path
 import h5py
 import importlib_resources
 import numpy as np
+from numpy.typing import NDArray
 from healpy import query_disc
 from healpy.pixelfunc import ang2vec, pix2vec, vec2ang
 from PyFHD.beam_setup.beam_utils import beam_image
@@ -15,7 +16,7 @@ from PyFHD.pyfhd_tools.pyfhd_utils import (angle_difference, histogram,
 from PyFHD.pyfhd_tools.unit_conv import radec_to_altaz, radec_to_pixel
 
 
-def healpix_cnv_apply(image: np.ndarray, hpx_cnv: dict, transpose = True, mask = False) -> np.ndarray:
+def healpix_cnv_apply(image: NDArray[np.int_ | np.float_ | np.complex_], hpx_cnv: dict, transpose = True, mask = False) -> NDArray[np.float64]:
     """
     healpix_cnv_apply creates a map based off the array/image and healpix convention dictionary given.
     In FHD the healpix_cnv_apply was mainly used as a wrapper for sprsax2, as such I will put the code
@@ -24,7 +25,7 @@ def healpix_cnv_apply(image: np.ndarray, hpx_cnv: dict, transpose = True, mask =
 
     Parameters
     ----------
-    image : np.ndarray
+    image : NDArray[np.int_ | np.float_ | np.complex_]
         _description_
     hpx_cnv : dict
         The HEALPix convention dictionary
@@ -35,7 +36,7 @@ def healpix_cnv_apply(image: np.ndarray, hpx_cnv: dict, transpose = True, mask =
 
     Returns
     -------
-    hpx_map: np.ndarray
+    hpx_map: NDArray[np.float64]
         TODO: _description_
     """
     # Is B in sprsax2
@@ -52,7 +53,7 @@ def healpix_cnv_apply(image: np.ndarray, hpx_cnv: dict, transpose = True, mask =
             hpx_map[i] = np.outer(x1, np.reshape(hpx_cnv['sa'][i], [np.size(hpx_cnv['sa'][i]), 1]))
     return hpx_map
 
-def healpix_cnv_generate(obs: dict, mask: np.ndarray, hpx_radius: float, pyfhd_config: dict, logger: Logger, nside: float = None) -> dict:
+def healpix_cnv_generate(obs: dict, mask: NDArray[np.int64], hpx_radius: float, pyfhd_config: dict, logger: Logger, nside: float = None) -> dict:
     """
     TODO:_summary_
 
@@ -189,6 +190,7 @@ def healpix_cnv_generate(obs: dict, mask: np.ndarray, hpx_radius: float, pyfhd_c
 
     n_arr = htot[inds]
     i_use = inds + min_bin
+    # TODO: check if sa and ija are constant sizes or not
     sa = np.empty(np.size(n_arr), dtype=object)
     ija = np.empty(np.size(n_arr), dtype=object)
 
@@ -247,13 +249,12 @@ def beam_image_cube(
     obs: dict, 
     psf: dict | h5py.File, 
     logger: Logger,
-    freq_i_arr: np.ndarray | None = None, 
-    pol_i_arr: np.ndarray | None = None,
+    freq_i_arr: NDArray[np.int_] | None = None, 
+    pol_i_arr: NDArray[np.int_] | None = None,
     n_freq_bin: float | None = None,
-    beam_mask: np.ndarray | None = None,
     square: bool = True,
     beam_threshold: float | None = None
-) -> tuple[np.ndarray, np.ndarray]:
+) -> tuple[NDArray[np.complex128], NDArray[np.float64]]:
     """
     TODO: _summary_
 
@@ -271,8 +272,6 @@ def beam_image_cube(
         _description_, by default None
     n_freq_bin : float | None, optional
         _description_, by default None
-    beam_mask : np.ndarray | None, optional
-        _description_, by default None
     square : bool, optional
         _description_, by default True
     beam_threshold : float | None, optional
@@ -280,7 +279,7 @@ def beam_image_cube(
 
     Returns
     -------
-    tuple[np.ndarray, np.ndarray]
+    tuple[NDArray[np.complex128], NDArray[np.float64]]
         _description_
     """
 
@@ -328,7 +327,7 @@ def beam_image_cube(
             beam_mask *= beam_mask1
     return beam_arr, beam_mask
 
-def phase_shift_uv_image(obs: dict) -> np.ndarray:
+def phase_shift_uv_image(obs: dict) -> NDArray[np.float64]:
     """
     TODO: _summary_
 
@@ -339,7 +338,7 @@ def phase_shift_uv_image(obs: dict) -> np.ndarray:
 
     Returns
     -------
-    np.ndarray
+    NDArray[np.float64]
         _description_
     """
     # Since we only use it once in PyFHD, assume we always want to do /to_orig_phase
@@ -369,17 +368,17 @@ def phase_shift_uv_image(obs: dict) -> np.ndarray:
 
 def vis_model_freq_split(
     obs: dict, 
-    psf: dict, 
+    psf: dict | h5py.File, 
     params: dict, 
-    vis_weights: np.ndarray,
-    vis_model_arr: np.ndarray,
-    vis_arr: np.ndarray,
+    vis_weights: NDArray[np.float64],
+    vis_model_arr: NDArray[np.complex128],
+    vis_arr: NDArray[np.complex128],
     pyfhd_config: dict,
     logger: Logger,
     fft: bool = True,
-    save_uvf = True,
-    uvf_name = '',
-    bi_use = None
+    save_uvf: bool = True,
+    uvf_name: str = '',
+    bi_use: NDArray[np.int_] = None
 ) -> dict:
     """
     TODO: _summary_
@@ -388,15 +387,15 @@ def vis_model_freq_split(
     ----------
     obs : dict
         _description_
-    psf : dict
+    psf : dict | h5py.File
         _description_
     params : dict
         _description_
-    vis_weights : np.ndarray
+    vis_weights : NDArray[np.float64]
         _description_
-    vis_model_arr : np.ndarray
+    vis_model_arr : NDArray[np.complex128]
         _description_
-    vis_arr : np.ndarray
+    vis_arr : NDArray[np.complex128]
         _description_
     pyfhd_config : dict
         _description_
@@ -408,7 +407,7 @@ def vis_model_freq_split(
         _description_, by default True
     uvf_name : str, optional
         _description_, by default ''
-    bi_use : _type_, optional
+    bi_use : NDArray[np.int_], optional
         _description_, by default None
 
     Returns

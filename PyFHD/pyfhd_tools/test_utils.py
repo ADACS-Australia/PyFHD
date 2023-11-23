@@ -6,8 +6,9 @@ import numpy.testing as npt
 from colorama import Fore
 from colorama import Style
 from PyFHD.io.pyfhd_io import save
+from numpy.typing import NDArray
 
-def get_data(data_dir, data_filename, *args):
+def get_data(data_dir: Path, data_filename: str, *args: list[str]) -> list:
     """
     This function is designed to read npy or sav files in a 
     data directory inside test_fhd_*. Ensure the data file
@@ -21,21 +22,15 @@ def get_data(data_dir, data_filename, *args):
     ----------
     data_dir : Path
         This should be the dir passed through from pytest-datadir
-    function_name : String
-        The name of the function we're testing
-    data_filename : String
+    data_filename : atr
         The name of the file for the input
-    expected_filename : String
-        The name of the file name for the expected result
-    *args : List
+    *args : list[str]
         If given, is expected to be more filenames
     
     Returns
     -------
-    input : 
-        The data used for input of the function being tested
-    expected : 
-        The expected result of the function
+    return_list: list
+        Contains just the input if only one file given, otherwise, it also gives the output if other files given
     """
     # Put as Paths and read the files
     input_path = Path(data_dir, data_filename)
@@ -56,8 +51,7 @@ def get_data(data_dir, data_filename, *args):
     # Return the input and expected
     return input
     
-
-def get_data_items(data_dir, data_with_item_path, *args):
+def get_data_items(data_dir: Path, data_with_item_path: Path, *args: list[str]) -> list:
     """
     Takes all the path inputs from tests and processes them so they're ready for use.
 
@@ -72,7 +66,7 @@ def get_data_items(data_dir, data_with_item_path, *args):
 
     Returns
     -------
-    return_list
+    return_list: list
         Variable(s) required to do the test
     """
     # Retrieve the files and their contents
@@ -93,7 +87,7 @@ def get_data_items(data_dir, data_with_item_path, *args):
     #Return them
     return item
 
-def get_data_sav(data_dir, sav_file, *args):
+def get_data_sav(data_dir: Path, sav_file: Path, *args: list[Path]) -> list:
     """
     Takes all the path inputs from tests and processes them so they're ready for use.
     More specifically takes in sav files
@@ -104,8 +98,13 @@ def get_data_sav(data_dir, sav_file, *args):
         Path to the data directory
     sav_file : Path
         Path to the sav file, which will load a python dictionary
-    args: Paths
+    args: list[Path]
         If given, is expected to be more filenames
+
+    Returns
+    -------
+    return_list: list
+        Contains just the data if only one file given, otherwise, it also gives the output if other files given
     """
     data = get_data(data_dir, sav_file)
     key = list(data.keys())[0]
@@ -121,7 +120,7 @@ def get_data_sav(data_dir, sav_file, *args):
         return return_list
     return data
 
-def get_savs(data_dir, sav_file, *args):
+def get_savs(data_dir: Path, sav_file: Path, *args: list[Path]) -> dict | list[dict]:
     """
     Takes in the path for many sav files and reads them without
     reading their keys. Assumes the sav files here have more than one key.
@@ -135,6 +134,11 @@ def get_savs(data_dir, sav_file, *args):
         Path to the sav file, which will load a python dictionary
     args: Paths
         If given, is expected to be more filenames
+
+    Returns
+    -------
+    data: dict | list[dict]
+        Either a dict of one sav file or the dicts of multiple sav files
     """
     data = readsav(Path(data_dir, sav_file), python_dict=True)
     if len(args) > 0:
@@ -144,7 +148,7 @@ def get_savs(data_dir, sav_file, *args):
             data.append(new_data)
     return data
 
-def try_assert_all_close(actual : np.ndarray, target : np.ndarray, name : str, tolerance = 1e-8):
+def try_assert_all_close(actual : NDArray, target : NDArray, name : str, tolerance = 1e-8) -> None:
     """
     Uses the numpy testing assert_all_close but uses a try and except wrapper around it to print
     the error instead of doing an AssertionError which stops the running of the program. This is helpful
@@ -153,9 +157,9 @@ def try_assert_all_close(actual : np.ndarray, target : np.ndarray, name : str, t
 
     Parameters
     ----------
-    actual : np.ndarray
+    actual : NDArray
         The array we calculated
-    target : np.ndarray
+    target : NDArray
         The array we actually want to calculate
     name : str
         The name of the variable we are testing
@@ -168,7 +172,7 @@ def try_assert_all_close(actual : np.ndarray, target : np.ndarray, name : str, t
     except AssertionError as error:
         print(Fore.RED + Style.BRIGHT + "Test Failed for {}:".format(name) + Style.RESET_ALL + "{}".format(error) + Style.RESET_ALL)
 
-def convert_to_h5(test_path: Path, save_path: Path, *args) -> None:
+def convert_to_h5(test_path: Path, save_path: Path, *args: list[Path]) -> None:
     """
     For every file specified as an arg, read the file from the test_path into a python dictionary.
     If it's a dict or recarray that contaisn recarrays, convert all the recarrays using recarray_to_dict.
@@ -184,7 +188,7 @@ def convert_to_h5(test_path: Path, save_path: Path, *args) -> None:
         The path to a directory with all the files inside it
     save_path : Path
         The path to the file for saving the HDF5
-    *args : list[str]
+    *args : list[Path]
         A list of file names to be read in, can be .npy or .sav files
     """
     to_save = {}
@@ -200,7 +204,7 @@ def convert_to_h5(test_path: Path, save_path: Path, *args) -> None:
             to_save[key] = var[key]
     save(save_path, to_save, "to_save")
 
-def sav_file_vis_arr_swap_axes(sav_file_vis_arr : np.ndarray):
+def sav_file_vis_arr_swap_axes(sav_file_vis_arr : NDArray) -> NDArray:
     """After saving arrays from IDL like `vis_arr` and `vis_model_arr` into
     and IDL .sav file, and subsequently loading in via scipy.io.readsav,
     they come out in a shape/format unsuitable for PyFHD. Use this function
@@ -208,12 +212,12 @@ def sav_file_vis_arr_swap_axes(sav_file_vis_arr : np.ndarray):
 
     Parameters
     ----------
-    sav_file_vis_arr : np.ndarray
+    sav_file_vis_arr : NDArray
         Array as read in by scipy.io.readsav, if `n_pol = 2` should have `shape=(2,)`
 
     Returns
     -------
-    np.ndarray
+    NDArray
         Returns the array with `shape=(n_pol, n_freq, n_baselines)`
     """
 
@@ -228,9 +232,9 @@ def sav_file_vis_arr_swap_axes(sav_file_vis_arr : np.ndarray):
 
     return vis_arr
 
-def print_types(dictionary, dict_name, indent_level = 1):
+def print_types(dictionary: dict, dict_name: str, indent_level: int = 1) -> None:
     """
-    When generating the tests, I'd find it useful to see the types of all the keys and value pairs inside
+    When generating the tests, Sometimes I'd find it useful to see the types of all the keys and value pairs inside
     the dictionary I'm manipulating. The Debug mode is helpful for this too, but this can be easily used 
     inside a notebook if experimenting in there too. 
 
@@ -238,7 +242,7 @@ def print_types(dictionary, dict_name, indent_level = 1):
     ----------
     dictionary : dict
         The dictionary to print the types of
-    dict_name : string
+    dict_name : str
         The name of the dict
     indent_level : int
         Sets the indent levels for printing as it's a recursive function, by default 1

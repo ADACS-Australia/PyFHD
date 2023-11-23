@@ -1,4 +1,5 @@
 import numpy as np
+from numpy.typing import NDArray
 from PyFHD.data_setup.uvfits import extract_visibilities, create_params, extract_header
 import logging
 from PyFHD.pyfhd_tools.pyfhd_utils import run_command
@@ -11,7 +12,7 @@ from scipy.io import readsav
 from pathlib import Path
 import sys
 
-def vis_model_transfer(pyfhd_config: dict, obs : dict, logger: logging.Logger) -> tuple[np.ndarray, dict]:
+def vis_model_transfer(pyfhd_config: dict, obs : dict, logger: logging.Logger) -> tuple[NDArray[np.complex128], dict]:
     """
     Transfer in a simulated model of the visibilities from either a sav file or uvfits file.
 
@@ -24,7 +25,7 @@ def vis_model_transfer(pyfhd_config: dict, obs : dict, logger: logging.Logger) -
 
     Returns
     -------
-    (vis_model_arr, params_model) : tuple[np.array, dict]
+    (vis_model_arr, params_model) : tuple[NDArray[np.complex128], dict]
         1) The simulated model for the visibilities 2) The parameters for the model used for flagging the model
 
     See Also
@@ -40,8 +41,7 @@ def vis_model_transfer(pyfhd_config: dict, obs : dict, logger: logging.Logger) -
         logger.error("You chose a file type PyFHD can't import, existing")
         sys.exit()
     
-
-def import_vis_model_from_sav(pyfhd_config : dict, obs : dict, logger : logging.Logger) -> tuple[np.ndarray, dict]:
+def import_vis_model_from_sav(pyfhd_config : dict, obs : dict, logger : logging.Logger) -> tuple[NDArray[np.complex128], dict]:
     """
     Read a model visibility array in from multiple IDL sav files which are in a directory
     given by pyfhd_config['model-file-path']. The data is assumed to be in the format of
@@ -59,7 +59,7 @@ def import_vis_model_from_sav(pyfhd_config : dict, obs : dict, logger : logging.
 
     Returns
     -------
-    (vis_model_arr, params_model) : tuple[np.ndarray, dict]
+    (vis_model_arr, params_model) : tuple[NDArray[np.complex128], dict]
         1) The simulated model for the visibilities 2) The parameters for the model used for flagging the model
     """
     try: 
@@ -102,7 +102,7 @@ def import_vis_model_from_sav(pyfhd_config : dict, obs : dict, logger : logging.
 
 
 def import_vis_model_from_uvfits(pyfhd_config : dict, obs : dict,
-                                 logger : logging.Logger) -> tuple[np.ndarray, dict]:
+                                 logger : logging.Logger) -> tuple[NDArray[np.complex128], dict]:
     """Read a model visibility array in from a `uvfits` with filepath given
     by pyfhd_config['model_file_path']. Reads data in via 
     `PyFHD.data_setup.uvfits import extract_visibilities`.
@@ -117,8 +117,8 @@ def import_vis_model_from_uvfits(pyfhd_config : dict, obs : dict,
 
     Returns
     -------
-    vis_model_arr : np.array
-        A `np.complex128` type array of shape (n_pol, n_vis_raw, n_freq)
+    (vis_model_arr, params_model) : tuple[NDArray[np.complex128], dict]
+        1) A `np.complex128` type array of shape (n_pol, n_vis_raw, n_freq) 2) The parameters for said model
     """
     
     header_model, params_data_model, _, _ = extract_header(pyfhd_config, logger, model_uvfits=True)
@@ -191,17 +191,17 @@ class _FlaggingInfoCounter(object):
         self.ant1_single_time = params['antenna1'][:self.num_visi_per_time_step]
         self.ant2_single_time = params['antenna2'][:self.num_visi_per_time_step]
 
-def flag_model_visibilities(vis_model_arr : np.ndarray,
+def flag_model_visibilities(vis_model_arr : NDArray[np.complex128],
                             params_data : dict, params_model : dict,
                             obs : dict, pyfhd_config : dict,
-                            logger : logging.Logger) -> np.ndarray:
+                            logger : logging.Logger) -> NDArray[np.complex128]:
     """
     Account for time offset and tile flags, and check that the uvfits
     and compatible. Needs to check if auto-correlations are present
 
     Parameters
     ----------
-    vis_model_arr : np.ndarray
+    vis_model_arr : NDArray[np.complex128]
         The model visibility array from the model uvfits file
     params_data : dict
         The params data from the observation uvfits
@@ -216,7 +216,7 @@ def flag_model_visibilities(vis_model_arr : np.ndarray,
 
     Returns
     -------
-    vis_model_arr_flagged: np.ndarray
+    vis_model_arr_flagged: NDArray[np.complex128]
         The flagged model visibility array
     """    
 
@@ -384,18 +384,19 @@ def flag_model_visibilities(vis_model_arr : np.ndarray,
 
     return vis_model_arr_flagged
 
-def convert_vis_model_arr_to_sav(vis_model_arr : np.ndarray,
+def convert_vis_model_arr_to_sav(vis_model_arr : NDArray[np.complex128],
                                  pyfhd_config : dict,
                                  logger : logging.Logger,
                                  model_vis_dir : str, n_pol : int):
-    """Converts the contents of `vis_model_arr` into an FHD .sav file format
+    """
+    Converts the contents of `vis_model_arr` into an FHD .sav file format
     so we can import into existing IDL code with ease. First writes data to
     `hdf5` format, then uses IDL code template to convert to IDL `.sav` format
     compatible with FHD. Sticks the outputs into `model_vis_dir`.
 
     Parameters
     ----------
-    vis_model_arr : np.ndarray
+    vis_model_arr : NDArray[np.complex128]
         Complex array hold the model visibilities
     pyfhd_config : dict
         The options from argparse in a dictionary, that have been verified using

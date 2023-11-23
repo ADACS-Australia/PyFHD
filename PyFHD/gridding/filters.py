@@ -1,20 +1,21 @@
 import numpy as np
+from numpy.typing import NDArray
 from PyFHD.pyfhd_tools.pyfhd_utils import weight_invert
 import PyFHD.gridding.gridding_utils as gridding_utils
 from logging import Logger
 
-def filter_uv_uniform(image_uv, vis_count: np.ndarray | None, 
+def filter_uv_uniform(image_uv: NDArray[np.complex128], vis_count: NDArray[np.int_] | None, 
                       obs: dict|None = None, params: dict|None = None, pyfhd_config: dict|None = None, 
-                      logger: Logger|None = None,weights: dict|None = None, fi_use: dict|None = None, 
-                      bi_use: dict|None = None, mask_mirror_indices: bool = False) -> tuple[np.ndarray, np.ndarray]:
+                      logger: Logger|None = None, weights: NDArray[np.float64] | None = None, fi_use: NDArray[np.int_] | None = None, 
+                      bi_use: NDArray[np.int_] | None = None, mask_mirror_indices: bool = False) -> tuple[NDArray[np.complex128], NDArray[np.float64]]:
     """
     Perform uniform weighting in {u,v} space.
 
     Parameters
     ----------
-    image_uv : np.ndarray
+    image_uv : NDArray[np.complex128]
         A 2D {u,v} gridded plane to be filtered
-    vis_count : np.ndarray | None
+    vis_count : NDArray[np.int_] | None
         2D array of number of contributing visibilities per pixel on the {u,v} grid
     obs : dict | None, optional
         Observation metadata dictionary, by default None
@@ -24,18 +25,18 @@ def filter_uv_uniform(image_uv, vis_count: np.ndarray | None,
         Run option dictionary, by default None
     logger : Logger | None, optional
         PyFHD's logger, by default None
-    weights : dict | None, optional
+    weights : NDArray[np.float64] | None, optional
         The weights array (aka vis_weights), by default None
-    fi_use : dict | None, optional
+    fi_use : NDArray[np.int_] | None, optional
         Frequency index array for gridding, i.e. gridding all frequencies for continuum images, by default None
-    bi_use : dict | None, optional
+    bi_use : NDArray[np.int_] | None, optional
         Baseline index array for gridding, i.e even vs odd time stamps, by default None
     mask_mirror_indices : bool, optional
         Exclude baselines mirrored along the v-axis, by default False
 
     Returns
     -------
-    tuple[image_uv_filtered: np.ndarray, filter_use: np.ndarray]
+    (image_uv_filtered, filter_use) : tuple[NDArray[np.complex128], NDArray[np.float64]]
         The filtered 2D {u,v} plane and the filter used
 
     Raises

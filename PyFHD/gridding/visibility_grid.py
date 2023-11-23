@@ -1,12 +1,13 @@
 import numpy as np
+from numpy.typing import NDArray
 from PyFHD.gridding.gridding_utils import interpolate_kernel, baseline_grid_locations, grid_beam_per_baseline, conjugate_mirror
 from PyFHD.pyfhd_tools.pyfhd_utils import weight_invert, rebin, l_m_n, idl_argunique
 from logging import Logger
 import h5py
 
 def visibility_grid(
-        visibility: np.ndarray,
-        vis_weights: np.ndarray,
+        visibility: NDArray[np.complex128],
+        vis_weights: NDArray[np.float64],
         obs: dict,
         psf: dict | h5py.File,
         params: dict,
@@ -15,10 +16,10 @@ def visibility_grid(
         logger: Logger,
         uniform_flag: bool = False,
         no_conjugate: bool = False,
-        model: np.ndarray|None = None,
-        fi_use: np.ndarray|None = None,
-        bi_use: np.ndarray|None = None
-    ):
+        model: NDArray[np.complex128]|None = None,
+        fi_use: NDArray[np.int_]|None = None,
+        bi_use: NDArray[np.int_]|None = None
+    ) -> dict:
     """
     Put visibilities on a discrete, hyperresolved 2D plane in {u,v}-space with the Fourier-transform of the 
     beam sensitivity as the kernel (or spreading function). This can done per frequency to create 3D {u,v,f} 
@@ -37,9 +38,9 @@ def visibility_grid(
 
     Parameters
     ----------
-    visibility : np.ndarray
+    visibility : NDArray[np.complex128]
         Calibrated and flagged data visibilities 
-    vis_weights : np.ndarray
+    vis_weights : NDArray[np.float64]
         Weights (flags) of the visibilities 
     obs : dict
         Observation metadata dictionary
@@ -57,11 +58,11 @@ def visibility_grid(
         Grid a number count for contributing baselines per pixel, by default False
     no_conjugate : bool, optional
         Do not perform the conjugate mirror to fill half of the {u,v} plane, by default False
-    model : np.ndarray | None, optional
+    model : NDArray[np.complex128] | None, optional
         Simulated model visibilites, by default None
-    fi_use : np.ndarray | None, optional
+    fi_use : NDArray[np.int_] | None, optional
         Frequency index array for gridding, i.e. gridding all frequencies for continuum images, by default None
-    bi_use : np.ndarray | None, optional
+    bi_use : NDArray[np.int_] | None, optional
         Baseline index array for gridding, i.e even vs odd time stamps, by default None
 
     Returns

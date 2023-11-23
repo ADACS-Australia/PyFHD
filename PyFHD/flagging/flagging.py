@@ -1,8 +1,9 @@
 import numpy as np
+from numpy.typing import NDArray, ArrayLike
 from logging import Logger
 from PyFHD.pyfhd_tools.pyfhd_utils import idl_median, histogram
 
-def vis_flag_tiles(obs: dict, vis_weight_arr: np.ndarray, tiles_to_flag: np.ndarray | list, logger: Logger) -> np.ndarray:
+def vis_flag_tiles(obs: dict, vis_weight_arr: NDArray[np.float64], tiles_to_flag: ArrayLike, logger: Logger) -> np.ndarray:
     """
     Flag tiles in the visibility weights array with a given array or list of tiles to flag 
     containing the names of the tiles, NOT the indexes.
@@ -11,16 +12,16 @@ def vis_flag_tiles(obs: dict, vis_weight_arr: np.ndarray, tiles_to_flag: np.ndar
     ----------
     obs : dict
         The observation metadata dictionary
-    vis_weight_arr : np.ndarray
+    vis_weight_arr : NDArray[np.float64]
         The visibility weight array
-    tiles_to_flag : np.ndarray | list
+    tiles_to_flag : ArrayLike
         The tiles to flag
     logger : Logger
         PyFHD's Logger
 
     Returns
     -------
-    flagged_vis_weight_arr: np.ndarray
+    flagged_vis_weight_arr: NDArray[np.float64]
         A vis_weight_arr where the tiles to flag have been set to 0
     """
     tile_flag_list_use = np.array([], dtype=np.int64)
@@ -49,7 +50,7 @@ def vis_flag_tiles(obs: dict, vis_weight_arr: np.ndarray, tiles_to_flag: np.ndar
                 vis_weight_arr[:, :, rb[rb[ti] : rb[ti + 1] - 1]] = 0
     return vis_weight_arr
 
-def vis_flag_basic(vis_weight_arr: np.ndarray, vis_arr: np.ndarray, obs: dict, pyfhd_config: dict, logger: Logger) -> tuple[np.ndarray, dict]:
+def vis_flag_basic(vis_weight_arr: NDArray[np.float64], vis_arr: NDArray[np.complex128], obs: dict, pyfhd_config: dict, logger: Logger) -> tuple[np.ndarray, dict]:
     """
     Do some basic flagging on frequencies and tiles based on the confgiruation given by pyfhd_config 
     such as `flag_freq_start`, `flag_freq_end`, `instrument` and `flag_tile_names`. To flag the frequencies and
@@ -59,9 +60,9 @@ def vis_flag_basic(vis_weight_arr: np.ndarray, vis_arr: np.ndarray, obs: dict, p
 
     Parameters
     ----------
-    vis_weight_arr : np.ndarray
+    vis_weight_arr : NDArray[np.float64]
         The visibility weights array
-    vis_arr : np.ndarray
+    vis_arr : NDArray[np.complex128]
         The visibilities array
     obs : dict
         The observation dictionary containing the frequency and tile flag arrays
@@ -74,7 +75,7 @@ def vis_flag_basic(vis_weight_arr: np.ndarray, vis_arr: np.ndarray, obs: dict, p
 
     Returns
     -------
-    tuple[vis_weight_arr: np.ndarray, obs: dict]
+    (vis_weight_arr, obs) : tuple[NDArray[np.complex128], dict]
         A tuple of the updated vis_weight_arr and the obs dict containing updated frequency 
         and tile flags
     """
@@ -176,15 +177,15 @@ def vis_flag_basic(vis_weight_arr: np.ndarray, vis_arr: np.ndarray, obs: dict, p
 
     return vis_weight_arr, obs
 
-def vis_flag(vis_arr : np.ndarray, vis_weights: np.ndarray, obs: dict, params: dict, logger: Logger) -> tuple[np.ndarray, dict] :
+def vis_flag(vis_arr : NDArray[np.complex128], vis_weights: NDArray[np.float64], obs: dict, params: dict, logger: Logger) -> tuple[np.ndarray, dict] :
     """
     TODO: __summary__
 
     Parameters
     ----------
-    vis_arr : np.ndarray
+    vis_arr : NDArray[np.complex128]
         The visibility array
-    vis_weights : np.ndarray
+    vis_weights : NDArray[np.float64]
         The visibility weights array
     obs : dict
         The observation dictionary

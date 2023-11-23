@@ -328,7 +328,6 @@ def _check_layout_valid(layout : dict, key : str, logger : logging.Logger, check
     if type(layout[key]) == np.ndarray and (layout[key].size != layout['n_antenna']):
         logger.error(f"The layout[{key}] array set is not the same size of the number of antennas. Check the UVFITS file for errors.")
     
-
 def create_layout(antenna_header: Header, antenna_data: FITS_rec, logger : logging.Logger) -> dict:
     """
     TODO: _summary_
@@ -553,5 +552,3 @@ def create_layout(antenna_header: Header, antenna_data: FITS_rec, logger : loggi
     _check_layout_valid(layout, 'polb_orientation', logger, check_min_max = True)
 
     return layout
-
-    
