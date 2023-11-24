@@ -177,8 +177,6 @@ def main_python_only(pyfhd_config : dict, logger : logging.Logger):
                 flag_end = time.time()
                 _print_time_diff(flag_start, flag_end, 'Visibilities Flagged', logger)
 
-            # TODO: save flagged weights and obs here
-
             noise_start = time.time()
             obs['vis_noise'] = vis_noise_calc(obs, vis_arr, vis_weights)
             noise_end = time.time()
@@ -206,7 +204,6 @@ def main_python_only(pyfhd_config : dict, logger : logging.Logger):
         cal = cal_checkpoint['cal']
         logger.info(f"Checkpoint Loaded: Calibrated and Flagged visibility parameters, array and weights, the flagged observation metadata dictionary and the calibration dictionary loaded from {Path(pyfhd_config['output_dir'], 'calibrate_checkpoint.h5')}")
 
-    # TODO: save the psf here as h5, sav files take a while to read, and then add in hdf5 reader into the import beam function
     if pyfhd_config['recalculate_grid'] and pyfhd_config['gridding_checkpoint'] is None:
         grid_start = time.time()
         # Since it's done per polarization, we can do multi-processing if it's not fast enough
