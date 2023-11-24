@@ -58,7 +58,7 @@ def main_python_only(pyfhd_config : dict, logger : logging.Logger):
         _The logger to output info and errors to
     """
 
-    if pyfhd_config['obs_checkpoint'] is None:
+    if pyfhd_config['obs_checkpoint'] is None and pyfhd_config['calibrate_checkpoint'] is None:
         header_start = time.time()
         # Get the header
         pyfhd_header, params_data, antenna_header, antenna_data = extract_header(pyfhd_config, logger)
@@ -99,9 +99,8 @@ def main_python_only(pyfhd_config : dict, logger : logging.Logger):
                 'vis_arr': vis_arr,
                 'vis_weights': vis_weights
             }
-            logger.info("Checkpoint Saved: Uncalibrated visibility parameters, array and weights and the observation metadata dictionary saved into obs_checkpoint.h5")
             save(Path(pyfhd_config['output_dir'], 'obs_checkpoint.h5'), checkpoint, 'obs_checkpoint', logger = logger)
-
+            logger.info(f"Checkpoint Saved: Uncalibrated visibility parameters, array and weights and the observation metadata dictionary saved into {Path(pyfhd_config['output_dir'], 'obs_checkpoint.h5')}")
     else:
         # Load the checkpoint and initialize the required variables
         obs_checkpoint = load(pyfhd_config['obs_checkpoint'], logger = logger)
@@ -109,6 +108,7 @@ def main_python_only(pyfhd_config : dict, logger : logging.Logger):
         params = obs_checkpoint['params']
         vis_arr = obs_checkpoint['vis_arr']
         vis_weights = obs_checkpoint['vis_weights']
+        logger.info(f"Checkpoint Loaded: Uncalibrated visibility parameters, array and weights and the observation metadata dictionary loaded from {Path(pyfhd_config['output_dir'], 'obs_checkpoint.h5')}")
 
     # Read in the beam from a file returning a psf dictionary
     psf_start = time.time()
@@ -120,72 +120,94 @@ def main_python_only(pyfhd_config : dict, logger : logging.Logger):
         # Turn off beam_per_baseline if image_power_beam_arr is 
         # only one value
         pyfhd_config['beam_per_baseline'] = False
+    
+    # Check if the calibrate checkpoint has been used, if not run the calibration steps
+    if pyfhd_config['calibrate_checkpoint'] is None:
+        if pyfhd_config['deproject_w_term'] is not None:
+            w_term_start = time.time()
+            vis_arr = simple_deproject_w_term(obs, params, vis_arr, pyfhd_config['deproject_w_term'], logger)
+            w_term_end = time.time()
+            _print_time_diff(w_term_start, w_term_end, 'Simple W-Term Deprojection Applied', logger)
 
-    if pyfhd_config['deproject_w_term'] is not None:
-        w_term_start = time.time()
-        vis_arr = simple_deproject_w_term(obs, params, vis_arr, pyfhd_config['deproject_w_term'], logger)
-        w_term_end = time.time()
-        _print_time_diff(w_term_start, w_term_end, 'Simple W-Term Deprojection Applied', logger)
+        # Peform basic flagging
+        if (pyfhd_config['flag_basic']):
+            basic_flag_start = time.time()
+            vis_weights, obs = vis_flag_basic(vis_weights, vis_arr, obs, pyfhd_config, logger)
+            basic_flag_end = time.time()
+            _print_time_diff(basic_flag_start, basic_flag_end, 'Basic Flagging Completed', logger)
 
-    # Peform basic flagging
-    if (pyfhd_config['flag_basic']):
-        basic_flag_start = time.time()
-        vis_weights, obs = vis_flag_basic(vis_weights, vis_arr, obs, pyfhd_config, logger)
-        basic_flag_end = time.time()
-        _print_time_diff(basic_flag_start, basic_flag_end, 'Basic Flagging Completed', logger)
-
-    # Update the visibility weights
-    weight_start = time.time()
-    vis_weights, obs = vis_weights_update(vis_weights, obs, psf, params)
-    weight_end = time.time()
-    _print_time_diff(weight_start, weight_end, 'Visibilities Weights Updated After Basic Flagging', logger)
-
-    # Get the vis_model_arr from a UVFITS file or SAV files and flag any issues
-    vis_model_arr_start = time.time()
-    vis_model_arr, params_model = vis_model_transfer(pyfhd_config, obs, logger)
-    if pyfhd_config['flag_model']:
-        vis_model_arr = flag_model_visibilities(vis_model_arr, params, params_model, obs, pyfhd_config, logger)
-    vis_model_arr_end = time.time()
-    _print_time_diff(vis_model_arr_start, vis_model_arr_end, 'Model Imported and Flagged From UVFITS', logger)
-
-    # Skipped initializing the cal structure as it mostly just copies values from the obs, params, config and the skymodel from FHD
-    # However, there is resulting cal structure for logging and output purposes to store the resulting gain and any other associated
-    # arrays
-    if (pyfhd_config['calibrate_visibilities']):
-        logger.info("Beginning Calibration")
-        cal_start = time.time()
-        vis_arr, cal, obs = calibrate(obs, params, vis_arr, vis_weights, vis_model_arr, pyfhd_config, logger)
-        cal_end = time.time()
-        _print_time_diff(cal_start, cal_end, 'Visibilities calibrated and cal dictionary with gains created', logger)
-
-        if (obs['n_pol'] >= 4):
-            qu_mixing_start = time.time()
-            cal["stokes_mix_phase"] = calibrate_qu_mixing(vis_arr, vis_model_arr, vis_weights, obs)
-            qu_mixing_end = time.time()
-            _print_time_diff(qu_mixing_start, qu_mixing_end, 'Calibrate QU-Mixing has finished, result in cal["stokes_mix_phase"]', logger)
-
+        # Update the visibility weights
         weight_start = time.time()
         vis_weights, obs = vis_weights_update(vis_weights, obs, psf, params)
         weight_end = time.time()
-        _print_time_diff(weight_start, weight_end, 'Visibilities Weights Updated After Calibration', logger)
+        _print_time_diff(weight_start, weight_end, 'Visibilities Weights Updated After Basic Flagging', logger)
 
-    # TODO: save vis_arr, vis_weights and cal dict here
+        # Get the vis_model_arr from a UVFITS file or SAV files and flag any issues
+        vis_model_arr_start = time.time()
+        vis_model_arr, params_model = vis_model_transfer(pyfhd_config, obs, logger)
+        if pyfhd_config['flag_model']:
+            vis_model_arr = flag_model_visibilities(vis_model_arr, params, params_model, obs, pyfhd_config, logger)
+        vis_model_arr_end = time.time()
+        _print_time_diff(vis_model_arr_start, vis_model_arr_end, 'Model Imported and Flagged From UVFITS', logger)
 
-    if (pyfhd_config['flag_visibilities']):
-        flag_start = time.time()
-        vis_weights, obs = vis_flag(vis_arr, vis_weights, obs, params)
-        flag_end = time.time()
-        _print_time_diff(flag_start, flag_end, 'Visibilities Flagged', logger)
+        # Skipped initializing the cal structure as it mostly just copies values from the obs, params, config and the skymodel from FHD
+        # However, there is resulting cal structure for logging and output purposes to store the resulting gain and any other associated
+        # arrays
+        if pyfhd_config['calibrate_visibilities']:
+            logger.info("Beginning Calibration")
+            cal_start = time.time()
+            vis_arr, cal, obs = calibrate(obs, params, vis_arr, vis_weights, vis_model_arr, pyfhd_config, logger)
+            cal_end = time.time()
+            _print_time_diff(cal_start, cal_end, 'Visibilities calibrated and cal dictionary with gains created', logger)
 
-    # TODO: save flagged weights and obs here
+            if (obs['n_pol'] >= 4):
+                qu_mixing_start = time.time()
+                cal["stokes_mix_phase"] = calibrate_qu_mixing(vis_arr, vis_model_arr, vis_weights, obs)
+                qu_mixing_end = time.time()
+                _print_time_diff(qu_mixing_start, qu_mixing_end, 'Calibrate QU-Mixing has finished, result in cal["stokes_mix_phase"]', logger)
 
-    noise_start = time.time()
-    obs['vis_noise'] = vis_noise_calc(obs, vis_arr, vis_weights)
-    noise_end = time.time()
-    _print_time_diff(noise_start, noise_end, 'Noise Calculated and added to obs', logger)
+            weight_start = time.time()
+            vis_weights, obs = vis_weights_update(vis_weights, obs, psf, params)
+            weight_end = time.time()
+            _print_time_diff(weight_start, weight_end, 'Visibilities Weights Updated After Calibration', logger)
+
+            if (pyfhd_config['flag_visibilities']):
+                flag_start = time.time()
+                vis_weights, obs = vis_flag(vis_arr, vis_weights, obs, params)
+                flag_end = time.time()
+                _print_time_diff(flag_start, flag_end, 'Visibilities Flagged', logger)
+
+            # TODO: save flagged weights and obs here
+
+            noise_start = time.time()
+            obs['vis_noise'] = vis_noise_calc(obs, vis_arr, vis_weights)
+            noise_end = time.time()
+            _print_time_diff(noise_start, noise_end, 'Noise Calculated and added to obs', logger)
+
+            if pyfhd_config['save_checkpoints']:
+                checkpoint = {
+                    "obs": obs,
+                    'params': params,
+                    "vis_arr": vis_arr,
+                    "vis_model_arr": vis_model_arr,
+                    "vis_weights": vis_weights,
+                    "cal": cal,
+                }
+                save(Path(pyfhd_config['output_dir'], 'calibrate_checkpoint.h5'), checkpoint, "calibrate_checkpoint", logger = logger)
+                logger.info(f"Checkpoint Saved: Calibrated and Flagged visibility parameters, array and weights, the flagged observation metadata dictionary and the calibration dictionary saved into {Path(pyfhd_config['output_dir'], 'calibrate_checkpoint.h5')}")
+    else:
+        # Load the calibration checkpoint
+        cal_checkpoint = load(pyfhd_config['calibrate_checkpoint'], logger = logger)
+        obs = cal_checkpoint['obs']
+        params = cal_checkpoint['params']
+        vis_arr = cal_checkpoint['vis_arr']
+        vis_model_arr = cal_checkpoint['vis_model_arr']
+        vis_weights = cal_checkpoint['vis_weights']
+        cal = cal_checkpoint['cal']
+        logger.info(f"Checkpoint Loaded: Calibrated and Flagged visibility parameters, array and weights, the flagged observation metadata dictionary and the calibration dictionary loaded from {Path(pyfhd_config['output_dir'], 'calibrate_checkpoint.h5')}")
 
     # TODO: save the psf here as h5, sav files take a while to read, and then add in hdf5 reader into the import beam function
-    if (pyfhd_config['recalculate_grid']):
+    if pyfhd_config['recalculate_grid'] and pyfhd_config['gridding_checkpoint'] is None:
         grid_start = time.time()
         # Since it's done per polarization, we can do multi-processing if it's not fast enough
         for pol_i in range(obs["n_pol"]):
@@ -233,9 +255,28 @@ def main_python_only(pyfhd_config : dict, logger : logging.Logger):
             weights_uv = crosspol_reformat(weights_uv)
             if vis_model_arr is not None:
                 model_uv = crosspol_reformat(model_uv)
-        # TODO: Save the results here
+        if pyfhd_config['save_checkpoints']:
+            checkpoint = {
+                "image_uv": image_uv,
+                'weights_uv': weights_uv,
+                "variance_uv": variance_uv,
+                "uniform_filter_uv": uniform_filter_uv,
+            }
+            if vis_model_arr is not None:
+                checkpoint["model_uv"] = model_uv
+            save(Path(pyfhd_config['output_dir'], 'gridding_checkpoint.h5'), checkpoint, "gridding_checkpoint", logger = logger)
+            logger.info(f"Checkpoint Saved: The Gridded UV Planes saved into {Path(pyfhd_config['output_dir'], 'gridding_checkpoint.h5')}")
         grid_end = time.time()
         _print_time_diff(grid_start, grid_end, 'Visibilities gridded', logger)
+    else:
+        grid_checkpoint = load(pyfhd_config['gridding_checkpoint'], logger = logger)
+        image_uv = grid_checkpoint['image_uv']
+        weights_uv = grid_checkpoint['weights_uv']
+        variance_uv = grid_checkpoint['variance_uv']
+        uniform_filter_uv = grid_checkpoint['uniform_filter_uv']
+        if 'model_uv' in grid_checkpoint:
+            model_uv = grid_checkpoint['model_uv']
+        logger.info(f"Checkpoint Loaded: The Gridded UV Planes loaded from {Path(pyfhd_config['output_dir'], 'gridding_checkpoint.h5')}")
 
     # TODO: Translate fhd_quickview and add it here
 

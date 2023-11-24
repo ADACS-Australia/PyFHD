@@ -18,7 +18,8 @@ deproject-w-term : ~
 # Checkpointing
 save-checkpoints: true
 obs-checkpoint: ~
-
+calibration-checkpoint: ~
+gridding-checkpoint: ~
 
 # Instrument
 override-target-phasera: ~

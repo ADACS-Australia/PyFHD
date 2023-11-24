@@ -100,8 +100,10 @@ def pyfhd_parser():
     parser.add_argument('--n-pol', type = int, default = 2, choices = [0, 2, 4], help = 'Set number of polarizations to use (XX, YY versus XX, YY, XY, YX).')
 
     # Checkpoints
-    checkpoints.add_argument('-sc', '--save-checkpoints', default = False, action = 'store_true', help = "Activates PyFHD's checkpointing system and saves them into the output directory")
-    checkpoints.add_argument('--obs-checkpoint', default = None, type = Path, help = "Load the checkpoint just after creating the obs, should contain the obs dict, uncalibrated visibility parameters, array and weights")
+    checkpoints.add_argument('--save-checkpoints', default = False, action = 'store_true', help = "Activates PyFHD's checkpointing system and saves them into the output directory")
+    checkpoints.add_argument('--obs-checkpoint', default = None, type = Path, help = "Load the checkpoint just after creating the observation metadata dictionary, should contain the observation metadata dictionary, uncalibrated visibility parameters, array and weights. If calibrate-checkpoint has been set, then obs-checkpoint will be ignored")
+    checkpoints.add_argument('--calibrate-checkpoint', default = None, type = Path, help = "Load the checkpoint after calibration containing the observation metadata dictionary with flagged tiles and frequencies, the calibration dictionary containing the gains and the calibrated visibility parameters, model, array and weights.")
+    checkpoints.add_argument('--gridding-checkpoint', default = None, type = Path, help = "Load the checkpoint after gridding containing the gridded uv planes for the image, weights, variance and filter, with an updated observation metadata dictionary. Should be used in conjunction with the calibrate-checkpoint option")
 
     # Instrument Group
     instrument.add_argument('--override-target-phasera', default = None, type = float, help = "RA of the target phase center, which overrides the value supplied in the metafits under the header keyword RAPHASE. If the metafits doesn't exist, it ovverides the value supplied in the uvfits under the header keyword RA")

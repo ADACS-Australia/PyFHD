@@ -363,7 +363,7 @@ def group_to_dict(group: h5py.Group) -> dict:
                 return_dict[key] = group_to_dict(group[key])
     return return_dict
 
-def load(file_name: Path, logger: Logger | None = None, lazy_load: bool = False) -> dict | NDArray[Any] | h5py.File:
+def load(file_name: Path, logger: Logger | None = None, lazy_load: bool = False) -> dict[str, object] | NDArray[Any] | h5py.File:
     """
     Loads a HDF5 file into PyFHD, it reads the HDF5 into an array if the 
     HDF5 file contains a single dataset, while a HDF5 which contains multiple
@@ -384,7 +384,7 @@ def load(file_name: Path, logger: Logger | None = None, lazy_load: bool = False)
 
     Returns
     -------
-    return_dict | array | h5_file: dict | NDArray[Any] | h5py.File
+    return_dict | array | h5_file: dict[str, object] | NDArray[Any] | h5py.File
         Returns a dict in the case the HDF5 file contains multple datasets, 
         An array if the HDF5 contains one dataset or h5py File object if the 
         file is lazy loaded to conserve memory. 
