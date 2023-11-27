@@ -13,4 +13,5 @@ h5py
 sphinx-rtd-theme
 sphinx-argparse
 deepdish
+healpy
 myst-parser
