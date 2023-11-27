@@ -1,12 +1,25 @@
 import numpy as np
-from math import ceil
+from numpy.typing import NDArray
 import warnings
+import h5py
 from PyFHD.gridding.gridding_utils import baseline_grid_locations, interpolate_kernel, grid_beam_per_baseline
 from PyFHD.pyfhd_tools.pyfhd_utils import l_m_n, rebin, weight_invert, histogram, deriv_coefficients
 
-def visibility_degrid(image_uv, vis_weights, obs, psf, params, polarization = 0,
-                      fill_model_visibilities = False, vis_input = None, spectral_model_uv_arr = None,
-                      beam_per_baseline = False, uv_grid_phase_only = True, conserve_memory = False, memory_threshold = 1e8):
+def visibility_degrid(
+        image_uv: NDArray[np.complex128], 
+        vis_weights: NDArray[np.float64], 
+        obs: dict, 
+        psf: dict | h5py.File, 
+        params: dict, 
+        polarization: int = 0,
+        fill_model_visibilities: bool = False, 
+        vis_input: NDArray[np.complex128] | None = None, 
+        spectral_model_uv_arr: NDArray[np.float64] | None = None,
+        beam_per_baseline: bool = False, 
+        uv_grid_phase_only: bool = True, 
+        conserve_memory: bool = False, 
+        memory_threshold: float | int = 1e8
+    ):
     """
     Generate visibilities from a 2D hyperresolved {u,v} plane using the Fourier transform of the beam sensitivity as the 
     kernel (or integration function). The input {u,v} plane is the slant-orthographic projection of the sky when Fourier 
@@ -22,13 +35,13 @@ def visibility_degrid(image_uv, vis_weights, obs, psf, params, polarization = 0,
 
     Parameters
     ----------
-    image_uv : np.ndarray
+    image_uv : NDArray[np.complex128]
         A simulated {u,v} plane with no instrumental effects
-    vis_weight : np.ndarray
+    vis_weight : NDArray[np.float64]
         Weights (flags) of the visibilities
     obs : dict
         Observation metadata dictionary
-    psf : dict
+    psf : dict | h5py.File
         Beam metadata dictionary 
     params : dict
         Visibility metadata dictionary
@@ -36,9 +49,9 @@ def visibility_degrid(image_uv, vis_weights, obs, psf, params, polarization = 0,
         Index of the current polarization, by default 0
     fill_model_visibilities : bool, optional
         Create all model visibilities disregarding flags, by default False
-    vis_input : np.ndarray, optional
+    vis_input : NDArray[np.complex128] | None, optional
         Extra model visibilities to add to the degridded products, by default None
-    spectral_model_uv_arr : np.ndarray, optional
+    spectral_model_uv_arr : NDArray[np.float64] | None, optional
         Additional {u,v} planes to degrid for complicated source spectral dependencies, by default None
     beam_per_baseline : bool, optional
         Generate beams with corrective phases given the baseline location, by default False
@@ -49,9 +62,9 @@ def visibility_degrid(image_uv, vis_weights, obs, psf, params, polarization = 0,
 
     Returns
     -------
-    visibility_array : np.ndarray
+    visibility_array : NDArray[np.complex128]
         A simulated visibility array from degridding the input {u,v} plane with the instrumental kernel
-    obs : dict, optional
+    obs : dict
         Updated observation metadata dictionary
     """
 

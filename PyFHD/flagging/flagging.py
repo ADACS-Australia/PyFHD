@@ -75,9 +75,10 @@ def vis_flag_basic(vis_weight_arr: NDArray[np.float64], vis_arr: NDArray[np.comp
 
     Returns
     -------
-    (vis_weight_arr, obs) : tuple[NDArray[np.complex128], dict]
-        A tuple of the updated vis_weight_arr and the obs dict containing updated frequency 
-        and tile flags
+    vis_weight_arr : NDArray[np.complex128] 
+        Updated visibility weights with flagged tiles and frequencies
+    obs : dict
+        observation metadata dictionary containing updated frequency and tile flags
     """
     freq_arr = obs['baseline_info']['freq'].copy()
 
@@ -196,8 +197,10 @@ def vis_flag(vis_arr : NDArray[np.complex128], vis_weights: NDArray[np.float64],
 
     Returns
     -------
-    tuple[vis_weights: np.ndarray, obs: dict]
-        Flagged vis_weights and flagged tiles and frequencies inside obs
+    vis_weights : np.ndarray
+        Flagged vis_weights
+    obs : dict
+        Flagged tiles and frequencies observation metadata dictionary
     """
     flag_nsigma = 3
     data_abs = np.abs(vis_arr[0])

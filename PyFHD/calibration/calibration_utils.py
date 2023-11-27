@@ -26,8 +26,10 @@ def vis_extract_autocorr(obs: dict, vis_arr: NDArray[np.complex128], pyfhd_confi
 
     Returns
     -------
-    (autocorr, auto_tile_i) : tuple[NDArray[np.float64], NDArray[np.int_]]
-        Tuple of 1) the auto-correlation visibilities and 2) the index array for auto-correlation visibilities
+    autocorr: NDArray[np.float64]
+        The auto-correlation visibilities
+    auto_tile_i : NDArray[np.int_]
+        The index array for auto-correlation visibilities
     """
 
     autocorr_i = np.where(obs["baseline_info"]["tile_a"] == obs["baseline_info"]["tile_b"])[0]
@@ -263,9 +265,10 @@ def transfer_bandpass(obs: dict, cal: dict, pyfhd_config: dict, logger: Logger) 
 
     Returns
     -------
-    (cal_bandpass, cal_remainder) : tuple[dict, dict]
-        Tuple of 1) calibration dictionary with bandpass gains and 2) calibration dictionary with residuals
-        after removing the bandpass gains
+    cal_bandpass : dict 
+        Calibration dictionary with bandpass gains
+    cal_remainder : dict
+        calibration dictionary with residuals after removing the bandpass gains
     """
     cal_bandpass = {}
     try:  
@@ -505,9 +508,10 @@ def vis_cal_bandpass(obs: dict, cal: dict, pyfhd_config: dict, logger: Logger) -
 
     Returns
     -------
-    (cal_bandpass, cal_remainder) : tuple[dict, dict]
-        Tuple of 1) calibration dictionary with bandpass gains and 2) calibration dictionary with residuals
-        after removing the bandpass gains
+    cal_bandpass : dict 
+        Calibration dictionary with bandpass gains
+    cal_remainder : dict
+        calibration dictionary with residuals after removing the bandpass gains
     """
     freq_use = np.nonzero(obs["baseline_info"]["freq_use"])[0]
     tile_use = np.nonzero(obs["baseline_info"]["tile_use"])[0]
@@ -1020,8 +1024,10 @@ def vis_calibration_apply(vis_arr: NDArray[np.complex128], obs: dict, cal: dict,
         
     Returns
     -------
-    (vis_arr, cal) : Tuple[NDArray[np.complex128], dict]
-        Tuple of 1) calibrated data visibilities and 2) calibration dictionary 
+    vis_arr : NDArray[np.complex128]
+        Calibrated visibilities
+    cal : dict
+        Calibration dictionary 
     """
     # tile numbering starts at 1
     tile_a_i = obs['baseline_info']['tile_a'] - 1
@@ -1181,9 +1187,10 @@ def cal_auto_ratio_divide(obs: dict, cal: dict, vis_auto: NDArray[np.float64], a
 
     Returns
     -------
-    (cal, auto_ratio) : tuple[dict, NDArray[np.float64]]
-        Tuple of 1) calibration dictionary with gains that have reduced antenna-dependent bias and
-        2) the estimation of the antenna-dependent bias through the square root of the autocorrelation 
+    cal : dict 
+        Calibration dictionary with gains that have reduced antenna-dependent bias
+    auto_ratio : NDArray[np.float64]
+        The estimation of the antenna-dependent bias through the square root of the autocorrelation 
         visibilities normalized via a reference tile.
     """
 

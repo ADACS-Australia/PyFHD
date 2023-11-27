@@ -1,4 +1,5 @@
 import numpy as np
+from numpy.typing import NDArray
 from PyFHD.io.pyfhd_io import save
 from logging import Logger
 from pathlib import Path
@@ -11,9 +12,9 @@ from PyFHD.gridding.gridding_utils import dirty_image_generate
 
 def get_image_renormalization(
     obs: dict, 
-    weights: np.ndarray, 
-    beam_base: np.ndarray, 
-    filter_arr: np.ndarray, 
+    weights: NDArray[np.float64], 
+    beam_base: NDArray[np.complex128], 
+    filter_arr: NDArray[np.float64], 
     pyfhd_config: dict, 
     logger: Logger
 ) -> np.ndarray:
@@ -24,11 +25,11 @@ def get_image_renormalization(
     ----------
     obs : dict
         _description_
-    weights : np.ndarray
+    weights : NDArray[np.float64]
         _description_
-    beam_base : np.ndarray
+    beam_base : NDArray[np.complex128]
         _description_
-    filter_arr : np.ndarray
+    filter_arr : NDArray[np.float64]
         _description_
     pyfhd_config : dict
         _description_
@@ -37,7 +38,7 @@ def get_image_renormalization(
 
     Returns
     -------
-    np.ndarray
+    NDArray[np.float64]
         _description_
     """
     renorm_factor = np.empty(obs["pol_i"])
@@ -61,16 +62,48 @@ def quickview(
     psf: dict,
     params: dict,
     cal: dict,
-    vis_arr: np.ndarray,
-    vis_weights: np.ndarray,
-    image_uv: np.ndarray,
-    weights_uv: np.ndarray,
-    variance_uv: np.ndarray,
-    uniform_filter_uv: np.ndarray,
-    model_uv: np.ndarray,
+    vis_arr: NDArray[np.complex128],
+    vis_weights: NDArray[np.float64],
+    image_uv: NDArray[np.complex128],
+    weights_uv: NDArray[np.complex128],
+    variance_uv: NDArray[np.float64],
+    uniform_filter_uv: NDArray[np.float64],
+    model_uv: NDArray[np.complex128],
     pyfhd_config: dict,
     logger: Logger
  ) -> None:
+    """
+    TODO: _summary_
+
+    Parameters
+    ----------
+    obs : dict
+        _description_
+    psf : dict
+        _description_
+    params : dict
+        _description_
+    cal : dict
+        _description_
+    vis_arr : NDArray[np.complex128]
+        _description_
+    vis_weights : NDArray[np.float64]
+        _description_
+    image_uv : NDArray[np.complex128]
+        _description_
+    weights_uv : NDArray[np.complex128]
+        _description_
+    variance_uv : NDArray[np.float64]
+        _description_
+    uniform_filter_uv : NDArray[np.float64]
+        _description_
+    model_uv : NDArray[np.complex128]
+        _description_
+    pyfhd_config : dict
+        _description_
+    logger : Logger
+        _description_
+    """
     # Save all the things into the output directory
     if pyfhd_config["save_obs"]:
         obs_path = Path(pyfhd_config["output_dir"],f"{pyfhd_config['obs_id']}_obs.h5")

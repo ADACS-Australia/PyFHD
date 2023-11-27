@@ -25,8 +25,10 @@ def vis_model_transfer(pyfhd_config: dict, obs : dict, logger: logging.Logger) -
 
     Returns
     -------
-    (vis_model_arr, params_model) : tuple[NDArray[np.complex128], dict]
-        1) The simulated model for the visibilities 2) The parameters for the model used for flagging the model
+    vis_model_arr : NDArray[np.complex128] 
+        Simulated model for the visibilities
+    params_model : dict
+        The parameters for said model used for flagging
 
     See Also
     --------
@@ -59,8 +61,10 @@ def import_vis_model_from_sav(pyfhd_config : dict, obs : dict, logger : logging.
 
     Returns
     -------
-    (vis_model_arr, params_model) : tuple[NDArray[np.complex128], dict]
-        1) The simulated model for the visibilities 2) The parameters for the model used for flagging the model
+    vis_model_arr : NDArray[np.complex128] 
+        Simulated model for the visibilities
+    params_model : dict
+        The parameters for said model used for flagging
     """
     try: 
         path = Path(pyfhd_config['model_file_path'], f"{pyfhd_config['obs_id']}_params.sav")
@@ -99,8 +103,6 @@ def import_vis_model_from_sav(pyfhd_config : dict, obs : dict, logger : logging.
             exit()
     return vis_model_arr, params_model
 
-
-
 def import_vis_model_from_uvfits(pyfhd_config : dict, obs : dict,
                                  logger : logging.Logger) -> tuple[NDArray[np.complex128], dict]:
     """Read a model visibility array in from a `uvfits` with filepath given
@@ -117,8 +119,10 @@ def import_vis_model_from_uvfits(pyfhd_config : dict, obs : dict,
 
     Returns
     -------
-    (vis_model_arr, params_model) : tuple[NDArray[np.complex128], dict]
-        1) A `np.complex128` type array of shape (n_pol, n_vis_raw, n_freq) 2) The parameters for said model
+    vis_model_arr : NDArray[np.complex128] 
+        Simulated model for the visibilities
+    params_model : dict
+        The parameters for said model used for flagging
     """
     
     header_model, params_data_model, _, _ = extract_header(pyfhd_config, logger, model_uvfits=True)

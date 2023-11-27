@@ -29,8 +29,10 @@ def altaz_to_radec(alt : float, az : float, lat : float, lon : float, height : f
 
     Returns
     -------
-    (ra, dec) : tuple[float, float]
-        The corresponding Equatorial Coordinates from the given location and time with altitude and azimuth
+    ra : float  
+        Right Ascension from the given location and time with altitude and azimuth
+    dec : float
+        Declination from the given location and time with altitude and azimuth
     """
 
     loc = EarthLocation.from_geodetic(lon*u.deg, lat*u.deg, height = height*u.meter)
@@ -61,8 +63,10 @@ def radec_to_altaz(ra : float, dec : float, lat : float, lon : float, height : f
 
     Returns
     -------
-    (alt, az) : tuple[float, float]
-        The corresponding Altitude and Azimuth coordinates for the given location, time and celestial coordinates
+    alt : float
+        Altitude coordinates for the given location, time and celestial coordinates
+    az : float
+        Azimuth coordinates for the given location, time and celestial coordinates
     """
 
     # Create the Earth Location
@@ -88,8 +92,10 @@ def radec_to_pixel(ra : float, dec : float, astr : dict) -> tuple[float, float]:
 
     Returns
     -------
-    (x, y) : tuple[float, float]
-        The pixel coordinates for the given celestial coordinate.
+    x : float
+        The pixel x coordinate for the given celestial coordinate.
+    y : float
+        The pixel y coordinate for the given celestial coordinate.
     """
 
     # Create WCS object with astr
@@ -120,8 +126,10 @@ def pixel_to_radec(x: float | NDArray[np.float64], y: float | NDArray[np.float64
 
     Returns
     -------
-    (ra, dec) : tuple[float | NDArray[np.float64], float | NDArray[np.float64]]
-        The corresponding celestial cooridnates
+    ra : float | NDArray[np.float64]
+        Right Ascension from the given pixel coordinates and WCS
+    dec : float | NDArray[np.float64]
+        Declination from the given pixel coordinates and WCS
     """
     wcs_astr = WCS(naxis  = 2)
     wcs_astr.wcs.cdelt = astr['cdelt']

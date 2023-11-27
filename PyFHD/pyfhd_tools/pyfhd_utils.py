@@ -225,10 +225,12 @@ def histogram(data : NDArray[np.float_ | np.int_ | np.complex_], bin_size: int =
 
     Returns
     -------
-    (hist, bins, ri) : tuple[NDArray[np.int64], NDArray[np.float64 | np.int64], NDArray[np.int64]]
-        1) The histogram of the data
-        2) The bins of the histogram
-        3) The reverse indices array for the histogram and data
+    hist : NDArray[np.int64]
+        The histogram of the data
+    bins : NDArray[np.float64 | np.int64] 
+        The bins of the histogram
+    ri : NDArray[np.int64]
+        The reverse indices array for the histogram and data
     
     See Also
     --------
@@ -288,10 +290,12 @@ def l_m_n(obs: dict, psf: dict | h5py.File , obsdec: float | None = None, obsra:
 
     Returns
     -------
-    (l_mode, m_mode, n_tracked) : tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]]
-        1) TODO: Add description for l_mode
-        2) TODO: Add description for m_mode
-        3) TODO: Add description for n_tracked.
+    l_mode : NDArray[np.float64] 
+        TODO: Add description for l_mode
+    m_mode : NDArray[np.float64]
+        TODO: Add description for m_mode
+    n_tracked : NDArray[np.float64]
+        TODO: Add description for n_tracked.
     """
     # If the variables passed through are None them
     if obsdec is None:
@@ -415,7 +419,7 @@ def rebin_rows(a: NDArray[np.int_ | np.float_ | np.complex_], ax: int, shape: tu
     row_rebinned = inferences + np.repeat(a, row_sizer, axis = ax)
     return row_rebinned
 
-def rebin(a: NDArray[np.int_ | np.float_ | np.complex_], shape: ArrayLike, sample: bool = False):
+def rebin(a: NDArray[np.int_ | np.float_ | np.complex_], shape: ArrayLike, sample: bool = False) -> NDArray[np.int_ | np.float_ | np.complex_]:
     """
     Resizes a 2D array by averaging or repeating elements, new dimensions must be integral factors of original dimensions.
 
@@ -434,7 +438,7 @@ def rebin(a: NDArray[np.int_ | np.float_ | np.complex_], shape: ArrayLike, sampl
         
     Returns
     -------
-    rebinned : ndarray
+    rebinned : NDArray[np.int_ | np.float_ | np.complex_]
         If the new shape is smaller of the input array, the data are averaged, 
         if the new shape is bigger array elements are repeated and interpolated
 
@@ -1000,8 +1004,10 @@ def vis_weights_update(vis_weights : NDArray[np.float64], obs: dict, psf: dict |
 
     Returns
     -------
-    (vis_weights, obs) : tuple[NDArray[np.float64], dict]
-        The updated vis_weights and the obs dictionary now containing the sums of the flags
+    vis_weights : NDArray[np.float64]
+        Updated vis_weights
+    obs : dict
+        The observation metadata dictionary now containing the sums of the flags
     """
     kx_arr = params['uu'] / obs['kpix']
     ky_arr = params['vv'] / obs['kpix']
@@ -1089,7 +1095,9 @@ def split_vis_weights(obs: dict, vis_weights: NDArray[np.float64]) -> tuple[NDAr
 
     Returns
     -------
-    tuple[NDArray[np.float64], NDArray[np.int64]]
+    vis_weights : NDArray[np.float64]
+        _description_
+    bi_use  NDArray[np.int64]
         _description_
     """
     # Not always used in vis_noise_calc requires this check in other cases
@@ -1365,7 +1373,9 @@ def crosspol_split_real_imaginary(image: NDArray[np.complex128], pol_names: list
 
     Returns
     -------
-    tuple[NDArray[np.complex128], list[str]|None]
+    image : NDArray[np.complex128]
+        _description_
+    pol_names : list[str]|None]
         _description_
     """
     crosspol_image: np.ndarray = image[2]

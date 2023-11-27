@@ -28,11 +28,14 @@ def extract_header(pyfhd_config : dict, logger : logging.Logger, model_uvfits = 
 
     Returns
     -------
-    (pyfhd_header, params_data, antenna_data, antenna_header) : tuple[dict, np.recarray, FITS_rec, Header]
-        1) The result from the extraction of the header of the UVFITS file, containing observation metadata mostly
-        2) The data from the UVFITS file, containing the visibility metadata
-        3) The layout data which will be used in the create_layout function, mostly antenna metadata
-        4) The layout header which will be used in the create_layout function, mostly antenna metadatas
+    pyfhd_header : dict
+        The result from the extraction of the header of the UVFITS file, containing observation metadata mostly
+    params_data: np.recarray 
+        The data from the UVFITS file, containing the visibility metadata
+    antenna_data : FITS_rec 
+        The layout data which will be used in the create_layout function, mostly antenna metadata
+    antenna_header : Header
+        The layout header which will be used in the create_layout function, mostly antenna metadatas
 
     Raises
     ------
@@ -263,9 +266,10 @@ def extract_visibilities(pyfhd_header : dict, params_data : np.recarray, pyfhd_c
 
     Returns
     -------
-    (vis_arr, vis_weights) : tuple[NDArray[np.complex128], NDArray[np.float64]]
-        1) The visibility array
-        2) The visibility weights array
+    vis_arr : NDArray[np.complex128] 
+        The visibility array
+    vis_weights : NDArray[np.float64]
+        The visibility weights array
 
     See Also
     ========

@@ -36,8 +36,10 @@ def filter_uv_uniform(image_uv: NDArray[np.complex128], vis_count: NDArray[np.in
 
     Returns
     -------
-    (image_uv_filtered, filter_use) : tuple[NDArray[np.complex128], NDArray[np.float64]]
-        The filtered 2D {u,v} plane and the filter used
+    image_uv_filtered : NDArray[np.complex128] 
+        The filtered 2D {u,v} plane
+    filter_use : NDArray[np.float64]
+        The filter used
 
     Raises
     ------

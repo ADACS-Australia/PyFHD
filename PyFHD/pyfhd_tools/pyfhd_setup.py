@@ -342,8 +342,6 @@ def write_collated_yaml_config(pyfhd_config: dict, output_dir : str, description
                 else:
                     outfile.write(f"{yaml_key} : '{pyfhd_config[key]}'\n")
 
-
-
 def pyfhd_setup(options : argparse.Namespace) -> Tuple[dict, logging.Logger]:
     """
     Check for any incompatibilities among the options given for starting the PyFHD pipeline as some options

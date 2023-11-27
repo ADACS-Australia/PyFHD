@@ -311,10 +311,12 @@ def dirty_image_generate(
 
     Returns
     -------
-    (dirty_image, filter, normalization) : tuple[NDArray[np.complex128], NDArray[np.float64], float | NDArray[np.float64] | None]
-        1) A 2D {l,m} directional-cosine image plane 
-        2) The filter applied to the dirty image 
-        3) The normalization (if any) applied to the dirty image
+    dirty_image : NDArray[np.complex128]
+        A 2D {l,m} directional-cosine image plane 
+    filter : NDArray[np.float64]
+        The filter applied to the dirty image
+    normalization : float | NDArray[np.float64] | None
+        The normalization (if any) applied to the dirty image
     """
 
     # dimension is columns, elements is rows
@@ -527,7 +529,7 @@ def grid_beam_per_baseline(
 
     Returns
     -------
-    box_matrix: NDArray[np.complex128]
+    box_matrix : NDArray[np.complex128]
         The kernel values on the static {u,v} grid for each visibility
     """
 
@@ -779,7 +781,7 @@ def crosspol_reformat(image_uv: NDArray[np.complex128]) -> NDArray[np.complex128
 
     Returns
     -------
-    image_uv: NDArray[np.complex128]
+    image_uv : NDArray[np.complex128]
         A 2D {u,v} plane in two linear polarizations, pseudo Stokes Q, and pseudo Stokes U.
     """
     # instrumental -> Stokes

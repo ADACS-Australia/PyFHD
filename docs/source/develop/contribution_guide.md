@@ -83,7 +83,7 @@ From there I'll leave it upto you, time to put that function from your head to a
 
 ### Documenting and Typing the new function
 
-
+You have made your new function, congratulations, now it's time to add some documentation and comments if you haven't already. In PyFHD, we use docstrings in the [`numpydoc`](https://numpydoc.readthedocs.io/en/latest/format.html) which is well documented in terms of what you should put into your docstrings and what each section in the docstring is for. 
 
 ### Testing the new function
 

@@ -41,9 +41,12 @@ def calibrate(obs: dict, params: dict, vis_arr: NDArray[np.complex128], vis_weig
 
     Returns
     -------
-    (vis_cal, cal, obs) : tuple[NDArray[np.complex128], dict, dict]
-        Tuple of 1) the calibrated data visibilities, 2) the updated calibration dictionary and 3) the
-        updated observation metadata dictionary
+    vis_cal : tuple[NDArray[np.complex128]
+        The calibrated data visibilities
+    cal : dict
+        The updated calibration dictionary
+    obs : dict
+        Updated observation metadata dictionary
     """
     # Initialize cal dict
     cal = {}
