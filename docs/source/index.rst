@@ -29,8 +29,9 @@ Contents
    :maxdepth: 2
 
    installation/installation
-   documentation/documentation
    examples/examples
+   develop/contribution_guide
+   documentation/documentation
    changelog/changelog
    
 Browse
