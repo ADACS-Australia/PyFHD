@@ -407,7 +407,7 @@ def vis_model_freq_split(
         _description_, by default True
     uvf_name : str, optional
         _description_, by default ''
-    bi_use : NDArray[np.int_], optional
+    bi_use : NDArray[np.int\_], optional
         _description_, by default None
 
     Returns

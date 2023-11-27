@@ -106,8 +106,8 @@ def _decode_byte_arr(value: NDArray[np.byte]) -> str:
 def format_array(array: NDArray[Any]) -> NDArray[Any]:
     """
     Find any `None` values in an object array and replaces them with empty
-    strings if we're dealing with a string array, or `NaN`s if we're 
-    dealing with a Number array. If complex, the NaN will be nan + nanj.
+    strings if we're dealing with a string array, or `NaNs` if we're 
+    dealing with a Number array. If complex, the NaN will be `nan + nanj`.
     If a string array is found, convert the string array to a bytes array,
     in all other cases leave the array alone as it should be ready to save
     into a HDF5 file.

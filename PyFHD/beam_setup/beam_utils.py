@@ -60,10 +60,9 @@ def gaussian_decomp(
         kx = np.outer(np.arange(x.size) - x.size / 2, np.ones(y.size))
         ky = np.outer(np.ones(x.size), np.arange(y.size) - y.size / 2)
         decomp_beam += amp ** 2 * \
-            np.pi / (x.size * y.size) *\
-            sigma_x * sigma_y * \
-            np.exp(
-                (2 * np.pi ** 2 / (x.size * y.size) * sigma_x ** 2 kx **2 + sigma_y ** 2 * ky ** 2) - 
+            np.pi / (x.size * y.size) * \
+            sigma_x * sigma_y * np.exp(
+                (2 * np.pi ** 2 / (x.size * y.size) * sigma_x ** 2 * kx **2 + sigma_y ** 2 * ky ** 2) -  
                 (2 * np.pi / x.size * 1j * (offset_x * kx + offset_y * ky))
             )
 

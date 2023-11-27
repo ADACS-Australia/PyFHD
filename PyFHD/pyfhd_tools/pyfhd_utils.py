@@ -54,7 +54,7 @@ def get_hist(data: NDArray[np.float_ | np.int_ | np.complex_], bins: NDArray[np.
 
     Parameters
     ----------
-    data : NDArray[np.float_ | np.int_ | np.complex_]
+    data : NDArray[np.float\_ | np.int\_ | np.complex\_]
         A NumPy array that is of one dtype float, int, or complex. Cannot be object
     bins : NDArray[np.float64 | np.int64]
         A NumPy array of bins for the histogram
@@ -138,7 +138,7 @@ def get_ri(data: NDArray[np.float_ | np.int_ | np.complex_], bins: NDArray[np.fl
 
     Parameters
     ----------
-    data : NDArray[np.float_ | np.int_ | np.complex_]
+    data : NDArray[np.float\_ | np.int\_ | np.complex\_]
         A NumPy array of the data
     bins : NDArray[np.float64 | np.int64]
         A NumPy array containing the bins for the histogram
@@ -212,7 +212,7 @@ def histogram(data : NDArray[np.float_ | np.int_ | np.complex_], bin_size: int =
 
     Parameters
     ----------
-    data : NDArray[np.float_ | np.int_ | np.complex_]
+    data : NDArray[np.float\_ | np.int\_ | np.complex\_]
         A NumPy array containing the data we want a histogram of
     bin_size : int, optional
         Sets the bin size for this histogram, by default 1
@@ -281,10 +281,10 @@ def l_m_n(obs: dict, psf: dict | h5py.File , obsdec: float | None = None, obsra:
     obsra: float | None, optional
         By default is set to None, as such by default this value will be set to
         obs['obsra']
-    declination_arr: NDArray[np.float_] | None, optional
+    declination_arr: NDArray[np.float\_] | None, optional
         By default is set to None, as such by default this value will be set to
         psf['image_info']['dec_arr']
-    right_ascension_arr: NDArray[np.float_] | None, optional
+    right_ascension_arr: NDArray[np.float\_] | None, optional
         By default is set to None, as such by default this value will be set to
         psf['image_info']['ra_arr']
 
@@ -344,7 +344,7 @@ def rebin_columns(a: NDArray[np.int_ | np.float_ | np.complex_], ax: int, shape:
 
     Parameters
     ----------
-    a : NDArray[np.int_  |  np.float_  |  np.complex_]
+    a : NDArray[np.int\_  |  np.float\_  |  np.complex\_]
         An array to be expanded
     ax : int
         The axis we're expanding, almost always set to 1
@@ -355,7 +355,7 @@ def rebin_columns(a: NDArray[np.int_ | np.float_ | np.complex_], ax: int, shape:
 
     Returns
     -------
-    rebinned : NDArray[np.int_ | np.float_ | np.complex_]
+    rebinned : NDArray[np.int\_ | np.float\_ | np.complex\_]
         An interpolated array of a containing shape[1] * col_sizer columns
 
     See Also
@@ -384,7 +384,7 @@ def rebin_rows(a: NDArray[np.int_ | np.float_ | np.complex_], ax: int, shape: tu
 
     Parameters
     ----------
-    a : NDArray[np.int_  |  np.float_  |  np.complex_]
+    a : NDArray[np.int\_  |  np.float\_  |  np.complex\_]
         The array to be rebinned
     ax : int
         The axis we're expanding, almost always set to 0
@@ -397,7 +397,7 @@ def rebin_rows(a: NDArray[np.int_ | np.float_ | np.complex_], ax: int, shape: tu
 
     Returns
     -------
-    row_rebinned : NDArray[np.int_ | np.float_ | np.complex_]
+    row_rebinned : NDArray[np.int\_ | np.float\_ | np.complex\_]
         The interpolated array with row_sizer extra columns between existing rows
 
     See Also
@@ -428,7 +428,7 @@ def rebin(a: NDArray[np.int_ | np.float_ | np.complex_], shape: ArrayLike, sampl
 
     Parameters
     ----------
-    a : NDArray[np.int_ | np.float_ | np.complex_]
+    a : NDArray[np.int\_ | np.float\_ | np.complex\_]
         Input array.
     new_shape : ArrayLike
         Shape of the output array in (rows, columns)
@@ -438,7 +438,7 @@ def rebin(a: NDArray[np.int_ | np.float_ | np.complex_], shape: ArrayLike, sampl
         
     Returns
     -------
-    rebinned : NDArray[np.int_ | np.float_ | np.complex_]
+    rebinned : NDArray[np.int\_ | np.float\_ | np.complex\_]
         If the new shape is smaller of the input array, the data are averaged, 
         if the new shape is bigger array elements are repeated and interpolated
 
@@ -584,7 +584,7 @@ def weight_invert(weights : NDArray[np.int_ | np.float_ | np.complex_] | int | f
 
     Parameters
     ----------
-    weights: NDArray[np.int_ | np.float_ | np.complex_] | int | float | np.number
+    weights: NDArray[np.int\_ | np.float\_ | np.complex\_] | int | float | np.number
         An array of values of some dtype
     threshold: float | None, optional
         A real number set as the threshold for the array.
@@ -596,7 +596,7 @@ def weight_invert(weights : NDArray[np.int_ | np.float_ | np.complex_] | int | f
 
     Returns
     -------
-    result: NDArray[np.int_ | np.float_ | np.complex_] | int | float | np.number
+    result: NDArray[np.int\_ | np.float\_ | np.complex\_] | int | float | np.number
         The weights array that has had NaNs and Infinities removed, and zeros OR
         values that don't meet the threshold.
     """
@@ -658,11 +658,11 @@ def array_match(array_1: NDArray[np.int_ | np.float_ | np.complex_], value_match
 
     Parameters
     ----------
-    array_1: NDArray[np.int_ | np.float_ | np.complex_]
+    array_1: NDArray[np.int\_ | np.float\_ | np.complex\_]
         TODO: Add Description for Array_1
-    value_match: NDArray[np.int_ | np.float_ | np.complex_]
+    value_match: NDArray[np.int\_ | np.float\_ | np.complex\_]
         TODO: Add Description for Value_Match
-    array_2: NDArray[np.int_ | np.float_ | np.complex_] | None, optional
+    array_2: NDArray[np.int\_ | np.float\_ | np.complex\_] | None, optional
         TODO: Add Description for Array_2, by default is None
 
     Returns
@@ -801,7 +801,7 @@ def idl_argunique(arr : NDArray[np.int_ | np.float_ | np.complex_]) -> NDArray[n
 
     Parameters
     ----------
-    arr : NDArray[np.int_ | np.float_ | np.complex_]
+    arr : NDArray[np.int\_ | np.float\_ | np.complex\_]
         A sorted numpy array of any type.
 
     Returns
@@ -912,7 +912,7 @@ def simple_deproject_w_term(obs : dict, params : dict, vis_arr : NDArray[np.comp
 
 def resistant_mean(array : NDArray[np.int_ | np.float_ | np.complex_], deviations : int, mad_scale: float = 0.67449999999999999, sigma_coeff: NDArray[np.float64] = np.array([0.020142000000000000, -0.23583999999999999 , 0.90722999999999998 , -0.15404999999999999])) -> int | float | complex | np.number:
     """
-    The resistant_mean function translate the IDLAstro function resistant_mean[1]_ from IDL to Python using NumPy.
+    The resistant_mean function translate the IDLAstro function resistant_mean from IDL to Python using NumPy.
     The values mad_scale and sigma_coeff are also retrieved from the same IDLAstro function when running in Double 
     Precision Mode.
 
@@ -923,7 +923,7 @@ def resistant_mean(array : NDArray[np.int_ | np.float_ | np.complex_], deviation
 
     Parameters
     ----------
-    array : NDArray[np.int_ | np.float_ | np.complex_]
+    array : NDArray[np.int\_ | np.float\_ | np.complex\_]
         A 1 dimensional array of values, multidimensional arrays should be flattened before use
     deviations : int
         The number of median absolute deviations from the median we want use to exclude outliers
@@ -931,7 +931,7 @@ def resistant_mean(array : NDArray[np.int_ | np.float_ | np.complex_], deviation
         The scale factor for the median absolute deviation, by default 0.67449999999999999
     sigma_coeff : NDArray[np.float64], optional
         The coefficients applied to the polynomial equation to the standard deviation of the points excluded by the outliers for additional exclusion, by default np.array([0.020142000000000000, -0.23583999999999999 , 0.90722999999999998 , -0.15404999999999999])
-
+        
     Returns
     -------
     resistant_mean : Number
@@ -939,7 +939,7 @@ def resistant_mean(array : NDArray[np.int_ | np.float_ | np.complex_], deviation
 
     References
     ----------
-    .. [1] IDLAstro, RESISTANT_Mean, https://idlastro.gsfc.nasa.gov/ftp/pro/robust/resistant_mean.pro
+    .. IDLAstro, RESISTANT_Mean, https://idlastro.gsfc.nasa.gov/ftp/pro/robust/resistant_mean.pro
     """
     # Calculate median of the real part of the array
     median = np.median(array.real)
@@ -1194,7 +1194,7 @@ def idl_median(x : NDArray[np.int_ | np.float_ | np.complex_], width: int = 0, e
 
     Parameters
     ----------
-    x : NDArray[np.int_ | np.float_ | np.complex_]
+    x : NDArray[np.int\_ | np.float\_ | np.complex\_]
         Data to perform median on
     width : int
         If set, perform a type of median filtering. 
@@ -1282,9 +1282,9 @@ def region_grow(image: NDArray[np.int_ | np.float_ | np.complex_], roiPixels: ND
 
     Parameters
     ----------
-    image : NDArray[np.int_ | np.float_ | np.complex_]
+    image : NDArray[np.int\_ | np.float\_ | np.complex\_]
         A 2D array of pixels
-    roiPixels : NDArray[np.int_]
+    roiPixels : NDArray[np.int\_]
         The region of interest given as FLAT indexes i.e. array.flat
     low : int | float | None, optional
         The low threshold, any number below this is considered background, 
@@ -1295,7 +1295,7 @@ def region_grow(image: NDArray[np.int_ | np.float_ | np.complex_], roiPixels: ND
 
     Returns
     -------
-    growROIPixels: NDArray[np.int_ | np.float_ | np.complex_] | None
+    growROIPixels: NDArray[np.int\_ | np.float\_ | np.complex\_] | None
         The grown region of interest that has connected neighbours by using the threshold
 
     See Also

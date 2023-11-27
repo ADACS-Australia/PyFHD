@@ -26,7 +26,12 @@ Data Setup
 
 Beam Setup
 ==========
-.. note:: This is a placeholder for the future, the work hasn't been done yet.
+
+.. automodule:: PyFHD.beam_setup.beam
+   :members:
+
+.. automodule:: PyFHD.beam_setup.beam_utils
+   :members:
 
 Calibration
 ===========
@@ -78,10 +83,12 @@ Visibility Degrid
 
 Input & Output
 ==============
-.. note:: This is a placeholder for the future, the work hasn't been done yet.
 
-.. .. automodule:: PyFHD.io.pyfhd_io
-..    :members:
+.. automodule:: PyFHD.io.pyfhd_io
+   :members:
+
+.. automodule:: PyFHD.io.pyfhd_quickview
+   :members:
 
 Using ``FHD`` via ``PyFHD``
 ==============================

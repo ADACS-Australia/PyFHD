@@ -15,7 +15,7 @@ def filter_uv_uniform(image_uv: NDArray[np.complex128], vis_count: NDArray[np.in
     ----------
     image_uv : NDArray[np.complex128]
         A 2D {u,v} gridded plane to be filtered
-    vis_count : NDArray[np.int_] | None
+    vis_count : NDArray[np.int\_] | None
         2D array of number of contributing visibilities per pixel on the {u,v} grid
     obs : dict | None, optional
         Observation metadata dictionary, by default None
@@ -27,9 +27,9 @@ def filter_uv_uniform(image_uv: NDArray[np.complex128], vis_count: NDArray[np.in
         PyFHD's logger, by default None
     weights : NDArray[np.float64] | None, optional
         The weights array (aka vis_weights), by default None
-    fi_use : NDArray[np.int_] | None, optional
+    fi_use : NDArray[np.int\_] | None, optional
         Frequency index array for gridding, i.e. gridding all frequencies for continuum images, by default None
-    bi_use : NDArray[np.int_] | None, optional
+    bi_use : NDArray[np.int\_] | None, optional
         Baseline index array for gridding, i.e even vs odd time stamps, by default None
     mask_mirror_indices : bool, optional
         Exclude baselines mirrored along the v-axis, by default False

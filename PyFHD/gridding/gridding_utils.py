@@ -17,19 +17,19 @@ def interpolate_kernel(kernel_arr: NDArray[np.complex128], x_offset: NDArray[np.
 
     Parameters
     ----------
-    kernel_arr: NDArray[np.complex128]
+    kernel_arr : NDArray[np.complex128]
         The 2D kernel for bilinear interpolation
-    x_offset: NDArray[np.int_]
+    x_offset : NDArray[np.int\_]
         The nearest pixel offset in the x (u) direction
-    y_offset: NDArray[np.int_]
+    y_offset : NDArray[np.int\_]
         The nearest pixel offset in the y (v) direction
-    dx0dy0: NDArray[np.float64]
+    dx0dy0 : NDArray[np.float64]
        (1 - derivative to pixel edge in x) * (1 - derivative to pixel edge in y) for selected baselines
-    dx1dy0: NDArray[np.float64]
+    dx1dy0 : NDArray[np.float64]
         (derivative to pixel edge in x) * (1 - derivative to pixel edge in y) for selected baselines
-    dx0dy1: NDArray[np.float64]
+    dx0dy1 : NDArray[np.float64]
         (1 - derivative to pixel edge in x) * (derivative to pixel edge in y) for selected baselines
-    dx1dy1: NDArray[np.float64]
+    dx1dy1 : NDArray[np.float64]
         (derivative to pixel edge in x) * (derivative to pixel edge in y) for selected baselines
 
     Returns
@@ -90,9 +90,9 @@ def baseline_grid_locations(obs: dict, psf: dict, params: dict, vis_weights: NDA
         Weights (flags) of the visibilities 
     logger : Logger
         PyFHD's logger
-    bi_use : NDArray[np.int_] | None, optional
+    bi_use : NDArray[np.int\_] | None, optional
         Baseline index array for gridding, i.e even vs odd time stamps, by default None
-    fi_use : NDArray[np.int_] | None, optional
+    fi_use : NDArray[np.int\_] | None, optional
         Frequency index array for gridding, i.e. gridding all frequencies for continuum images, by default None
     fill_model_visibilities : bool, optional
         Calculate baseline grid locations for all baselines, regardless of flags, by default False
@@ -286,7 +286,7 @@ def dirty_image_generate(
         PyFHD's configuration dictionary containing all the options set for a PyFHD run
     logger : Logger
         PyFHD's logger
-    mask : NDArray[np.int_] | None, optional
+    mask : NDArray[np.int\_] | None, optional
         A 2D {u,v} mask to apply before image creation, by default None
     baseline_threshold : int | float, optional
         The maximum baseline length to include in units of pixels, by default 0
@@ -502,9 +502,9 @@ def grid_beam_per_baseline(
         The minimum x-pixel that each selected baseline contributes to
     ymin_use : int
         The minimum y-pixel that each selected baseline contributes to
-    freq_i : NDArray[np.int_]
+    freq_i : NDArray[np.int\_]
         The current frequency index
-    bt_index : NDArray[np.int_]
+    bt_index : NDArray[np.int\_]
         The current baseline/time index
     polarization : int
         The current polarization index
@@ -522,7 +522,7 @@ def grid_beam_per_baseline(
         The integral of the beam sensitivity in {u,v} space, by default None
     beam2_int : NDArray[np.complex128] | None, optional
         The integral of the squared beam sensitivity in {u,v} space, by default None
-    n_grp_use : NDArray[np.int_] | None, optional
+    n_grp_use : NDArray[np.int\_] | None, optional
         The number of baselines in the current grouping, by default None
     degrid_flag : bool, optional
         Perform degridding instead of gridding, by default False
@@ -632,9 +632,9 @@ def visibility_count(obs: dict, psf: dict, params: dict, vis_weights: NDArray[np
         PyFHD's configuration dictionary containing all the options set for a PyFHD run
     logger : Logger
         PyFHD's logger
-    fi_use : NDArray[np.int_] | None, optional
+    fi_use : NDArray[np.int\_] | None, optional
         Frequency index array for gridding, i.e. gridding all frequencies for continuum images, by default None
-    bi_use : NDArray[np.int_] | None, optional
+    bi_use : NDArray[np.int\_] | None, optional
         Baseline index array for gridding, i.e even vs odd time stamps, by default None
     mask_mirror_indices : bool, optional
         Exclude baselines mirrored along the v-axis, by default False

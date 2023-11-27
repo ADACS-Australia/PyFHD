@@ -21,14 +21,14 @@ def vis_extract_autocorr(obs: dict, vis_arr: NDArray[np.complex128], pyfhd_confi
         Uncalibrated data visiblities
     pyfhd_config : dict
         PyFHD's configuration dictionary containing all the options set for a PyFHD run
-    auto_tile_i : NDArray[np.int_] | None, optional
+    auto_tile_i : NDArray[np.int\_] | None, optional
         Index array for auto-correlation visibilities, by default None
 
     Returns
     -------
     autocorr: NDArray[np.float64]
         The auto-correlation visibilities
-    auto_tile_i : NDArray[np.int_]
+    auto_tile_i : NDArray[np.int\_]
         The index array for auto-correlation visibilities
     """
 
@@ -101,7 +101,7 @@ def vis_cal_auto_init(obs : dict, cal : dict, vis_arr: NDArray[np.complex128], v
         Data auto-correlations 
     vis_auto_model : NDArray[np.float64]
         Simulated model auto-correlations
-    auto_tile_i : NDArray[np.int_]
+    auto_tile_i : NDArray[np.int\_]
         Index array for auto-correlation visibilities
 
     Returns
@@ -934,7 +934,7 @@ def vis_cal_auto_fit(obs: dict, cal: dict, vis_auto : NDArray[np.float64], vis_a
         Data autocorrelations
     vis_auto_model : NDArray[np.float64]
         Simulated model autocorrelations
-    auto_tile_i : NDArray[np.int_]
+    auto_tile_i : NDArray[np.int\_]
         Index array of the tile array that have defined autocorrelations
 
     Returns
@@ -1182,7 +1182,7 @@ def cal_auto_ratio_divide(obs: dict, cal: dict, vis_auto: NDArray[np.float64], a
         Calibration dictionary
     vis_auto : NDArray[np.float64]        
         Data autocorrelations
-    auto_tile_i : NDArray[np.int_]
+    auto_tile_i : NDArray[np.int\_]
         Index array of the tile array that have defined autocorrelations
 
     Returns
@@ -1217,7 +1217,7 @@ def cal_auto_ratio_remultiply(cal: dict, auto_ratio: NDArray[np.float64], auto_t
         Calibration dictionary
     auto_ratio : NDArray[np.float64]
         Square root of the autocorrelation visibilities normalized via a reference tile
-    auto_tile_i : NDArray[np.int_]
+    auto_tile_i : NDArray[np.int\_]
         Index array of the tile array that have defined autocorrelations
 
     Returns
