@@ -57,7 +57,7 @@ Here's how you install `PyFHD` for development purposes:
 
 ## The How-To on contributing to PyFHD
 
-This part of the guide will cover how to contribute to PyFHD, we'll go over some of the thoughts and ideas that one ought to use when creating a new function from scratch for `PyFHD`. We're going to use the examples along the way from `PyFHD` most of it showcasing the best of what `PyFHD` has done in each section. So let's go over making the histogram function for `PyFHD`, with each step focusing on best practices and the practices used in `PyFHD`. Many of the best practices applied in `PyFHD` are useful for any project you're doing, so if you're new to programming and development in general, I hope you find these docs useful to you.
+This part of the guide will cover how to contribute to PyFHD, we'll go over some of the thoughts and ideas that one ought to use when creating a new function from scratch for `PyFHD`. We're going to use the examples along the way from `PyFHD` most of it showcasing the best of what `PyFHD` has done in each section. Many of the best practices applied in `PyFHD` are useful for any project you're doing, so if you're new to programming and development in general, I hope you find these docs useful to you.
 
 ### Has someone invented the wheel?
 
