@@ -388,7 +388,7 @@ Initiate the pull request back to whatever branch the function needs to go in, a
 
 This part of the guide is going to be more personal and contains lessons from my own (Joel Dunstan, [SkyWa7ch3r](https://github.com/SkyWa7ch3r)) 2 year experience of translating the majority of `FHD` from IDL to Python to create `PyFHD`.
 
-Hello there weary traveler, you wish to translate from IDL to Python or have been tasked with doing so, first thing my sincerest apologies for your future sanity and also to your colleagues as you likely vent to them about the annoyances of doing the translation. Here I'll try to put all the discoveries, roadbumps and potholes that will slow you down along the way. Be prepared to laugh, sigh, be filled with rage and maybe shed a tear if you find out a problem you've been facing for a week is because of some ~~dumb~~ *interesting* behaviour.
+Hello there weary traveler, you wish to translate from IDL to Python or have been tasked with doing so, first thing my sincerest apologies for your future sanity and also to your colleagues as you likely vent to them about the annoyances of doing the translation. Here I'll try to put all the discoveries, roadbumps and potholes that will slow you down along the way. Be prepared to laugh, sigh, be filled with rage and maybe shed a tear if you find out a problem you've been facing for a week is because of some <del>dumb</del> *interesting* behaviour.
 
 First thing, you'll need access to IDL, this is easier said than done as you require a license to use the language if you're lucky your instituion has an IDL license or the HPC you use has an IDL license. If you plan on installing IDL to your local machine you will need to contact [NV5 Geospatial](https://www.nv5geospatialsoftware.com/Products/IDL) directly to get a license and get the download link through their locked download links. If you're institution has a license server you should be able to get a license from the server and an install package from your institution. There are open source versions of IDL, [`GDL`](https://github.com/gnudatalanguage/gdl) and [`Fawlty`](https://www.flxpert.hu/fl/), however in my experience they didn't support running all the functions needed for `FHD` or produced different results to what's expected even in simple scenarios, hopefully that has changed and you can try to use them, feel free to let me know how that went.
 
@@ -434,7 +434,7 @@ There are several gotchas hidden thoughout IDL, usually most of them won't appea
   11.000000       2.0000000
   3.0000000       4.0000000
   ```
-* Indexing arrays using other arrays can also lead to ~~dumb~~ *interesting* behaviour, if we follow our test array again of 4 values and we try to access the 5th element of the array we expectedly get an error.
+* Indexing arrays using other arrays can also lead to <del>dumb</del> *interesting* behaviour, if we follow our test array again of 4 values and we try to access the 5th element of the array we expectedly get an error.
     ```idl
     IDL> test = [[1.,2.],[3.,4.]]
     IDL> test[5]
