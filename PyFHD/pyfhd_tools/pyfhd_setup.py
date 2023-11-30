@@ -87,7 +87,7 @@ def pyfhd_parser():
     parser.add_argument( '-i', '--input-path', type = Path, help = "Directory for the uvfits files and other inputs, by default it looks for a directory called input in the working directory", default = "./input/")
     parser.add_argument('-r', '--recalculate-all', action='store_true', help = 'Forces PyFHD to recalculate all values. This will ignore values set for recalculate-grid, recalculate-beam, recalculate-mapfn as it will set all of them to True')
     parser.add_argument('-s', '--silent', default = False, action = 'store_true', help = 'This PyFHD stops all output to the terminal except in the case of an error and/or exception')
-    parser.add_argument('-l', '--disable-log', action = 'store_true', help = 'Logging in a log file is enabled by default, set to False in the config or use this argument to disable the log file.')
+    parser.add_argument('-l', '--log-file', action = 'store_true', help = 'Logging in a log file is enabled by default, set to False in the config to disable logging to a file.')
     parser.add_argument('--instrument', type = str, default = 'mwa', choices = ['mwa'], help = 'Set the instrument used for the FHD run, currently only MWA is supported')
     parser.add_argument('--dimension', type = int, default = 2048, help = 'The number of pixels in the UV plane along one axis.')
     parser.add_argument('--elements', type = int, default = 2048, help = 'The number of pixels in the UV plane along the other axis.')
@@ -705,7 +705,7 @@ def pyfhd_logger(pyfhd_config: dict) -> Tuple[logging.Logger, str]:
         Path.mkdir(output_dir)
 
     # Create the logger for the file
-    if not pyfhd_config['disable_log']:
+    if pyfhd_config['log_file']:
         log_file = logging.FileHandler(Path(output_dir, log_name + '.log'))
         log_file.setFormatter(logging.Formatter('%(message)s'))
         logger.addHandler(log_file)
@@ -714,7 +714,7 @@ def pyfhd_logger(pyfhd_config: dict) -> Tuple[logging.Logger, str]:
     logger.info(log_string)
     if not pyfhd_config['silent']:
         log_terminal.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s:\n\t%(message)s', datefmt = '%Y-%m-%d %H:%M:%S'))
-    if not pyfhd_config['disable_log']:
+    if pyfhd_config['log_file']:
         log_file.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s:\n\t%(message)s', datefmt = '%Y-%m-%d %H:%M:%S'))
 
     # Copy the Configuration File if it exists to the output directory

@@ -498,7 +498,9 @@ def vis_model_freq_split(
             "variance_uv": variance_uv_arr,
             "model_uv": model_uv_arr,
         }
-        save(Path(pyfhd_config['output_dir'], f'{uvf_name}_gridded_uvf.h5'), h5_save_dict, f'{uvf_name}_gridded_uvf.h5', logger = logger)
+        uvf_dir = Path(Path(pyfhd_config['output_dir'], 'uvf_grid'))
+        uvf_dir.mkdir(exist_ok = True)
+        save(Path(uvf_dir, f'{uvf_name}_gridded_uvf.h5'), h5_save_dict, f'{uvf_name}_gridded_uvf', logger = logger)
     
     model_split = {
         "obs": obs,

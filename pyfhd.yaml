@@ -3,7 +3,7 @@
 input-path : './input'
 recalculate-all : false
 silent : false
-disable-log : false
+log-file : true
 conserve-memory : false
 instrument : 'mwa'
 memory-threshold : 100000000

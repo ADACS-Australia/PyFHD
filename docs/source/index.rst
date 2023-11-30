@@ -15,12 +15,13 @@ Welcome to PyFHD's documentation!
 **H**\olographic 
 **D**\econvolution
 
-.. note:: PyFHD is still a work in progress, and as such, in places still relies on the IDL code under the hood. As time goes on, this reliance should shrink.
+.. note:: PyFHD is still a work in progress but no longer requires IDL to work!
 
 Started as a project created in IDL, FHD is an open-source imaging algorithm for radio interferometers, 
 specifically tested on MWA Phase I, MWA Phase II, PAPER, and HERA. There are three main use-cases for FHD: 
 efficient image deconvolution for general radio astronomy, fast-mode Epoch of Reionization analysis, and simulation.
 
+Now, FHD has been translated to Python, giving us **PyFHD**, license free, free to use and free of IDL.
 
 Contents
 -----------------
