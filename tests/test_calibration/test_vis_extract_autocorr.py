@@ -5,7 +5,7 @@ from PyFHD.io.pyfhd_io import save, load
 import numpy as np
 
 from PyFHD.calibration.calibration_utils import vis_extract_autocorr
-from PyFHD.use_idl_fhd.use_idl_outputs import convert_sav_to_dict
+from PyFHD.io.pyfhd_io import convert_sav_to_dict
 from PyFHD.io.pyfhd_io import recarray_to_dict
 
 @pytest.fixture

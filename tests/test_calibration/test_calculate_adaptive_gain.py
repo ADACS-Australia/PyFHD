@@ -3,7 +3,7 @@ from os import environ as env
 from pathlib import Path
 from PyFHD.pyfhd_tools.test_utils import get_data_items
 from PyFHD.calibration.calibration_utils import calculate_adaptive_gain
-from PyFHD.use_idl_fhd.use_idl_outputs import convert_sav_to_dict
+from PyFHD.io.pyfhd_io import convert_sav_to_dict
 from PyFHD.io.pyfhd_io import save, load
 import numpy.testing as npt
 

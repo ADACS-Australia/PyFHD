@@ -7,7 +7,7 @@ from PyFHD.calibration.vis_calibrate_subroutine import vis_calibrate_subroutine
 from glob import glob
 from logging import Logger
 from PyFHD.pyfhd_tools.test_utils import get_data_items, sav_file_vis_arr_swap_axes
-from PyFHD.use_idl_fhd.use_idl_outputs import convert_sav_to_dict
+from PyFHD.io.pyfhd_io import convert_sav_to_dict
 from numpy.testing import assert_allclose
 from PyFHD.io.pyfhd_io import save, load
 

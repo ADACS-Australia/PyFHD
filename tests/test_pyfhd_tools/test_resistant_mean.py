@@ -5,7 +5,7 @@ from os import environ as env
 from pathlib import Path
 import pytest
 from PyFHD.io.pyfhd_io import save, load
-from PyFHD.use_idl_fhd.use_idl_outputs import convert_sav_to_dict
+from PyFHD.io.pyfhd_io import convert_sav_to_dict
 
 @pytest.fixture
 def data_dir():

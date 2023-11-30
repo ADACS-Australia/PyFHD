@@ -1,9 +1,11 @@
+import os
 import numpy as np
 import h5py
 from logging import Logger
 from pathlib import Path
 from typing import Any
 from numpy.typing import NDArray, DTypeLike
+from scipy.io import readsav
 
 def dtype_picker(dtype: DTypeLike) -> type:
     """
@@ -508,3 +510,59 @@ def recarray_to_dict(data: np.recarray | dict) -> dict:
             except ValueError:
                 data[key] = list(x for x in data[key])
     return data
+
+
+def convert_sav_to_dict(sav_path : str, logger : Logger,
+                        tmp_dir = "temp_pyfhd"):
+    """
+    Given a path to an IDL style .sav file, load into a python dictionary
+    using scipy.io.readsav.
+
+    If the file was saved with the IDL /compress option, the readsav function
+    has to save a decompressed version of the file. By default this uses
+    the tempfile module to find a location, but this usually finds a bad
+    location with little storage when called on a super cluster. So explicitly
+    make our own temp dir `tmp_pyfhd` where the code is being called. It is
+    assumed many files are to be converted, so `tmp_pyfhd` should be deleted
+    after all calls.
+
+    Mostly used just for testing, if you;re not a developer you can safely ignore this function
+
+    Parameters
+    ----------
+    sav_path : str
+        Filepath for an IDL .sav file
+    logger : Logger
+        The logger to output any error messages to
+    tmp_dir : str
+        Dir to place temporary files, creates the directory if doesn't exist.
+        Default: "tmp_pyfhd".
+
+    Returns
+    --------
+    sav_dict : dict
+        Dictionary containing whatever was in the .sav file
+
+    """
+
+    if os.path.isfile(sav_path):
+        # logger.info(f"{sav_path} found, converting now.")
+
+        #Ensure the tmp dir exists, create if not
+        os.makedirs(tmp_dir, exist_ok=True)
+
+        #Strip off any leading path to leave just the file name
+        temp_name = f"{tmp_dir}/{sav_path.split('/')[-1]}"
+
+        #Load into a dictionary, decompressed and saving a temporary file if need
+        #be
+        sav_dict = readsav(sav_path, python_dict=True, uncompressed_file_name=temp_name)
+
+        return sav_dict
+    else:
+        # sys.exit(f"{sav_path} does not exist. Cannot grid so exiting")
+        logger.error(f"{sav_path} doesn't exist, please check your input path")
+
+        for handler in logger.handlers:
+            handler.close()
+        exit()

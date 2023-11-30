@@ -4,7 +4,7 @@ from pathlib import Path
 from os import environ as env
 from PyFHD.data_setup.uvfits import extract_header, create_params, create_layout
 from PyFHD.data_setup.obs import create_obs
-from PyFHD.use_idl_fhd.use_idl_outputs import convert_sav_to_dict
+from PyFHD.io.pyfhd_io import convert_sav_to_dict
 from PyFHD.io.pyfhd_io import recarray_to_dict
 from PyFHD.io.pyfhd_io import save, load
 import numpy.testing as npt

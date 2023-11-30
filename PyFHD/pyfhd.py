@@ -20,9 +20,6 @@ from PyFHD.pyfhd_tools.pyfhd_utils import (simple_deproject_w_term,
 from PyFHD.source_modeling.vis_model_transfer import (flag_model_visibilities,
                                                       vis_model_transfer)
 from PyFHD.io.pyfhd_io import save, load
-from PyFHD.use_idl_fhd.run_idl_fhd import (
-    run_IDL_calibration_only, run_IDL_convert_gridding_to_healpix_images)
-from PyFHD.use_idl_fhd.use_idl_outputs import run_gridding_on_IDL_outputs
 
 
 def _print_time_diff(start : float, end : float, description : str, logger : logging.Logger):
@@ -45,18 +42,13 @@ def _print_time_diff(start : float, end : float, description : str, logger : log
     else:
         logger.info(f'{description} completed in: {round(runtime,5)} seconds')
 
-def main_python_only(pyfhd_config : dict, logger : logging.Logger):
-    """One day, this python only loop will just be main. For now, only try and
-    run it if none of the IDL options are asked for.
+def main():
 
-    Parameters
-    ----------
-    pyfhd_config : dict
-        _The options from argparse in a dictionary, that have been verified using
-        `PyFHD.pyfhd_tools.pyfhd_setup.pyfhd_setup`.
-    logger : logging.Logger
-        _The logger to output info and errors to
-    """
+    pyfhd_start = time.time()
+    options = pyfhd_parser().parse_args()
+    
+    # Validate options and Create the Logger
+    pyfhd_config, logger = pyfhd_setup(options)
 
     if pyfhd_config['save_checkpoints']:
         pyfhd_config['checkpoint_dir'] = Path(pyfhd_config['output_dir'], 'checkpoints')
@@ -283,50 +275,16 @@ def main_python_only(pyfhd_config : dict, logger : logging.Logger):
 
     # TODO: Translate snapshot_healpix_export and add it here
 
-    # Close all open h5 files
-    if isinstance(psf, h5py.File):
-        psf.close()
-
-    # Write a final collated yaml for the final pyfhd_config
-    write_collated_yaml_config(pyfhd_config, pyfhd_config['output_dir'], "-final")
-
-def main():
-
-    pyfhd_start = time.time()
-    options = pyfhd_parser().parse_args()
-    
-    # Validate options and Create the Logger
-    pyfhd_config, logger = pyfhd_setup(options)
-
-    #If any of the hybrid options have been asked for, circumnavigate the
-    #main_loop_python_only function, and run the required hybrid options
-    if options.IDL_calibrate or options.grid_IDL_outputs or options.IDL_healpix_gridded_outputs:
-
-        idl_output_dir = None
-
-        if options.IDL_calibrate:
-            idl_output_dir = run_IDL_calibration_only(pyfhd_config, logger)
-
-        if options.grid_IDL_outputs:
-            if idl_output_dir != None:
-                pass
-            else:
-                idl_output_dir = f"{pyfhd_config['output_path']}/{pyfhd_config['top_level_dir']}/fhd_{pyfhd_config['top_level_dir']}"
-
-            run_gridding_on_IDL_outputs(pyfhd_config, idl_output_dir, logger)
-
-        if options.IDL_healpix_gridded_outputs:
-            run_IDL_convert_gridding_to_healpix_images(pyfhd_config, logger)
-
-    else:
-        main_python_only(pyfhd_config, logger)
-
-
     pyfhd_end = time.time()
     runtime = timedelta(seconds = pyfhd_end - pyfhd_start)
     logger.info(f'PyFHD Run Completed for {pyfhd_config["obs_id"]}\nTotal Runtime (Days:Hours:Minutes:Seconds.Millseconds): {runtime}')
     # Close the handlers in the log
     for handler in logger.handlers:
         handler.close()
+    # Close all open h5 files
+    if isinstance(psf, h5py.File):
+        psf.close()
+    # Write a final collated yaml for the final pyfhd_config
+    write_collated_yaml_config(pyfhd_config, pyfhd_config['output_dir'], "-final")
 
     
