@@ -187,7 +187,7 @@ def main():
                     "vis_weights": vis_weights,
                     "cal": cal,
                 }
-                save(Path(pyfhd_config['checkpoint_dir'], 'calibrate_checkpoint.h5'), checkpoint, "calibrate_checkpoint", logger = logger)
+                save(Path(pyfhd_config['checkpoint_dir'], 'calibration_checkpoint.h5'), checkpoint, "calibration_checkpoint", logger = logger)
                 logger.info(f"Checkpoint Saved: Calibrated and Flagged visibility parameters, array and weights, the flagged observation metadata dictionary and the calibration dictionary saved into {Path(pyfhd_config['output_dir'], 'calibrate_checkpoint.h5')}")
     else:
         # Load the calibration checkpoint

@@ -498,9 +498,12 @@ def vis_model_freq_split(
             "variance_uv": variance_uv_arr,
             "model_uv": model_uv_arr,
         }
-        uvf_dir = Path(Path(pyfhd_config['output_dir'], 'uvf_grid'))
-        uvf_dir.mkdir(exist_ok = True)
-        save(Path(uvf_dir, f'{uvf_name}_gridded_uvf.h5'), h5_save_dict, f'{uvf_name}_gridded_uvf', logger = logger)
+        uvf_dir = Path(Path(pyfhd_config['output_dir'], 'healpix', 'uvf_grid'))
+        uvf_dir.mkdir(exist_ok = True, parents = True)
+        save(Path(uvf_dir, f'{pyfhd_config["obs_id"]}_{uvf_name}_dirty_uv_arr_gridded_uvf.h5'), h5_save_dict, f'{pyfhd_config["obs_id"]}_{uvf_name}_dirty_uv_arr_gridded_uvf.h5', logger = logger)
+        save(Path(uvf_dir, f'{pyfhd_config["obs_id"]}_{uvf_name}_weights_uv_gridded_uvf.h5'), h5_save_dict, f'{pyfhd_config["obs_id"]}_{uvf_name}_weights_uv_gridded_uvf.h5', logger = logger)
+        save(Path(uvf_dir, f'{pyfhd_config["obs_id"]}_{uvf_name}_variance_uv_arr_gridded_uvf.h5'), h5_save_dict, f'{pyfhd_config["obs_id"]}_{uvf_name}_variance_uv_arr_gridded_uvf.h5', logger = logger)
+        save(Path(uvf_dir, f'{pyfhd_config["obs_id"]}_{uvf_name}_model_uv_arr_gridded_uvf.h5'), h5_save_dict, f'{pyfhd_config["obs_id"]}_{uvf_name}_model_uv_arr_gridded_uvf.h5', logger = logger)
     
     model_split = {
         "obs": obs,

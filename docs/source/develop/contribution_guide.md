@@ -81,6 +81,18 @@ If you think it's the start of a new part of the pipeline, then create a new dir
 
 From there I'll leave it upto you, time to put that function from your head to a screen.
 
+### Need to add an option to `pyfhd_config`?
+
+`PyFHD` uses `configargparse` to process all the options for a run, the options are parsed in via a `YAML` file. In order to add an option you need to do two things:
+1. Add the option to the YAML file with a good default value that is a good value in most cases, and if that isn't the case use the value you use the most
+2. Also add the option into `PyFHD/pyfhd_tools/pyfhd_setup.py` via the function `pyfhd_parser`. The `pyfhd_parser` function creates the argparse object. The argparse object contains multiple groups of options, each group usually corresponds to each part of the PyFHD pipeline, please add the option into the most appropriate group, e.g. if you want the option to be inside calibration add the new option to the calibration group. There will be plenty of examples inside the same function for you to refer to when making a new option. Each option must contain:
+   * The option argument string you're using, any spaces in your option should be replaced with a dash i.e. `new option` -> `--new-option`
+   * A default value, this is set by using `default =`. If you're dealing with a boolean toggle valkue, set the default = False, and configure the `YAML` to have the default value you want it too.
+   * If you're doing a boolean value then set an `action` to `'store_true'`, in the case of a list you should use the action `'append'` and put an empty list in the `YAML` file for that option.
+   * Help text which explains when and why to use the option, and if it conflicts with tother options describe how they conflict in that help text or define what happens when there are conflicting options using the `pyfhd_setup` function where we check all the options to ensure they are valid. Ideally try to keep all validation checking for those options inside `pyfhd_setup` if you can.
+
+From there you can reference the option created using `pyfhd_config[new_option]`, do take note all dashes in the option name are converted to underscores to avoid conflict with python's `-` operator. Inside the yaml you will also see `~` which represents a python `None` object.
+
 ### Documenting and Typing the new function
 
 You have made your new function, congratulations, now it's time to add some documentation and comments if you haven't already. In PyFHD, we use docstrings in the [`numpydoc`](https://numpydoc.readthedocs.io/en/latest/format.html) which is well documented in terms of what you should put into your docstrings and what each section in the docstring is for. There is specific formatting to follow and deviations from the format will result in weird outputs for read the docs once the docstring is read in for auto generating the API reference so please follow the numpydoc format precisely.

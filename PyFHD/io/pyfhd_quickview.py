@@ -105,36 +105,39 @@ def quickview(
         _description_
     """
     # Save all the things into the output directory
-    pyfhd_config['results_dir'] = Path(pyfhd_config["output_dir"], 'data')
+    pyfhd_config['metadata_dir'] = Path(pyfhd_config["output_dir"], 'metadata')
+    pyfhd_config['visibilities_path'] = Path(pyfhd_config["output_dir"], 'visibilities')
+    pyfhd_config['metadata_dir'].mkdir(exist_ok = True)
+    pyfhd_config['visibilities_path'].mkdir(exist_ok = True)
     if pyfhd_config["save_obs"]:
-        obs_path = Path(pyfhd_config['results_dir'],f"{pyfhd_config['obs_id']}_obs.h5")
+        obs_path = Path(pyfhd_config['metadata_dir'], f"{pyfhd_config['obs_id']}_obs.h5")
         logger.info(f"Saving the obs dictionary to {obs_path}")
         save(obs_path, obs, "obs", logger = logger)
     if pyfhd_config["save_params"]:
-        params_path = Path(pyfhd_config['results_dir'],f"{pyfhd_config['obs_id']}_params.h5")
+        params_path = Path(pyfhd_config['metadata_dir'], f"{pyfhd_config['obs_id']}_params.h5")
         logger.info(f"Saving params dictionary to {params_path}")
         save(params_path, params, "params", logger = logger)
     if pyfhd_config["save_visibilities"]:
         if pyfhd_config["recalculate-grid"]:
-            uv_path = Path(pyfhd_config['results_dir'],f"{pyfhd_config['obs_id']}_uv.h5")
-            logger.info(f"Saving the gridded uv plane to {uv_path}")
-            h5_save_dict = {
-                "image": image_uv,
-                "weights": weights_uv,
-                "variance": variance_uv,
-                "uniform_filter": uniform_filter_uv,
-                "model": model_uv
-            }
-            save(uv_path, h5_save_dict, "uv", logger = logger)
-        cal_vis_arr_path = Path(pyfhd_config['results_dir'],f"{pyfhd_config['obs_id']}_calibrated_vis_arr.h5")
+            gridding_path = Path(pyfhd_config["output_dir"], "gridding")
+            gridding_path.mkdir(exist_ok = True)
+            logger.info(f"Saving the gridded uv planes to {gridding_path}")
+            save(Path(gridding_path, f"{pyfhd_config['obs_id']}_image_uv.h5"), image_uv, "image_uv", logger = logger)
+            save(Path(gridding_path, f"{pyfhd_config['obs_id']}_weights_uv.h5"), weights_uv, "weights_uv", logger = logger)
+            save(Path(gridding_path, f"{pyfhd_config['obs_id']}_variance_uv.h5"), variance_uv, "variance_uv", logger = logger)
+            save(Path(gridding_path, f"{pyfhd_config['obs_id']}_uniform_filter_uv.h5"), uniform_filter_uv, "uniform_filter_uv", logger = logger)
+            save(Path(gridding_path, f"{pyfhd_config['obs_id']}_model_uv.h5"), model_uv, "model_uv", logger = logger)
+        cal_vis_arr_path = Path(pyfhd_config['visibilities_path'],f"{pyfhd_config['obs_id']}_calibrated_vis_arr.h5")
         logger.info(f"Saving the calibrated visibilities to {cal_vis_arr_path}")
         save(cal_vis_arr_path, vis_arr, "visibilities", logger = logger)
     if pyfhd_config["save_cal"] and pyfhd_config["calibrate_visibilities"]:
-        cal_path = Path(pyfhd_config['results_dir'], f"{pyfhd_config['obs_id']}_cal.h5")
+        cal_path = Path(pyfhd_config['output_dir'], "calibration")
+        cal_path.mkdir(exist_ok = True)
+        cal_path = Path(cal_path, f"{pyfhd_config['obs_id']}_cal.h5")
         logger.info(f"Saving the calibration dictionary to {cal_path}")
         save(cal_path, cal, "cal", logger = logger)
     if pyfhd_config["save_calibrated_weights"]:
-        weights_path = Path(pyfhd_config['results_dir'],f"{pyfhd_config['obs_id']}_calibrated_vis_weights.h5")
+        weights_path = Path(pyfhd_config['visibilities_path'], f"{pyfhd_config['obs_id']}_calibrated_vis_weights.h5")
         logger.info(f"Saving the calibrated weights to {weights_path}")
         save(weights_path, vis_weights, "weights", logger = logger)
     

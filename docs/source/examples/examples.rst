@@ -4,49 +4,72 @@
 Examples
 ===========
 
-Preamble - directory structure and using ``FHD`` outputs
+Preamble - Inputs and Outputs ``PyFHD``
 ----------------------------------------------------------
 
-``FHD`` creates a specific directory structure and naming convention that must be respected for us to use the ``IDL`` outputs. In each of the examples below, if ``FHD`` outputs are required, their expected locations and names will be explained.
+The input ``PyFHD`` requires at a minimum is the observation ID and a configuration file to be passed to ``configargparse`` using the ``-c`` option. 
+By default ``PyFHD`` will search for a ``pyfhd.yaml`` configuration file in the directory you run ``PyFHD`` from, so strictly speaking, 
+if you run ``PyFHD`` from a directory that contains a ``pyfhd.yaml`` file then only the observation ID is needed. It's assumed that the 
+configuration file you provide has valid options for all the files you require, some files can be discovered automatically through the ``input-path``
+option of ``PyFHD`` so read through the usage help text to work out how you wish to configure your input. ``PyFHD`` is rather flexible on how you do your input
+as many of the files you may require can be in completely separate directories.
 
-Those familiar with ``FHD`` should understand the keyword ``version``; this means ``FHD`` outputs will be output to a subdir called ``fhd`` + ``_`` + version. The equivalent in ``PyFHD`` is the ``--description`` option, which will make a subdir called ``pyfhd`` + ``_`` + description.
-
-When running calibration, ``PyFHD`` will (currently) call ``FHD``, and output everything into a subsubdir, which will start with ``fhd``, so we know the outputs have come from the ``IDL`` code. The following (incomplete) command:
-
-.. code-block:: bash
-
-    pyfhd 1088282552 \
-        --output-path /where/be/outputs/ \
-        --description my_first_run
-
-will result in a directory structure like this:
+The output of ``PyFHD`` is automatically generated and stores everything in one directory with the name ``pyfhd_YYYY_MM_DD_HH_mm_ss`` if you don't use the ``--description`` option. 
+In the case of using the ``--description`` option then the output directory generated will be ``pyfhd_your_description_here``. The path where the output directory will be generated is ``--output-path``,
+with the generated output having the following directory structure (assuming 2 polarizations are used):
 
 .. code-block:: bash
 
-    /where/be/outputs/
-    └── pyfhd_my_first_run
-      ├── fhd_pyfhd_my_first_run
-      │ ├── 1088282552_variables.sav
-      │ ├── Healpix
-      │ ├── metadata
-      │ └── vis_data
-      └── gridding_outputs
+  .
+  └── /path/to/the/output-path/
+      └── pyfhd_your_description_here/
+          ├── calibration/
+          │   └── obs_id_cal.h5
+          ├── checkpoints/
+          │   ├── obs_checkpoint.h5
+          │   ├── calibration_checkpoint.h5
+          │   └── gridding_checkpoint.h5
+          ├── gridding/
+          │   ├── obs_id_image_uv.h5
+          │   ├── obs_id_weights_uv.h5
+          │   ├── obs_id_variance_uv.h5
+          │   ├── obs_id_uniform_filter_uv.h5
+          │   └── obs_id_model_uv.h5
+          ├── healpix/
+          │   ├── obs_id_hpx_even_XX.h5
+          │   ├── obs_id_hpx_even_YY.h5
+          │   ├── obs_id_hpx_odd_XX.h5
+          │   ├── obs_id_hpx_odd_YY.h5
+          │   └── uvf_grid/
+          │       ├── obs_id_even_dirty_uv_arr_gridded_uvf.h5
+          │       ├── obs_id_even_weights_uv_gridded_uvf.h5
+          │       ├── obs_id_even_variance_uv_arr_gridded_uvf.h5
+          │       ├── obs_id_even_model_uv_arr_gridded_uvf.h5
+          │       ├── obs_id_odd_dirty_uv_arr_gridded_uvf.h5
+          │       ├── obs_id_odd_weights_uv_gridded_uvf.h5
+          │       ├── obs_id_odd_variance_uv_arr_gridded_uvf.h5
+          │       └── obs_id_odd_model_uv_arr_gridded_uvf.h5
+          ├── metadata/
+          │   ├── obs_id_obs.h5
+          │   └── obs_id_params.h5
+          ├── plotting/
+          │   ├── calibration/
+          │   │   ├── cal_plot_1.png
+          │   │   └── cal_plot_2.png
+          │   ├── gridding/
+          │   │   └── gridding_plot_1.png
+          │   └── quickview/
+          │       └── quickview_plot_1.png
+          ├── visibilities/
+          │   ├── obs_id_calibrated_vis_arr.h5
+          │   └── obs_id_calibrated_vis_weights.h5
+          ├── pyfhd_your_description_here_YYYY_MM_DD_HH_mm_ss.log
+          ├── pyfhd_your_description_here_YYYY_MM_DD_HH_mm_ss.yaml
+          └── pyfhd_your_description_here_YYYY_MM_DD_HH_mm_ss-final.yaml
 
-The ``Healpix``, ``metadata``, and ``vis_data`` subdirs are generated (amongst other things) by ``FHD``. ``fhd_pyfhd_my_first_run`` and ``gridding_outputs`` are created by ``PyFHD``. If you don't want to use ``PyFHD`` as a wrapper to run calibration, but still want to run gridding on ``FHD`` outputs, either run ``FHD`` to create/output into ``fhd_pyfhd_my_first_run``, or just symlink in the ``Healpix``, ``metadata``, and ``vis_data``. Otherwise ``PyFHD`` won't be able to find the ``FHD`` outputs.
+The difference between the final and non-final yaml is that the final yaml is generated at the end of the run so you can observe any changes made to ``pyfhd_config``
 
-.. warning::
-    
-    If you don't use ``PyFHD`` to run ``FHD``, the ``1088282552_variables.sav`` file won't be saved. ``PyFHD`` needs some extra information that isn't saved by default in ``FHD``. Adding the line 
-
-    .. code-block:: idl
-
-        save, bi_use, weights_flag, variance_flag, model_return, preserve_visibilities, filename=file_path_fhd + '_variables.sav'
-
-    into your ``FHD`` run should produce the needed file (this is what ``PyFHD`` does internally).
-
-Once ``PyFHD`` is fully Pythonic, this file structure faffing about will be handled internally to the code. Please bear with us for now.
-
-Downloading Data
+Downloading MWA Data
 ---------------------
 Data can be obtained via the `MWA ASVO`_ service (head to the webpage to get an account setup). There are multiple ways to download data (please refer to the `MWA ASVO`_ to learn more); here we will use the Web Dashboard as an example. 
 

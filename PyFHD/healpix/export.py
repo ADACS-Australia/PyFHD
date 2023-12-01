@@ -156,4 +156,4 @@ def healpix_snapshot_cube_generate(obs: dict, psf: dict | h5py.File, cal: dict, 
                 healpix_pol_dict['res_cube'] = dirty_or_res_cube
             elif dirty_flag:
                 healpix_pol_dict['dirty_cube'] = dirty_or_res_cube
-            save(healpix_dir / f"healpix_{cube_name[iter]}_{obs['pol_names'][pol_i]}.h5", healpix_pol_dict, f"healpix_{cube_name[iter]}_{obs['pol_names'][pol_i]}", logger = logger)
+            save(healpix_dir / f"{pyfhd_config['obs_id']}_{cube_name[iter]}_{obs['pol_names'][pol_i]}.h5", healpix_pol_dict, f"{pyfhd_config['obs_id']}_{cube_name[iter]}_{obs['pol_names'][pol_i]}", logger = logger)
