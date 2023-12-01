@@ -60,9 +60,7 @@ def vis_calibrate_subroutine(vis_arr: NDArray[np.complex128], vis_model_ptr: NDA
     # average the visibilities across time steps before solving for the gains
     time_average = pyfhd_config['cal_time_average']
     # maximum iterations to perform for the linear least-squares solver
-    max_cal_iter = 100
-    # For record keeping
-    cal['max_cal_iter'] = 100
+    max_cal_iter = pyfhd_config['max_cal_iter']
     # Leave a warning if its less than 5 iterations, or an Error if its less than 1
     if max_cal_iter < 5:
         warnings.warn("At Least 5 calibrations iterations is recommended.\nYou're currently using {} iterations".format(int(max_cal_iter)))

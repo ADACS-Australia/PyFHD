@@ -72,6 +72,7 @@ calibration-catalog-file-path  :  ~ # 'GLEAM_v2_plus_rlb2019.sav' (FHD Default)
 transfer-calibration : ~
 cal-stop : false
 transfer-model-uv : ~
+max-cal-iter: 100
 
 # Flagging
 flag-basic: true

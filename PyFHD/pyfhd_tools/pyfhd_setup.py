@@ -142,6 +142,7 @@ def pyfhd_parser():
     calibration.add_argument('--digital-gain-jump-polyfit', default=False, action='store_true', help = 'Perform polynomial fitting for the amplitude separately before and after the highband digital gain jump at 187.515E6.')
     calibration.add_argument('--calibration-flag-iterate', default = 0, type = int, help = 'Number of times to repeat calibration in order to better identify and flag bad antennas so as to exclude them from the final result.')
     calibration.add_argument('--cal-phase-fit-iter', default = 4, type = int, help = 'Set the iteration number to begin phase calibration. Before this, phase is held fixed and only amplitude is being calibrated.')
+    calibration.add_argument('--max-cal-iter', default = 100, type = int, help = 'Sets the maximum number of iterations allowed for the linear least-squares solver to converge during vis_calibrate_subroutine. Ideally do not set this number unless you notice some of the frquencies not reaching convergence within 100 iterations and do not set this number to 5 or below.')
 
     # Flagging Group
     flag.add_argument('-fm', '--flag-model', default = False, action = 'store_true', help = "Flag the imported model based on time offsets and the tiles. Turn off if you're dealing with an already flagged model or simulation.")
