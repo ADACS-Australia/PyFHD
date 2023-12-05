@@ -1378,7 +1378,7 @@ def crosspol_split_real_imaginary(image: NDArray[np.complex128], pol_names: list
     pol_names : list[str]|None]
         _description_
     """
-    crosspol_image: np.ndarray = image[2]
+    crosspol_image: NDArray[np.complex128] = image[2]
     image[2] = crosspol_image.real
     image[3] = crosspol_image.imag
 

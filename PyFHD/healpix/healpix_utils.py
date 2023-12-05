@@ -327,7 +327,7 @@ def beam_image_cube(
             beam_mask *= beam_mask1
     return beam_arr, beam_mask
 
-def phase_shift_uv_image(obs: dict) -> NDArray[np.float64]:
+def phase_shift_uv_image(obs: dict) -> NDArray[np.complex128]:
     """
     TODO: _summary_
 
