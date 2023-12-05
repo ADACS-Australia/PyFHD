@@ -3,12 +3,13 @@ from pathlib import Path
 import numpy as np
 import numpy.testing as npt
 import pytest
+from logging import Logger
 from PyFHD.io.pyfhd_io import convert_sav_to_dict, load, recarray_to_dict, save
-from PyFHD.healpix.healpix_utils import phase_shift_uv_image
+from PyFHD.io.pyfhd_quickview import get_image_renormalization
 
 @pytest.fixture
 def data_dir():
-    return Path(env.get('PYFHD_TEST_PATH'), "phase_shift_uv_image")
+    return Path(env.get('PYFHD_TEST_PATH'), "get_image_renormalization")
 
 @pytest.fixture(scope="function", params=['1088285600','1088716296', 'point_zenith', 'point_offzenith'])
 def tag(request):
@@ -31,10 +32,16 @@ def before_file(tag, run, data_dir):
 
     sav_file = before_file.with_suffix('.sav')
     sav_dict = convert_sav_to_dict(str(sav_file), "faked")
+    sav_dict = recarray_to_dict(sav_dict)
 
-    obs = recarray_to_dict(sav_dict['obs'])
+    pyfhd_config = {
+        "pad_uv_image": sav_dict["pad_uv_image"],
+        "image_filter": "filter_uv_uniform",
+    }
 
-    save(before_file, obs, "obs")
+    sav_dict["pyfhd_config"] = pyfhd_config
+
+    save(before_file, sav_dict, "sav_dict")
 
     return before_file
 
@@ -49,27 +56,34 @@ def after_file(tag, run, data_dir):
     
     sav_file = after_file.with_suffix('.sav')
     sav_dict = convert_sav_to_dict(str(sav_file), "faked")
+    sav_dict = recarray_to_dict(sav_dict)
 
-    save(after_file, sav_dict['rephase_calc'], "rephase_expected")
+    save(after_file, sav_dict["renorm_factor"], "renorm_factor")
     
     return after_file
 
-def test_phase_shift_uv_image(before_file, after_file):
+    
+def test_get_image_renormalization(before_file, after_file):
     if (before_file == None or after_file == None):
         pytest.skip(f"This test has been skipped because the test was listed in the skipped tests due to FHD not outputting them: {skip_tests}")
+
+    h5_before = load(before_file)
+    expected_renorm_factor = load(after_file)
+
+    h5_before["obs"]["dimension"] = int(h5_before["obs"]["dimension"])
+    h5_before["obs"]["elements"] = int(h5_before["obs"]["elements"])
+    h5_before["obs"]["obsx"] = int(h5_before["obs"]["obsx"])
+    h5_before["obs"]["obsy"] = int(h5_before["obs"]["obsy"])
+
+    renorm_factor = get_image_renormalization(
+        h5_before["obs"],
+        h5_before["weights_arr"],
+        h5_before["beam_base"],
+        h5_before["filter_arr"],
+        h5_before["pyfhd_config"],
+        Logger(1)
+    )
+    atol = renorm_factor - (1e-8 + 1e-7 * np.abs(expected_renorm_factor))
+    npt.assert_allclose(renorm_factor, expected_renorm_factor, atol = 1)
+
     
-    obs = load(before_file)
-    expected_rephase = load(after_file)
-
-    # WHy dId I haVe to dO thIs Astropy?!?!
-    obs['astr']['ctype'] = [x.encode() for x in obs['astr']['ctype']]
-    obs['dimension'] = int(obs['dimension'])
-    obs['elements'] = int(obs['elements'])
-
-    rephase = phase_shift_uv_image(obs)
-
-    # Precision differences caused by radec_to_pixel double precision calculation
-    # vs single. Furthermore, the !Pi used in phase_shift_uv_image is also single
-    # precision rather than the double precision variant IDL has. The calculations
-    # are mathematically the same in both PyFHD and FHD.
-    npt.assert_allclose(rephase, expected_rephase, atol = 3e-2)

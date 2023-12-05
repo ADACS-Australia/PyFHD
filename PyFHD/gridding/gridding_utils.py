@@ -410,7 +410,7 @@ def dirty_image_generate(
         # di_uv1 = np.zeros((dimension_new, dimension_new), dtype = "complex")
         # di_uv1[dimension_new // 2 - elements // 2 : dimension_new // 2 + elements // 2,
         #        dimension_new // 2 - dimension // 2 : dimension_new // 2 + dimension // 2] = di_uv_use
-        di_uv1 = np.pad(di_uv_use, np.max([dimension, elements]) // 2)
+        di_uv1 = np.pad(di_uv_use, (np.max([dimension, elements]) // 2) * (int(pad_uv_image) - 1))
         di_uv_use = di_uv1 * (pad_uv_image ** 2)
     
     # FFT normalization

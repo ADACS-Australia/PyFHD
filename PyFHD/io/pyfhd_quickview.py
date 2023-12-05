@@ -41,17 +41,21 @@ def get_image_renormalization(
     NDArray[np.float64]
         _description_
     """
-    renorm_factor = np.empty(obs["pol_i"])
+    # Use the weights to renormalize the image to units of Jy/sr
+    renorm_factor = np.empty(obs["n_pol"])
     for pol_i in range(obs["n_pol"]):
-        renorm_factor[pol_i] = 1 / dirty_image_generate(
+        dirty_image, _ , _ = dirty_image_generate(
             weights[pol_i], 
             pyfhd_config, 
             logger, 
             weights = weights[pol_i], 
             pad_uv_image = pyfhd_config['pad_uv_image'],
             filter = filter_arr[pol_i],
-            beam_ptr = beam_base[pol_i]
-        )[obs['dimension'] // 2, obs['elements'] // 2]
+            beam_ptr = beam_base[pol_i],
+            degpix = obs['degpix']
+        )
+        dirty_num = dirty_image[obs['dimension'] // 2, obs['elements'] // 2]
+        renorm_factor[pol_i] = 1 / dirty_num
         # TODO: Check x and y indexing
         renorm_factor[pol_i] *= beam_base[pol_i, obs["obsx"], obs["obsy"]] ** 2
         renorm_factor[pol_i] /= (obs["degpix"] * (np.pi / 180)) ** 2
