@@ -342,6 +342,7 @@ def phase_shift_uv_image(obs: dict) -> NDArray[np.complex128]:
         _description_
     """
     # Since we only use it once in PyFHD, assume we always want to do /to_orig_phase
+    # Implement the other options if you decide to use this function elsewhere
     ra_use = obs['orig_phasera']
     dec_use = obs['orig_phasedec']
     

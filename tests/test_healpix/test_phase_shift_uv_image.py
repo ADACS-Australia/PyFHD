@@ -69,4 +69,8 @@ def test_phase_shift_uv_image(before_file, after_file):
 
     rephase = phase_shift_uv_image(obs)
 
-    npt.assert_allclose(rephase, expected_rephase, atol = 1e-8)
+    # Precision differences caused by radec_to_pixel double precision calculation
+    # vs single. Furthermore, the !Pi used in phase_shift_uv_image is also single
+    # precision rather than the double precision variant IDL has. The calculations
+    # are mathematically the same in both PyFHD and FHD.
+    npt.assert_allclose(rephase, expected_rephase, atol = 3e-2)
