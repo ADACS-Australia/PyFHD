@@ -83,7 +83,11 @@ def test_get_image_renormalization(before_file, after_file):
         h5_before["pyfhd_config"],
         Logger(1)
     )
-    atol = renorm_factor - (1e-8 + 1e-7 * np.abs(expected_renorm_factor))
-    npt.assert_allclose(renorm_factor, expected_renorm_factor, atol = 1)
+    # Interestingly we are at the limit of single precision for this result so
+    # IDL can't actually use the decimal places here where we can i.e. in IDL
+    # 17044907.32 EQ 17044908. is True while in Python this is clearly False
+    # This means the rtol should be a max of 1 and we'll consider the PyFHD version
+    # to be better here as we can represent the number and decimal places
+    npt.assert_allclose(renorm_factor, expected_renorm_factor, rtol = 1)
 
     

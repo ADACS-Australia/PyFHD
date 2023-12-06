@@ -1317,7 +1317,7 @@ def region_grow(image: NDArray[np.int_ | np.float_ | np.complex_], roiPixels: ND
     image[nans] = 0
     # Get all the values that are within the threshold
     threshArray = np.zeros_like(image)
-    threshArray[np.where((image >= low) and (image <= high))] = 0
+    threshArray[np.where((image >= low) & (image <= high))] = 0
     threshArray[nans] = 0
     # Do binary blob detection with the label function
     labelArray, _ = label(threshArray)
