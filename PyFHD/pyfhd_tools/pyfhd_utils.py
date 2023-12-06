@@ -82,17 +82,20 @@ def get_hist(data: NDArray[np.float_ | np.int_ | np.complex_], bins: NDArray[np.
     n = bin_l - 1
     bin_min = bins[0]
     bin_max = bins[-1]
+    # In the case that the bin min and bin max is the same,
+    # then finding the index doesn't matter so set the divider
+    # to 1 (as there is only 1 bin!)
     if (bin_min == bin_max):
-        # Assume all values are the same, return the histogram
-        # as a single value array containing the size of the array
-        return np.array([data.size], dtype = np.int64)
+        bin_divider = 1
+    else:
+        bin_divider = bin_max - bin_min
     # Now loop through the data
     for idx in range(data.size):
         # Check if its inside the range we set
         if data[idx] < min or data[idx] > max:
             continue
         # Calculate the index for indices and histogram
-        bin_i = int(n * (data[idx] - bin_min) / (bin_max - bin_min))
+        bin_i = int(n * (data[idx] - bin_min) / bin_divider)
         # Add to the histogram 
         hist[bin_i] += 1
     return hist
@@ -177,17 +180,16 @@ def get_ri(data: NDArray[np.float_ | np.int_ | np.complex_], bins: NDArray[np.fl
     # Setup the reverse indices 
     ri = np.zeros(bin_l + 1 + data.size, dtype = np.int64)
     ri[0 : bin_l + 1] = first_v
-    # In the case of min being max, all values are the same
-    # so the ri is just the range of indexes
-    if (min == max):
-        ri[ri[0]:] = np.arange(data.size, dtype = np.int64)
-        return ri
     # Create a tracking array to keep track of where we are in the data indexing
     tracker = np.array(first_v)
     # Setup the things required for the indexing
     n = bin_l - 1
     bin_min = bins[0]
     bin_max = bins[-1]
+    if (bin_min == bin_max):
+        bin_divider = 1
+    else:
+        bin_divider = bin_max - bin_min
     # Setup counter to remove elements in case of min or max being set
     counter = 0
     for idx in range(data.size):
@@ -196,7 +198,7 @@ def get_ri(data: NDArray[np.float_ | np.int_ | np.complex_], bins: NDArray[np.fl
             counter += 1
             continue
         # Calculate the index for indices and histogram
-        bin_i = int(n * (data[idx] - bin_min) / (bin_max - bin_min))
+        bin_i = int(n * (data[idx] - bin_min) / bin_divider)
         # Record the current index and update the tracking array
         ri[tracker[bin_i]] = idx
         tracker[bin_i] += 1
@@ -1317,7 +1319,7 @@ def region_grow(image: NDArray[np.int_ | np.float_ | np.complex_], roiPixels: ND
     image[nans] = 0
     # Get all the values that are within the threshold
     threshArray = np.zeros_like(image)
-    threshArray[np.where((image >= low) & (image <= high))] = 0
+    threshArray[np.where((image >= low) & (image <= high))] = 1
     threshArray[nans] = 0
     # Do binary blob detection with the label function
     labelArray, _ = label(threshArray)

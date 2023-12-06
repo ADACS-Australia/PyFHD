@@ -61,6 +61,14 @@ def test_min(data_dir: Path):
     assert np.array_equal(hist, expected_hist)
     assert np.array_equal(indices, expected_indices)
 
+def test_ones_and_min():
+    only_ones = np.array([0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0])
+    output, _, ri = histogram(only_ones, min = 1)
+    expected_hist = np.array([3])
+    expected_ri = np.array([2, 5, 4, 5, 6])
+    assert np.array_equal(output, expected_hist)
+    assert np.array_equal(ri, expected_ri)
+
 def test_max(data_dir: Path):
     # Read the histogram file
     data, expected_hist, expected_indices = get_data(data_dir, 'hundred_ints.npy', 'hundred_ints_hist_max50.npy', 'hundred_ints_inds_max50.npy')
@@ -78,6 +86,14 @@ def test_min_max(data_dir: Path):
     hist, _, indices = histogram(data, bin_size = 10, min = 10, max = 55)
     assert np.array_equal(hist, expected_hist)
     assert np.array_equal(indices, expected_indices)
+
+def test_find_none():
+    only_twos = np.array([0, 0, 0, 0, 2, 2, 2, 0, 0, 0, 0])
+    output, _, ri = histogram(only_twos, min = 1, max = 1)
+    expected_hist = np.array([0])
+    expected_ri = np.array([2, 2])
+    assert np.array_equal(output, expected_hist)
+    assert np.array_equal(ri, expected_ri)
 
 def test_one_max(data_dir: Path):
     # Read the histogram file
