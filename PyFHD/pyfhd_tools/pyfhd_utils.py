@@ -1323,6 +1323,16 @@ def region_grow(image: NDArray[np.int_ | np.float_ | np.complex_], roiPixels: ND
     threshArray[nans] = 0
     # Do binary blob detection with the label function
     labelArray, _ = label(threshArray)
+    # Make the edges background as the Region grow IDL does not do the edges
+    # of an array
+    if labelArray.ndim == 2:
+        labelArray[0,:] = 0
+        labelArray[:, 0] = 0
+        labelArray[-1, :] = 0
+        labelArray[:, -1] = 0
+    else:
+        labelArray[0] = 0
+        labelArray[-1] = 0
     # Get the histogram of the labels to ascertain the neighbours we will be interested in
     if np.size(roiPixels) > 1:
         labels, _ , _ =  histogram(labelArray.flat[roiPixels], min = 0)
@@ -1331,6 +1341,8 @@ def region_grow(image: NDArray[np.int_ | np.float_ | np.complex_], roiPixels: ND
     else:
         nLabels = 1
         labels = labelArray.flat[roiPixels]
+        if not isinstance(labels, np.ndarray):
+            labels = np.array([labels], dtype = labelArray.dtype)
     # Ignore the first label if it's 0 as it's the background
     if (labels[0] == 0):
         nLabels -= 1
