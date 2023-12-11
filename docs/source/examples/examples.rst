@@ -19,16 +19,27 @@ In the case of using the ``--description`` option then the output directory gene
 with the generated output having the following directory structure (assuming 2 polarizations are used):
 
 .. code-block:: bash
-
+  
   .
   └── /path/to/the/output-path/
       └── pyfhd_your_description_here/
           ├── calibration/
           │   └── obs_id_cal.h5
           ├── checkpoints/
-          │   ├── obs_checkpoint.h5
-          │   ├── calibration_checkpoint.h5
-          │   └── gridding_checkpoint.h5
+          │   ├── obs_id__your_description_here_obs_checkpoint.h5
+          │   ├── obs_id__your_description_here_calibration_checkpoint.h5
+          │   └── obs_id__your_description_here_gridding_checkpoint.h5
+          ├── fits/
+          │   ├── obs_id_uniform_dirty_XX.fits
+          │   ├── obs_id_uniform_model_XX.fits
+          │   ├── obs_id_uniform_residual_XX.fits
+          │   ├── obs_id_beam_XX.fits
+          │   ├── obs_id_uv_weights_XX.fits
+          │   ├── obs_id_uniform_dirty_YY.fits
+          │   ├── obs_id_uniform_model_YY.fits
+          │   ├── obs_id_uniform_residual_YY.fits
+          │   ├── obs_id_beam_YY.fits
+          │   └── obs_id_uv_weights_YY.fits
           ├── gridding/
           │   ├── obs_id_image_uv.h5
           │   ├── obs_id_weights_uv.h5

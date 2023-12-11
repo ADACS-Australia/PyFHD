@@ -90,20 +90,14 @@ Input & Output
 .. automodule:: PyFHD.io.pyfhd_quickview
    :members:
 
-Using ``FHD`` via ``PyFHD``
-==============================
+HEALPix
+=======
 
-Running ``FHD`` from ``PyFHD``
--------------------------------
+.. automodule:: PyFHD.healpix.export
+   :members:
 
-.. automodule:: PyFHD.use_idl_fhd.run_idl_fhd
-    :members:
-
-Using ``FHD`` outputs within ``PyFHD``
------------------------------------------
-
-.. automodule:: PyFHD.use_idl_fhd.use_idl_outputs
-    :members:
+.. automodule:: PyFHD.healpix.healpix_utils
+   :members:
 
 Tools & Utilities
 =================

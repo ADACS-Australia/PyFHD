@@ -146,6 +146,9 @@ def quickview(
         save(weights_path, vis_weights, "weights", logger = logger)
     
     obs_out = update_obs(obs, obs['dimension'] * pyfhd_config['pad_uv_image'], obs['kpix'])
+    # In case pad_uv_image was a float can get a float out rather than int
+    obs_out['dimension'] = int(obs_out['dimension'])
+    obs_out['elements'] = int(obs_out['elements'])
     horizon_mask = np.ones([obs_out['dimension'], obs_out['elements']])
     ra, _ = pixel_to_radec(
         meshgrid(obs_out["dimension"], obs_out["elements"], 1), 
@@ -160,8 +163,8 @@ def quickview(
     beam_avg = np.zeros([obs_out["dimension"], obs_out["elements"]]) 
     beam_base_out = np.empty([obs_out["n_pol"], obs_out["dimension"], obs_out["elements"]])
     beam_correction_out = np.empty_like(beam_base_out)
-    for pol_i in obs["n_pol"]:
-        beam_base_out[pol_i] = rebin(psf["beam_ptr"], [obs_out["dimension"], obs_out["elements"]]) * horizon_mask
+    for pol_i in range(obs["n_pol"]):
+        beam_base_out[pol_i] = rebin(psf["beam_ptr"][pol_i], [obs_out["dimension"], obs_out["elements"]]) * horizon_mask
         beam_correction_out[pol_i] = weight_invert(beam_base_out[pol_i], 1e-3)
         if (pol_i == 0):
             beam_mask_test = beam_base_out[pol_i]
@@ -193,7 +196,7 @@ def quickview(
             pyfhd_config, 
             logger, 
             degpix = obs_out['degpix'],
-            weights = vis_weights[pol_i],
+            weights = weights_uv[pol_i],
             pad_uv_image = pyfhd_config['pad_uv_image'],
             filter = filter,
             not_real = complex_flag,
@@ -205,13 +208,13 @@ def quickview(
             pyfhd_config, 
             logger, 
             degpix = obs_out['degpix'],
-            weights = vis_weights[pol_i],
+            weights = weights_uv[pol_i],
             pad_uv_image = pyfhd_config['pad_uv_image'],
             filter = filter,
             not_real = complex_flag,
             beam_ptr = beam_base_out[pol_i]
         )
-    renorm_factor = get_image_renormalization(obs_out, vis_weights, beam_base_out, filter_arr, pyfhd_config, logger)
+    renorm_factor = get_image_renormalization(obs_out, weights_uv, beam_base_out, filter_arr, pyfhd_config, logger)
     # Reshape renorm factor to multiply per polarization without loop to [obs["n_pol"], 1, 1] 
     renorm_factor = np.expand_dims(renorm_factor.reshape([obs_out["n_pol"],1]), -1)
     instr_dirty_arr *= renorm_factor
@@ -227,11 +230,11 @@ def quickview(
         instr_model_arr,_ = crosspol_split_real_imaginary(instr_model_arr)
         instr_residual_arr, _ = crosspol_split_real_imaginary(instr_residual_arr)
         # The weights should have been saved at this point and we only need them like this from here
-        vis_weights, _ = crosspol_split_real_imaginary(vis_weights)
+        weights_uv, _ = crosspol_split_real_imaginary(weights_uv)
     
     # Build a fits header
     logger.info("Building the FITS Header for all the FITS files")
-    fits_file = fits.PrimaryHDU(instr_dirty_arr[0])
+    fits_file = fits.PrimaryHDU(weights_uv[0])
     # Write in the WCS into the header from the astr dictionary in obs_out
     fits_file.header.set("ctype1", obs_out["astr"]["ctype"][0].decode(), "Coordinate Type")
     fits_file.header.set("ctype2", obs_out["astr"]["ctype"][1].decode(), "Coordinate Type")
@@ -265,7 +268,7 @@ def quickview(
     fits_file_apparent.header.set("bunit", "Jy/sr (apparent)")
 
     # Create the fits header for the weights
-    fits_file_uv = fits.PrimaryHDU(vis_weights[0])
+    fits_file_uv = fits.PrimaryHDU(weights_uv[0])
     fits_file_uv.header.set("CD1_1", obs['kpix'], 'Wavelengths / Pixel')
     fits_file_uv.header.set("CD2_1", 0., 'Wavelengths / Pixel')
     fits_file_uv.header.set("CD1_2", 0., 'Wavelengths / Pixel')
@@ -280,6 +283,8 @@ def quickview(
     # If you need the beam_contour arrays add them here, lines 369-378 in fhd_quickview.pro
 
     filter_name = pyfhd_config["image_filter"].split("_")[-1]
+    fits_output: Path = pyfhd_config['output_dir'] / 'fits'
+    fits_output.mkdir(exist_ok = True)
     for pol_i in range(obs["n_pol"]):
         logger.info(f"Saving the FITS files for polarization {pol_i}")
         instr_residual = instr_residual_arr[pol_i] * beam_correction_out[pol_i]
@@ -289,12 +294,12 @@ def quickview(
         
         # Write the fits files for the dirty images
         fits_file_apparent.data = instr_dirty
-        fits_file_apparent.writeto(Path(pyfhd_config['results_dir'], f"{filter_name}_dirty_{pol_names[pol_i]}.fits"))
+        fits_file_apparent.writeto(Path(fits_output, f"{pyfhd_config['obs_id']}_{filter_name}_dirty_{pol_names[pol_i]}.fits"))
         fits_file_apparent.data = instr_model
-        fits_file_apparent.writeto(Path(pyfhd_config['results_dir'], f"{filter_name}_model_{pol_names[pol_i]}.fits"))
+        fits_file_apparent.writeto(Path(fits_output, f"{pyfhd_config['obs_id']}_{filter_name}_model_{pol_names[pol_i]}.fits"))
         fits_file_apparent.data = instr_residual
-        fits_file_apparent.writeto(Path(pyfhd_config['results_dir'], f"{filter_name}_residual_{pol_names[pol_i]}.fits"))
+        fits_file_apparent.writeto(Path(fits_output, f"{pyfhd_config['obs_id']}_{filter_name}_residual_{pol_names[pol_i]}.fits"))
         fits_file.data = beam_use
-        fits_file.writeto(Path(pyfhd_config['results_dir'], f"beam_{pol_names[pol_i]}.fits"))
-        fits_file_uv.data = np.abs(vis_weights) * obs["n_vis"]
-        fits_file_uv.writeto(Path(pyfhd_config['results_dir'], f"uv_weights_{pol_names[pol_i]}.fits"))
+        fits_file.writeto(Path(fits_output, f"{pyfhd_config['obs_id']}_beam_{pol_names[pol_i]}.fits"))
+        fits_file_uv.data = np.abs(weights_uv) * obs["n_vis"]
+        fits_file_uv.writeto(Path(fits_output, f"{pyfhd_config['obs_id']}_uv_weights_{pol_names[pol_i]}.fits"))

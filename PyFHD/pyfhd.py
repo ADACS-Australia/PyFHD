@@ -95,7 +95,7 @@ def main():
                 'vis_arr': vis_arr,
                 'vis_weights': vis_weights
             }
-            save(Path(pyfhd_config['checkpoint_dir'], 'obs_checkpoint.h5'), checkpoint, 'obs_checkpoint', logger = logger)
+            save(Path(pyfhd_config['checkpoint_dir'], f'{pyfhd_config["obs_id"]}_{pyfhd_config["description"]}_obs_checkpoint.h5'), checkpoint, 'obs_checkpoint', logger = logger)
             logger.info(f"Checkpoint Saved: Uncalibrated visibility parameters, array and weights and the observation metadata dictionary saved into {Path(pyfhd_config['output_dir'], 'obs_checkpoint.h5')}")
     else:
         # Load the checkpoint and initialize the required variables
@@ -187,7 +187,7 @@ def main():
                     "vis_weights": vis_weights,
                     "cal": cal,
                 }
-                save(Path(pyfhd_config['checkpoint_dir'], 'calibration_checkpoint.h5'), checkpoint, "calibration_checkpoint", logger = logger)
+                save(Path(pyfhd_config['checkpoint_dir'], f'{pyfhd_config["obs_id"]}_{pyfhd_config["description"]}_calibration_checkpoint.h5'), checkpoint, "calibration_checkpoint", logger = logger)
                 logger.info(f"Checkpoint Saved: Calibrated and Flagged visibility parameters, array and weights, the flagged observation metadata dictionary and the calibration dictionary saved into {Path(pyfhd_config['output_dir'], 'calibrate_checkpoint.h5')}")
     else:
         # Load the calibration checkpoint
@@ -257,7 +257,7 @@ def main():
             }
             if vis_model_arr is not None:
                 checkpoint["model_uv"] = model_uv
-            save(Path(pyfhd_config['checkpoint_dir'], 'gridding_checkpoint.h5'), checkpoint, "gridding_checkpoint", logger = logger)
+            save(Path(pyfhd_config['checkpoint_dir'], f'{pyfhd_config["obs_id"]}_{pyfhd_config["description"]}_gridding_checkpoint.h5'), checkpoint, "gridding_checkpoint", logger = logger)
             logger.info(f"Checkpoint Saved: The Gridded UV Planes saved into {Path(pyfhd_config['output_dir'], 'gridding_checkpoint.h5')}")
         grid_end = time.time()
         _print_time_diff(grid_start, grid_end, 'Visibilities gridded', logger)

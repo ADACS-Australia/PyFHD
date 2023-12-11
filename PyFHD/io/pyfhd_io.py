@@ -511,7 +511,6 @@ def recarray_to_dict(data: np.recarray | dict) -> dict:
                 data[key] = list(x for x in data[key])
     return data
 
-
 def convert_sav_to_dict(sav_path : str, logger : Logger,
                         tmp_dir = "temp_pyfhd"):
     """
