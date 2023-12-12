@@ -6,6 +6,7 @@ from pathlib import Path
 from astropy.io import fits
 from datetime import datetime
 from PyFHD.data_setup.obs import update_obs
+from PyFHD.beam_setup.beam_utils import beam_image
 from PyFHD.pyfhd_tools.unit_conv import pixel_to_radec
 from PyFHD.pyfhd_tools.pyfhd_utils import meshgrid, rebin, weight_invert, region_grow, crosspol_split_real_imaginary
 from PyFHD.gridding.gridding_utils import dirty_image_generate
@@ -164,6 +165,7 @@ def quickview(
     beam_base_out = np.empty([obs_out["n_pol"], obs_out["dimension"], obs_out["elements"]])
     beam_correction_out = np.empty_like(beam_base_out)
     for pol_i in range(obs["n_pol"]):
+        beam_base_out[pol_i] = beam_image(psf, obs, pol_i, square = False)
         beam_base_out[pol_i] = rebin(psf["beam_ptr"][pol_i], [obs_out["dimension"], obs_out["elements"]]) * horizon_mask
         beam_correction_out[pol_i] = weight_invert(beam_base_out[pol_i], 1e-3)
         if (pol_i == 0):

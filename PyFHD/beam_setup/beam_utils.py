@@ -15,13 +15,13 @@ def gaussian_decomp(
     decomp_beam = np.zeros([x.size, y.size])
     i = 1j
     # Expand the p vector into readable names
-    var = np.reshape(p, [5, p.size // 5])
-    amp = var[0]
-    offset_x = var[1]
-    sigma_x = var[2]
-    offset_y = var[3]
-    sigma_y = var[4]
-    n_lobes = var[0].size
+    var = np.reshape(p, [p.size // 5, 5])
+    amp = var[:, 0]
+    offset_x = var[:, 1]
+    sigma_x = var[:, 2]
+    offset_y = var[:, 3]
+    sigma_y = var[:, 4]
+    n_lobes = var[:, 0].size
 
     # If the parameters were built on a different grid, then put on new grid
     # Npix only affects the offset params
@@ -41,11 +41,11 @@ def gaussian_decomp(
         offset_x = ((offset_x - x.size / 2) * model_res) + x.size / 2
         offset_y = ((offset_y - y.size / 2) * model_res) + y.size / 2
     if not ftransform:
-        # Full image model with all the gaussian components
-        # TODO: check that the below code is correct, it does a matrix multiply
-        # on a per lobe basis, but only indexes one at a time, which means matrix
-        # multiply does basic multiplication
-        decomp_beam += amp * np.exp(-(x - offset_x) ** 2 / (2 * sigma_x ** 2)) * np.exp(-(y - offset_y) ** 2 / (2 * sigma_y ** 2))
+        for lobe in range(n_lobes):
+            decomp_beam += amp[lobe] * np.outer(
+                np.exp(-(x - offset_x[lobe]) ** 2 / (2 * sigma_x[lobe] ** 2)),
+                np.exp(-(y - offset_y[lobe]) ** 2 / (2 * sigma_y[lobe] ** 2))
+            )
         volume_beam = 0
         sq_volume_beam = 0
     else:
@@ -68,7 +68,7 @@ def gaussian_decomp(
 
     return decomp_beam, volume_beam, sq_volume_beam
 
-def beam_image(psf: dict | h5py.File, obs: dict, pol_i: int, freq_i: int, abs = False, square = False) -> np.ndarray:
+def beam_image(psf: dict | h5py.File, obs: dict, pol_i: int, freq_i: int | None = None, abs = False, square = False) -> np.ndarray:
     """
     TODO: _summary_
 
@@ -129,67 +129,82 @@ def beam_image(psf: dict | h5py.File, obs: dict, pol_i: int, freq_i: int, abs = 
         model_res = (2 * obs['kpix'] * dimension) / pix_horizon * (0.5 / obs['kpix'])
     
     freq_bin_i = obs["baseline_info"]["fbin_i"]
+    freq_i_use = obs["baseline_info"]["freq_use"]
     n_freq = obs["n_freq"]
     n_bin_use = 0
+    # We assume freq_i is an int when provided (i.e. a single frequency index)
+    if freq_i is not None:
+        freq_i_use = freq_i
 
     if square:
-        # Do note here since freq_i is assigned to freq_i_use in FHD we just use freq_i
-        # A lot of the code in FHD assumes that freq_i_use could be an array, where here it's always
-        # pointing to one bin due to the exclusive use of freq_i, so there will be differences due to
-        # this behaviour, for example nbin is always 1 now, so no loop is required
+        # Do note freq_i_use could be an integer or an array if freq_i is supplied or not
         beam_base = np.zeros([dimension, elements])
-        freq_bin_use = freq_bin_i[freq_i]
+        freq_bin_use = freq_bin_i[freq_i_use]
+        fbin_use = np.unique(freq_bin_use).sort()
+        nbin = fbin_use.size
+
         if beam_gaussian_params is not None:
             beam_single = np.zeros([dimension, elements])
-            for gi in range(n_groups):
-                beam_single += gaussian_decomp(
-                    np.arange(dimension), 
-                    np.arange(elements),
-                    # TODO: Check the shape of beam_gaussian_params, should be pol, freq, n_params
-                    beam_gaussian_params[pol_i, freq_bin_use, gi_ref[gi]],
-                    model_npix = model_npix,
-                    model_res = model_res
-                ) * group_n[gi_use[gi]]
-            beam_single /= np.sum(group_n[gi_use])
-            # Because nf_bin is only referring to one frequency, nf_bin is 1, don't bother putting it in
-            beam_base += beam_single ** 2  
         else:
             beam_single = np.zeros([psf_dim, psf_dim], dtype = np.complex128)
-            for gi in range(n_groups):
-                beam_single += (psf['beam_ptr'][0, freq_i, rbin, rbin] * group_n[gi_use[gi]]).reshape([psf_dim, psf_dim])
-            beam_single /= np.sum(group_n[gi_use])
-            if abs:
-                beam_single = np.abs(beam_single)
-            beam_base_uv1 = np.zeros([dimension, elements], np.complex128)
-            # TODO: Chekc the indexing as IDL may include the last indexes, hence the +1
-            beam_base_uv1[xl : xh + 1, yl : yh + 1] = beam_single
-            beam_base_single = np.fft.fftshift(np.fft.ifftn(np.fft.fftshift(beam_base_uv1)))
-            beam_base += beam_base_single * np.conjugate(beam_base_single)
-        # TODO: check this, because we assume we're only dealing one frequency, that we only have one bin
-        n_bin_use += freq_norm[freq_bin_use[0]]
+        for bin_i in range(nbin):
+            fbin = fbin_use[bin_i]
+            nf_bin = np.count_nonzero(freq_bin_use == fbin)
+            if beam_gaussian_params is not None:
+                for gi in range(n_groups):
+                    beam_single += gaussian_decomp(
+                        np.arange(dimension), 
+                        np.arange(elements),
+                        # TODO: Check the shape of beam_gaussian_params, should be pol, freq, n_params
+                        beam_gaussian_params[pol_i, fbin, gi_ref[gi]],
+                        model_npix = model_npix,
+                        model_res = model_res
+                    ) * group_n[gi_use[gi]]
+                beam_single /= np.sum(group_n[gi_use])
+                beam_base += nf_bin * beam_single ** 2  
+            else:
+                for gi in range(n_groups):
+                    beam_single += (psf['beam_ptr'][0, fbin, rbin, rbin] * group_n[gi_use[gi]]).reshape([psf_dim, psf_dim])
+                beam_single /= np.sum(group_n[gi_use])
+                if abs:
+                    beam_single = np.abs(beam_single)
+                beam_base_uv1 = np.zeros([dimension, elements], np.complex128)
+                # TODO: Check the indexing as IDL may include the last indexes, hence the +1
+                beam_base_uv1[xl : xh + 1, yl : yh + 1] = beam_single
+                beam_base_single = np.fft.fftshift(np.fft.ifftn(np.fft.fftshift(beam_base_uv1)))
+                beam_base += nf_bin * (beam_base_single * np.conjugate(beam_base_single)).real
+            n_bin_use += nf_bin * freq_norm[freq_bin_use[0]]
     else:
+        nf_use = freq_i_use.size
         if beam_gaussian_params is not None:
             beam_base_uv = np.zeros([dimension, elements])
             beam_single = np.zeros([dimension, elements])
         else:
             beam_base_uv = np.zeros([psf_dim, psf_dim], dtype = np.complex128)
             beam_single = np.zeros([psf_dim, psf_dim], dtype = np.complex128)
-        if beam_gaussian_params is not None:
-            for gi in range(n_groups):
-                beam_single += gaussian_decomp(
-                    np.arange(dimension), 
-                    np.arange(elements),
-                    beam_gaussian_params[pol_i, freq_bin_use, gi_ref[gi]],
-                    model_npix = model_npix,
-                    model_res = model_res
-                ) * group_n[gi_use[gi]]
-        else:
-            for gi in range(n_groups):
-                beam_single += (psf['beam_ptr'][0, freq_i, rbin, rbin] * group_n[gi_use[gi]]).reshape([psf_dim, psf_dim])
-        beam_single /= np.sum(group_n[gi_use])
-        beam_base_uv += beam_single
-        # TODO: check this, because we assume we're only dealing one frequency, that we only have one bin
-        n_bin_use += freq_norm[freq_bin_use[0]]
+        for f_idx in range(nf_use):
+            fi = freq_i_use[f_idx]
+            if freq_i is not None:
+                if freq_i != fi:
+                    continue
+            fbin=freq_bin_i[fi]
+            beam_single[:, :] = 0
+            if beam_gaussian_params is not None:
+                for gi in range(n_groups):
+                    beam_single += gaussian_decomp(
+                        np.arange(dimension), 
+                        np.arange(elements),
+                        beam_gaussian_params[pol_i, fbin, gi_ref[gi]],
+                        model_npix = model_npix,
+                        model_res = model_res
+                    ) * group_n[gi_use[gi]]
+            else:
+                for gi in range(n_groups):
+                    beam_single += (psf['beam_ptr'][0, fbin, rbin, rbin] * group_n[gi_use[gi]]).reshape([psf_dim, psf_dim])
+            beam_single /= np.sum(group_n[gi_use])
+            beam_base_uv += beam_single
+            n_bin_use += freq_norm[freq_bin_use[0]]
+
         if beam_gaussian_params is None:
             beam_base_uv1 = np.zeros([dimension, elements], dtype = np.complex128)
             beam_base_uv1[xl : xh + 1, yl : yh + 1] = beam_base_uv

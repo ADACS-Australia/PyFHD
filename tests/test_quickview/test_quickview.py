@@ -65,7 +65,7 @@ def test_quickview(before_file, data_dir):
         pytest.skip(f"This test has been skipped because the test was listed in the skipped tests due to FHD not outputting them: {skip_tests}")
 
     h5_before = load(before_file)
-    psf = load(Path(env.get('PYFHD_TEST_PATH'), "beams", "decomp_beam_pointing0.h5"))
+    psf = load(Path(env.get('PYFHD_TEST_PATH'), "beams", "decomp_beam_pointing0.h5"), lazy_load = True)
 
     # Make our test directory for saving the FITS files
     h5_before["pyfhd_config"]["output_dir"] = Path(h5_before["pyfhd_config"]["output_dir"])
