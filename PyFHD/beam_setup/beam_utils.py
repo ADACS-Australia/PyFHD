@@ -40,7 +40,7 @@ def gaussian_decomp(
         sigma_y *= model_res
         offset_x = ((offset_x - x.size / 2) * model_res) + x.size / 2
         offset_y = ((offset_y - y.size / 2) * model_res) + y.size / 2
-    
+
     if not ftransform:
         for lobe in range(n_lobes):
             decomp_beam += amp[lobe] * np.outer(
@@ -130,8 +130,7 @@ def beam_image(psf: dict | h5py.File, obs: dict, pol_i: int, freq_i: int | None 
         model_res = (2 * obs['kpix'] * dimension) / pix_horizon * (0.5 / obs['kpix'])
     
     freq_bin_i = obs["baseline_info"]["fbin_i"]
-    freq_i_use = obs["baseline_info"]["freq_use"]
-    n_freq = obs["n_freq"]
+    freq_i_use = np.nonzero(obs["baseline_info"]["freq_use"])[0]
     n_bin_use = 0
     # We assume freq_i is an int when provided (i.e. a single frequency index)
     if freq_i is not None:
@@ -141,7 +140,7 @@ def beam_image(psf: dict | h5py.File, obs: dict, pol_i: int, freq_i: int | None 
         # Do note freq_i_use could be an integer or an array if freq_i is supplied or not
         beam_base = np.zeros([dimension, elements])
         freq_bin_use = freq_bin_i[freq_i_use]
-        fbin_use = np.unique(freq_bin_use).sort()
+        fbin_use = np.sort(np.unique(freq_bin_use))
         nbin = fbin_use.size
 
         if beam_gaussian_params is not None:
@@ -152,15 +151,15 @@ def beam_image(psf: dict | h5py.File, obs: dict, pol_i: int, freq_i: int | None 
             fbin = fbin_use[bin_i]
             nf_bin = np.count_nonzero(freq_bin_use == fbin)
             if beam_gaussian_params is not None:
-                for gi in range(n_groups):
+                for gi in range(n_groups):                    
                     beam_single += gaussian_decomp(
                         np.arange(dimension), 
                         np.arange(elements),
                         # TODO: Check the shape of beam_gaussian_params, should be pol, freq, n_params
-                        beam_gaussian_params[pol_i, fbin, gi_ref[gi]],
+                        beam_gaussian_params[pol_i, fbin, :],
                         model_npix = model_npix,
                         model_res = model_res
-                    ) * group_n[gi_use[gi]]
+                    )[0] * group_n[gi_use[gi]]
                 beam_single /= np.sum(group_n[gi_use])
                 beam_base += nf_bin * beam_single ** 2  
             else:
@@ -174,7 +173,7 @@ def beam_image(psf: dict | h5py.File, obs: dict, pol_i: int, freq_i: int | None 
                 beam_base_uv1[xl : xh + 1, yl : yh + 1] = beam_single
                 beam_base_single = np.fft.fftshift(np.fft.ifftn(np.fft.fftshift(beam_base_uv1)))
                 beam_base += nf_bin * (beam_base_single * np.conjugate(beam_base_single)).real
-            n_bin_use += nf_bin * freq_norm[freq_bin_use[0]]
+            n_bin_use += nf_bin * freq_norm[fbin]
     else:
         nf_use = freq_i_use.size
         if beam_gaussian_params is not None:
@@ -195,16 +194,16 @@ def beam_image(psf: dict | h5py.File, obs: dict, pol_i: int, freq_i: int | None 
                     beam_single += gaussian_decomp(
                         np.arange(dimension), 
                         np.arange(elements),
-                        beam_gaussian_params[pol_i, fbin, gi_ref[gi]],
+                        beam_gaussian_params[pol_i, fbin, :],
                         model_npix = model_npix,
                         model_res = model_res
-                    ) * group_n[gi_use[gi]]
+                    )[0] * group_n[gi_use[gi]]
             else:
                 for gi in range(n_groups):
                     beam_single += (psf['beam_ptr'][0, fbin, rbin, rbin] * group_n[gi_use[gi]]).reshape([psf_dim, psf_dim])
             beam_single /= np.sum(group_n[gi_use])
             beam_base_uv += beam_single
-            n_bin_use += freq_norm[freq_bin_use[0]]
+            n_bin_use += freq_norm[fbin]
 
         if beam_gaussian_params is None:
             beam_base_uv1 = np.zeros([dimension, elements], dtype = np.complex128)
