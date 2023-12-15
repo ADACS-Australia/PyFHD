@@ -40,6 +40,7 @@ def gaussian_decomp(
         sigma_y *= model_res
         offset_x = ((offset_x - x.size / 2) * model_res) + x.size / 2
         offset_y = ((offset_y - y.size / 2) * model_res) + y.size / 2
+    
     if not ftransform:
         for lobe in range(n_lobes):
             decomp_beam += amp[lobe] * np.outer(
