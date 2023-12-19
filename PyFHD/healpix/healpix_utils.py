@@ -302,28 +302,25 @@ def beam_image_cube(
     else:
         freq_i_use = freq_i_arr
     
-    # TODO What is the shape of this eventually?
-    # TODO: Change shape of this based on beam_gaussian_params
-    beam_arr = np.zeros([obs['n_pol'], n_freq_bin])
+    beam_arr = np.zeros([obs['n_pol'], n_freq_bin, obs['dimension'], obs['elements']])
 
     bin_arr = obs['baseline_info']['fbin_i'][freq_i_use]
     bin_hist, _, bri = histogram(bin_arr, min = 0)
-    bin_use = np.nonzero(bin_hist)
+    bin_use = np.nonzero(bin_hist)[0]
     if np.size(bin_use) == 0:
         return beam_arr
     bin_n = bin_hist[bin_use]
-    beam_mask = np.ones(obs['dimension'], obs['elements'])
+    beam_mask = np.ones([obs['dimension'], obs['elements']])
     for pol_i in range(obs['n_pol']):
-        for fb_i in np.size(bin_use):
-            f_i_i = bri[bri[bin_use[fb_i] : bri[bin_use[fb_i]]]]
+        for fb_i in range(np.size(bin_use)):
+            f_i_i = bri[bri[bin_use[fb_i]] : bri[bin_use[fb_i] + 1]]
             f_i = freq_i_use[f_i_i[0]]
-            beam_single = beam_image(psf, obs, pol_i, f_i,  square = square)
-            for bi in range(bin_n[fb_i]):
-                beam_arr[pol_i, f_i_i[bi]] = beam_single
-            b_i = obs['obsx'] + obs['obsy'] * obs['dimension']
-            beam_i = region_grow(beam_single, b_i, low = beam_threshold ** (square + 1), max = np.max(beam_single))
+            beam_single = beam_image(psf, obs, pol_i, freq_i = f_i,  square = square)
+            beam_arr[pol_i, f_i_i[0] : f_i_i[bin_n[fb_i] - 1] + 1] = beam_single
+            b_i = int(obs['obsx'] + obs['obsy'] * obs['dimension'])
+            beam_i = region_grow(beam_single, b_i, low = beam_threshold ** (square + 1), high = np.max(beam_single))
             beam_mask1 = np.zeros([obs['dimension'], obs['elements']])
-            beam_mask1[beam_i] = 1
+            beam_mask1.flat[beam_i] = 1
             beam_mask *= beam_mask1
     return beam_arr, beam_mask
 
