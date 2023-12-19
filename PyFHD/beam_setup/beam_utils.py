@@ -1,7 +1,6 @@
 import numpy as np
 from astropy.constants import c
 from PyFHD.pyfhd_tools.pyfhd_utils import histogram
-import logging
 import h5py
 
 def gaussian_decomp(
@@ -151,15 +150,20 @@ def beam_image(psf: dict | h5py.File, obs: dict, pol_i: int, freq_i: int | None 
             fbin = fbin_use[bin_i]
             nf_bin = np.count_nonzero(freq_bin_use == fbin)
             if beam_gaussian_params is not None:
-                for gi in range(n_groups):                    
-                    beam_single += gaussian_decomp(
+                for gi in range(n_groups):    
+                    # beam_gaussian_params needs to be copied here rather than
+                    # a view as interestingly gaussian_decomp affects the values
+                    # of the array used with the calculations done to var and no copies
+                    # are made, only views are adjusted. so we explcitly call copy
+                    params = beam_gaussian_params[pol_i, fbin, :].copy()
+                    gaussian = gaussian_decomp(
                         np.arange(dimension), 
                         np.arange(elements),
-                        # TODO: Check the shape of beam_gaussian_params, should be pol, freq, n_params
-                        beam_gaussian_params[pol_i, fbin, :],
+                        params,
                         model_npix = model_npix,
                         model_res = model_res
-                    )[0] * group_n[gi_use[gi]]
+                    )[0]
+                    beam_single += gaussian * group_n[gi_use[gi]]                
                 beam_single /= np.sum(group_n[gi_use])
                 beam_base += nf_bin * beam_single ** 2  
             else:
@@ -169,7 +173,6 @@ def beam_image(psf: dict | h5py.File, obs: dict, pol_i: int, freq_i: int | None 
                 if abs:
                     beam_single = np.abs(beam_single)
                 beam_base_uv1 = np.zeros([dimension, elements], np.complex128)
-                # TODO: Check the indexing as IDL may include the last indexes, hence the +1
                 beam_base_uv1[xl : xh + 1, yl : yh + 1] = beam_single
                 beam_base_single = np.fft.fftshift(np.fft.ifftn(np.fft.fftshift(beam_base_uv1)))
                 beam_base += nf_bin * (beam_base_single * np.conjugate(beam_base_single)).real
@@ -191,13 +194,15 @@ def beam_image(psf: dict | h5py.File, obs: dict, pol_i: int, freq_i: int | None 
             beam_single[:, :] = 0
             if beam_gaussian_params is not None:
                 for gi in range(n_groups):
-                    beam_single += gaussian_decomp(
+                    params = beam_gaussian_params[pol_i, fbin, :].copy()
+                    gaussian = gaussian_decomp(
                         np.arange(dimension), 
                         np.arange(elements),
-                        beam_gaussian_params[pol_i, fbin, :],
+                        params,
                         model_npix = model_npix,
                         model_res = model_res
-                    )[0] * group_n[gi_use[gi]]
+                    )[0]
+                    beam_single += gaussian * group_n[gi_use[gi]]
             else:
                 for gi in range(n_groups):
                     beam_single += (psf['beam_ptr'][0, fbin, rbin, rbin] * group_n[gi_use[gi]]).reshape([psf_dim, psf_dim])

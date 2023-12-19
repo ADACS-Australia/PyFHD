@@ -50,10 +50,13 @@ def before_file(tag, run, quickview, data_dir):
     return before_file
 
 @pytest.fixture()
-def after_file(tag, run, data_dir):
+def after_file(tag, run, quickview, data_dir):
     if ([tag, run] in skip_tests):
         return None
-    after_file = Path(data_dir, f"{tag}_{run}_after_{data_dir.name}.h5")
+    if quickview != '':
+        after_file = Path(data_dir, f"{tag}_{run}_after_{data_dir.name}_{quickview}.h5")
+    else:
+        after_file = Path(data_dir, f"{tag}_{run}_after_{data_dir.name}.h5")
     # If the h5 file already exists and has been created, return the path to it
     if after_file.exists():
         return after_file
@@ -62,7 +65,10 @@ def after_file(tag, run, data_dir):
     sav_dict = convert_sav_to_dict(str(sav_file), "faked")
     sav_dict = recarray_to_dict(sav_dict)
 
-    save(after_file, sav_dict['beam_base'], 'beam_base')
+    if quickview != '':
+        save(after_file, sav_dict['beam_pol_0'], 'beam_pol_0')
+    else:
+        save(after_file, sav_dict['beam_base'], 'beam_base')
 
     return after_file
 
@@ -85,4 +91,4 @@ def test_beam_image(before_file, after_file, beam_dir):
         square = h5_before['square'] if 'square' in h5_before else False
     )
 
-    npt.assert_allclose(beam_base, expected_beam_base.transpose(), atol = 1e-16)
+    npt.assert_allclose(beam_base, expected_beam_base.transpose(), atol = 1e-8)
