@@ -91,4 +91,4 @@ def test_beam_image(before_file, after_file, beam_dir):
         square = h5_before['square'] if 'square' in h5_before else False
     )
 
-    npt.assert_allclose(beam_base, expected_beam_base.transpose(), atol = 1e-8)
+    npt.assert_allclose(beam_base, expected_beam_base, atol = 1e-8)

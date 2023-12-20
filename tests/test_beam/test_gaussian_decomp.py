@@ -75,4 +75,4 @@ def test_gaussian_decomp(before_file, after_file):
         model_res = h5_before['model_res']
     )
 
-    npt.assert_allclose(decomp_beam, expected_decomp_beam.transpose(), atol = 1e-16)
+    npt.assert_allclose(decomp_beam, expected_decomp_beam, atol = 1e-16)

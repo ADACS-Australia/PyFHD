@@ -43,8 +43,8 @@ def gaussian_decomp(
     if not ftransform:
         for lobe in range(n_lobes):
             decomp_beam += amp[lobe] * np.outer(
-                np.exp(-(x - offset_x[lobe]) ** 2 / (2 * sigma_x[lobe] ** 2)),
-                np.exp(-(y - offset_y[lobe]) ** 2 / (2 * sigma_y[lobe] ** 2))
+                np.exp(-(y - offset_y[lobe]) ** 2 / (2 * sigma_y[lobe] ** 2)),
+                np.exp(-(x - offset_x[lobe]) ** 2 / (2 * sigma_x[lobe] ** 2))
             )
         volume_beam = 0
         sq_volume_beam = 0
@@ -117,7 +117,6 @@ def beam_image(psf: dict | h5py.File, obs: dict, pol_i: int, freq_i: int | None 
     gi_use = np.nonzero(group_n)
     # Most likely going to be 1 as PyFHD does only one beam mostly
     n_groups = np.count_nonzero(group_n)
-    gi_ref = ri_id[ri_id[gi_use]]
 
     if beam_gaussian_params is not None:
         # 1.3 is the padding factor for the gaussian fitting procedure

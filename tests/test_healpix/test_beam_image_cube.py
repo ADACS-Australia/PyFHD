@@ -80,9 +80,7 @@ def test_beam_image_cube(before_file, after_file, beam_dir):
         square = h5_before['square']
     )
 
-    absolutes = np.where(np.abs(beam_arr[0,0, 860:, 1000:] - expected_beam_arr[0,0, 860:, 1000:]) > 0.06)
-
-    actual_beam = beam_arr[0,0, 860:, 1000:]
-    expected_beam = expected_beam_arr[0,0, 860:, 1000:]
-
+    # TODO add test for beam_mask, should be fine though, in most cases only the edges
+    # should be zeros because of region_grow i.e. 8188 zeros (or 2048 * 4 - 4)
+    # npt.assert_equal(beam_mask, expected_beam_mask)
     npt.assert_allclose(beam_arr, expected_beam_arr, atol = 1e-8)
