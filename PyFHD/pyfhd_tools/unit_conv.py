@@ -107,7 +107,10 @@ def radec_to_pixel(ra : float, dec : float, astr : dict) -> tuple[float, float]:
     # Now use world_to_pixel function for WCS objects
     x, y = wcs_astr.world_to_pixel(SkyCoord(ra = ra*u.deg, dec = dec*u.deg))
     # AstroPy returns values as an array, cast to float
-    return float(x), float(y)
+    if np.size(x) == 1:
+        return float(x[0]), float(y[0])
+    else:
+        return x, y
 
 def pixel_to_radec(x: float | NDArray[np.float64], y: float | NDArray[np.float64], astr: dict) -> tuple[float | NDArray[np.float64], float | NDArray[np.float64]]:
     """

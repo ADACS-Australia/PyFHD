@@ -208,8 +208,12 @@ def save_dataset(h5py_obj: h5py.File | h5py.Group,  key: str, value: Any, to_chu
                 h5py_obj.create_dataset(key, shape = value.shape, data = value, dtype = dtype_picker(value.dtype), compression = 'gzip')
         case list():
             # Was easier to convert to a NumPy array to get vectorization
-            value = np.array(value)
-            value = format_array(value)
+            try:
+                value = np.array(value)
+                value = format_array(value)
+            except ValueError as e:
+                if logger is not None:
+                    logger.info(f"You received an error when turning your list into an array. If you're array isn't homogenous, you can safely ignore this message. Just in case here's the error: {e}")
             h5py_obj.create_dataset(key, data = value)
         case Path():
             # If we find a Path object, convert it to a string

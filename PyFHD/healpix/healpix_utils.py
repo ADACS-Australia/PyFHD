@@ -16,7 +16,7 @@ from PyFHD.pyfhd_tools.pyfhd_utils import (angle_difference, histogram,
 from PyFHD.pyfhd_tools.unit_conv import radec_to_altaz, radec_to_pixel
 
 
-def healpix_cnv_apply(image: NDArray[np.int_ | np.float_ | np.complex_], hpx_cnv: dict, transpose = True, mask = False) -> NDArray[np.float64]:
+def healpix_cnv_apply(image: NDArray[np.int_ | np.float_ | np.complex_], hpx_cnv: dict, transpose = True) -> NDArray[np.float64]:
     """
     healpix_cnv_apply creates a map based off the array/image and healpix convention dictionary given.
     In FHD the healpix_cnv_apply was mainly used as a wrapper for sprsax2, as such I will put the code
@@ -25,14 +25,12 @@ def healpix_cnv_apply(image: NDArray[np.int_ | np.float_ | np.complex_], hpx_cnv
 
     Parameters
     ----------
-    image : NDArray[np.int_ | np.float_ | np.complex_]
+    image : NDArray[np.int\_ | np.float\_ | np.complex\_]
         _description_
     hpx_cnv : dict
         The HEALPix convention dictionary
     transpose : bool, optional
         Use a transpose of the image instead, by default True
-    mask : bool, optional
-        TODO: _description_, by default False
 
     Returns
     -------
@@ -130,8 +128,10 @@ def healpix_cnv_generate(obs: dict, mask: NDArray[np.int64], hpx_radius: float, 
             min_i = np.argmin(freq_dist)
             pyfhd_config["healpix_inds"] = importlib_resources.files('PyFHD.templates').joinpath(files[min_i]["name"])
         hpx_inds = load(pyfhd_config["healpix_inds"], logger = logger)
-        nside = hpx_inds["nside"]
-        hpx_inds = hpx_inds["hpx_inds"]
+        if type(hpx_inds) is dict:
+            if nside in hpx_inds:
+                nside = hpx_inds["nside"]
+            hpx_inds = hpx_inds["hpx_inds"]
     if nside is None:
         pix_sky = 4 * np.pi * ((180 / np.pi) ** 2) /  np.prod(np.abs(obs["astr"]["cdelt"]))
         nside = 2 ** (np.ceil(np.log(np.sqrt(pix_sky/12)) / np.log(2)))
@@ -141,7 +141,7 @@ def healpix_cnv_generate(obs: dict, mask: NDArray[np.int64], hpx_radius: float, 
 
     if hpx_inds is not None:
         pix_coords = np.vstack(pix2vec(nside, hpx_inds)).T
-        pix_dec, pix_ra = vec2ang(pix_coords, lonlat=True)
+        pix_ra, pix_dec = vec2ang(pix_coords, lonlat=True)
         xv_hpx, yv_hpx = radec_to_pixel(pix_ra, pix_dec, obs["astr"])
     else:
         cen_coords = ang2vec(obs["obsra"], obs["obsdec"], lonlat=True)
@@ -173,12 +173,17 @@ def healpix_cnv_generate(obs: dict, mask: NDArray[np.int64], hpx_radius: float, 
         xv_hpx = xv_hpx[h_use]
         yv_hpx = yv_hpx[h_use]
         hpx_inds = hpx_inds[h_use]
-    
+    # The differences in precision through the use of vec2ang, radec_to_pixel are exposed
+    # directly causing differences in the results. We can probably assume these numbers are
+    # "better" compared to IDL
     x_frac = 1 - (xv_hpx - np.floor(xv_hpx))
     y_frac = 1 - (yv_hpx - np.floor(yv_hpx))
 
     v_floor = np.floor(xv_hpx) + obs['dimension'] * np.floor(yv_hpx)
     v_ceil = np.ceil(xv_hpx) + obs['dimension'] * np.ceil(yv_hpx)
+    # Differences in precision occur here compared to IDL, unsolvable ones as we're using
+    # built in HEALPIX and astropy functions to get these arrays. We can probably assume these
+    # numbers are "better" compared to IDL
     min_bin = max(np.min(v_floor), 0)
     max_bin = min(np.max(v_ceil), obs['dimension'] * obs['elements'] - 1)
     h00, _, ri00 = histogram(v_floor, min = min_bin, max = max_bin)
@@ -186,13 +191,14 @@ def healpix_cnv_generate(obs: dict, mask: NDArray[np.int64], hpx_radius: float, 
     h10, _, ri10 = histogram(np.ceil(xv_hpx) + obs['dimension'] * np.floor(yv_hpx), min = min_bin, max = max_bin)
     h11, _, ri11 = histogram(v_ceil, min = min_bin, max = max_bin)
     htot = h00 + h01 + h10 + h11
-    inds = np.nonzero(htot)
+    inds = np.nonzero(htot)[0]
 
     n_arr = htot[inds]
-    i_use = inds + min_bin
-    # TODO: check if sa and ija are constant sizes or not
-    sa = np.empty(np.size(n_arr), dtype=object)
-    ija = np.empty(np.size(n_arr), dtype=object)
+    i_use = (inds + min_bin).astype(np.int64)
+    # NumPy does not like ragged arrays so we're going to use -1 as a placeholder
+    # for empty indexes/values instead of NaNs so we can leave it as a integer array.
+    sa = np.full((np.size(n_arr), np.max(htot)), -1, dtype = np.float64)
+    ija = np.full((np.size(n_arr), np.max(htot)), -1, dtype = np.int64)
 
     for i in range(np.size(n_arr)):
         ind0 = inds[i]
@@ -223,8 +229,8 @@ def healpix_cnv_generate(obs: dict, mask: NDArray[np.int64], hpx_radius: float, 
                     x_frac_multi = 1 - x_frac_multi
                 sa0[bin_i[bi] : bin_i[bi + 1]] = x_frac_multi * y_frac_multi
                 ija0[bin_i[bi] : bin_i[bi + 1]] = inds1
-        sa[i] = sa0
-        ija[i] = ija0
+        sa[i, : sa0.size] = sa0
+        ija[i, : ija0.size] = ija0
 
     hpx_cnv = {
         "nside": nside,

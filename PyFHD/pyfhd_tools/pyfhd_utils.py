@@ -851,11 +851,11 @@ def angle_difference(ra1 : float, dec1 : float, ra2 : float, dec2 : float, degre
     coord1 = SkyCoord(ra = ra1*unit, dec = dec1*unit)
     coord2 = SkyCoord(ra = ra2*unit, dec = dec2*unit)
     # Use built in astropy separtion instead of calculating it
-    relative_angle = coord1.separation(coord2)
+    relative_angle = coord1.separation(coord2).value
     if nearest:
         return max(relative_angle, 2 * pi - relative_angle)
     else:
-        return relative_angle.value
+        return relative_angle
 
 def parallactic_angle(latitude : float, hour_angle : float, dec : float) -> float:
     """
