@@ -3,6 +3,7 @@ from pathlib import Path
 import numpy as np
 import numpy.testing as npt
 import pytest
+import h5py
 from logging import Logger
 from PyFHD.io.pyfhd_io import convert_sav_to_dict, load, recarray_to_dict, save
 from PyFHD.healpix.healpix_utils import healpix_cnv_generate
@@ -58,29 +59,18 @@ def after_file(tag, run, data_dir):
     sav_file = after_file.with_suffix('.sav')
     sav_dict = convert_sav_to_dict(str(sav_file), "faked")
     sav_dict = recarray_to_dict(sav_dict)
-    # sav_dict['hpx_cnv']['ija'] = np.array(sav_dict['hpx_cnv']['ija'], dtype = object)
-    largest_arr_size = -1
-    for arr in sav_dict['hpx_cnv']['ija']:
-        if np.size(arr) > largest_arr_size:
-            largest_arr_size = np.size(arr)
-    # Create an array of the shape ija and largest_arr_size filling in the values from
-    # the original ija array and filling the rest with -1, as you can't use NaN with ints
-    ija = np.full((len(sav_dict['hpx_cnv']['ija']), largest_arr_size), -1, dtype = np.int64)
-    for i, arr in enumerate(sav_dict['hpx_cnv']['ija']):
-        ija[i, :np.size(arr)] = arr
-    sav_dict['hpx_cnv']['ija'] = ija
-    # Do the same with sa, but we can use NaNs as it's a float array
-    largest_arr_size = -1
-    for arr in sav_dict['hpx_cnv']['sa']:
-        if np.size(arr) > largest_arr_size:
-            largest_arr_size = np.size(arr)
-    sa = np.full((len(sav_dict['hpx_cnv']['sa']), largest_arr_size), np.nan, dtype = np.float64)
-    for i, arr in enumerate(sav_dict['hpx_cnv']['sa']):
-        sa[i, :np.size(arr)] = arr
-    sav_dict['hpx_cnv']['sa'] = sa
+
+    # This will allow the arrays to be saved a variable lengths in the before file
+    sav_dict['hpx_cnv']['ija'] = np.array(sav_dict['hpx_cnv']['ija'], dtype = object)
+    sav_dict['hpx_cnv']['sa'] = np.array(sav_dict['hpx_cnv']['sa'], dtype = object)
     sav_dict['hpx_cnv']['i_use'] = sav_dict['hpx_cnv']['i_use'].astype(np.int64)
 
-    save(after_file, sav_dict['hpx_cnv'], "hpx_cnv")
+    variable_lengths = {
+        'ija' : h5py.vlen_dtype(np.int64),
+        'sa' : h5py.vlen_dtype(np.float64),
+    }
+
+    save(after_file, sav_dict['hpx_cnv'], "hpx_cnv", variable_lengths = variable_lengths)
     
     return after_file
 

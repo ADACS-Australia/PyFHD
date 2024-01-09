@@ -137,6 +137,10 @@ def healpix_cnv_generate(obs: dict, mask: NDArray[np.int64], hpx_radius: float, 
     if hpx_inds is not None:
         pix_coords = np.vstack(pix2vec(nside, hpx_inds)).T
         pix_ra, pix_dec = vec2ang(pix_coords, lonlat=True)
+        # Precision differences start here, everything is close but the pixel
+        # values given are close to the IDL values but not exact, usually off by 0.2 - 0.5
+        # This makes a big difference as we floor the results only leaving the decimals behind
+        # which makes it very different from the IDL results
         xv_hpx, yv_hpx = radec_to_pixel(pix_ra, pix_dec, obs["astr"])
     else:
         cen_coords = ang2vec(obs["obsra"], obs["obsdec"], lonlat=True)
@@ -178,7 +182,8 @@ def healpix_cnv_generate(obs: dict, mask: NDArray[np.int64], hpx_radius: float, 
     v_ceil = np.ceil(xv_hpx) + obs['dimension'] * np.ceil(yv_hpx)
     # Differences in precision occur here compared to IDL, unsolvable ones as we're using
     # built in HEALPIX and astropy functions to get these arrays. We can probably assume these
-    # numbers are "better" compared to IDL
+    # numbers are "better" compared to IDL, as a result the v_floor and v_ceil arrays are one off
+    # compared to IDL, making min_bin and max_bin off by one.
     min_bin = max(np.min(v_floor), 0)
     max_bin = min(np.max(v_ceil), obs['dimension'] * obs['elements'] - 1)
     h00, _, ri00 = histogram(v_floor, min = min_bin, max = max_bin)
@@ -190,10 +195,13 @@ def healpix_cnv_generate(obs: dict, mask: NDArray[np.int64], hpx_radius: float, 
 
     n_arr = htot[inds]
     i_use = (inds + min_bin).astype(np.int64)
-    # NumPy does not like ragged arrays so we're going to use -1 as a placeholder
-    # for empty indexes/values instead of NaNs so we can leave it as a integer array.
-    sa = np.full((np.size(n_arr), np.max(htot)), -1, dtype = np.float64)
-    ija = np.full((np.size(n_arr), np.max(htot)), -1, dtype = np.int64)
+    # To make sure it's an array we can store into a HDF5 file we're
+    # creating object arrays full of Nones which will be populated by
+    # NumPy arrays, creating a "variable length" array of arrays, to which
+    # the save function in pyfhd_io can now handle through the variable_length
+    # parameter
+    sa = np.full(np.size(n_arr), None, dtype = object)
+    ija = np.full(np.size(n_arr), None, dtype = object)
 
     for i in range(np.size(n_arr)):
         ind0 = inds[i]
@@ -201,31 +209,32 @@ def healpix_cnv_generate(obs: dict, mask: NDArray[np.int64], hpx_radius: float, 
         ija0 = np.zeros(n_arr[ind0], dtype = np.int64)
         hist_arr = np.array([0, h00[ind0], h01[ind0], h10[ind0], h11[ind0]], dtype = np.int64)
         bin_i = np.cumsum(hist_arr)
-        for j in range(1, hist_arr.size):
-            bi = j - 1
-            if (hist_arr[j] > 0):
-                if (j == 1):
-                    # h00 > 0
-                    inds1 = ri00[ri00[ind0] : ri00[ind0 + 1]]
-                elif (j == 2):
-                    # h01 > 0
-                    inds1 = ri01[ri01[ind0] : ri01[ind0 + 1]]
-                elif (j == 3):
-                    # h10 > 0
-                    inds1 = ri10[ri10[ind0] : ri10[ind0 + 1]]
-                elif (j == 4):
-                    # h11 > 0
-                    inds1 = ri11[ri11[ind0] : ri11[ind0 + 1]]
-                y_frac_multi = y_frac[inds1]
-                x_frac_multi = x_frac[inds1]
-                if j % 2 == 0:
-                    y_frac_multi = 1 - y_frac_multi
-                if j > 2:
-                    x_frac_multi = 1 - x_frac_multi
-                sa0[bin_i[bi] : bin_i[bi + 1]] = x_frac_multi * y_frac_multi
-                ija0[bin_i[bi] : bin_i[bi + 1]] = inds1
-        sa[i, : sa0.size] = sa0
-        ija[i, : ija0.size] = ija0
+        if h00[ind0] > 0:
+            bi = 0
+            inds1 = ri00[ri00[ind0] : ri00[ind0 + 1]]
+            sa0[bin_i[bi] : bin_i[bi + 1]] = x_frac[inds1] * y_frac[inds1]
+            ija0[bin_i[bi] : bin_i[bi + 1]] = inds1
+        if h01[ind0] > 0:
+            bi = 1
+            inds1 = ri01[ri01[ind0] : ri01[ind0 + 1]]
+            sa0[bin_i[bi] : bin_i[bi + 1]] = x_frac[inds1] * (1 - y_frac[inds1])
+            ija0[bin_i[bi] : bin_i[bi + 1]] = inds1
+        if h10[ind0] > 0:
+            bi = 2
+            ri = ri10[ind0]
+            next_ri = ri10[ind0 + 1]
+            inds1 = ri10[ri10[ind0] : ri10[ind0 + 1]]
+            sa0[bin_i[bi] : bin_i[bi + 1]] = (1 - x_frac[inds1]) * y_frac[inds1]
+            ija0[bin_i[bi] : bin_i[bi + 1]] = inds1
+        if h11[ind0] > 0:
+            bi = 3
+            inds1 = ri11[ri11[ind0] : ri11[ind0 + 1]]
+            sa0[bin_i[bi] : bin_i[bi + 1]] = (1 - x_frac[inds1]) * (1 - y_frac[inds1])
+            ija0[bin_i[bi] : bin_i[bi + 1]] = inds1
+        # Since we didn't translate pixel_area we can ignore the if statement coverring
+        # the case where pixel_area is greater than 1
+        sa[i] = sa0
+        ija[i] = ija0
 
     hpx_cnv = {
         "nside": nside,
