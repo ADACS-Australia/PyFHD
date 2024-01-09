@@ -155,7 +155,7 @@ def format_array(array: NDArray[Any]) -> NDArray[Any]:
             pass
     return array
 
-def save_dataset(h5py_obj: h5py.File | h5py.Group,  key: str, value: Any, to_chunk: dict[str, dict], logger: Logger | None) -> bool:
+def save_dataset(h5py_obj: h5py.File | h5py.Group,  key: str, value: Any, to_chunk: dict[str, dict], variable_lengths: [str, DTypeLike], logger: Logger | None) -> bool:
     """
     A general function for saving a dataset inside a HDF5 File or Group. It's used exclusively for saving
     a dictionary into a HDF5 file, hence why we take a `key` and `value` pair. The `to_chunk` parameter is
@@ -177,6 +177,13 @@ def save_dataset(h5py_obj: h5py.File | h5py.Group,  key: str, value: Any, to_chu
         which should contain two key-value pairs, `shape` which should be the `shape` of the array and `chunk` which tells
         hdf5 how to chunk the dataset when it's being read/written. If you're not sure how to `chunk` the dataset, set `chunk` 
         to True which enables h5py to guess the chunk size for you. By default {}
+    variable_lengths : dict[str, DTypeLike]
+        A dictionary where each key-value pair represents a key in the to_save dictionary, and the value is a dtype. This is
+        for special cases where you must save an array of variable length arrays. H5Py does support variable length arrays, but
+        you must use a special type, using the `h5py.vlen_dtype()` you can create a dtype which accepts object arrays of variable
+        lengths. For example if you wish to have variable integer array called `ija`, you would use `h5py.vlen_dtype(np.int64)`,
+        and save use it in the variable_lengths dictionary like so, `{'ija': h5py.vlen_dtype(np.int64)}`, which will set the dtype appropriately
+        during a `create_dataset` call. By default {}
     logger : Logger | None
         PyFHD's Logger
 
@@ -197,24 +204,47 @@ def save_dataset(h5py_obj: h5py.File | h5py.Group,  key: str, value: Any, to_chu
             group = h5py_obj.create_group(key)
             # dict_to_group will be recursively called if there is another dict
             # in this dict
-            dict_to_group(group, value, to_chunk, logger)
+            dict_to_group(group, value, to_chunk, variable_lengths, logger)
         case np.ndarray():
-            # Find and replace all None objects
-            value = format_array(value)
+            if key not in variable_lengths:
+                # Find and replace all None objects
+                value = format_array(value)
+                value_dtype = dtype_picker(value.dtype)
+            else:
+                # Since we're dealing with variable length arrays, we need to use a special dtype
+                # and process each array individually
+                for i, arr in enumerate(value):
+                    value[i] = format_array(arr)
+                value_dtype = variable_lengths[key]
             # If we want it to be chunked do that, always compress it
             if key in to_chunk:
-                h5py_obj.create_dataset(key, shape=to_chunk[key]['shape'], data = value, dtype = dtype_picker(value.dtype), chunks = to_chunk[key]['chunk'], compression = 'gzip')
+                h5py_obj.create_dataset(key, shape=to_chunk[key]['shape'], data = value, dtype = value_dtype, chunks = to_chunk[key]['chunk'], compression = 'gzip')
             else:
-                h5py_obj.create_dataset(key, shape = value.shape, data = value, dtype = dtype_picker(value.dtype), compression = 'gzip')
+                h5py_obj.create_dataset(key, shape = value.shape, data = value, dtype = value_dtype, compression = 'gzip')
         case list():
             # Was easier to convert to a NumPy array to get vectorization
-            try:
-                value = np.array(value)
-                value = format_array(value)
-            except ValueError as e:
-                if logger is not None:
-                    logger.info(f"You received an error when turning your list into an array. If you're array isn't homogenous, you can safely ignore this message. Just in case here's the error: {e}")
-            h5py_obj.create_dataset(key, data = value)
+            # Given that H5Py converts it into a NumPy array anyway, we can
+            # at least control the conversion (if we need to)
+            if key in variable_lengths:
+                value = np.array(value, dtype = object)
+                for i, arr in enumerate(value):
+                    value[i] = format_array(arr)
+                data_dtype = variable_lengths[key]
+            else:
+                try:
+                    value = np.array(value)
+                    value = format_array(value)
+                    data_dtype = dtype_picker(value.dtype)
+                except ValueError as e:
+                    if 'inhomogeneous' in str(e):
+                        logger.warning(f"Failed to save {key} as an array as the list couldn't turn into a NumPy array, trying to save as a variable length array. Please add {key} to the variable_lengths dictionary in the save function in future.")
+                        value = np.array(value, dtype = object)
+                        for i, arr in enumerate(value):
+                            value[i] = format_array(arr)
+                        data_dtype = h5py.vlen_dtype(dtype_picker(value[0].dtype))
+                    else:
+                        logger.info(f"You received an error not related to the array being inhomogeneous, Here's the error: {e}")
+            h5py_obj.create_dataset(key, data = value, dtype = data_dtype, compression = 'gzip')
         case Path():
             # If we find a Path object, convert it to a string
             value = str(value)
@@ -232,7 +262,7 @@ def save_dataset(h5py_obj: h5py.File | h5py.Group,  key: str, value: Any, to_chu
                     logger.error(f"Failed to save {key}, the type of key was {type(value)}")
     return is_none
 
-def dict_to_group(group: h5py.Group, to_convert: dict, to_chunk: dict[str, dict], logger: Logger | None) -> None:
+def dict_to_group(group: h5py.Group, to_convert: dict, to_chunk: dict[str, dict], variable_lengths: dict[str, DTypeLike], logger: Logger | None) -> None:
     """
     Converts a dictionary to a HDF5 group. This is called in the event a dictionary is found inside
     a dictionary that is being saved in a HDF5 file. Creates a subgroup for the hdf5 file with everything
@@ -244,13 +274,21 @@ def dict_to_group(group: h5py.Group, to_convert: dict, to_chunk: dict[str, dict]
         The created group to save the dictionary in
     to_convert : dict
         The dictionary to save into the group
+    to_chunk : dict[str, dict]
+        The chunking dictionary, see `save` for more information
+    variable_lengths : dict[str, DTypeLike]
+        The variable length dictionary, see `save` for more information
     logger : Logger
        PyFHD's Logger
+
+    See Also
+    --------
+    PyFHD.io.pyfhd_io.save : Save a HDF5 file
     """
     for key in to_convert:
-        group.attrs[key] = save_dataset(group, key, to_convert[key], to_chunk, logger)
+        group.attrs[key] = save_dataset(group, key, to_convert[key], to_chunk, variable_lengths, logger)
 
-def save(file_name: Path, to_save: NDArray[Any] | dict, dataset_name: str, logger: Logger | None = None, to_chunk: dict[str, dict] = {}) -> None:
+def save(file_name: Path, to_save: NDArray[Any] | dict, dataset_name: str, logger: Logger | None = None, to_chunk: dict[str, dict] = {}, variable_lengths: dict[str, DTypeLike] = {}) -> None:
     """
     Saves a numpy array or dictionary into a hdf5 file using h5py, with compression applied to all arrays/datasets. 
     An array will be saved as a single dataset, while a dictionary will be saved where each key will be a dataset
@@ -276,6 +314,14 @@ def save(file_name: Path, to_save: NDArray[Any] | dict, dataset_name: str, logge
         which should contain two key-value pairs, `shape` which should be the `shape` of the array and `chunk` which tells
         hdf5 how to chunk the dataset when it's being read/written. If you're not sure how to `chunk` the dataset, set `chunk` 
         to True which enables h5py to guess the chunk size for you. By default {}
+    variable_lengths : dict[str, DTypeLike], optional
+        A dictionary where each key-value pair represents a key in the to_save dictionary, and the value is a dtype. This is
+        for special cases where you must save an array of variable length arrays. H5Py does support variable length arrays, but
+        you must use a special type, using the `h5py.vlen_dtype()` you can create a dtype which accepts object arrays of variable
+        lengths. For example if you wish to have variable integer array called `ija`, you would use `h5py.vlen_dtype(np.int64)`,
+        and save use it in the variable_lengths dictionary like so, `{'ija': h5py.vlen_dtype(np.int64)}`, which will set the dtype appropriately
+        during a `create_dataset` call. By default {}
+    
 
     See Also
     --------
@@ -292,15 +338,14 @@ def save(file_name: Path, to_save: NDArray[Any] | dict, dataset_name: str, logge
             case np.ndarray():
                 if logger:
                     logger.info(f"Writing the {dataset_name} array to {file_name}.h5")
-                h5_file.create_dataset(dataset_name, to_save.shape, data = to_save, dtype = dtype_picker(to_save.dtype), compression = 'gzip')
-                h5_file.attrs[dataset_name] = False
+                h5_file.attrs[dataset_name] = save_dataset(h5_file, dataset_name, to_save, to_chunk, variable_lengths, logger)
             case dict():
                 if logger:
                     logger.info(f"Writing the {dataset_name} dict to {file_name}, each key will be a dataset, if the key contains a dict then it will be a group.")
                 for key in to_save:
                     # We're using the attributes as a mask, where if True then we know
                     # the dataset is representing a None object. 
-                    h5_file.attrs[key] = save_dataset(h5_file, key, to_save[key], to_chunk, logger)
+                    h5_file.attrs[key] = save_dataset(h5_file, key, to_save[key], to_chunk, variable_lengths, logger)
             case _:
                 if logger:
                     logger.warning("Not a dict or numpy array, PyFHD won't write other types at this time, refer to PyFHD.io.pyfhd_io.save to see what is supported")

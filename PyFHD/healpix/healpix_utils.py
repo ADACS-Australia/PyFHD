@@ -16,7 +16,7 @@ from PyFHD.pyfhd_tools.pyfhd_utils import (angle_difference, histogram,
 from PyFHD.pyfhd_tools.unit_conv import radec_to_altaz, radec_to_pixel
 
 
-def healpix_cnv_apply(image: NDArray[np.int_ | np.float_ | np.complex_], hpx_cnv: dict, transpose = True) -> NDArray[np.float64]:
+def healpix_cnv_apply(image: NDArray[np.int_ | np.float_ | np.complex_], hpx_cnv: dict) -> NDArray[np.float64]:
     """
     healpix_cnv_apply creates a map based off the array/image and healpix convention dictionary given.
     In FHD the healpix_cnv_apply was mainly used as a wrapper for sprsax2, as such I will put the code
@@ -29,8 +29,6 @@ def healpix_cnv_apply(image: NDArray[np.int_ | np.float_ | np.complex_], hpx_cnv
         _description_
     hpx_cnv : dict
         The HEALPix convention dictionary
-    transpose : bool, optional
-        Use a transpose of the image instead, by default True
 
     Returns
     -------
@@ -43,12 +41,9 @@ def healpix_cnv_apply(image: NDArray[np.int_ | np.float_ | np.complex_], hpx_cnv
     image_vector = image.flatten()
     for i in range(0, np.size(hpx_cnv['i_use'])):
         i_use = hpx_cnv['i_use'][i]
-        if transpose:
-            hpx_map[hpx_cnv['ija'][i]] += hpx_cnv['sa'][i] * image_vector[i_use]
-        else:
-            x1 = image_vector[hpx_cnv['ija'][i]]
-            # TODO: Check if outer is the correct multiplication and the order of matrices is correct
-            hpx_map[i] = np.outer(x1, np.reshape(hpx_cnv['sa'][i], [np.size(hpx_cnv['sa'][i]), 1]))
+        # Transpose is always True when used inside healpix_cnv_apply when using
+        # sprsax2, so we can ignore the transpose keyword
+        hpx_map[hpx_cnv['ija'][i]] += hpx_cnv['sa'][i] * image_vector[i_use]
     return hpx_map
 
 def healpix_cnv_generate(obs: dict, mask: NDArray[np.int64], hpx_radius: float, pyfhd_config: dict, logger: Logger, nside: float = None) -> dict:
