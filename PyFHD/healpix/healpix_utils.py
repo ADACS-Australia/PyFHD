@@ -173,7 +173,7 @@ def healpix_cnv_generate(obs: dict, mask: NDArray[np.int64], hpx_radius: float, 
         yv_hpx = yv_hpx[h_use]
         hpx_inds = hpx_inds[h_use]
     # The differences in precision through the use of vec2ang, radec_to_pixel are exposed
-    # directly causing differences in the results. We can probably assume these numbers are
+    # directly causing differences in the results. We can probably assume these numbers are                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      the results. We can probably assume these numbers are
     # "better" compared to IDL
     x_frac = 1 - (xv_hpx - np.floor(xv_hpx))
     y_frac = 1 - (yv_hpx - np.floor(yv_hpx))
@@ -183,7 +183,7 @@ def healpix_cnv_generate(obs: dict, mask: NDArray[np.int64], hpx_radius: float, 
     # Differences in precision occur here compared to IDL, unsolvable ones as we're using
     # built in HEALPIX and astropy functions to get these arrays. We can probably assume these
     # numbers are "better" compared to IDL, as a result the v_floor and v_ceil arrays are one off
-    # compared to IDL, making min_bin and max_bin off by one.
+    # compared to IDL, making min_bin off by one
     min_bin = max(np.min(v_floor), 0)
     max_bin = min(np.max(v_ceil), obs['dimension'] * obs['elements'] - 1)
     h00, _, ri00 = histogram(v_floor, min = min_bin, max = max_bin)
@@ -221,8 +221,6 @@ def healpix_cnv_generate(obs: dict, mask: NDArray[np.int64], hpx_radius: float, 
             ija0[bin_i[bi] : bin_i[bi + 1]] = inds1
         if h10[ind0] > 0:
             bi = 2
-            ri = ri10[ind0]
-            next_ri = ri10[ind0 + 1]
             inds1 = ri10[ri10[ind0] : ri10[ind0 + 1]]
             sa0[bin_i[bi] : bin_i[bi + 1]] = (1 - x_frac[inds1]) * y_frac[inds1]
             ija0[bin_i[bi] : bin_i[bi + 1]] = inds1
