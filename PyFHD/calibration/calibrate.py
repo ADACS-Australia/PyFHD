@@ -1,5 +1,6 @@
 import numpy as np
 from numpy.typing import NDArray
+from copy import deepcopy
 from logging import Logger
 from PyFHD.calibration.calibration_utils import (
     vis_extract_autocorr, 
@@ -73,7 +74,9 @@ def calibrate(obs: dict, params: dict, vis_arr: NDArray[np.complex128], vis_weig
     if (pyfhd_config['flag_calibration']):
         logger.info("Flagging Calibration has been activated and calibration will now be flagged")
         obs = vis_calibration_flag(obs, cal, pyfhd_config, logger)
-    cal_base = cal.copy()
+
+    # Copy the cal structure with per-frequency gain solutions for future comparisons 
+    cal_base = deepcopy(cal)
 
     # Perform bandpass (amp + phase per fine freq) and polynomial fitting (low order amp + phase fit plus cable reflection fit)
     if (pyfhd_config["bandpass_calibrate"]):
