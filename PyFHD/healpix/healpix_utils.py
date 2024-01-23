@@ -11,12 +11,18 @@ from PyFHD.beam_setup.beam_utils import beam_image
 from PyFHD.gridding.visibility_grid import visibility_grid
 from PyFHD.gridding.gridding_utils import dirty_image_generate
 from PyFHD.io.pyfhd_io import load, save
-from PyFHD.pyfhd_tools.pyfhd_utils import (angle_difference, histogram,
-                                           meshgrid, region_grow)
+from PyFHD.pyfhd_tools.pyfhd_utils import (
+    angle_difference,
+    histogram,
+    meshgrid,
+    region_grow,
+)
 from PyFHD.pyfhd_tools.unit_conv import radec_to_altaz, radec_to_pixel
 
 
-def healpix_cnv_apply(image: NDArray[np.int_ | np.float_ | np.complex_], hpx_cnv: dict) -> NDArray[np.float64]:
+def healpix_cnv_apply(
+    image: NDArray[np.int_ | np.float_ | np.complex_], hpx_cnv: dict
+) -> NDArray[np.float64]:
     """
     healpix_cnv_apply creates a map based off the array/image and healpix convention dictionary given.
     In FHD the healpix_cnv_apply was mainly used as a wrapper for sprsax2, as such I will put the code
@@ -36,17 +42,25 @@ def healpix_cnv_apply(image: NDArray[np.int_ | np.float_ | np.complex_], hpx_cnv
         TODO: _description_
     """
     # Is B in sprsax2
-    hpx_map = np.zeros(np.size(hpx_cnv['inds']))
+    hpx_map = np.zeros(np.size(hpx_cnv["inds"]))
     # Is X in sprsax2 or X_use
     image_vector = image.flatten()
-    for i in range(0, np.size(hpx_cnv['i_use'])):
-        i_use = hpx_cnv['i_use'][i]
+    for i in range(0, np.size(hpx_cnv["i_use"])):
+        i_use = hpx_cnv["i_use"][i]
         # Transpose is always True when used inside healpix_cnv_apply when using
         # sprsax2, so we can ignore the transpose keyword
-        hpx_map[hpx_cnv['ija'][i]] += hpx_cnv['sa'][i] * image_vector[i_use]
+        hpx_map[hpx_cnv["ija"][i]] += hpx_cnv["sa"][i] * image_vector[i_use]
     return hpx_map
 
-def healpix_cnv_generate(obs: dict, mask: NDArray[np.int64], hpx_radius: float, pyfhd_config: dict, logger: Logger, nside: float = None) -> dict:
+
+def healpix_cnv_generate(
+    obs: dict,
+    mask: NDArray[np.int64],
+    hpx_radius: float,
+    pyfhd_config: dict,
+    logger: Logger,
+    nside: float = None,
+) -> dict:
     """
     TODO:_summary_
 
@@ -80,38 +94,51 @@ def healpix_cnv_generate(obs: dict, mask: NDArray[np.int64], hpx_radius: float, 
     # yourself you can do that here
     hpx_inds = None
     # Fill hpx_inds and nside with values from a file if restrict_healpix_inds has been activated
-    if (pyfhd_config["restrict_healpix_inds"]):
+    if pyfhd_config["restrict_healpix_inds"]:
         if pyfhd_config["healpix_inds"] is None:
             # Get the healpix indexes based off the observation, comes from observation_healpix_inds_select
-            files = np.array([
-                {
-                    "name": "EoR0_high_healpix_inds.h5",
-                    "ra": 0,
-                    "dec": -30,
-                    "freq": 182,
-                },
-                {
-                    "name": "EoR0_low_healpix_inds.h5",
-                    "ra": 0,
-                    "dec": -30,
-                    "freq": 151,
-                },
-                {
-                    "name": "EoR1_high_healpix_inds.h5",
-                    "ra": 60,
-                    "dec": -30,
-                    "freq": 182,
-                },
-                {
-                    "name": "EoR1_low_healpix_inds.h5",
-                    "ra": 60,
-                    "dec": -30,
-                    "freq": 151,
-                },
-            ])
+            files = np.array(
+                [
+                    {
+                        "name": "EoR0_high_healpix_inds.h5",
+                        "ra": 0,
+                        "dec": -30,
+                        "freq": 182,
+                    },
+                    {
+                        "name": "EoR0_low_healpix_inds.h5",
+                        "ra": 0,
+                        "dec": -30,
+                        "freq": 151,
+                    },
+                    {
+                        "name": "EoR1_high_healpix_inds.h5",
+                        "ra": 60,
+                        "dec": -30,
+                        "freq": 182,
+                    },
+                    {
+                        "name": "EoR1_low_healpix_inds.h5",
+                        "ra": 60,
+                        "dec": -30,
+                        "freq": 151,
+                    },
+                ]
+            )
             ang_dist = []
             for file in files:
-                ang_dist.append(np.abs(angle_difference(obs["obsra"], obs["obsdec"], file["ra"], file["dec"],degree = True, nearest = True)))
+                ang_dist.append(
+                    np.abs(
+                        angle_difference(
+                            obs["obsra"],
+                            obs["obsdec"],
+                            file["ra"],
+                            file["dec"],
+                            degree=True,
+                            nearest=True,
+                        )
+                    )
+                )
             ang_dist = np.array(ang_dist)
             ang_use = np.min(ang_dist)
             i_use = np.where(np.abs(ang_dist - ang_use) <= 1)
@@ -119,28 +146,29 @@ def healpix_cnv_generate(obs: dict, mask: NDArray[np.int64], hpx_radius: float, 
             freq_dist = []
             for file in files:
                 freq_dist.append(file["freq"])
-            freq_dist = np.abs(np.array(freq_dist) - (obs["freq_center"]/1e6))
+            freq_dist = np.abs(np.array(freq_dist) - (obs["freq_center"] / 1e6))
             min_i = np.argmin(freq_dist)
-            pyfhd_config["healpix_inds"] = importlib_resources.files('PyFHD.templates').joinpath(files[min_i]["name"])
-        hpx_inds = load(pyfhd_config["healpix_inds"], logger = logger)
+            pyfhd_config["healpix_inds"] = importlib_resources.files(
+                "PyFHD.templates"
+            ).joinpath(files[min_i]["name"])
+        hpx_inds = load(pyfhd_config["healpix_inds"], logger=logger)
         if type(hpx_inds) is dict:
             if nside in hpx_inds:
                 nside = hpx_inds["nside"]
             hpx_inds = hpx_inds["hpx_inds"]
     if nside is None:
-        pix_sky = 4 * np.pi * ((180 / np.pi) ** 2) /  np.prod(np.abs(obs["astr"]["cdelt"]))
-        nside = 2 ** (np.ceil(np.log(np.sqrt(pix_sky/12)) / np.log(2)))
-    
-    # If you wish to implement the keyword divide_pixel_area implement it here and 
+        pix_sky = (
+            4 * np.pi * ((180 / np.pi) ** 2) / np.prod(np.abs(obs["astr"]["cdelt"]))
+        )
+        nside = 2 ** (np.ceil(np.log(np.sqrt(pix_sky / 12)) / np.log(2)))
+
+    # If you wish to implement the keyword divide_pixel_area implement it here and
     # add it as an option inside pyfhd_config
 
     if hpx_inds is not None:
         pix_coords = np.vstack(pix2vec(nside, hpx_inds)).T
         pix_ra, pix_dec = vec2ang(pix_coords, lonlat=True)
-        # Precision differences start here, everything is close but the pixel
-        # values given are close to the IDL values but not exact, usually off by 0.2 - 0.5
-        # This makes a big difference as we floor the results only leaving the decimals behind
-        # which makes it very different from the IDL results
+        # This assume the refraction fix on FHD has been implemented
         xv_hpx, yv_hpx = radec_to_pixel(pix_ra, pix_dec, obs["astr"])
     else:
         cen_coords = ang2vec(obs["obsra"], obs["obsdec"], lonlat=True)
@@ -148,8 +176,13 @@ def healpix_cnv_generate(obs: dict, mask: NDArray[np.int64], hpx_radius: float, 
         pix_coords = np.vstack(pix2vec(nside, hpx_inds)).T
         pix_dec, pix_ra = vec2ang(pix_coords, lonlat=True)
         xv_hpx, yv_hpx = radec_to_pixel(pix_ra, pix_dec, obs["astr"])
-        # slightly more restrictive boundary here ('LT' and 'GT' instead of 'LE' and 'GE') 
-        pix_i_use = np.where((xv_hpx > 0) & (xv_hpx < obs['dimension'] - 1) & (yv_hpx > 0) & (yv_hpx < obs['elements'] - 1))
+        # slightly more restrictive boundary here ('LT' and 'GT' instead of 'LE' and 'GE')
+        pix_i_use = np.where(
+            (xv_hpx > 0)
+            & (xv_hpx < obs["dimension"] - 1)
+            & (yv_hpx > 0)
+            & (yv_hpx < obs["elements"] - 1)
+        )
         xv_hpx = xv_hpx[pix_i_use]
         yv_hpx = yv_hpx[pix_i_use]
         hpx_mask00 = mask[np.floor(xv_hpx), np.floor(yv_hpx)]
@@ -162,9 +195,11 @@ def healpix_cnv_generate(obs: dict, mask: NDArray[np.int64], hpx_radius: float, 
         yv_hpx = yv_hpx[pix_i_use2]
         pix_i_use = pix_i_use[pix_i_use2]
         hpx_inds = hpx_inds[pix_i_use]
-    
+
     # Test for pixels past the horizon. We don't need to be precise with this, so turn off precession, etc..
-    alt, _ = radec_to_altaz(pix_ra, pix_dec, obs["lat"], obs["lon"], obs["alt"], obs["jd0"])
+    alt, _ = radec_to_altaz(
+        pix_ra, pix_dec, obs["lat"], obs["lon"], obs["alt"], obs["jd0"]
+    )
     horizon_i = np.where(alt <= 0)
     if np.size(horizon_i) > 0:
         logger.info("Cutting the HEALPix pixels that were below the horizon")
@@ -178,18 +213,22 @@ def healpix_cnv_generate(obs: dict, mask: NDArray[np.int64], hpx_radius: float, 
     x_frac = 1 - (xv_hpx - np.floor(xv_hpx))
     y_frac = 1 - (yv_hpx - np.floor(yv_hpx))
 
-    v_floor = np.floor(xv_hpx) + obs['dimension'] * np.floor(yv_hpx)
-    v_ceil = np.ceil(xv_hpx) + obs['dimension'] * np.ceil(yv_hpx)
+    v_floor = np.floor(xv_hpx) + obs["dimension"] * np.floor(yv_hpx)
+    v_ceil = np.ceil(xv_hpx) + obs["dimension"] * np.ceil(yv_hpx)
     # Differences in precision occur here compared to IDL, unsolvable ones as we're using
     # built in HEALPIX and astropy functions to get these arrays. We can probably assume these
     # numbers are "better" compared to IDL, as a result the v_floor and v_ceil arrays are one off
     # compared to IDL, making min_bin off by one
     min_bin = max(np.min(v_floor), 0)
-    max_bin = min(np.max(v_ceil), obs['dimension'] * obs['elements'] - 1)
-    h00, _, ri00 = histogram(v_floor, min = min_bin, max = max_bin)
-    h01, _, ri01 = histogram(np.floor(xv_hpx) + obs['dimension'] * np.ceil(yv_hpx), min = min_bin, max = max_bin)
-    h10, _, ri10 = histogram(np.ceil(xv_hpx) + obs['dimension'] * np.floor(yv_hpx), min = min_bin, max = max_bin)
-    h11, _, ri11 = histogram(v_ceil, min = min_bin, max = max_bin)
+    max_bin = min(np.max(v_ceil), obs["dimension"] * obs["elements"] - 1)
+    h00, _, ri00 = histogram(v_floor, min=min_bin, max=max_bin)
+    h01, _, ri01 = histogram(
+        np.floor(xv_hpx) + obs["dimension"] * np.ceil(yv_hpx), min=min_bin, max=max_bin
+    )
+    h10, _, ri10 = histogram(
+        np.ceil(xv_hpx) + obs["dimension"] * np.floor(yv_hpx), min=min_bin, max=max_bin
+    )
+    h11, _, ri11 = histogram(v_ceil, min=min_bin, max=max_bin)
     htot = h00 + h01 + h10 + h11
     inds = np.nonzero(htot)[0]
 
@@ -200,14 +239,16 @@ def healpix_cnv_generate(obs: dict, mask: NDArray[np.int64], hpx_radius: float, 
     # NumPy arrays, creating a "variable length" array of arrays, to which
     # the save function in pyfhd_io can now handle through the variable_length
     # parameter
-    sa = np.full(np.size(n_arr), None, dtype = object)
-    ija = np.full(np.size(n_arr), None, dtype = object)
+    sa = np.full(np.size(n_arr), None, dtype=object)
+    ija = np.full(np.size(n_arr), None, dtype=object)
 
     for i in range(np.size(n_arr)):
         ind0 = inds[i]
-        sa0 = np.zeros(n_arr[ind0])
-        ija0 = np.zeros(n_arr[ind0], dtype = np.int64)
-        hist_arr = np.array([0, h00[ind0], h01[ind0], h10[ind0], h11[ind0]], dtype = np.int64)
+        sa0 = np.zeros(n_arr[i])
+        ija0 = np.zeros(n_arr[i], dtype=np.int64)
+        hist_arr = np.array(
+            [0, h00[ind0], h01[ind0], h10[ind0], h11[ind0]], dtype=np.int64
+        )
         bin_i = np.cumsum(hist_arr)
         if h00[ind0] > 0:
             bi = 0
@@ -234,34 +275,29 @@ def healpix_cnv_generate(obs: dict, mask: NDArray[np.int64], hpx_radius: float, 
         sa[i] = sa0
         ija[i] = ija0
 
-    hpx_cnv = {
-        "nside": nside,
-        "ija": ija,
-        "sa": sa,
-        "i_use": i_use,
-        "inds": hpx_inds
-    }
-    obs['healpix']['nside'] = nside
+    hpx_cnv = {"nside": nside, "ija": ija, "sa": sa, "i_use": i_use, "inds": hpx_inds}
+    obs["healpix"]["nside"] = nside
     if pyfhd_config["restrict_healpix_inds"]:
-        obs['healpix']['ind_list'] = None
+        obs["healpix"]["ind_list"] = None
     else:
-        obs['healpix']['ind_list'] = hpx_inds
-    obs['healpix']['n_pix'] = np.size(hpx_inds)
+        obs["healpix"]["ind_list"] = hpx_inds
+    obs["healpix"]["n_pix"] = np.size(hpx_inds)
     mask_test = healpix_cnv_apply(mask, hpx_cnv)
     mask_test_i0 = np.where(mask_test == 0)
-    obs['healpix']['n_zero'] = np.size(mask_test_i0[0])
+    obs["healpix"]["n_zero"] = np.size(mask_test_i0[0])
 
     return hpx_cnv, obs
 
+
 def beam_image_cube(
-    obs: dict, 
-    psf: dict | h5py.File, 
+    obs: dict,
+    psf: dict | h5py.File,
     logger: Logger,
-    freq_i_arr: NDArray[np.int_] | None = None, 
+    freq_i_arr: NDArray[np.int_] | None = None,
     pol_i_arr: NDArray[np.int_] | None = None,
     n_freq_bin: float | None = None,
     square: bool = True,
-    beam_threshold: float | None = None
+    beam_threshold: float | None = None,
 ) -> tuple[NDArray[np.complex128], NDArray[np.float64]]:
     """
     TODO: _summary_
@@ -293,44 +329,54 @@ def beam_image_cube(
 
     if beam_threshold is None:
         beam_threshold = 0.05
-    
+
     if pol_i_arr is None:
-        pol_i_arr = np.arange(obs['n_pol'])
-    
+        pol_i_arr = np.arange(obs["n_pol"])
+
     if n_freq_bin is not None:
-        freq_i_arr = np.floor(np.arange(n_freq_bin) * (obs['n_freq'] / n_freq_bin)).astype(np.int64)
+        freq_i_arr = np.floor(
+            np.arange(n_freq_bin) * (obs["n_freq"] / n_freq_bin)
+        ).astype(np.int64)
     if freq_i_arr is None:
         logger.error("beam_image_cube requires n_freq_bin or freq_i_arr to be set")
         sys.exit(1)
     if n_freq_bin is None and freq_i_arr is not None:
         n_freq_bin = freq_i_arr.size
 
-    if np.median(freq_i_arr) > obs['n_freq']:
-        freq_i_use = np.interp(np.arange(obs['n_freq']), obs['baseline_info']['freq'], freq_i_arr)
+    if np.median(freq_i_arr) > obs["n_freq"]:
+        freq_i_use = np.interp(
+            np.arange(obs["n_freq"]), obs["baseline_info"]["freq"], freq_i_arr
+        )
     else:
         freq_i_use = freq_i_arr
-    
-    beam_arr = np.zeros([obs['n_pol'], n_freq_bin, obs['dimension'], obs['elements']])
 
-    bin_arr = obs['baseline_info']['fbin_i'][freq_i_use]
-    bin_hist, _, bri = histogram(bin_arr, min = 0)
+    beam_arr = np.zeros([obs["n_pol"], n_freq_bin, obs["dimension"], obs["elements"]])
+
+    bin_arr = obs["baseline_info"]["fbin_i"][freq_i_use]
+    bin_hist, _, bri = histogram(bin_arr, min=0)
     bin_use = np.nonzero(bin_hist)[0]
     if np.size(bin_use) == 0:
         return beam_arr
     bin_n = bin_hist[bin_use]
-    beam_mask = np.ones([obs['dimension'], obs['elements']])
-    for pol_i in range(obs['n_pol']):
+    beam_mask = np.ones([obs["dimension"], obs["elements"]])
+    for pol_i in range(obs["n_pol"]):
         for fb_i in range(np.size(bin_use)):
             f_i_i = bri[bri[bin_use[fb_i]] : bri[bin_use[fb_i] + 1]]
             f_i = freq_i_use[f_i_i[0]]
-            beam_single = beam_image(psf, obs, pol_i, freq_i = f_i,  square = square)
+            beam_single = beam_image(psf, obs, pol_i, freq_i=f_i, square=square)
             beam_arr[pol_i, f_i_i[0] : f_i_i[bin_n[fb_i] - 1] + 1] = beam_single
-            b_i = int(obs['obsx'] + obs['obsy'] * obs['dimension'])
-            beam_i = region_grow(beam_single, b_i, low = beam_threshold ** (square + 1), high = np.max(beam_single))
-            beam_mask1 = np.zeros([obs['dimension'], obs['elements']])
+            b_i = int(obs["obsx"] + obs["obsy"] * obs["dimension"])
+            beam_i = region_grow(
+                beam_single,
+                b_i,
+                low=beam_threshold ** (square + 1),
+                high=np.max(beam_single),
+            )
+            beam_mask1 = np.zeros([obs["dimension"], obs["elements"]])
             beam_mask1.flat[beam_i] = 1
             beam_mask *= beam_mask1
     return beam_arr, beam_mask
+
 
 def phase_shift_uv_image(obs: dict) -> NDArray[np.complex128]:
     """
@@ -348,22 +394,25 @@ def phase_shift_uv_image(obs: dict) -> NDArray[np.complex128]:
     """
     # Since we only use it once in PyFHD, assume we always want to do /to_orig_phase
     # Implement the other options if you decide to use this function elsewhere
-    ra_use = obs['orig_phasera']
-    dec_use = obs['orig_phasedec']
-    
-    # Skip calculations if phased correctly
-    if obs['phasera'] == obs['orig_phasera'] and obs['phasedec'] == obs['orig_phasedec']:
-        return np.ones([obs['dimension'], obs['elements']], dtype = np.complex128)
+    ra_use = obs["orig_phasera"]
+    dec_use = obs["orig_phasedec"]
 
-    x, y = radec_to_pixel(ra_use, dec_use, obs['astr'])
+    # Skip calculations if phased correctly
+    if (
+        obs["phasera"] == obs["orig_phasera"]
+        and obs["phasedec"] == obs["orig_phasedec"]
+    ):
+        return np.ones([obs["dimension"], obs["elements"]], dtype=np.complex128)
+
+    x, y = radec_to_pixel(ra_use, dec_use, obs["astr"])
 
     # uv_mask is not applied in PyFHD decided not to translate it, if you want it put it here
 
-    dx = (x - (obs['dimension'] / 2)) * (2 * np.pi / obs['dimension'])
-    dy = (y - (obs['elements'] / 2)) * (2 * np.pi / obs['dimension'])
+    dx = (x - (obs["dimension"] / 2)) * (2 * np.pi / obs["dimension"])
+    dy = (y - (obs["elements"] / 2)) * (2 * np.pi / obs["dimension"])
 
-    xvals = meshgrid(obs['dimension'], obs['elements'], 1) - (obs['dimension'] / 2)
-    yvals = meshgrid(obs['dimension'], obs['elements'], 2) - (obs['elements'] / 2)
+    xvals = meshgrid(obs["dimension"], obs["elements"], 1) - (obs["dimension"] / 2)
+    yvals = meshgrid(obs["dimension"], obs["elements"], 2) - (obs["elements"] / 2)
 
     phase = xvals * dx + yvals * dy
     rephase_vals = np.cos(phase) + np.sin(phase) * 1j
@@ -372,10 +421,11 @@ def phase_shift_uv_image(obs: dict) -> NDArray[np.complex128]:
 
     return rephase_vals
 
+
 def vis_model_freq_split(
-    obs: dict, 
-    psf: dict | h5py.File, 
-    params: dict, 
+    obs: dict,
+    psf: dict | h5py.File,
+    params: dict,
     vis_weights: NDArray[np.float64],
     vis_model_arr: NDArray[np.complex128],
     vis_arr: NDArray[np.complex128],
@@ -383,8 +433,8 @@ def vis_model_freq_split(
     logger: Logger,
     fft: bool = True,
     save_uvf: bool = True,
-    uvf_name: str = '',
-    bi_use: NDArray[np.int_] = None
+    uvf_name: str = "",
+    bi_use: NDArray[np.int_] = None,
 ) -> dict:
     """
     TODO: _summary_
@@ -422,18 +472,32 @@ def vis_model_freq_split(
         _description_
     """
 
-    freq_bin_i2 = np.arange(obs['n_freq']) // pyfhd_config['n_avg']
+    freq_bin_i2 = np.arange(obs["n_freq"]) // pyfhd_config["n_avg"]
     nf = np.max(freq_bin_i2) + 1
     if save_uvf:
-        dirty_uv_arr = np.zeros([obs['n_pol'], nf, obs['dimension'], obs['dimension']], dtype = np.complex128)
-        weights_uv_arr = np.zeros([obs['n_pol'], nf, obs['dimension'], obs['dimension']], dtype = np.int64)
-        variance_uv_arr = np.zeros([obs['n_pol'], nf, obs['dimension'], obs['dimension']])
-        model_uv_arr = np.zeros([obs['n_pol'], nf, obs['dimension'], obs['dimension']], dtype = np.complex128)
-    dirty_arr = np.zeros([obs['n_pol'], nf, obs['dimension'], obs['dimension']], dtype = np.complex128)
-    weights_arr = np.zeros([obs['n_pol'], nf, obs['dimension'], obs['dimension']], dtype = np.int64)
-    variance_arr = np.zeros([obs['n_pol'], nf, obs['dimension'], obs['dimension']])
-    model_arr = np.zeros([obs['n_pol'], nf, obs['dimension'], obs['dimension']], dtype = np.complex128)
-    vis_n_arr = np.zeros([obs['n_pol'], nf])
+        dirty_uv_arr = np.zeros(
+            [obs["n_pol"], nf, obs["dimension"], obs["dimension"]], dtype=np.complex128
+        )
+        weights_uv_arr = np.zeros(
+            [obs["n_pol"], nf, obs["dimension"], obs["dimension"]], dtype=np.int64
+        )
+        variance_uv_arr = np.zeros(
+            [obs["n_pol"], nf, obs["dimension"], obs["dimension"]]
+        )
+        model_uv_arr = np.zeros(
+            [obs["n_pol"], nf, obs["dimension"], obs["dimension"]], dtype=np.complex128
+        )
+    dirty_arr = np.zeros(
+        [obs["n_pol"], nf, obs["dimension"], obs["dimension"]], dtype=np.complex128
+    )
+    weights_arr = np.zeros(
+        [obs["n_pol"], nf, obs["dimension"], obs["dimension"]], dtype=np.int64
+    )
+    variance_arr = np.zeros([obs["n_pol"], nf, obs["dimension"], obs["dimension"]])
+    model_arr = np.zeros(
+        [obs["n_pol"], nf, obs["dimension"], obs["dimension"]], dtype=np.complex128
+    )
+    vis_n_arr = np.zeros([obs["n_pol"], nf])
     if pyfhd_config["rephase_weights"]:
         rephase_use = phase_shift_uv_image(obs)
     else:
@@ -442,60 +506,100 @@ def vis_model_freq_split(
 
     flag_test = np.maximum(np.maximum(vis_weights[0], vis_weights[1]), 0)
     # Double check the axis used
-    flag_test = np.sum(flag_test, axis = 1)
+    flag_test = np.sum(flag_test, axis=1)
     bi_use = np.where(flag_test > 0)[0]
-    
-    for pol_i in range(obs['n_pol']):
+
+    for pol_i in range(obs["n_pol"]):
         n_vis_use = 0
         for fi in range(nf):
-            fi_use = np.where((freq_bin_i2 == fi) & (obs['baseline_info']['freq_use'] > 0))
+            fi_use = np.where(
+                (freq_bin_i2 == fi) & (obs["baseline_info"]["freq_use"] > 0)
+            )
             if np.size(fi_use) == 0:
                 n_vis = 0
             else:
-                gridding_dict = visibility_grid(vis_arr[pol_i], vis_weights[pol_i], obs, psf, params, pol_i,
-                                                pyfhd_config, logger, model = vis_model_arr[pol_i], fi_use = fi_use, 
-                                                bi_use = bi_use)
-            n_vis_use += gridding_dict['n_vis']
-            vis_n_arr[pol_i, fi] = gridding_dict['n_vis']
+                gridding_dict = visibility_grid(
+                    vis_arr[pol_i],
+                    vis_weights[pol_i],
+                    obs,
+                    psf,
+                    params,
+                    pol_i,
+                    pyfhd_config,
+                    logger,
+                    model=vis_model_arr[pol_i],
+                    fi_use=fi_use,
+                    bi_use=bi_use,
+                )
+            n_vis_use += gridding_dict["n_vis"]
+            vis_n_arr[pol_i, fi] = gridding_dict["n_vis"]
 
             if save_uvf:
-                dirty_uv_arr[pol_i, fi] = gridding_dict['image_uv'] * gridding_dict['n_vis']
-                weights_uv_arr[pol_i, fi] = gridding_dict['weights'] * rephase_use * gridding_dict['n_vis']
-                variance_uv_arr[pol_i, fi] = gridding_dict['variance'] * rephase_use * gridding_dict['n_vis']
-                model_uv_arr[pol_i, fi] = gridding_dict['model_return'] * gridding_dict['n_vis']
-            
+                dirty_uv_arr[pol_i, fi] = (
+                    gridding_dict["image_uv"] * gridding_dict["n_vis"]
+                )
+                weights_uv_arr[pol_i, fi] = (
+                    gridding_dict["weights"] * rephase_use * gridding_dict["n_vis"]
+                )
+                variance_uv_arr[pol_i, fi] = (
+                    gridding_dict["variance"] * rephase_use * gridding_dict["n_vis"]
+                )
+                model_uv_arr[pol_i, fi] = (
+                    gridding_dict["model_return"] * gridding_dict["n_vis"]
+                )
+
             if fft:
                 # No x_range and y_range hence no check for it here
-                dirty_arr[pol_i, fi] = dirty_image_generate(
-                    gridding_dict['image_uv'], 
-                    pyfhd_config, 
-                    logger, 
-                    degpix = obs['degpix']
-                ) * gridding_dict['n_vis']
-                weights_arr[pol_i, fi] = dirty_image_generate(
-                    gridding_dict['weights'] * rephase_use,
-                    pyfhd_config,
-                    logger,
-                    degpix = obs['degpix']
-                ) * gridding_dict['n_vis']
-                variance_arr[pol_i, fi] = dirty_image_generate(
-                    gridding_dict['variance'] * rephase_use,
-                    pyfhd_config,
-                    logger,
-                    degpix = obs['degpix']
-                ) * gridding_dict['n_vis']
-                model_arr[pol_i, fi] = dirty_image_generate(
-                    gridding_dict['model_return'] * gridding_dict['n_vis'],
-                    pyfhd_config,
-                    logger,
-                    degpix = obs['degpix']
-                ) * gridding_dict['n_vis']
+                dirty_arr[pol_i, fi] = (
+                    dirty_image_generate(
+                        gridding_dict["image_uv"],
+                        pyfhd_config,
+                        logger,
+                        degpix=obs["degpix"],
+                    )
+                    * gridding_dict["n_vis"]
+                )
+                weights_arr[pol_i, fi] = (
+                    dirty_image_generate(
+                        gridding_dict["weights"] * rephase_use,
+                        pyfhd_config,
+                        logger,
+                        degpix=obs["degpix"],
+                    )
+                    * gridding_dict["n_vis"]
+                )
+                variance_arr[pol_i, fi] = (
+                    dirty_image_generate(
+                        gridding_dict["variance"] * rephase_use,
+                        pyfhd_config,
+                        logger,
+                        degpix=obs["degpix"],
+                    )
+                    * gridding_dict["n_vis"]
+                )
+                model_arr[pol_i, fi] = (
+                    dirty_image_generate(
+                        gridding_dict["model_return"] * gridding_dict["n_vis"],
+                        pyfhd_config,
+                        logger,
+                        degpix=obs["degpix"],
+                    )
+                    * gridding_dict["n_vis"]
+                )
             else:
-                dirty_arr[pol_i, fi] = gridding_dict['image_uv'] * gridding_dict['n_vis']
-                weights_arr[pol_i, fi] = gridding_dict['weights'] * rephase_use * gridding_dict['n_vis']
-                variance_arr[pol_i, fi] = gridding_dict['variance'] * rephase_use * gridding_dict['n_vis']
-                model_arr[pol_i, fi] = gridding_dict['model_return'] * gridding_dict['n_vis']
-        obs['n_vis'] = n_vis_use
+                dirty_arr[pol_i, fi] = (
+                    gridding_dict["image_uv"] * gridding_dict["n_vis"]
+                )
+                weights_arr[pol_i, fi] = (
+                    gridding_dict["weights"] * rephase_use * gridding_dict["n_vis"]
+                )
+                variance_arr[pol_i, fi] = (
+                    gridding_dict["variance"] * rephase_use * gridding_dict["n_vis"]
+                )
+                model_arr[pol_i, fi] = (
+                    gridding_dict["model_return"] * gridding_dict["n_vis"]
+                )
+        obs["n_vis"] = n_vis_use
 
     if save_uvf:
         h5_save_dict = {
@@ -504,16 +608,48 @@ def vis_model_freq_split(
             "variance_uv": variance_uv_arr,
             "model_uv": model_uv_arr,
         }
-        uvf_dir = Path(Path(pyfhd_config['output_dir'], 'healpix', 'uvf_grid'))
-        uvf_dir.mkdir(exist_ok = True, parents = True)
-        save(Path(uvf_dir, f'{pyfhd_config["obs_id"]}_{uvf_name}_dirty_uv_arr_gridded_uvf.h5'), h5_save_dict, f'{pyfhd_config["obs_id"]}_{uvf_name}_dirty_uv_arr_gridded_uvf.h5', logger = logger)
-        save(Path(uvf_dir, f'{pyfhd_config["obs_id"]}_{uvf_name}_weights_uv_gridded_uvf.h5'), h5_save_dict, f'{pyfhd_config["obs_id"]}_{uvf_name}_weights_uv_gridded_uvf.h5', logger = logger)
-        save(Path(uvf_dir, f'{pyfhd_config["obs_id"]}_{uvf_name}_variance_uv_arr_gridded_uvf.h5'), h5_save_dict, f'{pyfhd_config["obs_id"]}_{uvf_name}_variance_uv_arr_gridded_uvf.h5', logger = logger)
-        save(Path(uvf_dir, f'{pyfhd_config["obs_id"]}_{uvf_name}_model_uv_arr_gridded_uvf.h5'), h5_save_dict, f'{pyfhd_config["obs_id"]}_{uvf_name}_model_uv_arr_gridded_uvf.h5', logger = logger)
-    
+        uvf_dir = Path(Path(pyfhd_config["output_dir"], "healpix", "uvf_grid"))
+        uvf_dir.mkdir(exist_ok=True, parents=True)
+        save(
+            Path(
+                uvf_dir,
+                f'{pyfhd_config["obs_id"]}_{uvf_name}_dirty_uv_arr_gridded_uvf.h5',
+            ),
+            h5_save_dict,
+            f'{pyfhd_config["obs_id"]}_{uvf_name}_dirty_uv_arr_gridded_uvf.h5',
+            logger=logger,
+        )
+        save(
+            Path(
+                uvf_dir,
+                f'{pyfhd_config["obs_id"]}_{uvf_name}_weights_uv_gridded_uvf.h5',
+            ),
+            h5_save_dict,
+            f'{pyfhd_config["obs_id"]}_{uvf_name}_weights_uv_gridded_uvf.h5',
+            logger=logger,
+        )
+        save(
+            Path(
+                uvf_dir,
+                f'{pyfhd_config["obs_id"]}_{uvf_name}_variance_uv_arr_gridded_uvf.h5',
+            ),
+            h5_save_dict,
+            f'{pyfhd_config["obs_id"]}_{uvf_name}_variance_uv_arr_gridded_uvf.h5',
+            logger=logger,
+        )
+        save(
+            Path(
+                uvf_dir,
+                f'{pyfhd_config["obs_id"]}_{uvf_name}_model_uv_arr_gridded_uvf.h5',
+            ),
+            h5_save_dict,
+            f'{pyfhd_config["obs_id"]}_{uvf_name}_model_uv_arr_gridded_uvf.h5',
+            logger=logger,
+        )
+
     model_split = {
         "obs": obs,
-        "residual_arr" : dirty_arr,
+        "residual_arr": dirty_arr,
         "weights_arr": weights_arr,
         "variance_arr": variance_arr,
         "model_arr": model_arr,
