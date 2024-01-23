@@ -5,7 +5,16 @@ from astropy import units as u
 import numpy as np
 from numpy.typing import NDArray
 
-def altaz_to_radec(alt : float, az : float, lat : float, lon : float, height : float, time : float, time_format = 'jd') -> tuple[float, float]:
+
+def altaz_to_radec(
+    alt: float,
+    az: float,
+    lat: float,
+    lon: float,
+    height: float,
+    time: float,
+    time_format="jd",
+) -> tuple[float, float]:
     """
     Turn AltAz coordinates into the equatorial/celestial coordinates RA and DEC.
     The exact location and time must given in order for the coordinates to be calculated.
@@ -29,17 +38,31 @@ def altaz_to_radec(alt : float, az : float, lat : float, lon : float, height : f
 
     Returns
     -------
-    ra : float  
+    ra : float
         Right Ascension from the given location and time with altitude and azimuth
     dec : float
         Declination from the given location and time with altitude and azimuth
     """
 
-    loc = EarthLocation.from_geodetic(lon*u.deg, lat*u.deg, height = height*u.meter)
-    altaz = AltAz(alt = alt*u.deg, az = az*u.deg, location = loc, obstime = Time(time, format=time_format))
+    loc = EarthLocation.from_geodetic(lon * u.deg, lat * u.deg, height=height * u.meter)
+    altaz = AltAz(
+        alt=alt * u.deg,
+        az=az * u.deg,
+        location=loc,
+        obstime=Time(time, format=time_format),
+    )
     return altaz.transform_to(ICRS()).ra.deg, altaz.transform_to(ICRS()).dec.deg
 
-def radec_to_altaz(ra : float, dec : float, lat : float, lon : float, height : float, time : float, time_format = 'jd') -> tuple[float, float]:
+
+def radec_to_altaz(
+    ra: float,
+    dec: float,
+    lat: float,
+    lon: float,
+    height: float,
+    time: float,
+    time_format="jd",
+) -> tuple[float, float]:
     """
     Turn Celestial/Equatorial coordinates into AltAz at the given location and time.
     Time Format by default is Julian, but you can use any of the formats provided by the AstroPy Time classes.
@@ -70,13 +93,14 @@ def radec_to_altaz(ra : float, dec : float, lat : float, lon : float, height : f
     """
 
     # Create the Earth Location
-    loc = EarthLocation.from_geodetic(lon*u.deg, lat*u.deg, height = height*u.meter)
-    loc_time = Time(time, format = time_format)
-    radec = SkyCoord(ra = ra * u.deg, dec = dec * u.deg)
-    altaz = radec.transform_to(AltAz(location = loc, obstime = loc_time))
+    loc = EarthLocation.from_geodetic(lon * u.deg, lat * u.deg, height=height * u.meter)
+    loc_time = Time(time, format=time_format)
+    radec = SkyCoord(ra=ra * u.deg, dec=dec * u.deg)
+    altaz = radec.transform_to(AltAz(location=loc, obstime=loc_time))
     return altaz.alt.deg, altaz.az.deg
 
-def radec_to_pixel(ra : float, dec : float, astr : dict) -> tuple[float, float]:
+
+def radec_to_pixel(ra: float, dec: float, astr: dict) -> tuple[float, float]:
     """
     Turn Celestial Coordinates into Pixel coordinates (X & Y). The astr dictionary should contain
     cdelt, ctype, crpix and crval as per the WCS standard when naxis is 2.
@@ -99,23 +123,43 @@ def radec_to_pixel(ra : float, dec : float, astr : dict) -> tuple[float, float]:
     """
 
     # Create WCS object with astr
-    wcs_astr = WCS(naxis  = 2)
-    wcs_astr.wcs.cdelt = astr['cdelt']
-    wcs_astr.wcs.ctype = astr['ctype']
-    wcs_astr.wcs.crpix = astr['crpix']
-    wcs_astr.wcs.crval = astr['crval']
+    wcs_astr = WCS(naxis=2)
+    wcs_astr.wcs.cdelt = astr["cdelt"]
+    # AstroPy ctype requires a list of python string objects, NumPy string objects will not work
+    wcs_astr.wcs.ctype = [str(projection) for projection in astr["ctype"]]
+    wcs_astr.wcs.crpix = astr["crpix"]
+    wcs_astr.wcs.crval = astr["crval"]
+    wcs_astr.wcs.equinox = astr["equinox"]
+    wcs_astr.wcs.mjdobs = astr["mjdobs"]
+    wcs_astr.wcs.dateobs = astr["dateobs"]
+    wcs_astr.wcs.radesys = astr["radecsys"]
+    wcs_astr.wcs.set_pv(
+        [
+            (1, 1, astr["pv1"][1]),
+            (1, 2, astr["pv1"][2]),
+            (1, 3, astr["pv1"][3]),
+            (1, 4, astr["pv1"][4]),
+            (2, 1, astr["pv2"][0]),
+            (2, 2, astr["pv2"][1]),
+        ]
+    )
     # Now use world_to_pixel function for WCS objects
-    x, y = wcs_astr.world_to_pixel(SkyCoord(ra = ra*u.deg, dec = dec*u.deg))
+    x, y = wcs_astr.world_to_pixel(
+        SkyCoord(ra=ra * u.deg, dec=dec * u.deg, frame=astr["radecsys"].lower())
+    )
     # AstroPy returns values as an array, cast to float
     if np.size(x) == 1:
         return float(x), float(y)
     else:
         return x, y
 
-def pixel_to_radec(x: float | NDArray[np.float64], y: float | NDArray[np.float64], astr: dict) -> tuple[float | NDArray[np.float64], float | NDArray[np.float64]]:
+
+def pixel_to_radec(
+    x: float | NDArray[np.float64], y: float | NDArray[np.float64], astr: dict
+) -> tuple[float | NDArray[np.float64], float | NDArray[np.float64]]:
     """
-    Turn Pixel coordinates (X & Y) into Celestial Coordinates based off a WCS. 
-    The astr dictionary should contain cdelt, ctype, crpix and crval as per the 
+    Turn Pixel coordinates (X & Y) into Celestial Coordinates based off a WCS.
+    The astr dictionary should contain cdelt, ctype, crpix and crval as per the
     WCS standard when naxis is 2.
 
     Parameters
@@ -134,11 +178,26 @@ def pixel_to_radec(x: float | NDArray[np.float64], y: float | NDArray[np.float64
     dec : float | NDArray[np.float64]
         Declination from the given pixel coordinates and WCS
     """
-    wcs_astr = WCS(naxis  = 2)
-    wcs_astr.wcs.cdelt = astr['cdelt']
-    wcs_astr.wcs.ctype = astr['ctype']
-    wcs_astr.wcs.crpix = astr['crpix']
-    wcs_astr.wcs.crval = astr['crval']
+    wcs_astr = WCS(naxis=2)
+    wcs_astr.wcs.cdelt = astr["cdelt"]
+    # AstroPy ctype requires a list of python string objects, NumPy string objects will not work
+    wcs_astr.wcs.ctype = [str(projection) for projection in astr["ctype"]]
+    wcs_astr.wcs.crpix = astr["crpix"]
+    wcs_astr.wcs.crval = astr["crval"]
+    wcs_astr.wcs.equinox = astr["equinox"]
+    wcs_astr.wcs.mjdobs = astr["mjdobs"]
+    wcs_astr.wcs.dateobs = astr["dateobs"]
+    wcs_astr.wcs.radesys = astr["radecsys"]
+    wcs_astr.wcs.set_pv(
+        [
+            (1, 1, astr["pv1"][1]),
+            (1, 2, astr["pv1"][2]),
+            (1, 3, astr["pv1"][3]),
+            (1, 4, astr["pv1"][4]),
+            (2, 1, astr["pv2"][0]),
+            (2, 2, astr["pv2"][1]),
+        ]
+    )
     radec = wcs_astr.pixel_to_world(x, y)
 
     return radec.ra, radec.dec
