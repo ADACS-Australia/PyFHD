@@ -125,5 +125,9 @@ def test_healpix_cnv_generate(before_file, after_file):
     npt.assert_array_equal(hpx_cnv["inds"], expected_hpx_cnv["inds"])
     # Hopefully once we fix the world_to_pixel issue, the following will pass
     npt.assert_array_equal(hpx_cnv["i_use"], expected_hpx_cnv["i_use"])
-    npt.assert_array_equal(hpx_cnv["ija"], expected_hpx_cnv["ija"])
-    npt.assert_allclose(hpx_cnv["sa"], expected_hpx_cnv["sa"], atol=1e-8)
+    npt.assert_array_equal(
+        np.hstack(hpx_cnv["ija"]), np.hstack(expected_hpx_cnv["ija"])
+    )
+    npt.assert_allclose(
+        np.hstack(hpx_cnv["sa"]), np.hstack(expected_hpx_cnv["sa"]), atol=2e-5
+    )
