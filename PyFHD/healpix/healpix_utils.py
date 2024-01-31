@@ -406,7 +406,7 @@ def phase_shift_uv_image(obs: dict) -> NDArray[np.complex128]:
 
     x, y = radec_to_pixel(ra_use, dec_use, obs["astr"])
 
-    # uv_mask is not applied in PyFHD decided not to translate it, if you want it put it here
+    # uv_mask is not applied in FHD examples or docs decided not to translate it, if you want it put it here
 
     dx = (x - (obs["dimension"] / 2)) * (2 * np.pi / obs["dimension"])
     dy = (y - (obs["elements"] / 2)) * (2 * np.pi / obs["dimension"])
@@ -504,33 +504,38 @@ def vis_model_freq_split(
         rephase_use = 1
     # No x_range and y_range is used in PyFHD, if you wish to do that add that here
 
-    flag_test = np.maximum(np.maximum(vis_weights[0], vis_weights[1]), 0)
-    # Double check the axis used
-    flag_test = np.sum(flag_test, axis=1)
-    bi_use = np.where(flag_test > 0)[0]
+    if bi_use is None:
+        if obs["n_pol"] > 1:
+            flag_test = np.maximum(np.maximum(vis_weights[0], vis_weights[1]), 0)
+            # Double check the axis used
+            flag_test = np.sum(flag_test, axis=1)
+            bi_use = np.where(flag_test > 0)[0]
+        else:
+            flag_test = np.maximum(vis_weights[0], 0)
+            flag_test = np.sum(flag_test, axis=1)
+            bi_use = np.where(flag_test > 0)[0]
 
     for pol_i in range(obs["n_pol"]):
         n_vis_use = 0
         for fi in range(nf):
             fi_use = np.where(
                 (freq_bin_i2 == fi) & (obs["baseline_info"]["freq_use"] > 0)
-            )
+            )[0]
             if np.size(fi_use) == 0:
-                n_vis = 0
-            else:
-                gridding_dict = visibility_grid(
-                    vis_arr[pol_i],
-                    vis_weights[pol_i],
-                    obs,
-                    psf,
-                    params,
-                    pol_i,
-                    pyfhd_config,
-                    logger,
-                    model=vis_model_arr[pol_i],
-                    fi_use=fi_use,
-                    bi_use=bi_use,
-                )
+                continue
+            gridding_dict = visibility_grid(
+                vis_arr[pol_i],
+                vis_weights[pol_i],
+                obs,
+                psf,
+                params,
+                pol_i,
+                pyfhd_config,
+                logger,
+                model=vis_model_arr[pol_i],
+                fi_use=fi_use,
+                bi_use=bi_use,
+            )
             n_vis_use += gridding_dict["n_vis"]
             vis_n_arr[pol_i, fi] = gridding_dict["n_vis"]
 
@@ -550,42 +555,34 @@ def vis_model_freq_split(
 
             if fft:
                 # No x_range and y_range hence no check for it here
-                dirty_arr[pol_i, fi] = (
-                    dirty_image_generate(
-                        gridding_dict["image_uv"],
-                        pyfhd_config,
-                        logger,
-                        degpix=obs["degpix"],
-                    )
-                    * gridding_dict["n_vis"]
+                dirty_arr[pol_i, fi], _, _ = dirty_image_generate(
+                    gridding_dict["image_uv"],
+                    pyfhd_config,
+                    logger,
+                    degpix=obs["degpix"],
                 )
-                weights_arr[pol_i, fi] = (
-                    dirty_image_generate(
-                        gridding_dict["weights"] * rephase_use,
-                        pyfhd_config,
-                        logger,
-                        degpix=obs["degpix"],
-                    )
-                    * gridding_dict["n_vis"]
+                dirty_arr[pol_i, fi] *= gridding_dict["n_vis"]
+                weights_arr[pol_i, fi], _, _ = dirty_image_generate(
+                    gridding_dict["weights"] * rephase_use,
+                    pyfhd_config,
+                    logger,
+                    degpix=obs["degpix"],
                 )
-                variance_arr[pol_i, fi] = (
-                    dirty_image_generate(
-                        gridding_dict["variance"] * rephase_use,
-                        pyfhd_config,
-                        logger,
-                        degpix=obs["degpix"],
-                    )
-                    * gridding_dict["n_vis"]
+                weights_arr[pol_i, fi] *= gridding_dict["n_vis"]
+                variance_arr[pol_i, fi], _, _ = dirty_image_generate(
+                    gridding_dict["variance"] * rephase_use,
+                    pyfhd_config,
+                    logger,
+                    degpix=obs["degpix"],
                 )
-                model_arr[pol_i, fi] = (
-                    dirty_image_generate(
-                        gridding_dict["model_return"] * gridding_dict["n_vis"],
-                        pyfhd_config,
-                        logger,
-                        degpix=obs["degpix"],
-                    )
-                    * gridding_dict["n_vis"]
+                variance_arr[pol_i, fi] *= gridding_dict["n_vis"]
+                model_arr[pol_i, fi], _, _ = dirty_image_generate(
+                    gridding_dict["model_return"] * gridding_dict["n_vis"],
+                    pyfhd_config,
+                    logger,
+                    degpix=obs["degpix"],
                 )
+                model_arr[pol_i, fi] *= gridding_dict["n_vis"]
             else:
                 dirty_arr[pol_i, fi] = (
                     gridding_dict["image_uv"] * gridding_dict["n_vis"]
