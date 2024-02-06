@@ -8,12 +8,13 @@ from colorama import Style
 from PyFHD.io.pyfhd_io import save
 from numpy.typing import NDArray
 
+
 def get_data(data_dir: Path, data_filename: str, *args: list[str]) -> list:
     """
-    This function is designed to read npy or sav files in a 
+    This function is designed to read npy or sav files in a
     data directory inside test_fhd_*. Ensure the data file
     has been made with the scripts inside the scripts directory.
-    Use splitter.py to put the files and directories in the right 
+    Use splitter.py to put the files and directories in the right
     format if you have used histogram runner and rebin runner.
     Paths are expected to be of data_dir/data/function_name/[data,expected]_filename.npy
     data_dir is given by pytest-datadir, it should be the directory where the test file is in.
@@ -26,7 +27,7 @@ def get_data(data_dir: Path, data_filename: str, *args: list[str]) -> list:
         The name of the file for the input
     *args : list[str]
         If given, is expected to be more filenames
-    
+
     Returns
     -------
     return_list: list
@@ -34,7 +35,7 @@ def get_data(data_dir: Path, data_filename: str, *args: list[str]) -> list:
     """
     # Put as Paths and read the files
     input_path = Path(data_dir, data_filename)
-    if input_path.suffix == '.sav':
+    if input_path.suffix == ".sav":
         input = readsav(input_path, python_dict=True)
     else:
         input = np.load(input_path, allow_pickle=True)
@@ -42,7 +43,7 @@ def get_data(data_dir: Path, data_filename: str, *args: list[str]) -> list:
         return_list = [input]
         for file in args:
             path = Path(data_dir, file)
-            if path.suffix == '.sav':
+            if path.suffix == ".sav":
                 output = readsav(path, python_dict=True)
             else:
                 output = np.load(path, allow_pickle=True)
@@ -50,7 +51,8 @@ def get_data(data_dir: Path, data_filename: str, *args: list[str]) -> list:
         return return_list
     # Return the input and expected
     return input
-    
+
+
 def get_data_items(data_dir: Path, data_with_item_path: Path, *args: list[str]) -> list:
     """
     Takes all the path inputs from tests and processes them so they're ready for use.
@@ -84,8 +86,9 @@ def get_data_items(data_dir: Path, data_with_item_path: Path, *args: list[str]) 
             item_in_data = data.item().get(key)
             return_list.append(item_in_data)
         return return_list
-    #Return them
+    # Return them
     return item
+
 
 def get_data_sav(data_dir: Path, sav_file: Path, *args: list[Path]) -> list:
     """
@@ -120,6 +123,7 @@ def get_data_sav(data_dir: Path, sav_file: Path, *args: list[Path]) -> list:
         return return_list
     return data
 
+
 def get_savs(data_dir: Path, sav_file: Path, *args: list[Path]) -> dict | list[dict]:
     """
     Takes in the path for many sav files and reads them without
@@ -148,11 +152,14 @@ def get_savs(data_dir: Path, sav_file: Path, *args: list[Path]) -> dict | list[d
             data.append(new_data)
     return data
 
-def try_assert_all_close(actual : NDArray, target : NDArray, name : str, tolerance = 1e-8) -> None:
+
+def try_assert_all_close(
+    actual: NDArray, target: NDArray, name: str, tolerance=1e-8
+) -> None:
     """
     Uses the numpy testing assert_all_close but uses a try and except wrapper around it to print
     the error instead of doing an AssertionError which stops the running of the program. This is helpful
-    when doing testing with expected precision errors, but wanting to avoid stopping the program or constantly 
+    when doing testing with expected precision errors, but wanting to avoid stopping the program or constantly
     setting the tolerances on multiple assert statements.
 
     Parameters
@@ -166,17 +173,30 @@ def try_assert_all_close(actual : NDArray, target : NDArray, name : str, toleran
     tolerance : float, optional
         This is the tolerance for the error in absolute values, by default 1e-8
     """
-    try :
-        npt.assert_allclose(actual, target, atol = tolerance)
-        print(Fore.GREEN + Style.BRIGHT + "Test Passed for {}".format(name) + Style.RESET_ALL)
+    try:
+        npt.assert_allclose(actual, target, atol=tolerance)
+        print(
+            Fore.GREEN
+            + Style.BRIGHT
+            + "Test Passed for {}".format(name)
+            + Style.RESET_ALL
+        )
     except AssertionError as error:
-        print(Fore.RED + Style.BRIGHT + "Test Failed for {}:".format(name) + Style.RESET_ALL + "{}".format(error) + Style.RESET_ALL)
+        print(
+            Fore.RED
+            + Style.BRIGHT
+            + "Test Failed for {}:".format(name)
+            + Style.RESET_ALL
+            + "{}".format(error)
+            + Style.RESET_ALL
+        )
+
 
 def convert_to_h5(test_path: Path, save_path: Path, *args: list[Path]) -> None:
     """
     For every file specified as an arg, read the file from the test_path into a python dictionary.
     If it's a dict or recarray that contaisn recarrays, convert all the recarrays using recarray_to_dict.
-    The files can be .npy or .sav files. The python dict will then be written into a HDF5 file for testing 
+    The files can be .npy or .sav files. The python dict will then be written into a HDF5 file for testing
     purposes.
 
     This function was made to convert many of the .npy and .sav files into something that can be read and written more
@@ -194,17 +214,18 @@ def convert_to_h5(test_path: Path, save_path: Path, *args: list[Path]) -> None:
     to_save = {}
     # Process the file differently depending on whether its IDL or numpy files
     for file in args:
-        if (file.endswith('.sav')):
-            var = readsav(Path(test_path, file), python_dict = True)
+        if file.endswith(".sav"):
+            var = readsav(Path(test_path, file), python_dict=True)
             # Convert to nested dictionaries
             var = recarray_to_dict(var)
-        elif(file.endswith('.npy')):
+        elif file.endswith(".npy"):
             var = np.load(Path(test_path, file), allow_pickle=True).item()
         for key in var:
             to_save[key] = var[key]
     save(save_path, to_save, "to_save")
 
-def sav_file_vis_arr_swap_axes(sav_file_vis_arr : NDArray) -> NDArray:
+
+def sav_file_vis_arr_swap_axes(sav_file_vis_arr: NDArray) -> NDArray:
     """After saving arrays from IDL like `vis_arr` and `vis_model_arr` into
     and IDL .sav file, and subsequently loading in via scipy.io.readsav,
     they come out in a shape/format unsuitable for PyFHD. Use this function
@@ -223,20 +244,22 @@ def sav_file_vis_arr_swap_axes(sav_file_vis_arr : NDArray) -> NDArray:
 
     n_pol = sav_file_vis_arr.shape[0]
 
-    vis_arr = np.empty((n_pol, sav_file_vis_arr[0].shape[1],
-                               sav_file_vis_arr[0].shape[0]),
-                               dtype=sav_file_vis_arr[0].dtype)
+    vis_arr = np.empty(
+        (n_pol, sav_file_vis_arr[0].shape[1], sav_file_vis_arr[0].shape[0]),
+        dtype=sav_file_vis_arr[0].dtype,
+    )
 
     for pol in range(n_pol):
         vis_arr[pol, :, :] = sav_file_vis_arr[pol].transpose()
 
     return vis_arr
 
+
 def print_types(dictionary: dict, dict_name: str, indent_level: int = 1) -> None:
     """
     When generating the tests, Sometimes I'd find it useful to see the types of all the keys and value pairs inside
-    the dictionary I'm manipulating. The Debug mode is helpful for this too, but this can be easily used 
-    inside a notebook if experimenting in there too. 
+    the dictionary I'm manipulating. The Debug mode is helpful for this too, but this can be easily used
+    inside a notebook if experimenting in there too.
 
     Parameters
     ----------
@@ -250,13 +273,19 @@ def print_types(dictionary: dict, dict_name: str, indent_level: int = 1) -> None
     for key in dictionary.keys():
         # Print this if it's a NumPy array
         if type(dictionary[key]) == np.ndarray:
-            print(f"{dict_name}[{key}] : {dictionary[key].dtype} {dictionary[key].shape}\n{indent_level * 2 * ' '}Inside Type: {type(dictionary[key][0])}")
+            print(
+                f"{dict_name}[{key}] : {dictionary[key].dtype} {dictionary[key].shape}\n{indent_level * 2 * ' '}Inside Type: {type(dictionary[key][0])}"
+            )
             if type(dictionary[key][0]) == np.ndarray:
-                print(f"{indent_level * 2 * ' '}NumPy Array Dtype: {dictionary[key][0].dtype}")
+                print(
+                    f"{indent_level * 2 * ' '}NumPy Array Dtype: {dictionary[key][0].dtype}"
+                )
         # Recursively call the function on another sub dict
         elif type(dictionary[key]) == dict:
             print(f"{dict_name}[{key}]  : {type(dictionary[key])}")
-            print_types(dictionary[key], dict_name=f"  {key}", indent_level=indent_level + 2)
+            print_types(
+                dictionary[key], dict_name=f"  {key}", indent_level=indent_level + 2
+            )
         # If it's an object, might be useful to print the value
         elif type(dictionary[key]) == object:
             print(f"{dict_name}[{key}]  : {type(dictionary[key])}")

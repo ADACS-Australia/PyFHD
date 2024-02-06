@@ -10,95 +10,104 @@ from PyFHD.io.pyfhd_io import save, load
 import numpy.testing as npt
 import matplotlib.pyplot as plt
 
+
 @pytest.fixture
 def data_dir():
-    return Path(env.get('PYFHD_TEST_PATH'), "vis_cal_auto_fit")
+    return Path(env.get("PYFHD_TEST_PATH"), "vis_cal_auto_fit")
 
-@pytest.fixture(scope="function", params=['point_zenith','point_offzenith', '1088716296'])
+
+@pytest.fixture(
+    scope="function", params=["point_zenith", "point_offzenith", "1088716296"]
+)
 def tag(request):
     return request.param
 
-@pytest.fixture(scope="function", params=['run1', 'run2', 'run3'])
+
+@pytest.fixture(scope="function", params=["run1", "run2", "run3"])
 def run(request):
     return request.param
 
-skip_tests = [
-    ['1088716296', "run1"],
-    ['1088716296', "run2"],
-    ['1088716296', "run3"]
-]
+
+skip_tests = [["1088716296", "run1"], ["1088716296", "run2"], ["1088716296", "run3"]]
+
 
 @pytest.fixture()
 def before_file(tag, run, data_dir):
-    if ([tag, run] in skip_tests):
+    if [tag, run] in skip_tests:
         return None
     before_file = Path(data_dir, f"{tag}_{run}_before_{data_dir.name}.h5")
     # If the h5 file already exists and has been created, return the path to it
     if before_file.exists():
         return before_file
-    
-    sav_file = before_file.with_suffix('.sav')
+
+    sav_file = before_file.with_suffix(".sav")
     sav_dict = convert_sav_to_dict(str(sav_file), "faked")
 
-    obs = recarray_to_dict(sav_dict['obs'])
-    cal = recarray_to_dict(sav_dict['cal'])
+    obs = recarray_to_dict(sav_dict["obs"])
+    cal = recarray_to_dict(sav_dict["cal"])
 
-    #Swap the freq and tile dimensions
-    #this make shape (n_pol, n_freq, n_tile)
-    cal['gain'] = sav_file_vis_arr_swap_axes(cal['gain'])
+    # Swap the freq and tile dimensions
+    # this make shape (n_pol, n_freq, n_tile)
+    cal["gain"] = sav_file_vis_arr_swap_axes(cal["gain"])
 
-    #super dictionary to save everything in
+    # super dictionary to save everything in
     h5_save_dict = {}
-    h5_save_dict['obs'] = obs
-    h5_save_dict['cal'] = cal
-    h5_save_dict['vis_auto'] = sav_file_vis_arr_swap_axes(sav_dict['vis_auto'])
-    h5_save_dict['vis_model_auto'] = sav_file_vis_arr_swap_axes(sav_dict['vis_model_auto'])
-    h5_save_dict['auto_tile_i'] = sav_dict['auto_tile_i']
+    h5_save_dict["obs"] = obs
+    h5_save_dict["cal"] = cal
+    h5_save_dict["vis_auto"] = sav_file_vis_arr_swap_axes(sav_dict["vis_auto"])
+    h5_save_dict["vis_model_auto"] = sav_file_vis_arr_swap_axes(
+        sav_dict["vis_model_auto"]
+    )
+    h5_save_dict["auto_tile_i"] = sav_dict["auto_tile_i"]
     # Del ragged array
-    del h5_save_dict['cal']['mode_params']
+    del h5_save_dict["cal"]["mode_params"]
 
     save(before_file, h5_save_dict, "before_file")
 
     return before_file
 
+
 @pytest.fixture()
 def after_file(tag, run, data_dir):
-    if ([tag, run] in skip_tests):
+    if [tag, run] in skip_tests:
         return None
     after_file = Path(data_dir, f"{tag}_{run}_after_{data_dir.name}.h5")
     # If the h5 file already exists and has been created, return the path to it
     if after_file.exists():
         return after_file
-    
-    sav_file = after_file.with_suffix('.sav')
+
+    sav_file = after_file.with_suffix(".sav")
     sav_dict = convert_sav_to_dict(str(sav_file), "faked")
 
-    cal_fit = recarray_to_dict(sav_dict['cal_fit'])
-        
+    cal_fit = recarray_to_dict(sav_dict["cal_fit"])
+
     # Swap the freq and tile dimensions
     # this make shape (n_pol, n_freq, n_tile)
-    cal_fit['gain'] = sav_file_vis_arr_swap_axes(cal_fit['gain'])
+    cal_fit["gain"] = sav_file_vis_arr_swap_axes(cal_fit["gain"])
     # Delete ragged array
-    del cal_fit['mode_params']
+    del cal_fit["mode_params"]
 
     save(after_file, cal_fit, "after_file")
 
     return after_file
 
+
 def test_vis_cal_auto_fit(before_file, after_file, data_dir):
     """Runs the test on `vis_cal_bandpass` - reads in the data in `data_loc`,
     and then calls `vis_cal_bandpass`, checking the outputs match expectations"""
-    if (before_file == None or after_file == None):
-        pytest.skip(f"This test has been skipped because the test was listed in the skipped tests due to FHD not outputting them: {skip_tests}")
+    if before_file == None or after_file == None:
+        pytest.skip(
+            f"This test has been skipped because the test was listed in the skipped tests due to FHD not outputting them: {skip_tests}"
+        )
 
     h5_before = load(before_file)
     expected_cal_fit = load(after_file)
 
-    obs = h5_before['obs']
-    cal = h5_before['cal']
-    vis_auto = h5_before['vis_auto']
-    vis_model_auto = h5_before['vis_model_auto']
-    auto_tile_i = h5_before['auto_tile_i']
+    obs = h5_before["obs"]
+    cal = h5_before["cal"]
+    vis_auto = h5_before["vis_auto"]
+    vis_model_auto = h5_before["vis_model_auto"]
+    auto_tile_i = h5_before["auto_tile_i"]
 
     return_cal_fit = vis_cal_auto_fit(obs, cal, vis_auto, vis_model_auto, auto_tile_i)
 
@@ -106,7 +115,6 @@ def test_vis_cal_auto_fit(before_file, after_file, data_dir):
 
     # Plots have been made already testing this against FHD, uncomment to regenerate them.
 
-    
     # auto_scale is nan, nan from FHD and Python, can't compare them due to the nans
     # assert np.array_equal(return_cal_fit['auto_scale'], expected_cal_fit['auto_scale'])
     # cal_fit['auto_params'] came in as an object array
@@ -150,5 +158,5 @@ def test_vis_cal_auto_fit(before_file, after_file, data_dir):
     # npt.assert_allclose(return_cal_fit['auto_params'], auto_params,
     #                     rtol=rtol, atol=atol)
 
-    # npt.assert_allclose(return_cal_fit['gain'], expected_cal_fit['gain'], 
+    # npt.assert_allclose(return_cal_fit['gain'], expected_cal_fit['gain'],
     #                     rtol=rtol, atol=atol)

@@ -12,7 +12,10 @@ from scipy.io import readsav
 from pathlib import Path
 import sys
 
-def vis_model_transfer(pyfhd_config: dict, obs : dict, logger: logging.Logger) -> tuple[NDArray[np.complex128], dict]:
+
+def vis_model_transfer(
+    pyfhd_config: dict, obs: dict, logger: logging.Logger
+) -> tuple[NDArray[np.complex128], dict]:
     """
     Transfer in a simulated model of the visibilities from either a sav file or uvfits file.
 
@@ -25,7 +28,7 @@ def vis_model_transfer(pyfhd_config: dict, obs : dict, logger: logging.Logger) -
 
     Returns
     -------
-    vis_model_arr : NDArray[np.complex128] 
+    vis_model_arr : NDArray[np.complex128]
         Simulated model for the visibilities
     params_model : dict
         The parameters for said model used for flagging
@@ -35,15 +38,18 @@ def vis_model_transfer(pyfhd_config: dict, obs : dict, logger: logging.Logger) -
     PyFHD.source_modeling.vis_model_transfer.import_vis_model_from_sav : Import model from a sav file
     PyFHD.source_modeling.vis_model_transfer.import_vis_model_from_uvfits : Import model from a uvfits file
     """
-    if (pyfhd_config['model_file_type'] == 'sav'):
+    if pyfhd_config["model_file_type"] == "sav":
         return import_vis_model_from_sav(pyfhd_config, obs, logger)
-    elif (pyfhd_config['model_file_type'] == 'uvfits'):
+    elif pyfhd_config["model_file_type"] == "uvfits":
         return import_vis_model_from_uvfits(pyfhd_config, obs, logger)
     else:
         logger.error("You chose a file type PyFHD can't import, existing")
         sys.exit()
-    
-def import_vis_model_from_sav(pyfhd_config : dict, obs : dict, logger : logging.Logger) -> tuple[NDArray[np.complex128], dict]:
+
+
+def import_vis_model_from_sav(
+    pyfhd_config: dict, obs: dict, logger: logging.Logger
+) -> tuple[NDArray[np.complex128], dict]:
     """
     Read a model visibility array in from multiple IDL sav files which are in a directory
     given by pyfhd_config['model-file-path']. The data is assumed to be in the format of
@@ -61,21 +67,26 @@ def import_vis_model_from_sav(pyfhd_config : dict, obs : dict, logger : logging.
 
     Returns
     -------
-    vis_model_arr : NDArray[np.complex128] 
+    vis_model_arr : NDArray[np.complex128]
         Simulated model for the visibilities
     params_model : dict
         The parameters for said model used for flagging
     """
-    try: 
-        path = Path(pyfhd_config['model_file_path'], f"{pyfhd_config['obs_id']}_params.sav")
+    try:
+        path = Path(
+            pyfhd_config["model_file_path"], f"{pyfhd_config['obs_id']}_params.sav"
+        )
         params_model = readsav(path)
         params_model = recarray_to_dict(params_model.params)
         # Read in the first polarization from pol_names
         pol_i = 0
-        path = Path(pyfhd_config['model_file_path'], f"{pyfhd_config['obs_id']}_vis_model_{obs['pol_names'][pol_i]}.sav")
+        path = Path(
+            pyfhd_config["model_file_path"],
+            f"{pyfhd_config['obs_id']}_vis_model_{obs['pol_names'][pol_i]}.sav",
+        )
         curr_vis_model = readsav(path)
         if isinstance(curr_vis_model, dict):
-            curr_vis_model = curr_vis_model['vis_model_ptr']
+            curr_vis_model = curr_vis_model["vis_model_ptr"]
         elif isinstance(curr_vis_model, np.recarray):
             curr_vis_model = curr_vis_model.vis_model_ptr
         # Sometimes arrays a packed in via a pointer, if so extract it
@@ -83,14 +94,17 @@ def import_vis_model_from_sav(pyfhd_config : dict, obs : dict, logger : logging.
             curr_vis_model = curr_vis_model[0]
         curr_vis_model = curr_vis_model.transpose().astype(np.complex128)
         # The shape should be n_pol, n_freq, n_time * n_baselines
-        vis_model_shape = [obs['n_pol']] + list(curr_vis_model.shape)
+        vis_model_shape = [obs["n_pol"]] + list(curr_vis_model.shape)
         vis_model_arr = np.empty(vis_model_shape, dtype=np.complex128)
         vis_model_arr[pol_i] = curr_vis_model
-        for pol_i in range(1, obs['n_pol']):
-            path = Path(pyfhd_config['model_file_path'], f"{pyfhd_config['obs_id']}_vis_model_{obs['pol_names'][pol_i]}.sav")
+        for pol_i in range(1, obs["n_pol"]):
+            path = Path(
+                pyfhd_config["model_file_path"],
+                f"{pyfhd_config['obs_id']}_vis_model_{obs['pol_names'][pol_i]}.sav",
+            )
             curr_vis_model = readsav(path)
             if isinstance(curr_vis_model, dict):
-                curr_vis_model = curr_vis_model['vis_model_ptr']
+                curr_vis_model = curr_vis_model["vis_model_ptr"]
             elif isinstance(curr_vis_model, np.recarray):
                 # Should be a rec array containing one item vis_model_ptr
                 curr_vis_model = curr_vis_model.vis_model_ptr
@@ -99,14 +113,18 @@ def import_vis_model_from_sav(pyfhd_config : dict, obs : dict, logger : logging.
                 curr_vis_model = curr_vis_model[0]
             vis_model_arr[pol_i] = curr_vis_model.transpose().astype(np.complex128)
     except FileNotFoundError as e:
-            logger.error(f"PyFHD failed to load in the model visibilities while trying to transfer in file: {path} as the file wasn't found. PyFHD is exiting execution")
-            exit()
+        logger.error(
+            f"PyFHD failed to load in the model visibilities while trying to transfer in file: {path} as the file wasn't found. PyFHD is exiting execution"
+        )
+        exit()
     return vis_model_arr, params_model
 
-def import_vis_model_from_uvfits(pyfhd_config : dict, obs : dict,
-                                 logger : logging.Logger) -> tuple[NDArray[np.complex128], dict]:
+
+def import_vis_model_from_uvfits(
+    pyfhd_config: dict, obs: dict, logger: logging.Logger
+) -> tuple[NDArray[np.complex128], dict]:
     """Read a model visibility array in from a `uvfits` with filepath given
-    by pyfhd_config['model_file_path']. Reads data in via 
+    by pyfhd_config['model_file_path']. Reads data in via
     `PyFHD.data_setup.uvfits import extract_visibilities`.
 
     Parameters
@@ -119,47 +137,53 @@ def import_vis_model_from_uvfits(pyfhd_config : dict, obs : dict,
 
     Returns
     -------
-    vis_model_arr : NDArray[np.complex128] 
+    vis_model_arr : NDArray[np.complex128]
         Simulated model for the visibilities
     params_model : dict
         The parameters for said model used for flagging
     """
-    
-    header_model, params_data_model, _, _ = extract_header(pyfhd_config, logger, model_uvfits=True)
 
-    if header_model['n_freq'] != obs['n_freq']:
-        model_path = pyfhd_config['model_file_path']
-        logger.error(f"The obs was expecting {obs['n_freq']} frequencies, "
-                     f"but the model visibilities read in from {model_path} "
-                     f"contain {header_model['n_freq']} freqs. Please supply "
-                     "model visibilities that match the data. Exiting now.")
+    header_model, params_data_model, _, _ = extract_header(
+        pyfhd_config, logger, model_uvfits=True
+    )
+
+    if header_model["n_freq"] != obs["n_freq"]:
+        model_path = pyfhd_config["model_file_path"]
+        logger.error(
+            f"The obs was expecting {obs['n_freq']} frequencies, "
+            f"but the model visibilities read in from {model_path} "
+            f"contain {header_model['n_freq']} freqs. Please supply "
+            "model visibilities that match the data. Exiting now."
+        )
         exit()
 
     params_model = create_params(header_model, params_data_model, logger)
-        
-    vis_model_arr, _ = extract_visibilities(header_model, params_data_model,
-                                            pyfhd_config, logger)
-    
+
+    vis_model_arr, _ = extract_visibilities(
+        header_model, params_data_model, pyfhd_config, logger
+    )
+
     return vis_model_arr, params_model
+
 
 class _FlaggingInfoCounter(object):
     """Something to count and hold numbers to do with baselines"""
 
-    def __init__(self, params : dict):
+    def __init__(self, params: dict):
         """
         Given a populated `params` dict (as populated by
         `PyFHD.data_setup.uvfits.create_params`), calculate many useful quantities
         to do with antenna (tile) names and numbers, expected number of cross and
-        auto correlations etc. 
+        auto correlations etc.
         """
 
-        self.unique_times = np.unique(params['time'])
+        self.unique_times = np.unique(params["time"])
         self.num_times = len(self.unique_times)
 
-        ant_names1 = np.unique(params['antenna1'])
-        ant_names2 = np.unique(params['antenna2'])
+        ant_names1 = np.unique(params["antenna1"])
+        ant_names2 = np.unique(params["antenna2"])
 
-        self.num_visis = len(params['antenna1'])
+        self.num_visis = len(params["antenna1"])
 
         # If there are no auto-correlations, you don't get every unique tile
         # in either antenna1 or antenna2, so do a unique on both of them to be sure
@@ -167,38 +191,47 @@ class _FlaggingInfoCounter(object):
         self.num_ants = len(self.ant_names)
 
         # indexes of the auto-correlations
-        self.auto_locs = params['antenna1'] == params['antenna2']
+        self.auto_locs = params["antenna1"] == params["antenna2"]
         self.num_autos = np.count_nonzero(self.auto_locs)
 
         if self.num_autos == 0:
             self.num_autos_per_time = 0
         else:
             self.num_autos_per_time = self.num_ants
-            
+
         # indexes of the cross-correlations
-        self.cross_locs = params['antenna1'] != params['antenna2']
-        
+        self.cross_locs = params["antenna1"] != params["antenna2"]
+
         # how many cross-correlations there should be per time step
-        self.num_cross_per_time = int((self.num_ants*(self.num_ants - 1)) / 2)
+        self.num_cross_per_time = int((self.num_ants * (self.num_ants - 1)) / 2)
 
         # number of visibilities per time step
         self.num_visi_per_time_step = self.num_cross_per_time + self.num_autos_per_time
 
         # within a single time step, where the cross-correlations are indexed
         # can use this while iterating over time to select the crosses only
-        self.cross_locs_per_time = np.where(self.cross_locs[:self.num_visi_per_time_step])[0]
+        self.cross_locs_per_time = np.where(
+            self.cross_locs[: self.num_visi_per_time_step]
+        )[0]
 
         # within a single time step, where the cross-correlations are indexed
         # can use this while iterating over time to select the crosses only
-        self.auto_locs_per_time = np.where(self.auto_locs[:self.num_visi_per_time_step])[0]
+        self.auto_locs_per_time = np.where(
+            self.auto_locs[: self.num_visi_per_time_step]
+        )[0]
 
-        self.ant1_single_time = params['antenna1'][:self.num_visi_per_time_step]
-        self.ant2_single_time = params['antenna2'][:self.num_visi_per_time_step]
+        self.ant1_single_time = params["antenna1"][: self.num_visi_per_time_step]
+        self.ant2_single_time = params["antenna2"][: self.num_visi_per_time_step]
 
-def flag_model_visibilities(vis_model_arr : NDArray[np.complex128],
-                            params_data : dict, params_model : dict,
-                            obs : dict, pyfhd_config : dict,
-                            logger : logging.Logger) -> NDArray[np.complex128]:
+
+def flag_model_visibilities(
+    vis_model_arr: NDArray[np.complex128],
+    params_data: dict,
+    params_model: dict,
+    obs: dict,
+    pyfhd_config: dict,
+    logger: logging.Logger,
+) -> NDArray[np.complex128]:
     """
     Account for time offset and tile flags, and check that the uvfits
     and compatible. Needs to check if auto-correlations are present
@@ -222,7 +255,7 @@ def flag_model_visibilities(vis_model_arr : NDArray[np.complex128],
     -------
     vis_model_arr_flagged: NDArray[np.complex128]
         The flagged model visibility array
-    """    
+    """
 
     # TODO - check if auto-correlations are present. If not, turn off
     # auto-correlation calibration options
@@ -236,8 +269,10 @@ def flag_model_visibilities(vis_model_arr : NDArray[np.complex128],
     # be consistently offset because of QUACK time
     time_offsets = []
     for time in flaginfo_data.unique_times:
-        #convert from julian to seconds via 24*60*60
-        time_offsets.append(np.min(np.abs(flaginfo_model.unique_times - time))*(24.0*60*60))
+        # convert from julian to seconds via 24*60*60
+        time_offsets.append(
+            np.min(np.abs(flaginfo_model.unique_times - time)) * (24.0 * 60 * 60)
+        )
 
     # The highest time resolution data we'll be dealing with. If the offset is
     # less than half of this, could be error in calculations rather than an
@@ -252,10 +287,15 @@ def flag_model_visibilities(vis_model_arr : NDArray[np.complex128],
     # If offset is big enough to be real, but smaller than half an integration
     # that add the `rounded_offset` (our calculated QUACK time) to the model
     # to work out which time steps are closest between model and data
-    if rounded_offset >= min_integration / 2.0 and rounded_offset <= obs['time_res'] / 2.0:
-        flaginfo_model.unique_times += rounded_offset / (24.0*60*60)
+    if (
+        rounded_offset >= min_integration / 2.0
+        and rounded_offset <= obs["time_res"] / 2.0
+    ):
+        flaginfo_model.unique_times += rounded_offset / (24.0 * 60 * 60)
 
-    logger.warning(f"Model time stamps are offset from data by an average of {rounded_offset}. Accounting for this to match model time steps to data")
+    logger.warning(
+        f"Model time stamps are offset from data by an average of {rounded_offset}. Accounting for this to match model time steps to data"
+    )
 
     model_times_to_use = []
     for time in flaginfo_data.unique_times:
@@ -269,26 +309,30 @@ def flag_model_visibilities(vis_model_arr : NDArray[np.complex128],
     # have the same time resolution so something bad has happened
     if flaginfo_data.num_times != len(np.unique(model_times_to_use)):
 
-        data_path = pyfhd_config['input_path'], pyfhd_config['obs_id'] + '.uvfits'
-        model_path = pyfhd_config['import_model_uvfits']
-        logger.error(f"Could not match the time steps in the data uvfits: {data_path}"
-                     f" and model uvfits {model_path}. Please check the model "
-                     "and try again. Exiting now.")
+        data_path = pyfhd_config["input_path"], pyfhd_config["obs_id"] + ".uvfits"
+        model_path = pyfhd_config["import_model_uvfits"]
+        logger.error(
+            f"Could not match the time steps in the data uvfits: {data_path}"
+            f" and model uvfits {model_path}. Please check the model "
+            "and try again. Exiting now."
+        )
         exit()
 
     # Now to flag the model - some models have no flagged tiles (antennas),
-    # whereas the data might have flagged tiles (and so missing baselines). 
-    # This means we need to flag the missing tiles out of the data and 
+    # whereas the data might have flagged tiles (and so missing baselines).
+    # This means we need to flag the missing tiles out of the data and
     # reshape the model
 
     # If less antennas in the model than the data, we can't calibrate the whole
     # dataset so just error for now
     if flaginfo_model.num_ants < flaginfo_data.num_ants:
-        model_path = pyfhd_config['import_model_uvfits']
-        logger.error(f"There are less antennas (tiles) in the model uvfits "
-                     f"{model_path} than in the data, so cannot calibrate the "
-                     "whole dataset. Please check the model "
-                     "and try again. Exiting now.")
+        model_path = pyfhd_config["import_model_uvfits"]
+        logger.error(
+            f"There are less antennas (tiles) in the model uvfits "
+            f"{model_path} than in the data, so cannot calibrate the "
+            "whole dataset. Please check the model "
+            "and try again. Exiting now."
+        )
         exit()
 
     # Test to see if there are auto-correlations in data
@@ -297,16 +341,20 @@ def flag_model_visibilities(vis_model_arr : NDArray[np.complex128],
 
     include_autos = True
     if flaginfo_model.num_autos == 0:
-        logger.warning("There are no auto-correlations present in model uvfits; "
-                       "filling with zeros to match data shape, and switching "
-                       "off all auto-correlation calibration")
+        logger.warning(
+            "There are no auto-correlations present in model uvfits; "
+            "filling with zeros to match data shape, and switching "
+            "off all auto-correlation calibration"
+        )
         include_autos = False
 
-    elif flaginfo_model.num_autos < flaginfo_model.num_times*flaginfo_model.num_ants:
-        logger.warning("There are some auto-correlations present in model uvfits, "
-                     "but less than number of antennas times number of time steps. "
-                     "Cannot deal with missing autocorrelations so setting all "
-                     "autos to zero and switching off all auto-correlation calibration")
+    elif flaginfo_model.num_autos < flaginfo_model.num_times * flaginfo_model.num_ants:
+        logger.warning(
+            "There are some auto-correlations present in model uvfits, "
+            "but less than number of antennas times number of time steps. "
+            "Cannot deal with missing autocorrelations so setting all "
+            "autos to zero and switching off all auto-correlation calibration"
+        )
         include_autos = False
 
     # This is where the fun begins - pyuvdata uses the tile number as written
@@ -320,33 +368,38 @@ def flag_model_visibilities(vis_model_arr : NDArray[np.complex128],
 
     flag_indexes = []
 
-
     # if the data just have tile indexes, the maximum should be the number
     # of tiles - use that to work out if we have Birli of pyuvdata input
 
     # we should have a pyuvdata input in this case as a tile name is greater
     # than the number of tiles
-    if np.max(flaginfo_data.ant_names) > len(obs['baseline_info']['tile_names']):
+    if np.max(flaginfo_data.ant_names) > len(obs["baseline_info"]["tile_names"]):
 
         # Loop over all possible antenna (tile) names, and if they're not in the
         # list of antennas in this data set, append to flag_indexes
-        for ant_ind, ant_name in enumerate(obs['baseline_info']['tile_names']):
-            if ant_name not in flaginfo_data.ant_names: flag_indexes.append(ant_ind + 1)
+        for ant_ind, ant_name in enumerate(obs["baseline_info"]["tile_names"]):
+            if ant_name not in flaginfo_data.ant_names:
+                flag_indexes.append(ant_ind + 1)
 
     # tiles are named by their index (1 indexed as per uvfits standard)
     else:
-        for ant_name in range(1, len(obs['baseline_info']['tile_names'])+1):
-            if ant_name not in flaginfo_data.ant_names: flag_indexes.append(ant_name)
+        for ant_name in range(1, len(obs["baseline_info"]["tile_names"]) + 1):
+            if ant_name not in flaginfo_data.ant_names:
+                flag_indexes.append(ant_name)
 
     if len(flag_indexes) > 0:
-        logger.info(f"Found flagged tiles {flag_indexes} in the data, flagging from the model")
+        logger.info(
+            f"Found flagged tiles {flag_indexes} in the data, flagging from the model"
+        )
 
     # This gives us true/false if the visibilities should be included
     # for a single time step based on antenna1 and antenna2
-    include_per_time_ant1 = np.isin(flaginfo_model.ant1_single_time,
-                                          flag_indexes, invert=True)
-    include_per_time_ant2 = np.isin(flaginfo_model.ant2_single_time,
-                                          flag_indexes, invert=True)
+    include_per_time_ant1 = np.isin(
+        flaginfo_model.ant1_single_time, flag_indexes, invert=True
+    )
+    include_per_time_ant2 = np.isin(
+        flaginfo_model.ant2_single_time, flag_indexes, invert=True
+    )
 
     # Doing a logic union combines info from ant1 and ant2
     include_per_time = include_per_time_ant1 & include_per_time_ant2
@@ -361,37 +414,55 @@ def flag_model_visibilities(vis_model_arr : NDArray[np.complex128],
 
     # To get indexes of auto-correlations to use, ensure ant1 == ant2
     # These are now indexes of unflagged auto-correlations to grab from model
-    include_auto_per_time = np.where(flaginfo_model.ant1_single_time[include_per_time] == flaginfo_model.ant2_single_time[include_per_time])[0]
+    include_auto_per_time = np.where(
+        flaginfo_model.ant1_single_time[include_per_time]
+        == flaginfo_model.ant2_single_time[include_per_time]
+    )[0]
 
     # empty holder for the flagged model - this should be the same shape
-    vis_model_arr_flagged = np.zeros((obs['n_pol'], obs['n_freq'],
-                                      flaginfo_data.num_visis),
-                                      dtype=np.complex128)
+    vis_model_arr_flagged = np.zeros(
+        (obs["n_pol"], obs["n_freq"], flaginfo_data.num_visis), dtype=np.complex128
+    )
 
     # For each time step that matches the data, copy across any visibilities
     # that aren't to be flagged
     for t_data_ind, t_model_ind in enumerate(model_times_to_use):
 
         # Subset of cross-corrs from flagged model to select for this time step
-        t_flag_inds = t_data_ind*flaginfo_data.num_visi_per_time_step + flaginfo_data.cross_locs_per_time
+        t_flag_inds = (
+            t_data_ind * flaginfo_data.num_visi_per_time_step
+            + flaginfo_data.cross_locs_per_time
+        )
         # Subset of cross-corrs from full model to select for this time step
-        t_model_inds = t_model_ind*flaginfo_model.num_visi_per_time_step + include_cross_per_time
+        t_model_inds = (
+            t_model_ind * flaginfo_model.num_visi_per_time_step + include_cross_per_time
+        )
         # Stick it in the flagged model
         vis_model_arr_flagged[:, :, t_flag_inds] = vis_model_arr[:, :, t_model_inds]
 
         # If we're doing autocorrelations, jam them in as well
         if include_autos:
-            t_flag_inds = t_data_ind*flaginfo_data.num_visi_per_time_step + flaginfo_data.auto_locs_per_time
-            t_model_inds = t_model_ind*flaginfo_model.num_visi_per_time_step + include_auto_per_time
+            t_flag_inds = (
+                t_data_ind * flaginfo_data.num_visi_per_time_step
+                + flaginfo_data.auto_locs_per_time
+            )
+            t_model_inds = (
+                t_model_ind * flaginfo_model.num_visi_per_time_step
+                + include_auto_per_time
+            )
 
             vis_model_arr_flagged[:, :, t_flag_inds] = vis_model_arr[:, :, t_model_inds]
 
     return vis_model_arr_flagged
 
-def convert_vis_model_arr_to_sav(vis_model_arr : NDArray[np.complex128],
-                                 pyfhd_config : dict,
-                                 logger : logging.Logger,
-                                 model_vis_dir : str, n_pol : int):
+
+def convert_vis_model_arr_to_sav(
+    vis_model_arr: NDArray[np.complex128],
+    pyfhd_config: dict,
+    logger: logging.Logger,
+    model_vis_dir: str,
+    n_pol: int,
+):
     """
     Converts the contents of `vis_model_arr` into an FHD .sav file format
     so we can import into existing IDL code with ease. First writes data to
@@ -414,36 +485,38 @@ def convert_vis_model_arr_to_sav(vis_model_arr : NDArray[np.complex128],
         `.sav` file
     """
 
-    pol_names = ['XX', 'YY', 'XY', 'YX']
+    pol_names = ["XX", "YY", "XY", "YX"]
 
-    logger.info(f"vis_model_transfer: saving {model_vis_dir}/{pyfhd_config['obs_id']}_vis_model.h5")
+    logger.info(
+        f"vis_model_transfer: saving {model_vis_dir}/{pyfhd_config['obs_id']}_vis_model.h5"
+    )
 
-    with h5py.File(f"{model_vis_dir}/{pyfhd_config['obs_id']}_vis_model.h5", 'w') as hf:
+    with h5py.File(f"{model_vis_dir}/{pyfhd_config['obs_id']}_vis_model.h5", "w") as hf:
 
         for pol, pol_name in enumerate(pol_names[:n_pol]):
-            
-            hf.create_dataset(f"{pyfhd_config['obs_id']}_vis_model_{pol_name}",
-                                    data=vis_model_arr[pol].transpose())
-                
+
+            hf.create_dataset(
+                f"{pyfhd_config['obs_id']}_vis_model_{pol_name}",
+                data=vis_model_arr[pol].transpose(),
+            )
+
         hf.close()
 
-    #Grab the template IDL code and transfer so people can see what code was used
-    #and modify if they want
-    model_arr_convert_pro = importlib_resources.files('PyFHD.templates').joinpath('convert_model_arr_to_sav.pro')
+    # Grab the template IDL code and transfer so people can see what code was used
+    # and modify if they want
+    model_arr_convert_pro = importlib_resources.files("PyFHD.templates").joinpath(
+        "convert_model_arr_to_sav.pro"
+    )
     shutil.copy(model_arr_convert_pro, model_vis_dir)
 
-    #Move into the output directory so IDL can see all the .pro files
+    # Move into the output directory so IDL can see all the .pro files
     os.chdir(model_vis_dir)
-    
-    #Run the IDL code
-    logger.info(f"vis_model_transfer: converting {model_vis_dir}/{pyfhd_config['obs_id']}_vis_model.h5 to .sav format")
+
+    # Run the IDL code
+    logger.info(
+        f"vis_model_transfer: converting {model_vis_dir}/{pyfhd_config['obs_id']}_vis_model.h5 to .sav format"
+    )
 
     idl_command = f"idl -IDL_DEVICE ps -e convert_model_arr_to_sav -args {model_vis_dir} {pyfhd_config['obs_id']} {n_pol}"
 
     run_command(idl_command, False)
-
-
-
-
-
-
