@@ -16,8 +16,9 @@ dependencies:
   - colorama
   - importlib_resources
   - h5py
-  - pip
   - healpy
+  - pre-commit
+  - pip
   - pip:
     - sphinx-rtd-theme
     - sphinx-argparse

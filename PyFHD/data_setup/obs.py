@@ -470,16 +470,16 @@ def project_slant_orthographic(meta: dict, obs: dict, epoch=2000) -> dict:
     # The last are the longpole and latpole we set earlier
     astr["pv1"] = np.array([0, 0, 90, 180, 0], dtype=np.float64)
     astr["axes"] = np.array([1, 2])
-    astr[
-        "reverse"
-    ] = 0  # Since Axes are always valid Celestial, we don't need to reverse them
+    astr["reverse"] = (
+        0  # Since Axes are always valid Celestial, we don't need to reverse them
+    )
     astr["coord_sys"] = "C"  # Celestial Coordinate System in MAKE_ASTR
     astr["projection"] = projection_name
     astr["known"] = np.array([1])  # The projection name is guaranteed to be known
     astr["radecsys"] = "ICRS"  # Using ICRS instead of FK5
     astr["equinox"] = epoch
-    astr["date_obs"] = Time(meta["jd0"], format="jd").to_value("fits")
-    astr["mjd_obs"] = meta["jd0"] - 2400000.5
+    astr["dateobs"] = Time(meta["jd0"], format="jd").to_value("fits")
+    astr["mjdobs"] = meta["jd0"] - 2400000.5
     astr["x0y0"] = np.zeros(2, dtype=np.float64)
     # Get the pixel coordinates of zenra and zendec
     zenx, zeny = radec_to_pixel(meta["zenra"], meta["zendec"], astr)

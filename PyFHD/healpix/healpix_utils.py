@@ -429,6 +429,7 @@ def vis_model_freq_split(
     vis_weights: NDArray[np.float64],
     vis_model_arr: NDArray[np.complex128],
     vis_arr: NDArray[np.complex128],
+    polarization: int,
     pyfhd_config: dict,
     logger: Logger,
     fft: bool = True,
@@ -453,6 +454,8 @@ def vis_model_freq_split(
         _description_
     vis_arr : NDArray[np.complex128]
         _description_
+    polarization : int
+        _description_
     pyfhd_config : dict
         _description_
     logger : Logger
@@ -475,29 +478,15 @@ def vis_model_freq_split(
     freq_bin_i2 = np.arange(obs["n_freq"]) // pyfhd_config["n_avg"]
     nf = np.max(freq_bin_i2) + 1
     if save_uvf:
-        dirty_uv_arr = np.zeros(
-            [obs["n_pol"], nf, obs["dimension"], obs["dimension"]], dtype=np.complex128
-        )
-        weights_uv_arr = np.zeros(
-            [obs["n_pol"], nf, obs["dimension"], obs["dimension"]], dtype=np.int64
-        )
-        variance_uv_arr = np.zeros(
-            [obs["n_pol"], nf, obs["dimension"], obs["dimension"]]
-        )
-        model_uv_arr = np.zeros(
-            [obs["n_pol"], nf, obs["dimension"], obs["dimension"]], dtype=np.complex128
-        )
-    dirty_arr = np.zeros(
-        [obs["n_pol"], nf, obs["dimension"], obs["dimension"]], dtype=np.complex128
-    )
-    weights_arr = np.zeros(
-        [obs["n_pol"], nf, obs["dimension"], obs["dimension"]], dtype=np.int64
-    )
-    variance_arr = np.zeros([obs["n_pol"], nf, obs["dimension"], obs["dimension"]])
-    model_arr = np.zeros(
-        [obs["n_pol"], nf, obs["dimension"], obs["dimension"]], dtype=np.complex128
-    )
-    vis_n_arr = np.zeros([obs["n_pol"], nf])
+        dirty_uv_arr = np.zeros([nf, obs["dimension"], obs["dimension"]])
+        weights_uv_arr = np.zeros([nf, obs["dimension"], obs["dimension"]])
+        variance_uv_arr = np.zeros([nf, obs["dimension"], obs["dimension"]])
+        model_uv_arr = np.zeros([nf, obs["dimension"], obs["dimension"]])
+    dirty_arr = np.zeros([nf, obs["dimension"], obs["dimension"]])
+    weights_arr = np.zeros([nf, obs["dimension"], obs["dimension"]])
+    variance_arr = np.zeros([nf, obs["dimension"], obs["dimension"]])
+    model_arr = np.zeros([nf, obs["dimension"], obs["dimension"]])
+    vis_n_arr = np.zeros([nf])
     if pyfhd_config["rephase_weights"]:
         rephase_use = phase_shift_uv_image(obs)
     else:
@@ -515,88 +504,79 @@ def vis_model_freq_split(
             flag_test = np.sum(flag_test, axis=1)
             bi_use = np.where(flag_test > 0)[0]
 
-    for pol_i in range(obs["n_pol"]):
-        n_vis_use = 0
-        for fi in range(nf):
-            fi_use = np.where(
-                (freq_bin_i2 == fi) & (obs["baseline_info"]["freq_use"] > 0)
-            )[0]
-            if np.size(fi_use) == 0:
-                continue
-            gridding_dict = visibility_grid(
-                vis_arr[pol_i],
-                vis_weights[pol_i],
-                obs,
-                psf,
-                params,
-                pol_i,
+    n_vis_use = 0
+    for fi in range(nf):
+        fi_use = np.where((freq_bin_i2 == fi) & (obs["baseline_info"]["freq_use"] > 0))[
+            0
+        ]
+        if np.size(fi_use) == 0:
+            continue
+        gridding_dict = visibility_grid(
+            vis_arr[polarization],
+            vis_weights[polarization],
+            obs,
+            psf,
+            params,
+            polarization,
+            pyfhd_config,
+            logger,
+            model=vis_model_arr[polarization],
+            fi_use=fi_use,
+            bi_use=bi_use,
+        )
+        n_vis_use += gridding_dict["n_vis"]
+        vis_n_arr[fi] = gridding_dict["n_vis"]
+
+        if save_uvf:
+            dirty_uv_arr[fi] = gridding_dict["image_uv"] * gridding_dict["n_vis"]
+            weights_uv_arr[fi] = (
+                gridding_dict["weights"] * rephase_use * gridding_dict["n_vis"]
+            )
+            variance_uv_arr[fi] = (
+                gridding_dict["variance"] * rephase_use * gridding_dict["n_vis"]
+            )
+            model_uv_arr[fi] = gridding_dict["model_return"] * gridding_dict["n_vis"]
+
+        if fft:
+            # No x_range and y_range hence no check for it here
+            dirty_arr[fi], _, _ = dirty_image_generate(
+                gridding_dict["image_uv"],
                 pyfhd_config,
                 logger,
-                model=vis_model_arr[pol_i],
-                fi_use=fi_use,
-                bi_use=bi_use,
+                degpix=obs["degpix"],
             )
-            n_vis_use += gridding_dict["n_vis"]
-            vis_n_arr[pol_i, fi] = gridding_dict["n_vis"]
-
-            if save_uvf:
-                dirty_uv_arr[pol_i, fi] = (
-                    gridding_dict["image_uv"] * gridding_dict["n_vis"]
-                )
-                weights_uv_arr[pol_i, fi] = (
-                    gridding_dict["weights"] * rephase_use * gridding_dict["n_vis"]
-                )
-                variance_uv_arr[pol_i, fi] = (
-                    gridding_dict["variance"] * rephase_use * gridding_dict["n_vis"]
-                )
-                model_uv_arr[pol_i, fi] = (
-                    gridding_dict["model_return"] * gridding_dict["n_vis"]
-                )
-
-            if fft:
-                # No x_range and y_range hence no check for it here
-                dirty_arr[pol_i, fi], _, _ = dirty_image_generate(
-                    gridding_dict["image_uv"],
-                    pyfhd_config,
-                    logger,
-                    degpix=obs["degpix"],
-                )
-                dirty_arr[pol_i, fi] *= gridding_dict["n_vis"]
-                weights_arr[pol_i, fi], _, _ = dirty_image_generate(
-                    gridding_dict["weights"] * rephase_use,
-                    pyfhd_config,
-                    logger,
-                    degpix=obs["degpix"],
-                )
-                weights_arr[pol_i, fi] *= gridding_dict["n_vis"]
-                variance_arr[pol_i, fi], _, _ = dirty_image_generate(
-                    gridding_dict["variance"] * rephase_use,
-                    pyfhd_config,
-                    logger,
-                    degpix=obs["degpix"],
-                )
-                variance_arr[pol_i, fi] *= gridding_dict["n_vis"]
-                model_arr[pol_i, fi], _, _ = dirty_image_generate(
-                    gridding_dict["model_return"] * gridding_dict["n_vis"],
-                    pyfhd_config,
-                    logger,
-                    degpix=obs["degpix"],
-                )
-                model_arr[pol_i, fi] *= gridding_dict["n_vis"]
-            else:
-                dirty_arr[pol_i, fi] = (
-                    gridding_dict["image_uv"] * gridding_dict["n_vis"]
-                )
-                weights_arr[pol_i, fi] = (
-                    gridding_dict["weights"] * rephase_use * gridding_dict["n_vis"]
-                )
-                variance_arr[pol_i, fi] = (
-                    gridding_dict["variance"] * rephase_use * gridding_dict["n_vis"]
-                )
-                model_arr[pol_i, fi] = (
-                    gridding_dict["model_return"] * gridding_dict["n_vis"]
-                )
-        obs["n_vis"] = n_vis_use
+            dirty_arr[fi] *= gridding_dict["n_vis"]
+            weights_arr[fi], _, _ = dirty_image_generate(
+                gridding_dict["weights"] * rephase_use,
+                pyfhd_config,
+                logger,
+                degpix=obs["degpix"],
+            )
+            weights_arr[fi] *= gridding_dict["n_vis"]
+            variance_arr[fi], _, _ = dirty_image_generate(
+                gridding_dict["variance"] * rephase_use,
+                pyfhd_config,
+                logger,
+                degpix=obs["degpix"],
+            )
+            variance_arr[fi] *= gridding_dict["n_vis"]
+            model_arr[fi], _, _ = dirty_image_generate(
+                gridding_dict["model_return"],
+                pyfhd_config,
+                logger,
+                degpix=obs["degpix"],
+            )
+            model_arr[fi] *= gridding_dict["n_vis"]
+        else:
+            dirty_arr[fi] = gridding_dict["image_uv"] * gridding_dict["n_vis"]
+            weights_arr[fi] = (
+                gridding_dict["weights"] * rephase_use * gridding_dict["n_vis"]
+            )
+            variance_arr[fi] = (
+                gridding_dict["variance"] * rephase_use * gridding_dict["n_vis"]
+            )
+            model_arr[fi] = gridding_dict["model_return"] * gridding_dict["n_vis"]
+    obs["n_vis"] = n_vis_use
 
     if save_uvf:
         h5_save_dict = {
@@ -610,37 +590,37 @@ def vis_model_freq_split(
         save(
             Path(
                 uvf_dir,
-                f'{pyfhd_config["obs_id"]}_{uvf_name}_dirty_uv_arr_gridded_uvf.h5',
+                f'{pyfhd_config["obs_id"]}_{uvf_name}_{obs["pol_names"][polarization]}_dirty_uv_arr_gridded_uvf.h5',
             ),
             h5_save_dict,
-            f'{pyfhd_config["obs_id"]}_{uvf_name}_dirty_uv_arr_gridded_uvf.h5',
+            f'{pyfhd_config["obs_id"]}_{uvf_name}_{obs["pol_names"][polarization]}_dirty_uv_arr_gridded_uvf.h5',
             logger=logger,
         )
         save(
             Path(
                 uvf_dir,
-                f'{pyfhd_config["obs_id"]}_{uvf_name}_weights_uv_gridded_uvf.h5',
+                f'{pyfhd_config["obs_id"]}_{uvf_name}_{obs["pol_names"][polarization]}_weights_uv_gridded_uvf.h5',
             ),
             h5_save_dict,
-            f'{pyfhd_config["obs_id"]}_{uvf_name}_weights_uv_gridded_uvf.h5',
+            f'{pyfhd_config["obs_id"]}_{uvf_name}_{obs["pol_names"][polarization]}_weights_uv_gridded_uvf.h5',
             logger=logger,
         )
         save(
             Path(
                 uvf_dir,
-                f'{pyfhd_config["obs_id"]}_{uvf_name}_variance_uv_arr_gridded_uvf.h5',
+                f'{pyfhd_config["obs_id"]}_{uvf_name}_{obs["pol_names"][polarization]}_variance_uv_arr_gridded_uvf.h5',
             ),
             h5_save_dict,
-            f'{pyfhd_config["obs_id"]}_{uvf_name}_variance_uv_arr_gridded_uvf.h5',
+            f'{pyfhd_config["obs_id"]}_{uvf_name}_{obs["pol_names"][polarization]}_variance_uv_arr_gridded_uvf.h5',
             logger=logger,
         )
         save(
             Path(
                 uvf_dir,
-                f'{pyfhd_config["obs_id"]}_{uvf_name}_model_uv_arr_gridded_uvf.h5',
+                f'{pyfhd_config["obs_id"]}_{uvf_name}_{obs["pol_names"][polarization]}_model_uv_arr_gridded_uvf.h5',
             ),
             h5_save_dict,
-            f'{pyfhd_config["obs_id"]}_{uvf_name}_model_uv_arr_gridded_uvf.h5',
+            f'{pyfhd_config["obs_id"]}_{uvf_name}_{obs["pol_names"][polarization]}_model_uv_arr_gridded_uvf.h5',
             logger=logger,
         )
 

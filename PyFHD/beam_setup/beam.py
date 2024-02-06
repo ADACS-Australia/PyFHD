@@ -55,7 +55,7 @@ import sys
 #         jdate_use = obs['jd0']
 #     if psf['resolution'] is None:
 #         psf_resolution = 16
-    
+
 #     freq_center = np.zeros(nfreq_bin)
 #     interp_func = interp1d(freq_bin_i, frequency_array)
 #     for fi in range(nfreq_bin):
@@ -64,7 +64,7 @@ import sys
 #             freq_center[fi] = interp_func(fi)
 #         else:
 #             freq_center[fi] = np.median(frequency_array[fi_i])
-    
+
 #     # Create basic antenna dictionary
 #     antenna = {
 #         'n_pol' : n_ant_pol,
@@ -74,7 +74,7 @@ import sys
 #         'freq' : freq_center,
 #         'nfreq_bin' : nfreq_bin,
 #         'n_ant_elements' : 0,
-#         # Anything that was pointer arrays in IDL will be None until assigned in Python 
+#         # Anything that was pointer arrays in IDL will be None until assigned in Python
 #         'jones' : None,
 #         'coupling' : None,
 #         'gain' : None,
@@ -95,9 +95,14 @@ import sys
 
 #     return antenna
 
+
 def create_psf(pyfhd_config: dict, logger: Logger) -> dict | File:
     """
-    Creates the psf dictionary by loading in a `sav` or `HDF5` file
+    Creates the psf dictionary by loading in a `sav` or `HDF5` file from a FHD run.
+    In the future it would be nice to have the ability to read in a beam fits file.
+    Do note, that PyFHD was made with the assumption that the beam is the MWA beam,
+    and assumes the beam does not differ on a per baseline basis. If you wish to use
+    separate baselines you'll need to add that functionality yourself.
 
     Parameters
     ----------
@@ -111,41 +116,52 @@ def create_psf(pyfhd_config: dict, logger: Logger) -> dict | File:
     dict | h5py.File
         _description_
     """
-    if pyfhd_config["beam_file_path"].suffix == '.sav':
+    if pyfhd_config["beam_file_path"].suffix == ".sav":
         # Read in a sav file containing the psf structure as we expect from FHD
-        logger.info("Reading in a beam sav file probably will take a long time. You will require double the storage size of the sav file in RAM at least. Do some other work or maybe watch your favourite long movie, for example the extended edition of LOTR: Return of the King is 4 hours 10 minutes. Check back when the Battle of the Pelennor Fields has finished or roughly 3 hours in.")
+        logger.info(
+            "Reading in a beam sav file probably will take a long time. You will require double the storage size of the sav file in RAM at least. Do some other work or maybe watch your favourite long movie, for example the extended edition of LOTR: Return of the King is 4 hours 10 minutes. Check back when the Battle of the Pelennor Fields has finished or roughly 3 hours in."
+        )
         beam = readsav(pyfhd_config["beam_file_path"], python_dict=True)
-        psf = beam['psf']
+        psf = beam["psf"]
         # Delete the read in sav file, now that we got the psf, at this point we will have the psf size twice!
         del beam
-        psf['beam_ptr'][0] = psf['beam_ptr'][0].T
+        psf["beam_ptr"][0] = psf["beam_ptr"][0].T
         # Take only the first baseline (as it assumes every baseline points to the first i.e. the FFT is done per frequency)
         # Has a bonus of reducing memory use, unless NumPy is really good at using representations, maybe use double memory
-        psf['beam_ptr'][0] = psf['beam_ptr'][0][:,:,0]
+        psf["beam_ptr"][0] = psf["beam_ptr"][0][:, :, 0]
         # Transpose the group array
-        psf['id'][0] = psf['id'][0].T
+        psf["id"][0] = psf["id"][0].T
         # Recarray to dict completely unpack object arrays into the dict, although will require the beam_ptr in memory twice potentially temporarily
         psf = recarray_to_dict(psf)
         # The to_chunk is a dictionary of dictionaries which contain the information necessary to chunk the beam_ptr
         to_chunk = {
             "beam_ptr": {
-                "shape": psf['beam_ptr'].shape,
-                "chunk": tuple([1] * 2 + list(psf['beam_ptr'].shape)[2:])
+                "shape": psf["beam_ptr"].shape,
+                "chunk": tuple([1] * 2 + list(psf["beam_ptr"].shape)[2:]),
             }
         }
         # By default save the file in the same place as the original beam
-        output_path = Path(pyfhd_config["beam_file_path"].parent ,pyfhd_config["beam_file_path"].stem + ".h5")
-        save(output_path, psf, "psf", logger = logger, to_chunk = to_chunk)
+        output_path = Path(
+            pyfhd_config["beam_file_path"].parent,
+            pyfhd_config["beam_file_path"].stem + ".h5",
+        )
+        save(output_path, psf, "psf", logger=logger, to_chunk=to_chunk)
         # Since the psf is already in memory, return it
         return psf
-    elif pyfhd_config["beam_file_path"].suffix == ".h5" or pyfhd_config["beam_file_path"].suffix == ".hdf5":
+    elif (
+        pyfhd_config["beam_file_path"].suffix == ".h5"
+        or pyfhd_config["beam_file_path"].suffix == ".hdf5"
+    ):
         logger.info(f"Reading in the HDF5 file {pyfhd_config['beam_file_path']}")
         # If you selected to lazy load the beam, then psf will be a h5py File Object
-        psf = load(pyfhd_config['beam_file_path'], logger = logger, lazy_load = pyfhd_config["lazy_load_beam"])
+        psf = load(
+            pyfhd_config["beam_file_path"],
+            logger=logger,
+            lazy_load=pyfhd_config["lazy_load_beam"],
+        )
         return psf
-    elif pyfhd_config["beam_file_path"].suffix == '.fits':
+    elif pyfhd_config["beam_file_path"].suffix == ".fits":
         # Read in a fits file, when you do I assume you probably will be translating
         # FHD's beam setup while reading in a beam fits file.
         logger.error("The ability to read in a beam fits hasn't been implemented yet")
         sys.exit(1)
-

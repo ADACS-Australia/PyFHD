@@ -75,6 +75,22 @@ def before_file(tag, run, data_dir):
     return before_file
 
 
+@pytest.fixture(autouse=True)
+def cleanup_files(before_file):
+    yield
+    if before_file != None:
+        dir_name = Path([before_file.name.split("_")[:-3], "test_data"].join("_"))
+        print(dir_name)
+        # # Clean up the FITS files directory after the test
+        # files_from_test = h5_before["pyfhd_config"]["output_dir"].glob("**.*")
+        # for files in files_from_test:
+        #     files.unlink()
+        # fits_path.rmdir()
+        # (h5_before["pyfhd_config"]["output_dir"] / "metadata").rmdir()
+        # (h5_before["pyfhd_config"]["output_dir"] / "visibilities").rmdir()
+        # h5_before["pyfhd_config"]["output_dir"].rmdir()
+
+
 def test_quickview(before_file, data_dir):
     if before_file == None:
         pytest.skip(
@@ -138,13 +154,29 @@ def test_quickview(before_file, data_dir):
         name = name.replace("residual", "Residual")
         name = name.replace("uv", "UV")
         expected_fits = Path(fits_test_dir, name)
-        fits_diff = astropy.io.fits.FITSDiff(fits, expected_fits, atol=1e-6)
-        print(fits_diff.report())
-    # Clean up the FITS files directory after the test
-    files_from_test = h5_before["pyfhd_config"]["output_dir"].glob("**.*")
-    for files in files_from_test:
-        files.unlink()
-    fits_path.rmdir()
-    (h5_before["pyfhd_config"]["output_dir"] / "metadata").rmdir()
-    (h5_before["pyfhd_config"]["output_dir"] / "visibilities").rmdir()
-    h5_before["pyfhd_config"]["output_dir"].rmdir()
+        expected_fits = astropy.io.fits.open(expected_fits)
+        actual_fits = astropy.io.fits.open(fits)
+        actual_header = actual_fits[0].header
+        expected_header = expected_fits[0].header
+        # Remove keys that are different between the two FITS files
+        if expected_header.get("COMMENT") is not None:
+            del expected_header["COMMENT"]
+        if expected_header.get("DATE") is not None:
+            del expected_header["DATE"]
+        if expected_header.get("EXTEND") is not None:
+            del expected_header["EXTEND"]
+        del actual_header["HISTORY"]
+        header_diff = astropy.io.fits.HeaderDiff(
+            actual_header,
+            expected_header,
+            atol=2e-4,
+            # ignore_comments=["*"],
+        )
+        print(header_diff.report())
+        print(actual_header)
+        print(expected_header)
+        assert header_diff.identical
+        # expected_fits_data = expected_fits[0].data
+        # actual_fits_data = actual_fits[0].data
+        # # expected_fits_data = np.transpose(expected_fits_data)
+        # npt.assert_allclose(actual_fits_data, expected_fits_data, atol=1e-6)

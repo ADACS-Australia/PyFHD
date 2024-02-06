@@ -127,6 +127,7 @@ def test_vis_model_freq_split(before_file, after_file, beam_file):
         h5_before["vis_weights"],
         h5_before["vis_model_arr"],
         h5_before["vis_data_arr"],
+        0,
         h5_before["pyfhd_config"],
         Logger("test"),
         fft=h5_before["fft"],
@@ -136,24 +137,26 @@ def test_vis_model_freq_split(before_file, after_file, beam_file):
     )
 
     assert expected_model_split["obs_out"]["n_vis"] == model_split["obs"]["n_vis"]
-    # Only checking the first polarization due to the size of the after file
+    # Only checking the first polarization due to the size of the arrays taking up too
+    # much memory, now doing the split on a per polarization basis. The sav file files
+    # should also only have one polarization.
     npt.assert_allclose(
-        model_split["residual_arr"][0],
-        np.swapaxes(expected_model_split["residual_arr"], -2, -1),
+        model_split["residual_arr"],
+        np.swapaxes(expected_model_split["dirty_arr"], -2, -1),
         atol=1e-8,
     )
     npt.assert_allclose(
-        model_split["weights_arr"][0],
+        model_split["weights_arr"],
         np.swapaxes(expected_model_split["weights_arr"], -2, -1),
         atol=1e-8,
     )
     npt.assert_allclose(
-        model_split["variance_arr"][0],
+        model_split["variance_arr"],
         np.swapaxes(expected_model_split["variance_arr"], -2, -1),
         atol=1e-8,
     )
     npt.assert_allclose(
-        model_split["model_arr"][0],
+        model_split["model_arr"],
         np.swapaxes(expected_model_split["model_arr"], -2, -1),
         atol=1e-8,
     )
