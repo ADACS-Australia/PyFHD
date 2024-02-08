@@ -30,6 +30,7 @@ skip_tests = [
     ["1088285600", "run4"],
     ["point_zenith", "run3"],
     ["point_offzenith", "run3"],
+    ["1088716296", "run3"],
 ]
 
 

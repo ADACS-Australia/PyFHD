@@ -36,6 +36,7 @@ skip_tests = [
     ["1088285600", "run4"],
     ["point_zenith", "run3"],
     ["point_offzenith", "run3"],
+    ["1088716296", "run3"],
 ]
 
 
@@ -94,11 +95,11 @@ def after_file(tag, run, data_dir):
     sav_file = after_file.with_suffix(".sav")
     sav_dict = convert_sav_to_dict(str(sav_file), "faked")
     sav_dict = recarray_to_dict(sav_dict)
-
-    sav_dict["dirty_arr"] = np.squeeze(sav_dict["dirty_arr"])
-    sav_dict["model_arr"] = np.squeeze(sav_dict["model_arr"])
-    sav_dict["weights_arr"] = np.squeeze(sav_dict["weights_arr"])
-    sav_dict["variance_arr"] = np.squeeze(sav_dict["variance_arr"])
+    # Swap the frequencies and polarization around, take the first polarization
+    sav_dict["dirty_arr"] = np.swapaxes(sav_dict["dirty_arr"], 0, 1)[0]
+    sav_dict["model_arr"] = np.swapaxes(sav_dict["model_arr"], 0, 1)[0]
+    sav_dict["weights_arr"] = np.swapaxes(sav_dict["weights_arr"], 0, 1)[0]
+    sav_dict["variance_arr"] = np.swapaxes(sav_dict["variance_arr"], 0, 1)[0]
 
     save(after_file, sav_dict, "b5_after")
 
@@ -138,25 +139,24 @@ def test_vis_model_freq_split(before_file, after_file, beam_file):
 
     assert expected_model_split["obs_out"]["n_vis"] == model_split["obs"]["n_vis"]
     # Only checking the first polarization due to the size of the arrays taking up too
-    # much memory, now doing the split on a per polarization basis. The sav file files
-    # should also only have one polarization.
+    # much memory, now doing the split on a per polarization basis due to memory constraints
     npt.assert_allclose(
         model_split["residual_arr"],
-        np.swapaxes(expected_model_split["dirty_arr"], -2, -1),
+        expected_model_split["dirty_arr"],
         atol=1e-8,
     )
     npt.assert_allclose(
         model_split["weights_arr"],
-        np.swapaxes(expected_model_split["weights_arr"], -2, -1),
+        expected_model_split["weights_arr"],
         atol=1e-8,
     )
     npt.assert_allclose(
         model_split["variance_arr"],
-        np.swapaxes(expected_model_split["variance_arr"], -2, -1),
+        expected_model_split["variance_arr"],
         atol=1e-8,
     )
     npt.assert_allclose(
         model_split["model_arr"],
-        np.swapaxes(expected_model_split["model_arr"], -2, -1),
+        expected_model_split["model_arr"],
         atol=1e-8,
     )

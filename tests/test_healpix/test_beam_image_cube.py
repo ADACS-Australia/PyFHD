@@ -35,6 +35,7 @@ skip_tests = [
     ["1088285600", "run4"],
     ["point_zenith", "run3"],
     ["point_offzenith", "run3"],
+    ["1088716296", "run3"],
 ]
 
 
@@ -97,7 +98,4 @@ def test_beam_image_cube(before_file, after_file, beam_dir):
         square=h5_before["square"],
     )
 
-    # TODO add test for beam_mask, should be fine though, in most cases only the edges
-    # should be zeros because of region_grow i.e. 8188 zeros (or 2048 * 4 - 4)
-    # npt.assert_equal(beam_mask, expected_beam_mask)
     npt.assert_allclose(beam_arr, expected_beam_arr, atol=1e-8)

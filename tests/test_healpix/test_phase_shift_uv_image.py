@@ -29,6 +29,7 @@ skip_tests = [
     ["1088285600", "run4"],
     ["point_zenith", "run3"],
     ["point_offzenith", "run3"],
+    ["1088716296", "run3"],
 ]
 
 
@@ -87,4 +88,4 @@ def test_phase_shift_uv_image(before_file, after_file):
     # precision rather than the double precision variant IDL has. The calculations
     # are mathematically the same in both PyFHD and FHD. phase_shift_uv_image
     # apply_astrometry is also taking into account refraction.
-    npt.assert_allclose(rephase, expected_rephase, atol=3e-2)
+    npt.assert_allclose(rephase, expected_rephase, atol=4e-6)

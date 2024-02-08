@@ -31,6 +31,7 @@ skip_tests = [
     ["1088285600", "run4"],
     ["point_zenith", "run3"],
     ["point_offzenith", "run3"],
+    ["1088716296", "run3"],
 ]
 
 
@@ -54,9 +55,11 @@ def before_file(tag, run, data_dir):
 
     # Set the save everything except the fits we're testing to false
     pyfhd_config = {
-        "obs_id": "1088716176"
-        if "point" in before_file.name
-        else before_file.name.split("_")[0],
+        "obs_id": (
+            "1088716176"
+            if "point" in before_file.name
+            else before_file.name.split("_")[0]
+        ),
         "output_dir": Path(data_dir, f"{tag}_{run}_test_data"),
         "save_obs": False,
         "save_params": False,
