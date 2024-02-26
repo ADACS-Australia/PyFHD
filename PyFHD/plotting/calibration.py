@@ -33,16 +33,16 @@ def plot_cals(obs: dict, cal: dict, pyfhd_config: dict):
                        f'{cal_plot_dir}{obs_id}_cal_raw_amp', f'{cal_plot_dir}{obs_id}_cal_raw_phase']
 
     # Calibration solutions are referenced mutliple times, put them in variables for speed
-    cal_sol_amp = np.abs(cal['gain'][:,:,freq_i_use])
-    cal_sol_phase = np.arctan2((cal['gain'][:,:,freq_i_use]).imag, (cal['gain'][:,:,freq_i_use]).real)
-    cal_raw_amp = np.abs(cal['gain'][:,:,freq_i_use] + cal['gain_residual'][:,:,freq_i_use])
-    cal_raw_phase = np.arctan2((cal['gain'][:,:,freq_i_use] + cal['gain_residual'][:,:,freq_i_use]).imag, 
-                               (cal['gain'][:,:,freq_i_use] + cal['gain_residual'][:,:,freq_i_use]).real)
+    cal_sol_amp = np.abs(cal['gain'][:,freq_i_use,:])
+    cal_sol_phase = np.arctan2((cal['gain'][:,freq_i_use,:]).imag, (cal['gain'][:,freq_i_use,:]).real)
+    cal_raw_amp = np.abs(cal['gain'][:,freq_i_use,:] + cal['gain_residual'][:,freq_i_use,:])
+    cal_raw_phase = np.arctan2((cal['gain'][:,freq_i_use,:] + cal['gain_residual'][:,freq_i_use,:]).imag, 
+                               (cal['gain'][:,freq_i_use,:] + cal['gain_residual'][:,freq_i_use,:]).real)
     
     # NOTE: The residuals that are plotted are the differences in raw amp/phase and solution amp/phase,
     # *not* the amp/phase of the raw and solution difference
     cal_res_amp = cal_raw_amp - cal_sol_amp
-    cal_res_phase = np.unwrap(cal_raw_phase, axis=2) - np.unwrap(cal_sol_phase, axis=2)
+    cal_res_phase = np.unwrap(cal_raw_phase, axis=1) - np.unwrap(cal_sol_phase, axis=1)
 
     # Find the min/max amplitude and phase for plotting
     amp_minmax = np.zeros((6))
@@ -121,16 +121,16 @@ def plot_cals(obs: dict, cal: dict, pyfhd_config: dict):
                     # Select current plotting type
                     if type_i == 0:
                         # Gain and phase fit solutions
-                        amp = cal_sol_amp[pol_i,tile_i,:].squeeze()
-                        phase = cal_sol_phase[pol_i,tile_i,:].squeeze()
+                        amp = cal_sol_amp[pol_i,:,tile_i].squeeze()
+                        phase = cal_sol_phase[pol_i,:,tile_i].squeeze()
                     if type_i == 1:
                         # Gain and phase residuals (per-frequency solutions minus fit solutions)
-                        amp = cal_res_amp[pol_i,tile_i,:].squeeze()
-                        phase = cal_res_phase[pol_i,tile_i,:].squeeze()
+                        amp = cal_res_amp[pol_i,:,tile_i].squeeze()
+                        phase = cal_res_phase[pol_i,:,tile_i].squeeze()
                     if type_i == 2:
                         # Gain and phase per-frequency solutions
-                        amp = cal_raw_amp[pol_i,tile_i,:].squeeze()
-                        phase = cal_raw_phase[pol_i,tile_i,:].squeeze()
+                        amp = cal_raw_amp[pol_i,:,tile_i].squeeze()
+                        phase = cal_raw_phase[pol_i,:,tile_i].squeeze()
 
                     # Leave blanks for flagged or undefined tiles
                     if np.isnan([amp,phase]).all():
