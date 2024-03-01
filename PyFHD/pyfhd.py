@@ -404,10 +404,12 @@ def main():
     if isinstance(psf, h5py.File):
         psf.close()
     # Write a final collated yaml for the final pyfhd_config
-    write_collated_yaml_config(pyfhd_config, pyfhd_config["output_dir"], "-final")
+    write_collated_yaml_config(
+        pyfhd_config, Path(pyfhd_config["output_dir"], "config"), "-final"
+    )
     # Save the config in a HDF5 file for ease of reading in previous parameters from previous runs
     save(
-        Path(pyfhd_config["output_dir"], "pyfhd_config.h5"),
+        Path(pyfhd_config["output_dir"], "config", "pyfhd_config.h5"),
         pyfhd_config,
         "pyfhd_config",
         logger=logger,

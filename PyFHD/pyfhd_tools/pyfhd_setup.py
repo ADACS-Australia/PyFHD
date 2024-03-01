@@ -1212,11 +1212,11 @@ def pyfhd_setup(options: argparse.Namespace) -> Tuple[dict, logging.Logger]:
     logic_test = (
         1
         if pyfhd_config["cal_reflection_mode_file"]
-        else 0 + 1
-        if pyfhd_config["cal_reflection_mode_delay"]
-        else 0 + 1
-        if pyfhd_config["cal_reflection_mode_theory"]
-        else 0
+        else (
+            0 + 1
+            if pyfhd_config["cal_reflection_mode_delay"]
+            else 0 + 1 if pyfhd_config["cal_reflection_mode_theory"] else 0
+        )
     )
     if logic_test > 1:
         logger.warning(
@@ -1427,7 +1427,10 @@ def pyfhd_setup(options: argparse.Namespace) -> Tuple[dict, logging.Logger]:
 
     logger.info("Input validated, starting PyFHD run now")
 
-    write_collated_yaml_config(pyfhd_config, output_dir)
+    # Create the config directory
+    config_path = Path(output_dir, "config")
+    config_path.mkdir(exist_ok=True)
+    write_collated_yaml_config(pyfhd_config, config_path)
 
     return pyfhd_config, logger
 
@@ -1573,14 +1576,6 @@ def pyfhd_logger(pyfhd_config: dict) -> Tuple[logging.Logger, str]:
                 datefmt="%Y-%m-%d %H:%M:%S",
             )
         )
-
-    # Copy the Configuration File if it exists to the output directory
-    # print("Did we set the config_file thingy??", pyfhd_config['config_file'])
-    # if pyfhd_config['config_file'] is None:
-    #     pyfhd_yaml = importlib_resources.files('PyFHD.templates').joinpath('pyfhd.yaml')
-    #     shutil.copy(pyfhd_yaml, Path(output_dir, log_name + '.yaml'))
-    # else:
-    #     shutil.copy(pyfhd_config['config_file'], Path(output_dir, log_name + '.yaml'))
 
     # Write out a config file based
 
