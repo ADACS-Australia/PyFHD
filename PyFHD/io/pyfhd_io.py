@@ -389,7 +389,7 @@ def save(
         match to_save:
             case np.ndarray():
                 if logger:
-                    logger.info(f"Writing the {dataset_name} array to {file_name}.h5")
+                    logger.info(f"Writing the {dataset_name} array to {file_name}")
                 h5_file.attrs[dataset_name] = save_dataset(
                     h5_file, dataset_name, to_save, to_chunk, variable_lengths, logger
                 )

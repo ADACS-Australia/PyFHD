@@ -73,7 +73,10 @@ def filter_uv_uniform(
                 mask_mirror_indices,
             )
         elif weights is not None and np.size(weights) == np.size(image_uv):
-            vis_count = weights / np.min(weights[weights > 0])
+            if np.max(weights == 0):
+                vis_count = weights
+            else:
+                vis_count = weights / np.min(weights[weights > 0])
         else:
             raise TypeError("obs and params must not be None when vis_count is None")
 

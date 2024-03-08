@@ -779,7 +779,7 @@ def visibility_count(
 
 def holo_mapfn_convert(map_fn, psf_dim, dimension, elements=None, norm=1, threshold=0):
     """
-    Convert pointer array holographic map function to a sparse matrix. May need to be depreciated.
+    Convert pointer array holographic map function to a sparse matrix. May need to be deprecated.
     The mapping functions were not translated into `visibility_grid` at the time of translation as
     it wasn't clear what PyFHD was going to use for sparse/large arrays at the time. If you wish to
     implement the mapping functions, I suggest using HDF5 chunk loading for the mapping function.

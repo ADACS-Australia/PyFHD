@@ -92,9 +92,9 @@ recalculate-grid : true
 image-filter : 'filter_uv_uniform'
 mask-mirror-indices: false
 grid-spectral: false
-grid-weights: True
-grid-variance: True
-grid-uniform: False
+grid-weights: true
+grid-variance: true
+grid-uniform: false
 
 # Deconvolution
 deconvolve : false

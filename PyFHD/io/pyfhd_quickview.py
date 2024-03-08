@@ -134,7 +134,7 @@ def quickview(
         logger.info(f"Saving params dictionary to {params_path}")
         save(params_path, params, "params", logger=logger)
     if pyfhd_config["save_visibilities"]:
-        if pyfhd_config["recalculate-grid"]:
+        if pyfhd_config["recalculate_grid"]:
             gridding_path = Path(pyfhd_config["output_dir"], "gridding")
             gridding_path.mkdir(exist_ok=True)
             logger.info(f"Saving the gridded uv planes to {gridding_path}")

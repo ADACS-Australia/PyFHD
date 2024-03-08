@@ -79,6 +79,8 @@ def healpix_snapshot_cube_generate(
     else:
         dimension_use = fov_use / obs["degpix"]
 
+    dimension_use = int(dimension_use)
+
     if pyfhd_config["ps_nfreq_avg"] is None:
         fbin_i = psf["fbin_i"]
         if isinstance(psf, h5py.File):
@@ -91,10 +93,10 @@ def healpix_snapshot_cube_generate(
     pix_sky = (4 * np.pi * (180 / np.pi) ** 2) / degpix_use**2
     # Below should = 1024 for 0.1119 degrees/pixel
     nside = 2 ** (np.ceil(np.log(np.sqrt(pix_sky / 12)) / np.log(2)))
-    n_freq_use = np.floor(obs["n_freq"] / pyfhd_config["n_avg"])
+    n_freq_use = int(np.floor(obs["n_freq"] / pyfhd_config["n_avg"]))
 
     obs_out = update_obs(
-        obs, dimension_use, obs["kbinsize"], beam_nfreq_avg=ps_nfreq_avg, fov=fov_use
+        obs, dimension_use, kbinsize, beam_nfreq_avg=ps_nfreq_avg, fov=fov_use
     )
     # To have a psf that has reacted to the new beam_nfreq_avg you have set that isn't
     # the default, tell PyFHD to re-create the psf here once beam_setup has been translated
@@ -110,7 +112,7 @@ def healpix_snapshot_cube_generate(
 
     hpx_radius = fov_use / np.sqrt(2)
 
-    hpx_cnv = healpix_cnv_generate(
+    hpx_cnv, obs_out = healpix_cnv_generate(
         obs_out, beam_mask, hpx_radius, pyfhd_config, logger, nside=nside
     )
     hpx_inds = hpx_cnv["inds"]
@@ -175,27 +177,27 @@ def healpix_snapshot_cube_generate(
                     ]
                 )
 
-            beam_squared_cube = np.zeros([hpx_inds.size, n_freq_use])
-            weights_cube = np.zeros([hpx_inds, n_freq_use])
-            variance_cube = np.zeros([hpx_inds.size, n_freq_use])
-            model_cube = np.zeros([hpx_inds.size, n_freq_use])
-            dirty_or_res_cube = np.zeros([hpx_inds.size, n_freq_use])
+            beam_squared_cube = np.zeros([n_freq_use, hpx_inds.size])
+            weights_cube = np.zeros([n_freq_use, hpx_inds.size])
+            variance_cube = np.zeros([n_freq_use, hpx_inds.size])
+            model_cube = np.zeros([n_freq_use, hpx_inds.size])
+            dirty_or_res_cube = np.zeros([n_freq_use, hpx_inds.size])
 
             for freq_i in range(n_freq_use):
-                # TODO: check the indexing, I don't think it will work for Python
-                beam_squared_cube[hpx_inds.size * freq_i] = healpix_cnv_apply(
+                # TODO: check the indexing and sizing of the arrays
+                beam_squared_cube[freq_i, :] = healpix_cnv_apply(
                     beam_arr[pol_i, freq_i] * nf_vis_use[freq_i], hpx_cnv
                 )
-                weights_cube[hpx_inds.size * freq_i] = healpix_cnv_apply(
+                weights_cube[freq_i, :] = healpix_cnv_apply(
                     split["weights_arr"][pol_i, freq_i], hpx_cnv
                 )
-                variance_cube[hpx_inds.size * freq_i] = healpix_cnv_apply(
+                variance_cube[freq_i, :] = healpix_cnv_apply(
                     split["variance_arr"][pol_i, freq_i], hpx_cnv
                 )
-                model_cube[hpx_inds.size * freq_i] = healpix_cnv_apply(
+                model_cube[freq_i, :] = healpix_cnv_apply(
                     split["model_arr"][pol_i, freq_i], hpx_cnv
                 )
-                dirty_or_res_cube[hpx_inds.size * freq_i] = healpix_cnv_apply(
+                dirty_or_res_cube[freq_i, :] = healpix_cnv_apply(
                     split["residual_arr"][pol_i, freq_i], hpx_cnv
                 )
             healpix_pol_dict = {

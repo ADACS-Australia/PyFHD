@@ -918,7 +918,7 @@ def pyfhd_parser():
     )
     healpix.add_argument(
         "--n-avg",
-        type=float,
+        type=int,
         default=2,
         help="Number of frequencies to average over to smooth the frequency band.",
     )

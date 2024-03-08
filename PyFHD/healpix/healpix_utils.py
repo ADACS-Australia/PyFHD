@@ -18,6 +18,7 @@ from PyFHD.pyfhd_tools.pyfhd_utils import (
     region_grow,
 )
 from PyFHD.pyfhd_tools.unit_conv import radec_to_altaz, radec_to_pixel
+from astropy.coordinates import EarthLocation
 
 
 def healpix_cnv_apply(
@@ -166,7 +167,7 @@ def healpix_cnv_generate(
     # add it as an option inside pyfhd_config
 
     if hpx_inds is not None:
-        pix_coords = np.vstack(pix2vec(nside, hpx_inds)).T
+        pix_coords = np.vstack(pix2vec(int(nside), hpx_inds)).T
         pix_ra, pix_dec = vec2ang(pix_coords, lonlat=True)
         # This assume the refraction fix on FHD has been implemented
         xv_hpx, yv_hpx = radec_to_pixel(pix_ra, pix_dec, obs["astr"])
@@ -197,8 +198,15 @@ def healpix_cnv_generate(
         hpx_inds = hpx_inds[pix_i_use]
 
     # Test for pixels past the horizon. We don't need to be precise with this, so turn off precession, etc..
+    # Get the location from instrument name
+    location = EarthLocation.of_site(obs["instrument"])
     alt, _ = radec_to_altaz(
-        pix_ra, pix_dec, obs["lat"], obs["lon"], obs["alt"], obs["jd0"]
+        pix_ra,
+        pix_dec,
+        location.lat.value,
+        location.lon.value,
+        location.height.value,
+        obs["jd0"],
     )
     horizon_i = np.where(alt <= 0)
     if np.size(horizon_i) > 0:
@@ -295,7 +303,7 @@ def beam_image_cube(
     logger: Logger,
     freq_i_arr: NDArray[np.int_] | None = None,
     pol_i_arr: NDArray[np.int_] | None = None,
-    n_freq_bin: float | None = None,
+    n_freq_bin: int | None = None,
     square: bool = True,
     beam_threshold: float | None = None,
 ) -> tuple[NDArray[np.complex128], NDArray[np.float64]]:
@@ -314,7 +322,7 @@ def beam_image_cube(
         _description_, by default None
     pol_i_arr : np.ndarray | None, optional
         _description_, by default None
-    n_freq_bin : float | None, optional
+    n_freq_bin : int | None, optional
         _description_, by default None
     square : bool, optional
         _description_, by default True
@@ -476,7 +484,7 @@ def vis_model_freq_split(
     """
 
     freq_bin_i2 = np.arange(obs["n_freq"]) // pyfhd_config["n_avg"]
-    nf = np.max(freq_bin_i2) + 1
+    nf = int(np.max(freq_bin_i2) + 1)
     if save_uvf:
         dirty_uv_arr = np.zeros([nf, obs["dimension"], obs["dimension"]])
         weights_uv_arr = np.zeros([nf, obs["dimension"], obs["dimension"]])

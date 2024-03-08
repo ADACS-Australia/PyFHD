@@ -32,6 +32,8 @@ from PyFHD.source_modeling.vis_model_transfer import (
     vis_model_transfer,
 )
 from PyFHD.io.pyfhd_io import save, load
+from PyFHD.io.pyfhd_quickview import quickview
+from PyFHD.healpix.export import healpix_snapshot_cube_generate
 
 
 def _print_time_diff(
@@ -388,9 +390,28 @@ def main():
             f"Checkpoint Loaded: The Gridded UV Planes loaded from {Path(pyfhd_config['output_dir'], 'gridding_checkpoint.h5')}"
         )
 
-    # TODO: Translate fhd_quickview and add it here
+    # Call quickview to save the all the variables if set in the config. Also create dirty images and save
+    # FITS files with the dirty images on a per polarization basis
+    quickview(
+        obs,
+        psf,
+        params,
+        cal,
+        vis_arr,
+        vis_weights,
+        image_uv,
+        weights_uv,
+        variance_uv,
+        uniform_filter_uv,
+        model_uv,
+        pyfhd_config,
+        logger,
+    )
 
-    # TODO: Translate snapshot_healpix_export and add it here
+    # Create the healpix HDF5 cubes and save them to disk
+    healpix_snapshot_cube_generate(
+        obs, psf, cal, params, vis_arr, vis_model_arr, vis_weights, pyfhd_config, logger
+    )
 
     pyfhd_end = time.time()
     runtime = timedelta(seconds=pyfhd_end - pyfhd_start)
