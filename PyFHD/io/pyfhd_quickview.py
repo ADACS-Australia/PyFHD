@@ -189,7 +189,7 @@ def quickview(
         save(weights_path, vis_weights, "weights", logger=logger)
 
     obs_out = update_obs(
-        obs, obs["dimension"] * pyfhd_config["pad_uv_image"], obs["kpix"]
+        obs, int(obs["dimension"] * pyfhd_config["pad_uv_image"]), obs["kpix"]
     )
     # In case pad_uv_image was a float can get a float out rather than int
     obs_out["dimension"] = int(obs_out["dimension"])
