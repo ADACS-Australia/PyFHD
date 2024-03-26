@@ -102,7 +102,7 @@ def healpix_snapshot_cube_generate(
     # the default, tell PyFHD to re-create the psf here once beam_setup has been translated
 
     beam_arr, beam_mask = beam_image_cube(
-        obs,
+        obs_out,
         psf,
         logger,
         square=True,
@@ -189,16 +189,16 @@ def healpix_snapshot_cube_generate(
                     beam_arr[pol_i, freq_i] * nf_vis_use[freq_i], hpx_cnv
                 )
                 weights_cube[freq_i, :] = healpix_cnv_apply(
-                    split["weights_arr"][pol_i, freq_i], hpx_cnv
+                    split["weights_arr"][freq_i, : , :], hpx_cnv
                 )
                 variance_cube[freq_i, :] = healpix_cnv_apply(
-                    split["variance_arr"][pol_i, freq_i], hpx_cnv
+                    split["variance_arr"][freq_i, :, :], hpx_cnv
                 )
                 model_cube[freq_i, :] = healpix_cnv_apply(
-                    split["model_arr"][pol_i, freq_i], hpx_cnv
+                    split["model_arr"][freq_i, :, :], hpx_cnv
                 )
                 dirty_or_res_cube[freq_i, :] = healpix_cnv_apply(
-                    split["residual_arr"][pol_i, freq_i], hpx_cnv
+                    split["residual_arr"][freq_i, :, :], hpx_cnv
                 )
             healpix_pol_dict = {
                 "obs": split["obs"],

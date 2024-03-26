@@ -64,7 +64,7 @@ def get_image_renormalization(
         )
         dirty_num = dirty_image[obs["dimension"] // 2, obs["elements"] // 2]
         renorm_factor[pol_i] = 1 / dirty_num
-        renorm_factor[pol_i] *= beam_base[pol_i, obs["obsx"], obs["obsy"]] ** 2
+        renorm_factor[pol_i] *= beam_base[pol_i, int(obs["obsx"]), int(obs["obsy"])] ** 2
         renorm_factor[pol_i] /= (obs["degpix"] * (np.pi / 180)) ** 2
     return renorm_factor
 
