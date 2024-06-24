@@ -227,8 +227,8 @@ def healpix_cnv_generate(
     # built in HEALPIX and astropy functions to get these arrays. We can probably assume these
     # numbers are "better" compared to IDL, as a result the v_floor and v_ceil arrays are one off
     # compared to IDL, making min_bin off by one
-    min_bin = max(np.min(v_floor), 0)
-    max_bin = min(np.max(v_ceil), obs["dimension"] * obs["elements"] - 1)
+    min_bin = max(np.nanmin(v_floor), 0)
+    max_bin = min(np.nanmax(v_ceil), obs["dimension"] * obs["elements"] - 1)
     h00, _, ri00 = histogram(v_floor, min=min_bin, max=max_bin)
     h01, _, ri01 = histogram(
         np.floor(xv_hpx) + obs["dimension"] * np.ceil(yv_hpx), min=min_bin, max=max_bin
