@@ -22,7 +22,7 @@ from astropy.coordinates import EarthLocation
 
 
 def healpix_cnv_apply(
-    image: NDArray[np.int_ | np.float_ | np.complex_], hpx_cnv: dict
+    image: NDArray[np.integer | np.floating | np.complexfloating], hpx_cnv: dict
 ) -> NDArray[np.float64]:
     """
     healpix_cnv_apply creates a map based off the array/image and healpix convention dictionary given.
@@ -301,8 +301,8 @@ def beam_image_cube(
     obs: dict,
     psf: dict | h5py.File,
     logger: Logger,
-    freq_i_arr: NDArray[np.int_] | None = None,
-    pol_i_arr: NDArray[np.int_] | None = None,
+    freq_i_arr: NDArray[np.integer] | None = None,
+    pol_i_arr: NDArray[np.integer] | None = None,
     n_freq_bin: int | None = None,
     square: bool = True,
     beam_threshold: float | None = None,
@@ -443,7 +443,7 @@ def vis_model_freq_split(
     fft: bool = True,
     save_uvf: bool = True,
     uvf_name: str = "",
-    bi_use: NDArray[np.int_] = None,
+    bi_use: NDArray[np.integer] = None,
 ) -> dict:
     """
     TODO: _summary_

@@ -91,7 +91,6 @@ setup(
         "PyFHD.flagging",
         "PyFHD.pyfhd_tools",
         "PyFHD.source_modeling",
-        "PyFHD.use_idl_fhd",
         "PyFHD.plotting",
         "PyFHD.healpix",
         "PyFHD.io",

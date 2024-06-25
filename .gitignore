@@ -151,3 +151,6 @@ input/**
 # test things to ignore (for now)
 tests/*/__pycache__
 tests/test_source_modelling
+
+# VSCode
+.vscode/

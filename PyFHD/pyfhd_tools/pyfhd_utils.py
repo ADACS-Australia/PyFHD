@@ -51,7 +51,7 @@ def get_bins(
 
 @njit
 def get_hist(
-    data: NDArray[np.float_ | np.int_ | np.complex_],
+    data: NDArray[np.floating | np.integer | np.complexfloating],
     bins: NDArray[np.float64 | np.int64],
     min: int | float,
     max: int | float,
@@ -111,7 +111,7 @@ def get_hist(
 
 @njit
 def get_ri(
-    data: NDArray[np.float_ | np.int_ | np.complex_],
+    data: NDArray[np.floating | np.integer | np.complexfloating],
     bins: NDArray[np.float64 | np.int64],
     hist: NDArray[np.int64],
     min: int | float,
@@ -222,7 +222,7 @@ def get_ri(
 
 
 def histogram(
-    data: NDArray[np.float_ | np.int_ | np.complex_],
+    data: NDArray[np.floating | np.integer | np.complexfloating],
     bin_size: int = 1,
     num_bins: int | None = None,
     min: int | float | None = None,
@@ -299,8 +299,8 @@ def l_m_n(
     psf: dict | h5py.File,
     obsdec: float | None = None,
     obsra: float | None = None,
-    declination_arr: NDArray[np.float_] | None = None,
-    right_ascension_arr: NDArray[np.float_] | None = None,
+    declination_arr: NDArray[np.floating] | None = None,
+    right_ascension_arr: NDArray[np.floating] | None = None,
 ) -> tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]]:
     """
     Calculates the l mode, m mode and the n_tracked
@@ -375,8 +375,8 @@ def l_m_n(
 
 
 def rebin_columns(
-    a: NDArray[np.int_ | np.float_ | np.complex_], ax: int, shape: tuple, col_sizer: int
-) -> NDArray[np.int_ | np.float_ | np.complex_]:
+    a: NDArray[np.integer | np.floating | np.complexfloating], ax: int, shape: tuple, col_sizer: int
+) -> NDArray[np.integer | np.floating | np.complexfloating]:
     """
     Performs expansion on the columns of a 1D or 2D array using interpolation to fill in the values that are created
     by expanding in the space between existing values. This function assumes the rows have already been expanded
@@ -419,12 +419,12 @@ def rebin_columns(
 
 
 def rebin_rows(
-    a: NDArray[np.int_ | np.float_ | np.complex_],
+    a: NDArray[np.integer | np.floating | np.complexfloating],
     ax: int,
     shape: tuple,
     old_shape: tuple,
     row_sizer: int,
-) -> NDArray[np.int_ | np.float_ | np.complex_]:
+) -> NDArray[np.integer | np.floating | np.complexfloating]:
     """
     Performs expansion on the rows of array `a` to the number of rows in shape[0] using interpolation to fill between any
     new values added when adding new rows between existing values.
@@ -471,10 +471,10 @@ def rebin_rows(
 
 
 def rebin(
-    a: NDArray[np.int_ | np.float_ | np.complex_],
+    a: NDArray[np.integer | np.floating | np.complexfloating],
     shape: ArrayLike,
     sample: bool = False,
-) -> NDArray[np.int_ | np.float_ | np.complex_]:
+) -> NDArray[np.integer | np.floating | np.complexfloating]:
     """
     Resizes a 2D array by averaging or repeating elements, new dimensions must be integral factors of original dimensions.
 
@@ -635,10 +635,10 @@ def rebin(
 
 
 def weight_invert(
-    weights: NDArray[np.int_ | np.float_ | np.complex_] | int | float | np.number,
+    weights: NDArray[np.integer | np.floating | np.complexfloating] | int | float | np.number,
     threshold: float | None = None,
     use_abs: bool = False,
-) -> NDArray[np.int_ | np.float_ | np.complex_] | int | float | np.number:
+) -> NDArray[np.integer | np.floating | np.complexfloating] | int | float | np.number:
     """
     The weights invert function cleans the weights given by removing
     the values that are 0, NaN or Inf ready for additional calculation.
@@ -717,9 +717,9 @@ def weight_invert(
 
 
 def array_match(
-    array_1: NDArray[np.int_ | np.float_ | np.complex_],
-    value_match: NDArray[np.int_ | np.float_ | np.complex_],
-    array_2: NDArray[np.int_ | np.float_ | np.complex_] | None = None,
+    array_1: NDArray[np.integer | np.floating | np.complexfloating],
+    value_match: NDArray[np.integer | np.floating | np.complexfloating],
+    array_2: NDArray[np.integer | np.floating | np.complexfloating] | None = None,
 ) -> NDArray[np.int64]:
     """
     TODO: Description for array match
@@ -870,7 +870,7 @@ def deriv_coefficients(n: int, divide_factorial: bool = False) -> NDArray[np.flo
     return coeff
 
 
-def idl_argunique(arr: NDArray[np.int_ | np.float_ | np.complex_]) -> NDArray[np.int64]:
+def idl_argunique(arr: NDArray[np.integer | np.floating | np.complexfloating]) -> NDArray[np.int64]:
     """
     In IDL the UNIQ function returns the indexes of the unique values within
     an array (that is assumed to be sorted beforehand). In NumPy they use the first
@@ -1007,7 +1007,7 @@ def simple_deproject_w_term(
 
 
 def resistant_mean(
-    array: NDArray[np.int_ | np.float_ | np.complex_],
+    array: NDArray[np.integer | np.floating | np.complexfloating],
     deviations: int,
     mad_scale: float = 0.67449999999999999,
     sigma_coeff: NDArray[np.float64] = np.array(
@@ -1331,7 +1331,7 @@ def vis_noise_calc(
 
 
 def idl_median(
-    x: NDArray[np.int_ | np.float_ | np.complex_], width: int = 0, even: bool = False
+    x: NDArray[np.integer | np.floating | np.complexfloating], width: int = 0, even: bool = False
 ) -> float:
     """
     TODO:_summary_
@@ -1421,11 +1421,11 @@ def reshape_and_average_in_time(
 
 
 def region_grow(
-    image: NDArray[np.int_ | np.float_ | np.complex_],
-    roiPixels: NDArray[np.int_],
+    image: NDArray[np.integer | np.floating | np.complexfloating],
+    roiPixels: NDArray[np.integer],
     low: int | float | None = None,
     high: int | float | None = None,
-) -> NDArray[np.int_ | np.float_ | np.complex_] | None:
+) -> NDArray[np.integer | np.floating | np.complexfloating] | None:
     """
     Replicates IDL's Region Grow, where a region of interest will grow based upon a given threshold
     within a 2D array. It finds all the pixels within the array that are connected neighbors via the

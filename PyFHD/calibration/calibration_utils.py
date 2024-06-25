@@ -19,8 +19,8 @@ def vis_extract_autocorr(
     obs: dict,
     vis_arr: NDArray[np.complex128],
     pyfhd_config: dict,
-    auto_tile_i: NDArray[np.int_] | None = None,
-) -> tuple[NDArray[np.float64], NDArray[np.int_]]:
+    auto_tile_i: NDArray[np.integer] | None = None,
+) -> tuple[NDArray[np.float64], NDArray[np.integer]]:
     """
     Extract the auto-correlations if they exist from the full visibility array.
 
@@ -49,7 +49,7 @@ def vis_extract_autocorr(
     if autocorr_i.size > 0:
         auto_tile_i = obs["baseline_info"]["tile_a"][autocorr_i] - 1
         # As auto_tile_i is used for indexing we need to make it an integer array
-        auto_tile_i = auto_tile_i.astype(np.int_)
+        auto_tile_i = auto_tile_i.astype(np.integer)
         auto_tile_i_single = np.unique(auto_tile_i)
         # expect it as a list of 2D arrays, so there might be trouble
         if not pyfhd_config["cal_time_average"]:
@@ -103,7 +103,7 @@ def vis_cal_auto_init(
     vis_model_arr: NDArray[np.complex128],
     vis_auto: NDArray[np.float64],
     vis_auto_model: NDArray[np.float64],
-    auto_tile_i: NDArray[np.int_],
+    auto_tile_i: NDArray[np.integer],
 ) -> NDArray[np.complex128]:
     """
     Initialize the calibration solutions using the autocorrelations prior to the linear least squares fit
@@ -361,7 +361,7 @@ def transfer_bandpass(
         time_integration = calfits[0].header["inttime"]
         freq_channel_width = calfits[0].header["chwidth"]
         x_orient = calfits[0].header["xorient"].strip()
-        data_dims = np.empty(naxis, dtype=np.int_)
+        data_dims = np.empty(naxis, dtype=np.integer)
         data_types = naxis * [""]
         for naxis_i in range(naxis):
             # Get the dimensions of the data
@@ -1261,7 +1261,7 @@ def vis_cal_auto_fit(
     cal: dict,
     vis_auto: NDArray[np.float64],
     vis_auto_model: NDArray[np.float64],
-    auto_tile_i: NDArray[np.int_],
+    auto_tile_i: NDArray[np.integer],
 ) -> dict:
     """
     Solve for each tile's calibration amplitude via the square root of the ratio of the data autocorrelation
@@ -1553,7 +1553,7 @@ def vis_baseline_hist(
 
 
 def cal_auto_ratio_divide(
-    obs: dict, cal: dict, vis_auto: NDArray[np.float64], auto_tile_i: NDArray[np.int_]
+    obs: dict, cal: dict, vis_auto: NDArray[np.float64], auto_tile_i: NDArray[np.integer]
 ) -> tuple[dict, NDArray[np.float64]]:
     """
     Remove antenna-dependent parameters (i.e. cable reflections) from the calculated gains
@@ -1594,7 +1594,7 @@ def cal_auto_ratio_divide(
 
 
 def cal_auto_ratio_remultiply(
-    cal: dict, auto_ratio: NDArray[np.float64], auto_tile_i: NDArray[np.int_]
+    cal: dict, auto_ratio: NDArray[np.float64], auto_tile_i: NDArray[np.integer]
 ) -> dict:
     """
     Return antenna-dependent parameters to the calculated gains after averaged quantities

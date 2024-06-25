@@ -7,14 +7,14 @@ from logging import Logger
 
 def filter_uv_uniform(
     image_uv: NDArray[np.complex128],
-    vis_count: NDArray[np.int_] | None,
+    vis_count: NDArray[np.integer] | None,
     obs: dict | None = None,
     params: dict | None = None,
     pyfhd_config: dict | None = None,
     logger: Logger | None = None,
     weights: NDArray[np.float64] | None = None,
-    fi_use: NDArray[np.int_] | None = None,
-    bi_use: NDArray[np.int_] | None = None,
+    fi_use: NDArray[np.integer] | None = None,
+    bi_use: NDArray[np.integer] | None = None,
     mask_mirror_indices: bool = False,
 ) -> tuple[NDArray[np.complex128], NDArray[np.float64]]:
     """

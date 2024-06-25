@@ -16,11 +16,11 @@ dependencies:
   - colorama
   - importlib_resources
   - h5py
-  - healpy
   - pre-commit
   - pip
   - pip:
     - sphinx-rtd-theme
     - sphinx-argparse
     - myst-parser
+    - healpy
     

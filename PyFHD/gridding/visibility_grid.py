@@ -23,8 +23,8 @@ def visibility_grid(
     uniform_flag: bool = False,
     no_conjugate: bool = False,
     model: NDArray[np.complex128] | None = None,
-    fi_use: NDArray[np.int_] | None = None,
-    bi_use: NDArray[np.int_] | None = None,
+    fi_use: NDArray[np.integer] | None = None,
+    bi_use: NDArray[np.integer] | None = None,
 ) -> dict:
     """
     Put visibilities on a discrete, hyperresolved 2D plane in {u,v}-space with the Fourier-transform of the

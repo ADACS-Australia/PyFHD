@@ -106,7 +106,7 @@ For examples of docstrings in PyFHD check out the following doc strings from the
 ```python
 # Notice how we can specificy we're wanting a numpy array of type int64 or float64, makes it clear to users of this
 # function the limits and bounds of what the function can take as input.
-def get_ri(data: NDArray[np.float_ | np.int_ | np.complex_], bins: NDArray[np.float64 | np.int64], hist: NDArray[np.int64], min: int | float, max: int | float) -> NDArray[np.int64]:
+def get_ri(data: NDArray[np.floating | np.integer | np.complexfloating], bins: NDArray[np.float64 | np.int64], hist: NDArray[np.int64], min: int | float, max: int | float) -> NDArray[np.int64]:
     """
     Calculates the reverse indices of a data and histogram. 
     The function replicates IDL's REVERSE_INDICES keyword within
@@ -180,7 +180,7 @@ def get_ri(data: NDArray[np.float_ | np.int_ | np.complex_], bins: NDArray[np.fl
 
 # Again notice the typing, and the typing of the return, again makes it clear to people to always expect three return
 # variables, and not only that, what type to expect them to be.
-def histogram(data : NDArray[np.float_ | np.int_ | np.complex_], bin_size: int = 1, num_bins: int | None = None, min: int | float | None = None, max: int | float | None = None) -> tuple[NDArray[np.int64], NDArray[np.float64 | np.int64], NDArray[np.int64]]:
+def histogram(data : NDArray[np.floating | np.integer | np.complexfloating], bin_size: int = 1, num_bins: int | None = None, min: int | float | None = None, max: int | float | None = None) -> tuple[NDArray[np.int64], NDArray[np.float64 | np.int64], NDArray[np.int64]]:
     """
     The histogram function combines the use of the get_bins, get_hist and get_ri
     functions into one function. For the descriptions and docs of those functions
