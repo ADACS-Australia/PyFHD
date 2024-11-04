@@ -73,6 +73,7 @@ transfer-calibration : ~
 cal-stop : false
 transfer-model-uv : ~
 max-cal-iter: 100
+calibration-plots: true
 
 # Flagging
 flag-basic: true
@@ -113,7 +114,7 @@ save-obs: true
 save-params: true
 save-cal: true
 save-visibilities : true
-save-calibrated-weights: true
+save-weights: true
 save-healpix-fits: true
 snapshot-healpix-export : true
 pad-uv-image : 1.

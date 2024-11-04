@@ -65,7 +65,7 @@ def before_file(tag, run, data_dir):
         "save_params": False,
         "save_visibilities": False,
         "save_cal": False,
-        "save_calibrated_weights": False,
+        "save_weights": False,
         "pad_uv_image": sav_dict["pad_uv_image"],
         "image_filter": "filter_uv_uniform",
     }

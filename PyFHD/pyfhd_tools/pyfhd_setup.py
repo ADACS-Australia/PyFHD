@@ -50,6 +50,9 @@ def pyfhd_parser():
     export = parser.add_argument_group(
         "Export", "Adjust the outputs of the PyFHD pipeline"
     )
+    plotting = parser.add_argument_group(
+        "Plotting", "Adjust the plotting of the PyFHD pipeline"
+    )
     model = parser.add_argument_group("Model", "Tune the modelling in PyFHD")
     sim = parser.add_argument_group(
         "Simulation", "Turn On Simulation and Tune the simulation"
@@ -431,7 +434,7 @@ def pyfhd_parser():
         "--max-cal-iter",
         default=100,
         type=int,
-        help="Sets the maximum number of iterations allowed for the linear least-squares solver to converge during vis_calibrate_subroutine. Ideally do not set this number unless you notice some of the frquencies not reaching convergence within 100 iterations and do not set this number to 5 or below.",
+        help="Sets the maximum number of iterations allowed for the linear least-squares solver to converge during vis_calibrate_subroutine. Ideally do not set this number unless you notice some of the frequencies not reaching convergence within 100 iterations and do not set this number to 5 or below.",
     )
 
     # Flagging Group
@@ -769,19 +772,27 @@ def pyfhd_parser():
         "--save-visibilities",
         default=False,
         action="store_true",
-        help="Save the calibrated data visibilities, the model visibilities, and the gridded uv planes",
+        help="Save the raw visibilities, calibrated data visibilities, the model visibilities, and the gridded uv planes",
     )
     export.add_argument(
-        "--save-calibrated-weights",
+        "--save-weights",
         default=False,
         action="store_true",
-        help="Save the calibrated weights from PyFHD's run",
+        help="Save the raw and calibrated weights from PyFHD's run",
     )
     export.add_argument(
         "--save-healpix-fits",
         default=False,
         action="store_true",
         help="Create Healpix fits files. Healpix fits maps are in units Jy/sr. Replaces write_healpix_fits",
+    )
+
+    # Plotting Group
+    plotting.add_argument(
+        "--calibration-plots",
+        default=False,
+        action="store_true",
+        help="Turns on the plotting of calibration solutions",
     )
 
     # Model Group
@@ -1027,7 +1038,7 @@ def _check_file_exists(config: dict, key: str) -> int:
 
 
 def write_collated_yaml_config(
-    pyfhd_config: dict, output_dir: str, description: str = ""
+    pyfhd_config: dict, output_dir: Path, description: str = ""
 ):
     """
     After all inputs have been validated using `PyFHD.pyfhd_tools.pyfhd_setup`,
@@ -1039,7 +1050,7 @@ def write_collated_yaml_config(
     ----------
     pyfhd_config : dict
         The options from the argparse in a dictionary
-    output_dir : str
+    output_dir : Path
         Path to save the file to
 
     """
@@ -1435,7 +1446,7 @@ def pyfhd_setup(options: argparse.Namespace) -> Tuple[dict, logging.Logger]:
     return pyfhd_config, logger
 
 
-def pyfhd_logger(pyfhd_config: dict) -> Tuple[logging.Logger, str]:
+def pyfhd_logger(pyfhd_config: dict) -> Tuple[logging.Logger, Path]:
     """
     Creates the the logger for PyFHD. If silent is True in the pyfhd_config then
     the StreamHandler won't be added to logger meaning there will be no terminal output

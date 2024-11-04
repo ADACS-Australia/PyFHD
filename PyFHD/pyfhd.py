@@ -3,6 +3,7 @@ import sys
 import time
 from datetime import timedelta
 import h5py
+from h5py import File
 import numpy as np
 from pathlib import Path
 from PyFHD.beam_setup.beam import create_psf
@@ -61,6 +62,33 @@ def _print_time_diff(
         logger.info(f"{description} completed in: {round(runtime,5)} seconds")
 
 
+def finish_pyfhd(
+    pyfhd_start: float, logger: logging.Logger, psf: dict | File, pyfhd_config: dict
+):
+    pyfhd_end = time.time()
+    runtime = timedelta(seconds=pyfhd_end - pyfhd_start)
+    # Close all open h5 files
+    if isinstance(psf, h5py.File):
+        psf.close()
+    # Write a final collated yaml for the final pyfhd_config
+    write_collated_yaml_config(
+        pyfhd_config, Path(pyfhd_config["output_dir"], "config"), "-final"
+    )
+    # Save the config in a HDF5 file for ease of reading in previous parameters from previous runs
+    save(
+        Path(pyfhd_config["output_dir"], "config", "pyfhd_config.h5"),
+        pyfhd_config,
+        "pyfhd_config",
+        logger=logger,
+    )
+    logger.info(
+        f'PyFHD Run Completed for {pyfhd_config["obs_id"]}\nTotal Runtime (Days:Hours:Minutes:Seconds.Millseconds): {runtime}'
+    )
+    # Close the handlers in the log
+    for handler in logger.handlers:
+        handler.close()
+
+
 def main():
 
     pyfhd_start = time.time()
@@ -68,6 +96,10 @@ def main():
 
     # Validate options and Create the Logger
     pyfhd_config, logger = pyfhd_setup(options)
+
+    checkpoint_name = pyfhd_config["description"]
+    if pyfhd_config["description"] is None or pyfhd_config["description"] == "":
+        checkpoint_name = pyfhd_config["obs_id"]
 
     if pyfhd_config["save_checkpoints"]:
         pyfhd_config["checkpoint_dir"] = Path(pyfhd_config["output_dir"], "checkpoints")
@@ -100,6 +132,25 @@ def main():
             visibility_start, visibility_end, "Visibilities Extracted", logger
         )
 
+        # Save the raw visibilities and weights if the option is set
+        if pyfhd_config["save_visibilities"]:
+            pyfhd_config["visibilities_path"] = Path(
+                pyfhd_config["output_dir"], "visibilities"
+            )
+            pyfhd_config["visibilities_path"].mkdir(exist_ok=True)
+            raw_vis_arr_path = Path(
+                pyfhd_config["visibilities_path"],
+                f"{pyfhd_config['obs_id']}_raw_vis_arr.h5",
+            )
+            save(raw_vis_arr_path, vis_arr, "visibilities", logger=logger)
+
+        if pyfhd_config["save_weights"]:
+            weights_path = Path(
+                pyfhd_config["visibilities_path"],
+                f"{pyfhd_config['obs_id']}_raw_vis_weights.h5",
+            )
+            save(weights_path, vis_weights, "weights", logger=logger)
+
         # If you wish to reorder your visibilities, insert your function to do that here.
         # If you wish to average your fits data by time or frequency, insert your functions to do that here
 
@@ -128,7 +179,7 @@ def main():
             save(
                 Path(
                     pyfhd_config["checkpoint_dir"],
-                    f'{pyfhd_config["obs_id"]}_{pyfhd_config["description"]}_obs_checkpoint.h5',
+                    f"{checkpoint_name}_obs_checkpoint.h5",
                 ),
                 checkpoint,
                 "obs_checkpoint",
@@ -276,7 +327,7 @@ def main():
                 save(
                     Path(
                         pyfhd_config["checkpoint_dir"],
-                        f'{pyfhd_config["obs_id"]}_{pyfhd_config["description"]}_calibration_checkpoint.h5',
+                        f"{checkpoint_name}_calibration_checkpoint.h5",
                     ),
                     checkpoint,
                     "calibration_checkpoint",
@@ -297,6 +348,59 @@ def main():
         logger.info(
             f"Checkpoint Loaded: Calibrated and Flagged visibility parameters, array and weights, the flagged observation metadata dictionary and the calibration dictionary loaded from {Path(pyfhd_config['output_dir'], 'calibrate_checkpoint.h5')}"
         )
+
+    if pyfhd_config["cal_stop"]:
+        logger.info(
+            "The cal_stop option was used, calibration was finished, saving calibration files then exiting PyFHD"
+        )
+        pyfhd_config["metadata_dir"] = Path(pyfhd_config["output_dir"], "metadata")
+        pyfhd_config["visibilities_path"] = Path(
+            pyfhd_config["output_dir"], "visibilities"
+        )
+        pyfhd_config["metadata_dir"].mkdir(exist_ok=True)
+        pyfhd_config["visibilities_path"].mkdir(exist_ok=True)
+
+        if pyfhd_config["save_obs"]:
+            obs_path = Path(
+                pyfhd_config["metadata_dir"], f"{pyfhd_config['obs_id']}_obs.h5"
+            )
+            logger.info(f"Saving the obs dictionary to {obs_path}")
+            save(obs_path, obs, "obs", logger=logger)
+
+        if pyfhd_config["save_params"]:
+            params_path = Path(
+                pyfhd_config["metadata_dir"], f"{pyfhd_config['obs_id']}_params.h5"
+            )
+            logger.info(f"Saving params dictionary to {params_path}")
+            save(params_path, params, "params", logger=logger)
+
+        if pyfhd_config["save_cal"] and pyfhd_config["calibrate_visibilities"]:
+            cal_path = Path(pyfhd_config["output_dir"], "calibration")
+            cal_path.mkdir(exist_ok=True)
+            cal_path = Path(cal_path, f"{pyfhd_config['obs_id']}_cal.h5")
+            logger.info(f"Saving the calibration dictionary to {cal_path}")
+            save(cal_path, cal, "cal", logger=logger)
+
+        if pyfhd_config["save_weights"]:
+            weights_path = Path(
+                pyfhd_config["visibilities_path"],
+                f"{pyfhd_config['obs_id']}_calibrated_vis_weights.h5",
+            )
+            logger.info(f"Saving the calibrated weights to {weights_path}")
+            save(weights_path, vis_weights, "weights", logger=logger)
+
+        if pyfhd_config["save_visibilities"]:
+            cal_vis_arr_path = Path(
+                pyfhd_config["visibilities_path"],
+                f"{pyfhd_config['obs_id']}_calibrated_vis_arr.h5",
+            )
+            logger.info(f"Saving the calibrated visibilities to {cal_vis_arr_path}")
+            save(cal_vis_arr_path, vis_arr, "visibilities", logger=logger)
+        logger.info(
+            "The cal_stop option was used, calibration was finished, exiting PyFHD"
+        )
+        finish_pyfhd(pyfhd_start, logger, psf, pyfhd_config)
+        exit(0)
 
     if pyfhd_config["recalculate_grid"] and pyfhd_config["gridding_checkpoint"] is None:
         grid_start = time.time()
@@ -367,7 +471,7 @@ def main():
             save(
                 Path(
                     pyfhd_config["checkpoint_dir"],
-                    f'{pyfhd_config["obs_id"]}_{pyfhd_config["description"]}_gridding_checkpoint.h5',
+                    f"{checkpoint_name}_gridding_checkpoint.h5",
                 ),
                 checkpoint,
                 "gridding_checkpoint",
@@ -413,25 +517,4 @@ def main():
         obs, psf, cal, params, vis_arr, vis_model_arr, vis_weights, pyfhd_config, logger
     )
 
-    pyfhd_end = time.time()
-    runtime = timedelta(seconds=pyfhd_end - pyfhd_start)
-    logger.info(
-        f'PyFHD Run Completed for {pyfhd_config["obs_id"]}\nTotal Runtime (Days:Hours:Minutes:Seconds.Millseconds): {runtime}'
-    )
-    # Close the handlers in the log
-    for handler in logger.handlers:
-        handler.close()
-    # Close all open h5 files
-    if isinstance(psf, h5py.File):
-        psf.close()
-    # Write a final collated yaml for the final pyfhd_config
-    write_collated_yaml_config(
-        pyfhd_config, Path(pyfhd_config["output_dir"], "config"), "-final"
-    )
-    # Save the config in a HDF5 file for ease of reading in previous parameters from previous runs
-    save(
-        Path(pyfhd_config["output_dir"], "config", "pyfhd_config.h5"),
-        pyfhd_config,
-        "pyfhd_config",
-        logger=logger,
-    )
+    finish_pyfhd(pyfhd_start, logger, psf, pyfhd_config)

@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 import matplotlib
+from pathlib import Path
 
 matplotlib.use("pdf")
 
@@ -27,15 +28,16 @@ def plot_cals(obs: dict, cal: dict, pyfhd_config: dict):
 
     # Plotting amplitude and phase for the gain, gain_residual, and their sum (raw solutions)
     obs_id = pyfhd_config["obs_id"]
-    cal_plot_dir = pyfhd_config["output_dir"] + "/plots/calibration/"
+    cal_plot_dir = Path(pyfhd_config["output_dir"], "plots", "calibration")
+    cal_plot_dir.mkdir(parents=True, exist_ok=True)
     n_types = 3  # plotting three types of amp and phase gains
     save_path_roots = [
-        f"{cal_plot_dir}{obs_id}_cal_amp",
-        f"{cal_plot_dir}{obs_id}_cal_phase",
-        f"{cal_plot_dir}{obs_id}_cal_residual_amp",
-        f"{cal_plot_dir}{obs_id}_cal_residual_phase",
-        f"{cal_plot_dir}{obs_id}_cal_raw_amp",
-        f"{cal_plot_dir}{obs_id}_cal_raw_phase",
+        Path(cal_plot_dir, f"{obs_id}_cal_amp"),
+        Path(cal_plot_dir, f"{obs_id}_cal_phase"),
+        Path(cal_plot_dir, f"{obs_id}_cal_residual_amp"),
+        Path(cal_plot_dir, f"{obs_id}_cal_residual_phase"),
+        Path(cal_plot_dir, f"{obs_id}_cal_raw_amp"),
+        Path(cal_plot_dir, f"{obs_id}_cal_raw_phase"),
     ]
 
     # Calibration solutions are referenced mutliple times, put them in variables for speed

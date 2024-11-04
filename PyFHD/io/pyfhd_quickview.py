@@ -64,7 +64,9 @@ def get_image_renormalization(
         )
         dirty_num = dirty_image[obs["dimension"] // 2, obs["elements"] // 2]
         renorm_factor[pol_i] = 1 / dirty_num
-        renorm_factor[pol_i] *= beam_base[pol_i, int(obs["obsx"]), int(obs["obsy"])] ** 2
+        renorm_factor[pol_i] *= (
+            beam_base[pol_i, int(obs["obsx"]), int(obs["obsy"])] ** 2
+        )
         renorm_factor[pol_i] /= (obs["degpix"] * (np.pi / 180)) ** 2
     return renorm_factor
 
@@ -180,7 +182,7 @@ def quickview(
         cal_path = Path(cal_path, f"{pyfhd_config['obs_id']}_cal.h5")
         logger.info(f"Saving the calibration dictionary to {cal_path}")
         save(cal_path, cal, "cal", logger=logger)
-    if pyfhd_config["save_calibrated_weights"]:
+    if pyfhd_config["save_weights"]:
         weights_path = Path(
             pyfhd_config["visibilities_path"],
             f"{pyfhd_config['obs_id']}_calibrated_vis_weights.h5",

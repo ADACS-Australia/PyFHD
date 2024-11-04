@@ -16,6 +16,7 @@ from PyFHD.calibration.calibration_utils import (
 )
 from PyFHD.calibration.vis_calibrate_subroutine import vis_calibrate_subroutine
 from PyFHD.pyfhd_tools.pyfhd_utils import resistant_mean, reshape_and_average_in_time
+from PyFHD.plotting.calibration import plot_cals
 
 
 def calibrate(
@@ -136,8 +137,6 @@ def calibrate(
         # These subtractions replace vis_cal_subtract
         cal_res_gain = cal_base["gain"] - cal["gain"]
 
-    # Add plotting later here, plot_cals was the function in IDL if you wish to translate
-
     # If calibration_auto_fit was set then replace cal with cal_auto, usually for diagnostic purposes
     if pyfhd_config["calibration_auto_fit"]:
         cal = cal_auto
@@ -177,6 +176,10 @@ def calibrate(
     cal["mean_gain_residual"] = cal_res_avg
     cal["mean_gain_restrict"] = cal_res_restrict
     cal["stddev_gain_residual"] = cal_res_stddev
+
+    if pyfhd_config["calibration_plots"]:
+        logger.info(f"Plotting the calibration solutions into {pyfhd_config['output_dir']/"plots"/"calibration"}")
+        plot_cals(obs, cal, pyfhd_config)
 
     # Return the calibrated visibility array
     return vis_cal, cal, obs
