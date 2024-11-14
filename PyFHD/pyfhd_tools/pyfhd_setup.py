@@ -24,12 +24,18 @@ def pyfhd_parser():
     # TODO: Cleanup all the options at some point remove unused options
 
     parser = configargparse.ArgumentParser(
-        default_config_files=["./pyfhd.yaml"],
+        # default_config_files=["./pyfhd.yaml"],
         prog="PyFHD",
         description="This is the Python Fast Holographic Deconvolution package, only the observation ID (obs_id) is required to start your run, but you should need to modify these arguments below to get something useful.",
         config_file_parser_class=configargparse.YAMLConfigFileParser,
-        args_for_setting_config_path=["-c", "--config"],
         formatter_class=configargparse.RawTextHelpFormatter,
+    )
+    parser.add_argument(
+        "-c",
+        "--config",
+        default="./pyfhd.yaml",
+        is_config_file=True,
+        help="Configuration File Path for PyFHD",
     )
     # Add All the Groups
     checkpoints = parser.add_argument_group(
@@ -1104,6 +1110,165 @@ def write_collated_yaml_config(
                     outfile.write(f"{yaml_key} : '{pyfhd_config[key]}'\n")
 
 
+def pyfhd_logger(pyfhd_config: dict) -> Tuple[logging.Logger, Path]:
+    """
+    Creates the the logger for PyFHD. If silent is True in the pyfhd_config then
+    the StreamHandler won't be added to logger meaning there will be no terminal output
+    even if logger is called later. If diable_log is True then the FileHandler won't be added
+    to the logger preventing the creation fo the log file meaning subsequent calls to the logger
+    will not add to or create a log file.
+
+    Parameters
+    ----------
+    pyfhd_config : dict
+        The options from the argparse in a dictionary
+
+    Returns
+    -------
+    logger : logging.Logger
+        The logger with the appropriate handlers added.
+    output_dir : str
+        Where the log and FHD outputs are being written to
+    """
+    # Get the time, Git commit and setup the name of the output directory
+    run_time = time.localtime()
+    stdout_time = time.strftime("%c", run_time)
+    log_time = time.strftime("%Y_%m_%d_%H_%M_%S", run_time)
+
+    commit = "Could not find git info"
+    # Try and get git_information from the pip install method
+    git_dict = retrieve_gitdict()
+    if git_dict:
+        commit = git_dict["describe"]
+    # If that doesn't exist, try directly find the information (we might be
+    # running from within the git repo)
+    else:
+        commit = subprocess.run(
+            ["git", "rev-parse", "HEAD"], stdout=subprocess.PIPE, text=True
+        ).stdout
+        commit.replace("\n", "")
+
+    if pyfhd_config["description"] is None:
+        log_name = "pyfhd_" + log_time
+    else:
+        log_name = (
+            "pyfhd_" + pyfhd_config["description"].replace(" ", "_") + "_" + log_time
+        )
+    pyfhd_config["commit"] = commit
+    pyfhd_config["log_name"] = log_name
+    pyfhd_config["log_time"] = log_time
+    # Format the starting string for logging
+    start_string = f"""\
+    ________________________________________________________________________
+    |    ooooooooo.               oooooooooooo ooooo   ooooo oooooooooo.    |
+    |    8888   `Y88.             8888       8 8888    888   888     Y8b    |
+    |    888   .d88' oooo    ooo  888          888     888   888      888   |
+    |    888ooo88P'   `88.  .8'   888oooo8     888ooooo888   888      888   |
+    |    888           `88..8'    888          888     888   888      888   |
+    |    888            `888'     888          888     888   888     d88'   |
+    |    o888o            .8'     o888o        o888o   o888o o888bood8P'    |
+    |                 .o..P'                                                |
+    |                `Y8P'                                                  |
+    |_______________________________________________________________________|
+        Python Fast Holographic Deconvolution 
+
+        Translated from IDL to Python as a collaboration between Astronomy Data and Computing Services (ADACS) and the Epoch of Reionisation (EoR) Team.
+
+        Repository: https://github.com/ADACS-Australia/PyFHD
+
+        Documentation: https://pyfhd.readthedocs.io/en/latest/
+
+        Git Commit Hash: {commit}
+
+        PyFHD Run Started At: {stdout_time}
+
+        Observation ID: {pyfhd_config["obs_id"]}
+
+        Confifuration File: {pyfhd_config["config_file"]}
+        
+        Validating your input..."""
+
+    # Setup logging
+    log_string = ""
+    for line in start_string.split("\n"):
+        log_string += (
+            line.lstrip().replace("_", " ").replace("|    ", "").replace("|", "") + "\n"
+        )
+    # Start the PyFHD run
+    logger = logging.getLogger()
+    logger.setLevel(logging.INFO)
+    # Also capture Python Warnings and put it into the log as well
+    logging.captureWarnings(True)
+    # Create the logging for the temrinal
+    if not pyfhd_config["silent"]:
+        log_terminal = logging.StreamHandler()
+        log_terminal.setFormatter(logging.Formatter("%(message)s"))
+        logger.addHandler(log_terminal)
+
+    # Check the output_path exists, and create if not
+
+    if not os.path.isdir(pyfhd_config["output_path"]):
+        print(
+            f"Output path specified by `--output-path={pyfhd_config['output_path']}` does not exist. Attempting to create now."
+        )
+        output_dir = Path(pyfhd_config["output_path"])
+        Path.mkdir(output_dir)
+        print(f"Successfully created directory: {pyfhd_config['output_path']}")
+
+    # Create the output directory path. If the user has selected a description,
+    # don't use the time in the name - that gets used for the log
+    if pyfhd_config["description"] is None:
+        dir_name = "pyfhd_" + log_time
+    else:
+        dir_name = "pyfhd_" + pyfhd_config["description"].replace(" ", "_")
+
+    output_dir = Path(pyfhd_config["output_path"], dir_name)
+    if Path.is_dir(output_dir):
+        output_dir_exists = True
+    else:
+        output_dir_exists = False
+        Path.mkdir(output_dir)
+
+    # Create the logger for the file
+    if pyfhd_config["log_file"]:
+        log_file = logging.FileHandler(Path(output_dir, log_name + ".log"))
+        log_file.setFormatter(logging.Formatter("%(message)s"))
+        logger.addHandler(log_file)
+
+    # Show that start message in the terminal and/or log file, unless both are turned off.
+    logger.info(log_string)
+    if not pyfhd_config["silent"]:
+        log_terminal.setFormatter(
+            logging.Formatter(
+                "%(asctime)s - %(levelname)s:\n\t%(message)s",
+                datefmt="%Y-%m-%d %H:%M:%S",
+            )
+        )
+    if pyfhd_config["log_file"]:
+        log_file.setFormatter(
+            logging.Formatter(
+                "%(asctime)s - %(levelname)s:\n\t%(message)s",
+                datefmt="%Y-%m-%d %H:%M:%S",
+            )
+        )
+
+    # Write out a config file based
+
+    # Stick a warning in the log if running in an already existing dir
+    if output_dir_exists:
+        logger.warning(
+            f"The output dir {output_dir} already exists, so any existing outputs might be overridden depending on settings."
+        )
+
+    logger.info(
+        "Logging and configuration file created and copied to here: {}".format(
+            Path(output_dir).resolve()
+        )
+    )
+
+    return logger, output_dir
+
+
 def pyfhd_setup(options: argparse.Namespace) -> Tuple[dict, logging.Logger]:
     """
     Check for any incompatibilities among the options given for starting the PyFHD pipeline as some options
@@ -1435,7 +1600,6 @@ def pyfhd_setup(options: argparse.Namespace) -> Tuple[dict, logging.Logger]:
                 warnings
             )
         )
-
     logger.info("Input validated, starting PyFHD run now")
 
     # Create the config directory
@@ -1444,162 +1608,3 @@ def pyfhd_setup(options: argparse.Namespace) -> Tuple[dict, logging.Logger]:
     write_collated_yaml_config(pyfhd_config, config_path)
 
     return pyfhd_config, logger
-
-
-def pyfhd_logger(pyfhd_config: dict) -> Tuple[logging.Logger, Path]:
-    """
-    Creates the the logger for PyFHD. If silent is True in the pyfhd_config then
-    the StreamHandler won't be added to logger meaning there will be no terminal output
-    even if logger is called later. If diable_log is True then the FileHandler won't be added
-    to the logger preventing the creation fo the log file meaning subsequent calls to the logger
-    will not add to or create a log file.
-
-    Parameters
-    ----------
-    pyfhd_config : dict
-        The options from the argparse in a dictionary
-
-    Returns
-    -------
-    logger : logging.Logger
-        The logger with the appropriate handlers added.
-    output_dir : str
-        Where the log and FHD outputs are being written to
-    """
-    # Get the time, Git commit and setup the name of the output directory
-    run_time = time.localtime()
-    stdout_time = time.strftime("%c", run_time)
-    log_time = time.strftime("%Y_%m_%d_%H_%M_%S", run_time)
-
-    commit = "Could not find git info"
-    # Try and get git_information from the pip install method
-    git_dict = retrieve_gitdict()
-    if git_dict:
-        commit = git_dict["describe"]
-    # If that doesn't exist, try directly find the information (we might be
-    # running from within the git repo)
-    else:
-        commit = subprocess.run(
-            ["git", "rev-parse", "HEAD"], stdout=subprocess.PIPE, text=True
-        ).stdout
-        commit.replace("\n", "")
-
-    if pyfhd_config["description"] is None:
-        log_name = "pyfhd_" + log_time
-    else:
-        log_name = (
-            "pyfhd_" + pyfhd_config["description"].replace(" ", "_") + "_" + log_time
-        )
-    pyfhd_config["commit"] = commit
-    pyfhd_config["log_name"] = log_name
-    pyfhd_config["log_time"] = log_time
-    # Format the starting string for logging
-    start_string = """\
-    ________________________________________________________________________
-    |    ooooooooo.               oooooooooooo ooooo   ooooo oooooooooo.    |
-    |    8888   `Y88.             8888       8 8888    888   888     Y8b    |
-    |    888   .d88' oooo    ooo  888          888     888   888      888   |
-    |    888ooo88P'   `88.  .8'   888oooo8     888ooooo888   888      888   |
-    |    888           `88..8'    888          888     888   888      888   |
-    |    888            `888'     888          888     888   888     d88'   |
-    |    o888o            .8'     o888o        o888o   o888o o888bood8P'    |
-    |                 .o..P'                                                |
-    |                `Y8P'                                                  |
-    |_______________________________________________________________________|
-        Python Fast Holographic Deconvolution 
-
-        Translated from IDL to Python as a collaboration between Astronomy Data and Computing Services (ADACS) and the Epoch of Reionisation (EoR) Team.
-
-        Repository: https://github.com/ADACS-Australia/PyFHD
-
-        Documentation: https://pyfhd.readthedocs.io/en/latest/
-
-        Git Commit Hash: {}
-
-        PyFHD Run Started At: {}
-
-        Observation ID: {}
-        
-        Validating your input...""".format(
-        commit, stdout_time, pyfhd_config["obs_id"]
-    )
-
-    # Setup logging
-    log_string = ""
-    for line in start_string.split("\n"):
-        log_string += (
-            line.lstrip().replace("_", " ").replace("|    ", "").replace("|", "") + "\n"
-        )
-    # Start the PyFHD run
-    logger = logging.getLogger()
-    logger.setLevel(logging.INFO)
-    # Also capture Python Warnings and put it into the log as well
-    logging.captureWarnings(True)
-    # Create the logging for the temrinal
-    if not pyfhd_config["silent"]:
-        log_terminal = logging.StreamHandler()
-        log_terminal.setFormatter(logging.Formatter("%(message)s"))
-        logger.addHandler(log_terminal)
-
-    # Check the output_path exists, and create if not
-
-    if not os.path.isdir(pyfhd_config["output_path"]):
-        print(
-            f"Output path specified by `--output-path={pyfhd_config['output_path']}` does not exist. Attempting to create now."
-        )
-        output_dir = Path(pyfhd_config["output_path"])
-        Path.mkdir(output_dir)
-        print(f"Successfully created directory: {pyfhd_config['output_path']}")
-
-    # Create the output directory path. If the user has selected a description,
-    # don't use the time in the name - that gets used for the log
-    if pyfhd_config["description"] is None:
-        dir_name = "pyfhd_" + log_time
-    else:
-        dir_name = "pyfhd_" + pyfhd_config["description"].replace(" ", "_")
-
-    output_dir = Path(pyfhd_config["output_path"], dir_name)
-    if Path.is_dir(output_dir):
-        output_dir_exists = True
-    else:
-        output_dir_exists = False
-        Path.mkdir(output_dir)
-
-    # Create the logger for the file
-    if pyfhd_config["log_file"]:
-        log_file = logging.FileHandler(Path(output_dir, log_name + ".log"))
-        log_file.setFormatter(logging.Formatter("%(message)s"))
-        logger.addHandler(log_file)
-
-    # Show that start message in the terminal and/or log file, unless both are turned off.
-    logger.info(log_string)
-    if not pyfhd_config["silent"]:
-        log_terminal.setFormatter(
-            logging.Formatter(
-                "%(asctime)s - %(levelname)s:\n\t%(message)s",
-                datefmt="%Y-%m-%d %H:%M:%S",
-            )
-        )
-    if pyfhd_config["log_file"]:
-        log_file.setFormatter(
-            logging.Formatter(
-                "%(asctime)s - %(levelname)s:\n\t%(message)s",
-                datefmt="%Y-%m-%d %H:%M:%S",
-            )
-        )
-
-    # Write out a config file based
-
-    # Stick a warning in the log if running in an already existing dir
-    if output_dir_exists:
-        logger.warning(
-            f"The output dir {output_dir} already exists, so any existing outputs might be overridden depending on settings."
-        )
-
-    logger.info(
-        "Logging and configuration file created and copied to here: {}".format(
-            Path(output_dir).resolve()
-        )
-    )
-
-    return logger, output_dir

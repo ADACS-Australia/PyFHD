@@ -90,7 +90,6 @@ def finish_pyfhd(
 
 
 def main():
-
     pyfhd_start = time.time()
     options = pyfhd_parser().parse_args()
 
@@ -190,14 +189,15 @@ def main():
             )
     else:
         # Load the checkpoint and initialize the required variables
-        obs_checkpoint = load(pyfhd_config["obs_checkpoint"], logger=logger)
-        obs = obs_checkpoint["obs"]
-        params = obs_checkpoint["params"]
-        vis_arr = obs_checkpoint["vis_arr"]
-        vis_weights = obs_checkpoint["vis_weights"]
-        logger.info(
-            f"Checkpoint Loaded: Uncalibrated visibility parameters, array and weights and the observation metadata dictionary loaded from {Path(pyfhd_config['output_dir'], 'obs_checkpoint.h5')}"
-        )
+        if pyfhd_config["obs_checkpoint"]:
+            obs_checkpoint = load(pyfhd_config["obs_checkpoint"], logger=logger)
+            obs = obs_checkpoint["obs"]
+            params = obs_checkpoint["params"]
+            vis_arr = obs_checkpoint["vis_arr"]
+            vis_weights = obs_checkpoint["vis_weights"]
+            logger.info(
+                f"Checkpoint Loaded: Uncalibrated visibility parameters, array and weights and the observation metadata dictionary loaded from {Path(pyfhd_config['output_dir'], 'obs_checkpoint.h5')}"
+            )
 
     # Read in the beam from a file returning a psf dictionary
     psf_start = time.time()
@@ -338,16 +338,17 @@ def main():
                 )
     else:
         # Load the calibration checkpoint
-        cal_checkpoint = load(pyfhd_config["calibrate_checkpoint"], logger=logger)
-        obs = cal_checkpoint["obs"]
-        params = cal_checkpoint["params"]
-        vis_arr = cal_checkpoint["vis_arr"]
-        vis_model_arr = cal_checkpoint["vis_model_arr"]
-        vis_weights = cal_checkpoint["vis_weights"]
-        cal = cal_checkpoint["cal"]
-        logger.info(
-            f"Checkpoint Loaded: Calibrated and Flagged visibility parameters, array and weights, the flagged observation metadata dictionary and the calibration dictionary loaded from {Path(pyfhd_config['output_dir'], 'calibrate_checkpoint.h5')}"
-        )
+        if pyfhd_config["calibration_checkpoint"]:
+            cal_checkpoint = load(pyfhd_config["calibrate_checkpoint"], logger=logger)
+            obs = cal_checkpoint["obs"]
+            params = cal_checkpoint["params"]
+            vis_arr = cal_checkpoint["vis_arr"]
+            vis_model_arr = cal_checkpoint["vis_model_arr"]
+            vis_weights = cal_checkpoint["vis_weights"]
+            cal = cal_checkpoint["cal"]
+            logger.info(
+                f"Checkpoint Loaded: Calibrated and Flagged visibility parameters, array and weights, the flagged observation metadata dictionary and the calibration dictionary loaded from {Path(pyfhd_config['output_dir'], 'calibrate_checkpoint.h5')}"
+            )
 
     if pyfhd_config["cal_stop"]:
         logger.info(
@@ -483,38 +484,53 @@ def main():
         grid_end = time.time()
         _print_time_diff(grid_start, grid_end, "Visibilities gridded", logger)
     else:
-        grid_checkpoint = load(pyfhd_config["gridding_checkpoint"], logger=logger)
-        image_uv = grid_checkpoint["image_uv"]
-        weights_uv = grid_checkpoint["weights_uv"]
-        variance_uv = grid_checkpoint["variance_uv"]
-        uniform_filter_uv = grid_checkpoint["uniform_filter_uv"]
-        if "model_uv" in grid_checkpoint:
-            model_uv = grid_checkpoint["model_uv"]
-        logger.info(
-            f"Checkpoint Loaded: The Gridded UV Planes loaded from {Path(pyfhd_config['output_dir'], 'gridding_checkpoint.h5')}"
-        )
+        if pyfhd_config["gridding_checkpoint"]:
+            grid_checkpoint = load(pyfhd_config["gridding_checkpoint"], logger=logger)
+            image_uv = grid_checkpoint["image_uv"]
+            weights_uv = grid_checkpoint["weights_uv"]
+            variance_uv = grid_checkpoint["variance_uv"]
+            uniform_filter_uv = grid_checkpoint["uniform_filter_uv"]
+            if "model_uv" in grid_checkpoint:
+                model_uv = grid_checkpoint["model_uv"]
+            logger.info(
+                f"Checkpoint Loaded: The Gridded UV Planes loaded from {Path(pyfhd_config['output_dir'], 'gridding_checkpoint.h5')}"
+            )
 
     # Call quickview to save the all the variables if set in the config. Also create dirty images and save
     # FITS files with the dirty images on a per polarization basis
-    quickview(
-        obs,
-        psf,
-        params,
-        cal,
-        vis_arr,
-        vis_weights,
-        image_uv,
-        weights_uv,
-        variance_uv,
-        uniform_filter_uv,
-        model_uv,
-        pyfhd_config,
-        logger,
-    )
+    if pyfhd_config["export_images"]:
+        quickview(
+            obs,
+            psf,
+            params,
+            cal,
+            vis_arr,
+            vis_weights,
+            image_uv,
+            weights_uv,
+            variance_uv,
+            uniform_filter_uv,
+            model_uv,
+            pyfhd_config,
+            logger,
+        )
 
     # Create the healpix HDF5 cubes and save them to disk
-    healpix_snapshot_cube_generate(
-        obs, psf, cal, params, vis_arr, vis_model_arr, vis_weights, pyfhd_config, logger
-    )
+    if pyfhd_config["snapshot_healpix_export"]:
+        healpix_snapshot_cube_generate(
+            obs,
+            psf,
+            cal,
+            params,
+            vis_arr,
+            vis_model_arr,
+            vis_weights,
+            pyfhd_config,
+            logger,
+        )
 
     finish_pyfhd(pyfhd_start, logger, psf, pyfhd_config)
+
+
+if __name__ == "__main__":
+    main()

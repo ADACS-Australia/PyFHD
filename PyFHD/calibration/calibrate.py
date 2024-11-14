@@ -178,7 +178,9 @@ def calibrate(
     cal["stddev_gain_residual"] = cal_res_stddev
 
     if pyfhd_config["calibration_plots"]:
-        logger.info(f"Plotting the calibration solutions into {pyfhd_config['output_dir']/"plots"/"calibration"}")
+        logger.info(
+            f"Plotting the calibration solutions into {pyfhd_config['output_dir']/'plots'/'calibration'}"
+        )
         plot_cals(obs, cal, pyfhd_config)
 
     # Return the calibrated visibility array
