@@ -67,7 +67,7 @@ Take the `histogram` function for example, are you wondering why we did a histog
 
 After all, `IDL's` histogram function can be done using a combination of `np.histogram` and the reverse indices can technically be done using many indexing functions available in NumPy as well. Well it turns out the NumPy functions like `np.histogram` suffer from a fatal flaw, they're awfully slow with large arrays, and this isn't necessarily their fault either, NumPy (rightly for their particular case) prioritised compatibility over raw speed. Other than speed, a function needed to be made to create the reverse indices part of `IDL's` histogram anyway as there is no `SciPy` or `NumPy` equivalent. As such it was decided to rewrite the histogram from scratch with speed as the priority given that `histogram` in `PyFHD` get's called hundreds, maybe hundreds of times.
 
-To summarise, only make a new function if it hasn't been made before, or the ones that do exist do not meet your requirements. The requirements initally should not include anything in rgeards to the speed of the function unless you know before hand that the function is going to be called a lot or in a loop. 
+To summarise, only make a new function if it hasn't been made before, or the ones that do exist do not meet your requirements. The requirements initally should not include anything in regards to the speed of the function unless you know before hand that the function is going to be called a lot or in a loop. 
 
 If you're wondering what to do in the case that the function is in a library/package that is no longer being supported anymore? It's likely you'll need to remake it at some stage, and depending on the license of the original library/package, you might be able to copy and paste the function into PyFHD (with acknowledgements to the original library/package).
 
@@ -87,17 +87,41 @@ From there I'll leave it upto you, time to put that function from your head to a
 1. Add the option to the YAML file with a good default value that is a good value in most cases, and if that isn't the case use the value you use the most
 2. Also add the option into `PyFHD/pyfhd_tools/pyfhd_setup.py` via the function `pyfhd_parser`. The `pyfhd_parser` function creates the argparse object. The argparse object contains multiple groups of options, each group usually corresponds to each part of the PyFHD pipeline, please add the option into the most appropriate group, e.g. if you want the option to be inside calibration add the new option to the calibration group. There will be plenty of examples inside the same function for you to refer to when making a new option. Each option must contain:
    * The option argument string you're using, any spaces in your option should be replaced with a dash i.e. `new option` -> `--new-option`
-   * A default value, this is set by using `default =`. If you're dealing with a boolean toggle valkue, set the default = False, and configure the `YAML` to have the default value you want it too.
+   * A default value, this is set by using `default =`. If you're dealing with a boolean toggle value, set the `default = False`, and configure the `YAML` to have the default value you want it too.
    * If you're doing a boolean value then set an `action` to `'store_true'`, in the case of a list you should use the action `'append'` and put an empty list in the `YAML` file for that option.
    * Help text which explains when and why to use the option, and if it conflicts with tother options describe how they conflict in that help text or define what happens when there are conflicting options using the `pyfhd_setup` function where we check all the options to ensure they are valid. Ideally try to keep all validation checking for those options inside `pyfhd_setup` if you can.
 
-From there you can reference the option created using `pyfhd_config[new_option]`, do take note all dashes in the option name are converted to underscores to avoid conflict with python's `-` operator. Inside the yaml you will also see `~` which represents a python `None` object.
+From there you can reference the option created using `pyfhd_config[new_option]`, do take note all dashes in the option name are converted to underscores to avoid conflict with python's `-` operator. Inside the yaml you will also see `~` which represents a python `None` object. An example is provided below added to the `pyfhd_parser`:
+
+```py
+plotting.add_argument(
+    "--calibration-plots",
+    default=False,
+    action="store_true",
+    help="Turns on the plotting of calibration solutions",
+)
+```
+
+For adding options I would also avoid adding options that negate something e.g. `--no-calibration-plots`, as these can be confusing to set, as you can start dealing with double negatives. If you wish to have an option that is negatable, then I'd suggest using the `action`, `argparse.BooleanOptionalAction` so when adding a boolean option in the command line it will automatically add the `--no` argument. For example, we could change the above `calibration-plots` to incorporate this action:
+
+```py
+import argparse
+
+plotting.add_argument(
+    "--calibration-plots",
+    default=False,
+    action=argparse.BooleanOptionalAction,
+    help="Turns on the plotting of calibration solutions",
+)
+```
+
+This will add the option for `--no-calibration-plots` in the command line without having to define it inside the code or configuration files. 
 
 ### Documenting and Typing the new function
 
 You have made your new function, congratulations, now it's time to add some documentation and comments if you haven't already. In PyFHD, we use docstrings in the [`numpydoc`](https://numpydoc.readthedocs.io/en/latest/format.html) which is well documented in terms of what you should put into your docstrings and what each section in the docstring is for. There is specific formatting to follow and deviations from the format will result in weird outputs for read the docs once the docstring is read in for auto generating the API reference so please follow the numpydoc format precisely.
 
-When it comes to comments in PyFHD, there are some functions which are heavily commented and others are not, in general comments should be about the intention and the reason why the code exists, rather than what it does. It's often said good, clean code shouldn't need comments as it's descriptive enough to be followed, which for the most part is somewhat True, however, I personally don't think that's always True, and so having comments about what something does isn't necessarily a bad thing. The rule I like to follow is somewhere in between, some pieces of code do occasionally need you to say what they are doing as good docstrings can also tell people why you have done what you have done. Remember, comments are gifts to yourself when you have to re-read the same function a year later, so if a function has more comments than you need, who cares?
+When it comes to comments in PyFHD, there are some functions which are heavily commented and others are not, in general comments should be about the intention and the reason why the code exists, rather than what it does. It's often said good, clean code shouldn't need comments as it's descriptive enough to be followed, which for the most part is somewhat true, however, I personally don't think that's always true, and so having comments about what something does isn't necessarily a bad thing. The rule I like to follow is somewhere in between, some pieces of code do occasionally need you to say what they are doing as good docstrings can also tell people why you have done what you have done. Remember, comments are gifts to yourself when you have to re-read the same function a year later, so if a function has more comments than you need, who cares?
 
 In PyFHD we're also using the Python typing systems and packages. In PyFHD they have been primarily used in the definition of functions, to ensure the not only is the type of each variable visible, but in the case of NumPy typing, you can also show the expected precision. The reason for using the typing system is making the development experience better in IDE's like VSCode or PyCharm, as the IDE will show you the function as you're typing it out. It only takes an extra 2 seconds per parameter on the defintion of a new function but can save you hours of pain. Features inside IDE's such as code completion, code hinting usually come under the umbrella of [Intellisense](https://code.visualstudio.com/docs/editor/intellisense). In the future, it's possible to use tools such as [MyPy](https://mypy.readthedocs.io/en/stable/) to enforce these types too.
 
@@ -374,7 +398,7 @@ def test_cal_auto_ratio_divide(before_file, after_file):
     npt.assert_allclose(expected_cal['gain'], result_cal['gain'], atol=atol)
 ```
 
-Once you have set up the tests, evry time you change the code and re-run the test you can be sure you haven't broken existing functionality accidentally giving you more confidence that the changes you have made will improve `PyFHD`. 
+Once you have set up the tests, every time you change the code and re-run the test you can be sure you haven't broken existing functionality accidentally giving you more confidence that the changes you have made will improve `PyFHD`. 
 
 Another tool that will help you during testing is the debugging tools available in IDE's like those in VSCode and PyCharm. Debugging tools allow you to get away from using print statements to using breakpoints instead, allowing you to see the entire snapshot of your function at that point in time in the code. This does make it easier to track down issues, see portions of large arrays, watch certain variables throughout the code to see how they change etc. VSCode in particular can allow you to set log points which can act like print statements without you having to put anything into the code. Breakpoints can also have conditions attached to them, so if you know you're looping through frequencies and you know an issue happens with frequency index 13, you can make a breakpoint condition that will trigger only when the frequency index is 13. Check the debugging tools for VSCode [here](https://code.visualstudio.com/docs/python/debugging) and the tools for PyCharm [here](https://www.jetbrains.com/help/pycharm/debugging-code.html).
 
@@ -482,7 +506,7 @@ There are several gotchas hidden thoughout IDL, usually most of them won't appea
     In summary, watch out for this behaviour, it does not fly in any other language, I have absolutely no idea why this is a thing or why you'd want it.
 * The `POLY_FIT` function in IDL has the ability to do both `polyfit` and `polyval`, so watch out for the use of the `YFIT` keyword. In general, `poly_fit(a, b, 2)` in IDL is `np.polynomial.polynomial.Polynomial.fit(a, b, deg=2).convert().coef` in Python. If you see the `YFIT` keyword, then it's a case of calling `np.polynomial.polynomial.polyval` on the calculated coefficients i.e. `phase_fit = np.polynomial.polynomial.polyval(a, np.polynomial.polynomial.Polynomial.fit(a, b, deg=2).convert().coef)`.
 * `LA_LEAST_SQUARES` in IDL and `np.linalg.lstsq` in Python (and the SciPy least square functions as well) will produce different results due to the solvers in use, and the assumption that the design matrix given to the solvers is full rank in `LA_LEAST_SQUARES` while NumPy and SciPy assuming that the design matrix is not full rank. Even using the same solvers doesn't give the same results, so it might come down to how each of the functions were compiled, either way, keep into consideration they just won't get the same results in most cirumstances.
-* The `REBIN` has been replicated in `PyFHD`, however it's use should be used sparingly as its doing interpolation when increasng an array in size, and averaging when decreasing the size of an array i.e. it's  upscaling or downscaling and it's treating your array or matrix as an image rather than any ordinary array. In many cases it could be best to use `np.tile`, `np.pad` or `np.repeat` to do the same task more consistently.
+* The `REBIN` has been replicated in `PyFHD`, however it's use should be used sparingly as its doing interpolation when increasing an array in size, and averaging when decreasing the size of an array i.e. it's  upscaling or downscaling and it's treating your array or matrix as an image rather than any ordinary array. In many cases it could be best to use `np.tile`, `np.pad` or `np.repeat` to do the same task more consistently.
 * The `SMOOTH` function in IDL is a boxcar averaging function so it should be replaced with `scipy.ndimage.uniform_filter` and the `/edge` keywords will dictate the mode you need to use for the `uniform_filter` function.
 * When dealing with complex numbers in IDL, it's possible to get different results when using `WHERE` in IDL and `np.where` as `WHERE` in IDL applies to the absolute values of the numbers, while `np.where` looks at just the real numbers for example:
   
