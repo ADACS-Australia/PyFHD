@@ -1184,7 +1184,7 @@ def pyfhd_logger(pyfhd_config: dict) -> Tuple[logging.Logger, Path]:
 
         Observation ID: {pyfhd_config["obs_id"]}
 
-        Confifuration File: {pyfhd_config["config_file"]}
+        Confifuration File: {pyfhd_config["config"]}
         
         Validating your input..."""
 
