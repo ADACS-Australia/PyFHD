@@ -375,7 +375,10 @@ def l_m_n(
 
 
 def rebin_columns(
-    a: NDArray[np.integer | np.floating | np.complexfloating], ax: int, shape: tuple, col_sizer: int
+    a: NDArray[np.integer | np.floating | np.complexfloating],
+    ax: int,
+    shape: tuple,
+    col_sizer: int,
 ) -> NDArray[np.integer | np.floating | np.complexfloating]:
     """
     Performs expansion on the columns of a 1D or 2D array using interpolation to fill in the values that are created
@@ -635,7 +638,9 @@ def rebin(
 
 
 def weight_invert(
-    weights: NDArray[np.integer | np.floating | np.complexfloating] | int | float | np.number,
+    weights: (
+        NDArray[np.integer | np.floating | np.complexfloating] | int | float | np.number
+    ),
     threshold: float | None = None,
     use_abs: bool = False,
 ) -> NDArray[np.integer | np.floating | np.complexfloating] | int | float | np.number:
@@ -870,7 +875,9 @@ def deriv_coefficients(n: int, divide_factorial: bool = False) -> NDArray[np.flo
     return coeff
 
 
-def idl_argunique(arr: NDArray[np.integer | np.floating | np.complexfloating]) -> NDArray[np.int64]:
+def idl_argunique(
+    arr: NDArray[np.integer | np.floating | np.complexfloating],
+) -> NDArray[np.int64]:
     """
     In IDL the UNIQ function returns the indexes of the unique values within
     an array (that is assumed to be sorted beforehand). In NumPy they use the first
@@ -1331,7 +1338,9 @@ def vis_noise_calc(
 
 
 def idl_median(
-    x: NDArray[np.integer | np.floating | np.complexfloating], width: int = 0, even: bool = False
+    x: NDArray[np.integer | np.floating | np.complexfloating],
+    width: int = 0,
+    even: bool = False,
 ) -> float:
     """
     TODO:_summary_

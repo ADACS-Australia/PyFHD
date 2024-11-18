@@ -1328,14 +1328,14 @@ def pyfhd_setup(options: argparse.Namespace) -> Tuple[dict, logging.Logger]:
             "Recalculate All option has been enabled, the beam, gridding and map function will be recalculated"
         )
 
-    # If both mapping function and healpi export are on save the visibilities (Warning)
+    # If both mapping function and healpix export are on save the visibilities (Warning)
     if (
         pyfhd_config["snapshot_healpix_export"]
         and not pyfhd_config["save_visibilities"]
     ):
         pyfhd_config["save_visibilities"] = True
         logger.warning(
-            "If we're exporting healpix we should also save the visibilities that created them."
+            "If we're exporting healpix we should also save the visibilities that created them. Setting save_visibilities to True"
         )
         warnings += 1
 

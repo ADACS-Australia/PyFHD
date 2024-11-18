@@ -310,7 +310,7 @@ def flag_model_visibilities(
     if flaginfo_data.num_times != len(np.unique(model_times_to_use)):
 
         data_path = pyfhd_config["input_path"], pyfhd_config["obs_id"] + ".uvfits"
-        model_path = pyfhd_config["import_model_uvfits"]
+        model_path = pyfhd_config["model_file_path"] + pyfhd_config["model_file_type"]
         logger.error(
             f"Could not match the time steps in the data uvfits: {data_path}"
             f" and model uvfits {model_path}. Please check the model "
@@ -326,9 +326,9 @@ def flag_model_visibilities(
     # If less antennas in the model than the data, we can't calibrate the whole
     # dataset so just error for now
     if flaginfo_model.num_ants < flaginfo_data.num_ants:
-        model_path = pyfhd_config["import_model_uvfits"]
+        model_path = pyfhd_config["model_file_path"] + pyfhd_config["model_file_type"]
         logger.error(
-            f"There are less antennas (tiles) in the model uvfits "
+            f"There are less antennas (tiles) in the model "
             f"{model_path} than in the data, so cannot calibrate the "
             "whole dataset. Please check the model "
             "and try again. Exiting now."
@@ -342,7 +342,7 @@ def flag_model_visibilities(
     include_autos = True
     if flaginfo_model.num_autos == 0:
         logger.warning(
-            "There are no auto-correlations present in model uvfits; "
+            "There are no auto-correlations present in model, "
             "filling with zeros to match data shape, and switching "
             "off all auto-correlation calibration"
         )
@@ -350,7 +350,7 @@ def flag_model_visibilities(
 
     elif flaginfo_model.num_autos < flaginfo_model.num_times * flaginfo_model.num_ants:
         logger.warning(
-            "There are some auto-correlations present in model uvfits, "
+            "There are some auto-correlations present in model, "
             "but less than number of antennas times number of time steps. "
             "Cannot deal with missing autocorrelations so setting all "
             "autos to zero and switching off all auto-correlation calibration"
