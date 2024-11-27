@@ -113,7 +113,7 @@ def test_vis_model_freq_split(before_file, after_file, beam_file):
         )
 
     h5_before = load(before_file)
-    expected_model_split = load(after_file)
+    expected_model_split = load(after_file, lazy_load=True)
 
     psf = load(beam_file, lazy_load=True)
 

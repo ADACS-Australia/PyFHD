@@ -418,7 +418,7 @@ Once you have created your new function, add information about your new function
 
 Initiate the pull request back to whatever branch the function needs to go in, and during the pull request you should notice a Pull Request Template that pops up with checkboxes, please follow the pull request template and do what it asks of you, one of which you're doing now by reading this contribution guide (Thanks 🙌). The pull request template is there for you to make sure you have followed best practices and for the reviewers to check you have followed best practices as well. 
 
-**If you're not doing any translation from IDL (`FHD`) to Python (`PyFHD`) you can safely stop here, and embark on your many scientific endeavours with PyFHD, good hunting for that mysterious signal.**
+**If you're not doing any translation from IDL (`FHD`) to Python (`PyFHD`) you can safely stop here, and embark on your many scientific endeavours with PyFHD.**
 
 ## IDL to Python Translation Guide
 

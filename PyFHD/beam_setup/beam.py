@@ -165,3 +165,4 @@ def create_psf(pyfhd_config: dict, logger: Logger) -> dict | File:
         # FHD's beam setup while reading in a beam fits file.
         logger.error("The ability to read in a beam fits hasn't been implemented yet")
         sys.exit(1)
+    return None
