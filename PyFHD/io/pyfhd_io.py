@@ -281,7 +281,7 @@ def save_dataset(
         case Path():
             # If we find a Path object, convert it to a string
             value = str(value)
-            h5py_obj.create_dataset(key, shape=(1), data=value)
+            h5py_obj.create_dataset(key, data=value)
         case None:
             is_none = True
             # In the case we get something that is none, create empty dataset
@@ -289,7 +289,7 @@ def save_dataset(
         case _:
             try:
                 # Store the value in a single size dataset, used for ints, floats, strings etc
-                h5py_obj.create_dataset(key, shape=(1), data=value)
+                h5py_obj.create_dataset(key, data=value)
             except ValueError:
                 if logger is not None:
                     logger.error(
@@ -444,11 +444,12 @@ def load_dataset(
     if h5py_obj.attrs[key]:
         return None
     else:
-        value = dataset[:]
+        if dataset.shape == ():
+            value = dataset[()]
+        else:
+            value = dataset[:]
         if value.dtype.kind == "S":
             value = _decode_byte_arr(value)
-        if isinstance(value, np.ndarray) and value.size == 1:
-            value = value[0]
         if isinstance(value, bytes):
             value = value.decode()
         return value
