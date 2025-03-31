@@ -53,9 +53,7 @@ def gaussian_decomp(
         # Full uv model with all the gaussian components
         decomp_beam = decomp_beam.astype(np.complex128)
         volume_beam = np.sum(amp)
-        sq_volume_beam = (
-            np.pi * np.sum(sigma_x * sigma_y * amp**2) / (x.size * y.size)
-        )
+        sq_volume_beam = np.pi * np.sum(sigma_x * sigma_y * amp**2) / (x.size * y.size)
 
         offset_x -= x.size / 2
         offset_y -= y.size / 2

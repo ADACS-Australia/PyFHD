@@ -189,7 +189,7 @@ def healpix_snapshot_cube_generate(
                     beam_arr[pol_i, freq_i] * nf_vis_use[freq_i], hpx_cnv
                 )
                 weights_cube[freq_i, :] = healpix_cnv_apply(
-                    split["weights_arr"][freq_i, : , :], hpx_cnv
+                    split["weights_arr"][freq_i, :, :], hpx_cnv
                 )
                 variance_cube[freq_i, :] = healpix_cnv_apply(
                     split["variance_arr"][freq_i, :, :], hpx_cnv
