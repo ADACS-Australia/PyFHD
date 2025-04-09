@@ -109,7 +109,7 @@ def calibrate(
 
         if pyfhd_config["calibration_polyfit"]:
             logger.info(
-                "You have selected to calculate a polynomial fit allowing the cable reflections to be fit"
+                "You have selected to perform polynomial fits over the frequency band"
             )
             cal_polyfit = vis_cal_polyfit(
                 obs, cal_remainder, auto_ratio, pyfhd_config, logger

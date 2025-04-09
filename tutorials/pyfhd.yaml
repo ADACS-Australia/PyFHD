@@ -49,11 +49,11 @@ allow-sidelobe-cal-sources : true
 cal-amp-degree-fit : 2
 cal-phase-degree-fit : 1
 cal-reflection-hyperresolve : false
-cal-reflection-mode-theory : 150
+cal-reflection-mode-theory : 0
 cal-reflection-mode-delay : false
 cal-reflection-mode-file : false
 calibration-auto-fit: false
-calibration-auto-initialize: true
+calibration-auto-initialize: false
 cal-gain-init: 1
 cal-convergence-threshold: 1e-7
 cal-adaptive-calibration-gain: false
@@ -80,7 +80,7 @@ flag-basic: true
 flag-freq-start : ~
 flag-freq-end : ~
 flag-tiles: []
-flag-frequencies: true
+flag-frequencies: false
 flag-model: true
 flag-calibration : true
 flag-calibration-frequencies: false

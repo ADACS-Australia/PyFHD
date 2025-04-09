@@ -154,7 +154,7 @@ def healpix_cnv_generate(
             ).joinpath(files[min_i]["name"])
         hpx_inds = load(pyfhd_config["healpix_inds"], logger=logger)
         if type(hpx_inds) is dict:
-            if nside in hpx_inds:
+            if "nside" in hpx_inds:
                 nside = hpx_inds["nside"]
             hpx_inds = hpx_inds["hpx_inds"]
     if nside is None:
@@ -486,10 +486,10 @@ def vis_model_freq_split(
     freq_bin_i2 = np.arange(obs["n_freq"]) // pyfhd_config["n_avg"]
     nf = int(np.max(freq_bin_i2) + 1)
     if save_uvf:
-        dirty_uv_arr = np.zeros([nf, obs["dimension"], obs["dimension"]])
-        weights_uv_arr = np.zeros([nf, obs["dimension"], obs["dimension"]])
-        variance_uv_arr = np.zeros([nf, obs["dimension"], obs["dimension"]])
-        model_uv_arr = np.zeros([nf, obs["dimension"], obs["dimension"]])
+        dirty_uv_arr = np.zeros([nf, obs["dimension"], obs["dimension"]], dtype=np.complex128)
+        weights_uv_arr = np.zeros([nf, obs["dimension"], obs["dimension"]], dtype=np.complex128)
+        variance_uv_arr = np.zeros([nf, obs["dimension"], obs["dimension"]], dtype=np.complex128)
+        model_uv_arr = np.zeros([nf, obs["dimension"], obs["dimension"]], dtype=np.complex128)
     dirty_arr = np.zeros([nf, obs["dimension"], obs["dimension"]])
     weights_arr = np.zeros([nf, obs["dimension"], obs["dimension"]])
     variance_arr = np.zeros([nf, obs["dimension"], obs["dimension"]])
@@ -532,6 +532,11 @@ def vis_model_freq_split(
             fi_use=fi_use,
             bi_use=bi_use,
         )
+        if not gridding_dict:
+            logger.warning(
+                f"No visibilities gridded for frequency channel {fi_use} and polarization {polarization}"
+            )
+            continue
         n_vis_use += gridding_dict["n_vis"]
         vis_n_arr[fi] = gridding_dict["n_vis"]
 

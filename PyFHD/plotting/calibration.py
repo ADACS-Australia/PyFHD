@@ -26,6 +26,9 @@ def plot_cals(obs: dict, cal: dict, pyfhd_config: dict):
     freq_i_use = np.where(obs["baseline_info"]["freq_use"])[0]
     freq_arr_use = obs["baseline_info"]["freq"][freq_i_use] / 1e6
 
+    # Plotting only unflagged tiles
+    tile_i_use = np.where(obs["baseline_info"]["tile_use"])[0]
+
     # Plotting amplitude and phase for the gain, gain_residual, and their sum (raw solutions)
     obs_id = pyfhd_config["obs_id"]
     cal_plot_dir = Path(pyfhd_config["output_dir"], "plots", "calibration")
@@ -58,7 +61,7 @@ def plot_cals(obs: dict, cal: dict, pyfhd_config: dict):
     cal_res_amp = cal_raw_amp - cal_sol_amp
     cal_res_phase = np.unwrap(cal_raw_phase, axis=1) - np.unwrap(cal_sol_phase, axis=1)
 
-    # Find the min/max amplitude and phase for plotting
+    # Find the min/max amplitude and phase for plotting, only using unflagged tiles
     amp_minmax = np.zeros((6))
     phase_minmax = np.zeros((6))
     amp_minmax[0:2] = [np.nanmin(cal_sol_amp), np.nanmax(cal_sol_amp)]
@@ -177,7 +180,7 @@ def plot_cals(obs: dict, cal: dict, pyfhd_config: dict):
                         phase = cal_raw_phase[pol_i, :, tile_i].squeeze()
 
                     # Leave blanks for flagged or undefined tiles
-                    if np.isnan([amp, phase]).all():
+                    if np.isnan([amp, phase]).all() or tile_i not in tile_i_use:
                         ax_amp[row, col].set_axis_off()
                         ax_phase[row, col].set_axis_off()
                     else:

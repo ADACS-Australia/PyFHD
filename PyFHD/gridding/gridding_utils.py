@@ -298,6 +298,7 @@ def dirty_image_generate(
     dirty_image_uv: NDArray[np.complex128],
     pyfhd_config: dict,
     logger: Logger,
+    uniform_filter_uv: NDArray[np.float64] | None = None,
     mask: NDArray[np.integer] | None = None,
     baseline_threshold: int | float = 0,
     normalization: float | NDArray[np.float64] | None = None,
@@ -324,6 +325,8 @@ def dirty_image_generate(
         PyFHD's configuration dictionary containing all the options set for a PyFHD run
     logger : Logger
         PyFHD's logger
+    uniform_filter_uv : NDArray[np.float64] | None, optional
+        A 2D {u,v} gridded visibility number, by default None
     mask : NDArray[np.int\_] | None, optional
         A 2D {u,v} mask to apply before image creation, by default None
     baseline_threshold : int | float, optional
@@ -433,7 +436,7 @@ def dirty_image_generate(
                     )
                 # Since we only use filter_uniform at the moment, put the call to it here.
                 di_uv_use, filter = filters.filter_uv_uniform(
-                    di_uv_use, vis_count=None, weights=weights
+                    di_uv_use, vis_count=uniform_filter_uv, weights=weights
                 )
 
     # Resize the dirty image by the factor resize

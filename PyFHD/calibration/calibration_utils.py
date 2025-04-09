@@ -841,7 +841,7 @@ def vis_cal_bandpass(
             gain2 = np.zeros(gain.shape, dtype=np.complex128)
             gain3 = deepcopy(gain)
             # Vectorize later if possible
-            for tile_i in range(cal["n_tile"]):
+            for tile_i in range(obs["n_tile"]):
                 gain2[freq_use, tile_i] = bandpass_single
                 gain3[freq_use, tile_i] /= bandpass_single
 

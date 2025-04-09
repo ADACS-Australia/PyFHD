@@ -520,7 +520,7 @@ def update_obs(
     """
     if beam_nfreq_avg is None:
         beam_nfreq_avg = np.round(
-            obs["n_freq"] / np.max(obs["baseline_info"]["fbin_i"]) + 1
+            obs["n_freq"] / (np.max(obs["baseline_info"]["fbin_i"]) + 1)
         )
     freq_bin = beam_nfreq_avg * obs["freq_res"]
     freq_hist, _, freq_ri = histogram(obs["baseline_info"]["freq"], bin_size=freq_bin)
@@ -531,6 +531,8 @@ def update_obs(
     # Adjust the obs dictionary based on the new dimension and kbinsize
     obs["dimension"] = dimension
     obs["elements"] = dimension
+    obs["obsx"] = dimension / 2
+    obs["obsy"] = dimension / 2
     obs["kpix"] = kbinsize if fov is None else (180 / np.pi) / fov
     obs["degpix"] = (180 / np.pi) / (obs["kpix"] * dimension)
     obs["max_baseline"] = min(
