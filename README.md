@@ -24,6 +24,14 @@ For full installation notes, including dependencies on FHD, check out the [ReadT
 
 > Note: Once PyFHD is feature-complete, we aim to make this both a `conda` install and a `pip` install.
 
+To run the example included in the PyFHD repository, run the following command:
+
+```
+pyfhd -c ./input/1088285600_example/1088285600_example.yaml 1088285600
+```
+
+Please note the command is designed to run from the **root directory** of the repository.
+
 ## Useful Documentation Resources
  - [PyFHD documentation](https://pyfhd.readthedocs.io/en/latest/)
  - [MWA ASVO](https://asvo.mwatelescope.org/) - service to obtain MWA data

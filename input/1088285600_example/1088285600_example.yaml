@@ -1,6 +1,6 @@
 # Default Arguments for PyFHD
 # ~ returns None in Python (i.e. NULL)
-input-path : './'
+input-path : './input/1088285600_example/'
 recalculate-all : false
 silent : false
 log-file : true
@@ -26,7 +26,7 @@ override-target-phasera: ~
 override-target-phasedec: ~
 
 # Beam Setup
-beam-file-path: './gauss_beam_pointing0_167635008Hz.h5'
+beam-file-path: './input/1088285600_example/gauss_beam_pointing0_167635008Hz.h5'
 lazy-load-beam: false
 recalculate-beam : true
 beam-clip-floor : true
@@ -119,14 +119,14 @@ save-healpix-fits: true
 snapshot-healpix-export : true
 pad-uv-image : 1.
 ring-radius-multi : 10.
-description : ~
+description : 1088285600_example
 
 # Model
 # Current choices of model-file-type are sav and uvfits
 model-file-type : 'uvfits'
 # If you set model-file-type to uvfits, set import-model-uvfits to the (ideally absolute) path of the fits file
 # If model-file-type is set to sav then it will look for the sav files as said in the function import_vis_model_from_sav
-model-file-path: './1088285600_model.uvfits'
+model-file-path: './input/1088285600_example/1088285600_model.uvfits'
 diffuse-model : ~
 model-catalog-file-path  :  ~ # 'GLEAM_v2_plus_rlb2019.sav' (FHD Default)
 allow-sidelobe-model-sources : false
