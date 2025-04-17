@@ -34,7 +34,7 @@ def quick_image(
 ):
     """
     Python translation of the IDL quick_image procedure with additional features.
-    
+
 
     Parameters
     ----------
@@ -97,7 +97,7 @@ def quick_image(
     ------
     ValueError
         _description_
-    """      
+    """
     # Determine if the output is to be saved to disk
     pub = bool(savefile or png or eps or pdf)
 
@@ -348,7 +348,7 @@ def log_color_calc(
         _description_
     ValueError
         _description_
-   
+
     """
     # Define valid color profiles
     color_profile_enum = ["log_cut", "sym_log", "abs"]
@@ -560,7 +560,7 @@ def color_range(data, count_missing=None):
     -------
     _type_
         _description_
-    """    
+    """
 
     # Initialize color range
     color_range = [0, 255]
