@@ -34,7 +34,70 @@ def quick_image(
 ):
     """
     Python translation of the IDL quick_image procedure with additional features.
-    """
+    
+
+    Parameters
+    ----------
+    image : _type_
+        _description_
+    xvals : _type_, optional
+        _description_, by default None
+    yvals : _type_, optional
+        _description_, by default None
+    data_range : _type_, optional
+        _description_, by default None
+    data_min_abs : _type_, optional
+        _description_, by default None
+    xrange : _type_, optional
+        _description_, by default None
+    yrange : _type_, optional
+        _description_, by default None
+    data_aspect : _type_, optional
+        _description_, by default None
+    log : bool, optional
+        _description_, by default False
+    color_profile : str, optional
+        _description_, by default "log_cut"
+    xtitle : _type_, optional
+        _description_, by default None
+    ytitle : _type_, optional
+        _description_, by default None
+    title : _type_, optional
+        _description_, by default None
+    cb_title : _type_, optional
+        _description_, by default None
+    note : _type_, optional
+        _description_, by default None
+    charsize : _type_, optional
+        _description_, by default None
+    xlog : bool, optional
+        _description_, by default False
+    ylog : bool, optional
+        _description_, by default False
+    window_num : int, optional
+        _description_, by default 1
+    multi_pos : _type_, optional
+        _description_, by default None
+    start_multi_params : _type_, optional
+        _description_, by default None
+    alpha : _type_, optional
+        _description_, by default None
+    missing_value : _type_, optional
+        _description_, by default None
+    savefile : _type_, optional
+        _description_, by default None
+    png : bool, optional
+        _description_, by default False
+    eps : bool, optional
+        _description_, by default False
+    pdf : bool, optional
+        _description_, by default False
+
+    Raises
+    ------
+    ValueError
+        _description_
+    """      
     # Determine if the output is to be saved to disk
     pub = bool(savefile or png or eps or pdf)
 
@@ -246,6 +309,46 @@ def log_color_calc(
 ):
     """
     Translated version of log_color_calc from IDL to Python.
+
+    Parameters
+    ----------
+    data : _type_
+        _description_
+    data_range : _type_, optional
+        _description_, by default None
+    color_profile : str, optional
+        _description_, by default "log_cut"
+    log_cut_val : _type_, optional
+        _description_, by default None
+    min_abs : _type_, optional
+        _description_, by default None
+    count_missing : _type_, optional
+        _description_, by default None
+    wh_missing : _type_, optional
+        _description_, by default None
+    missing_color : _type_, optional
+        _description_, by default None
+    invert_colorbar : bool, optional
+        _description_, by default False
+
+    Returns
+    -------
+    _type_
+        _description_
+
+    Raises
+    ------
+    ValueError
+        _description_
+    ValueError
+        _description_
+    ValueError
+        _description_
+    ValueError
+        _description_
+    ValueError
+        _description_
+   
     """
     # Define valid color profiles
     color_profile_enum = ["log_cut", "sym_log", "abs"]
@@ -443,6 +546,21 @@ def log_color_calc(
 
 
 def color_range(data, count_missing=None):
+    """
+    _summary_
+
+    Parameters
+    ----------
+    data : _type_
+        _description_
+    count_missing : _type_, optional
+        _description_, by default None
+
+    Returns
+    -------
+    _type_
+        _description_
+    """    
 
     # Initialize color range
     color_range = [0, 255]
