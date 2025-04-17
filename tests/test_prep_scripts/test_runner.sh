@@ -1,7 +1,6 @@
 #!/bin/bash
 #
 #SBATCH --job-name=test-runner
-#
 #SBATCH --ntasks=1
 #SBATCH --nodes=1
 #SBATCH --time=01:00:00

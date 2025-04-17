@@ -26,7 +26,12 @@ Data Setup
 
 Beam Setup
 ==========
-.. note:: This is a placeholder for the future, the work hasn't been done yet.
+
+.. automodule:: PyFHD.beam_setup.beam
+   :members:
+
+.. automodule:: PyFHD.beam_setup.beam_utils
+   :members:
 
 Calibration
 ===========
@@ -78,25 +83,21 @@ Visibility Degrid
 
 Input & Output
 ==============
-.. note:: This is a placeholder for the future, the work hasn't been done yet.
 
-.. .. automodule:: PyFHD.io.pyfhd_io
-..    :members:
+.. automodule:: PyFHD.io.pyfhd_io
+   :members:
 
-Using ``FHD`` via ``PyFHD``
-==============================
+.. automodule:: PyFHD.io.pyfhd_quickview
+   :members:
 
-Running ``FHD`` from ``PyFHD``
--------------------------------
+HEALPix
+=======
 
-.. automodule:: PyFHD.use_idl_fhd.run_idl_fhd
-    :members:
+.. automodule:: PyFHD.healpix.export
+   :members:
 
-Using ``FHD`` outputs within ``PyFHD``
------------------------------------------
-
-.. automodule:: PyFHD.use_idl_fhd.use_idl_outputs
-    :members:
+.. automodule:: PyFHD.healpix.healpix_utils
+   :members:
 
 Tools & Utilities
 =================

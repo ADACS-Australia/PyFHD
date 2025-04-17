@@ -3,10 +3,11 @@ from scipy.io import readsav
 from pathlib import Path
 import argparse
 
+
 def splitter(sav_file, save_path):
     """
     The purpose of splitter is to take a large dictionary read from a sav file
-    that contains many arrays as their values. These arrays will be imported 
+    that contains many arrays as their values. These arrays will be imported
     as numpy arrays. Each key:value pair from the dictionary iterated through
     with the key acting as the file name, and the value is saved into the npy
     file. They will all be saved in a save_path, ideally this will be a data
@@ -22,7 +23,7 @@ def splitter(sav_file, save_path):
     save_path : Path
         The path to the directory where we save all the .npy files i.e. /path/to/the/directory/where/we/want/save
         In the case the directory doesn't exist it will recursively make the directories to ensure it does.
-    
+
     Raises
     ------
     OSError
@@ -44,32 +45,63 @@ def splitter(sav_file, save_path):
         if save_path.is_dir():
             # For every key, value pair, save a numpy file with key as the file name in the save_path directory
             for key in dict_to_iter.keys():
-                np.save(str(save_path) + '/' + str(key) + '.npy', dict_to_iter[key], allow_pickle=True)
-                print(str(key) + '.npy' + '\n\tHas been written to: ' + str(save_path) + '/' + str(key) + ".npy")
+                np.save(
+                    str(save_path) + "/" + str(key) + ".npy",
+                    dict_to_iter[key],
+                    allow_pickle=True,
+                )
+                print(
+                    str(key)
+                    + ".npy"
+                    + "\n\tHas been written to: "
+                    + str(save_path)
+                    + "/"
+                    + str(key)
+                    + ".npy"
+                )
         else:
             raise OSError("save_path is not a dir")
     # If its not a file, then raise an OSError indicating that its not a file
     elif sav_file.exists() and not sav_file.is_file():
-        raise OSError("sav_file while it exists, is not a file, sav_file must be a file")
+        raise OSError(
+            "sav_file while it exists, is not a file, sav_file must be a file"
+        )
     # If it doesn't exist then raise OSError indicating it doesn't exist
     else:
         raise OSError("sav_file does not exist")
 
+
 if __name__ == "__main__":
     # Setup argparse
     parser = argparse.ArgumentParser()
-    parser.add_argument("sav_file", nargs="?", help="A sav file you want to split and save as npy files")
-    parser.add_argument("save_path", nargs = "?", help="Directory where all the .npy files will be saved")
-    parser.add_argument("-f", "--files", nargs="+", help="In the case of multiple files use this argument instead")
-    parser.add_argument("-d", "--directories", nargs="+", help="In the case you want to specifiy different directories for each file, use this argument.\n\
-        Directories are taken in the same order as the files")
+    parser.add_argument(
+        "sav_file", nargs="?", help="A sav file you want to split and save as npy files"
+    )
+    parser.add_argument(
+        "save_path", nargs="?", help="Directory where all the .npy files will be saved"
+    )
+    parser.add_argument(
+        "-f",
+        "--files",
+        nargs="+",
+        help="In the case of multiple files use this argument instead",
+    )
+    parser.add_argument(
+        "-d",
+        "--directories",
+        nargs="+",
+        help="In the case you want to specifiy different directories for each file, use this argument.\n\
+        Directories are taken in the same order as the files",
+    )
     args = parser.parse_args()
     print(args)
     # If the sav_file is not None
     if args.sav_file is not None:
         # Check if the save_path is provided, if it is then use splitter
         if args.save_path is None:
-            parser.error("If you have provided a sav_file, you must also provide a save_path")
+            parser.error(
+                "If you have provided a sav_file, you must also provide a save_path"
+            )
         else:
             splitter(args.sav_file, args.save_path)
     # If multiple files were given then
@@ -82,7 +114,9 @@ if __name__ == "__main__":
             else:
                 directories = list(args.save_path) * len(args.files)
         if len(args.directories) != len(args.files):
-            parser.error("When using directories and files optional arguments, they must have the same number of options passed")
+            parser.error(
+                "When using directories and files optional arguments, they must have the same number of options passed"
+            )
         else:
             directories = args.directories
         # Combine files and directories together

@@ -3,11 +3,10 @@
 input-path : './input'
 recalculate-all : false
 silent : false
-disable-log : false
+log-file : true
 conserve-memory : false
 instrument : 'mwa'
 memory-threshold : 100000000
-n-avg : 2
 dimension : 2048
 elements : 2048
 kbinsize : 0.5
@@ -16,9 +15,19 @@ min-baseline : 1.
 n-pol : 2
 deproject-w-term : ~
 
+# Checkpointing
+save-checkpoints: true
+obs-checkpoint: ~
+calibration-checkpoint: ~
+gridding-checkpoint: ~
+
+# Instrument
+override-target-phasera: ~
+override-target-phasedec: ~
+
 # Beam Setup
 beam-file-path: './input'
-beam-sav-to-npz: true
+lazy-load-beam: false
 recalculate-beam : true
 beam-clip-floor : true
 interpolate-kernel : true
@@ -46,7 +55,7 @@ cal-reflection-mode-file : false
 calibration-auto-fit: false
 calibration-auto-initialize: true
 cal-gain-init: 1
-cal-convergence-threshold: 0.0000001
+cal-convergence-threshold: 1e-7
 cal-adaptive-calibration-gain: false
 cal-base-gain: ~ # This is set to None by default to set the default based on cal-adaptive-calibration-gain as per FHD
 cal-phase-fit-iter: 4
@@ -63,26 +72,30 @@ calibration-catalog-file-path  :  ~ # 'GLEAM_v2_plus_rlb2019.sav' (FHD Default)
 transfer-calibration : ~
 cal-stop : false
 transfer-model-uv : ~
+max-cal-iter: 100
+calibration-plots: true
 
 # Flagging
 flag-basic: true
 flag-freq-start : ~
 flag-freq-end : ~
 flag-tiles: []
+flag-frequencies: true
+flag-model: true
 flag-calibration : true
+flag-calibration-frequencies: false
 flag-visibilities : false
 transfer-weights : ~
 time-cut: ~
 
 # Gridding
-recalculate-grid : false
-recalculate-mapfn : false
+recalculate-grid : true
 image-filter : 'filter_uv_uniform'
 mask-mirror-indices: false
 grid-spectral: false
-grid-weights: True
-grid-variance: True
-grid-uniform: False
+grid-weights: true
+grid-variance: true
+grid-uniform: false
 
 # Deconvolution
 deconvolve : false
@@ -97,7 +110,12 @@ deconvolution-filter : 'filter_uv_uniform'
 output-path : './output'
 export-images : true
 cleanup : false
+save-obs: true
+save-params: true
+save-cal: true
 save-visibilities : true
+save-weights: true
+save-healpix-fits: true
 snapshot-healpix-export : true
 pad-uv-image : 1.
 ring-radius-multi : 10.
@@ -124,6 +142,15 @@ remove-sim-flags : false
 
 # HEALPIX
 ps-kbinsize : 0.5
-ps-kspan : 600.
-restrict-hpx-inds : ~
+ps-kspan : 600
+ps-beam-threshold: 0
+ps-fov: ~
+ps-dimension: ~
+ps-degpix: ~
+ps-nfreq-avg: ~
+ps-tile-flag-list: []
+n-avg : 2
+rephase-weights: True
+restrict-healpix-inds : true
+healpix-inds: ~
 split-ps-export : true

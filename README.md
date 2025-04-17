@@ -1,8 +1,11 @@
 # PyFHD
-Python Fast Holographic Deconvolution
+**Py**thon **F**ast **H**olographic **D**econvolution
 
+[![Python](https://img.shields.io/badge/Python-3.10--3.13-%231475b3?logo=python&logoColor=%23fff)](https://www.python.org/)
+![GitHub last commit](https://img.shields.io/github/last-commit/ADACS-Australia/PyFHD?logo=github&color=blue&link=https%3A%2F%2Fgithub.com%2FADACS-Australia%2FPyFHD%2Fcommits%2Fmain%2F)
 [![Documentation Status](https://readthedocs.org/projects/pyfhd/badge/?version=latest)](https://pyfhd.readthedocs.io/en/latest/?badge=latest)
-[![Python](https://img.shields.io/badge/Python-3.10-%231475b3?logo=python&logoColor=%23fff)](https://www.python.org/downloads/release/)
+![GitHub branch status](https://img.shields.io/github/checks-status/ADACS-Australia/PyFHD/main)
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
 TODO: Add Testing Results and Testing coverage
 
@@ -14,15 +17,27 @@ PyFHD is the translated library of FHD from IDL to Python, it aims to get close 
 ## Quick Start
 Clone (and move into) the PyFHD repo:
 
-```$ git clone https://github.com/ADACS-Australia/PyFHD && cd PyFHD```
+```
+git clone https://github.com/ADACS-Australia/PyFHD && cd PyFHD
+```
 
 Then just pip install the repo:
 
-```$ pip install -r requirements.txt .```
+```
+pip install -r requirements.txt .
+```
 
 For full installation notes, including dependencies on FHD, check out the [ReadTheDocs installation page](https://pyfhd.readthedocs.io/en/latest/installation/installation.html).
 
 > Note: Once PyFHD is feature-complete, we aim to make this both a `conda` install and a `pip` install.
+
+To run the example included in the PyFHD repository, run the following command:
+
+```
+pyfhd -c ./input/1088285600_example/1088285600_example.yaml 1088285600
+```
+
+Please note the command is designed to run from the **root directory** of the repository.
 
 ## Useful Documentation Resources
  - [PyFHD documentation](https://pyfhd.readthedocs.io/en/latest/)
@@ -33,6 +48,8 @@ For full installation notes, including dependencies on FHD, check out the [ReadT
 
 ## Community Guidelines
 We are an open-source community that interacts and discusses issues via GitHub. We encourage collaborative development. New users are encouraged to submit issues and pull requests and to create branches for new development and exploration. Comments and suggestions are welcome.
+
+If you wish to contribute to PyFHD, first of all thank you, second please read the contribution guide which can be found here, [Contribution Guide](https://pyfhd.readthedocs.io/en/latest/develop/contribution_guide.html). The contribution will cover all you need to know for developing in PyFHD from adding features, formatting adding tests and some advice in translating IDL to Python.
 
 Please cite [Sullivan et al 2012](https://arxiv.org/abs/1209.1653) and [Barry et al 2019a](https://arxiv.org/abs/1901.02980) when publishing data reduction from FHD.
 

@@ -6,6 +6,7 @@ dependencies:
   - python
   - astropy
   - configargparse
+  - matplotlib
   - numba
   - numpy
   - pytest
@@ -16,9 +17,12 @@ dependencies:
   - colorama
   - importlib_resources
   - h5py
+  - pre-commit
+  - black
   - pip
   - pip:
     - sphinx-rtd-theme
     - sphinx-argparse
     - myst-parser
+    - healpy
     

@@ -1,5 +1,6 @@
 astropy
 configargparse
+matplotlib
 numba
 numpy
 pytest
@@ -10,7 +11,9 @@ sphinx
 colorama
 importlib_resources
 h5py
+pre-commit
 sphinx-rtd-theme
 sphinx-argparse
-deepdish
 myst-parser
+healpy
+black
