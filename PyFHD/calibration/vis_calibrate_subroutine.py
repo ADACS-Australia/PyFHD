@@ -217,6 +217,9 @@ def vis_calibrate_subroutine(
         hist_tile_A, _, riA = histogram(tile_A_i[baseline_use], min=0, max=n_tile - 1)
         hist_tile_B, _, riB = histogram(tile_B_i[baseline_use], min=0, max=n_tile - 1)
         tile_use = np.where(((hist_tile_A + hist_tile_B) > 0) & (tile_use_flag > 0))[0]
+        tile_flag = np.where(((hist_tile_A + hist_tile_B) == 0) & (tile_use_flag == 0))[
+            0
+        ]
 
         # Should be able to reduce precision if memory is a concern
         tile_A_i_use = np.zeros(np.size(baseline_use), dtype=np.int64)
@@ -435,6 +438,9 @@ def vis_calibrate_subroutine(
             vis_weight_ptr_use[pol_i][:, freq_nan_i] = 0
             weight[:, freq_nan_i] = 0
             gain_arr[nan_i] = 0
+        if tile_flag.size > 0:
+            # set flagged tiles to NAN to remove from calculations
+            gain_arr[:, tile_flag] = np.nan
         cal["gain"][pol_i] = gain_arr
         cal["convergence"][pol_i] = convergence
         cal["n_converged"][pol_i] = n_converged

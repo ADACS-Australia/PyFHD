@@ -1402,14 +1402,6 @@ def pyfhd_setup(options: argparse.Namespace) -> Tuple[dict, logging.Logger]:
         pyfhd_config["cal_reflection_mode_file"] = False
         pyfhd_config["cal_reflection_mode_delay"] = False
         pyfhd_config["cal_reflection_mode_theory"] = True
-    elif logic_test == 0:
-        logger.warning(
-            "No nominal mode-fitting procedure was specified for calibration reflection fits. Using cal_reflection_mode_delay"
-        )
-        warnings += 1
-        pyfhd_config["cal_reflection_mode_file"] = False
-        pyfhd_config["cal_reflection_mode_delay"] = True
-        pyfhd_config["cal_reflection_mode_theory"] = False
 
     # cal_adaptive_calibration_gain impacts cal_base_gain if cal_base_gain isn't set
     if pyfhd_config["cal_base_gain"] == None:

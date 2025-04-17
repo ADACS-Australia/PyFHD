@@ -405,30 +405,30 @@ def main():
 
     if pyfhd_config["recalculate_grid"] and pyfhd_config["gridding_checkpoint"] is None:
         grid_start = time.time()
+        image_uv = np.empty(
+            (obs["n_pol"], obs["elements"], obs["dimension"]), dtype=np.complex128
+        )
+        weights_uv = np.empty(
+            (obs["n_pol"], obs["elements"], obs["dimension"]), dtype=np.complex128
+        )
+        variance_uv = np.empty((obs["n_pol"], obs["elements"], obs["dimension"]))
+        uniform_filter_uv = np.empty((obs["elements"], obs["dimension"]))
+        if vis_model_arr is not None:
+            model_uv = np.empty(
+                (obs["n_pol"], obs["elements"], obs["dimension"]),
+                dtype=np.complex128,
+            )
         # Since it's done per polarization, we can do multi-processing if it's not fast enough
         for pol_i in range(obs["n_pol"]):
             logger.info(f"Gridding has begun for polarization {pol_i}")
-            image_uv = np.empty(
-                (obs["n_pol"], obs["elements"], obs["dimension"]), dtype=np.complex128
-            )
-            weights_uv = np.empty(
-                (obs["n_pol"], obs["elements"], obs["dimension"]), dtype=np.complex128
-            )
-            variance_uv = np.empty((obs["n_pol"], obs["elements"], obs["dimension"]))
-            uniform_filter_uv = np.empty(
-                (obs["n_pol"], obs["elements"], obs["dimension"])
-            )
-            if vis_model_arr is not None:
-                model_uv = np.empty(
-                    (obs["n_pol"], obs["elements"], obs["dimension"]),
-                    dtype=np.complex128,
-                )
             if pol_i == 0:
                 uniform_flag = True
-                no_conjugate = False
             else:
                 uniform_flag = False
+            if pol_i > 1:
                 no_conjugate = True
+            else:
+                no_conjugate = False
             gridding_dict = visibility_grid(
                 vis_arr[pol_i],
                 vis_weights[pol_i],
@@ -446,7 +446,8 @@ def main():
                 image_uv[pol_i] = gridding_dict["image_uv"]
                 weights_uv[pol_i] = gridding_dict["weights"]
                 variance_uv[pol_i] = gridding_dict["variance"]
-                uniform_filter_uv[pol_i] = gridding_dict["uniform_filter"]
+                if uniform_flag:
+                    uniform_filter_uv = gridding_dict["uniform_filter"]
                 obs["nf_vis"] = gridding_dict["obs"]["nf_vis"]
                 if vis_model_arr is not None:
                     model_uv[pol_i] = gridding_dict["model_return"]

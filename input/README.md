@@ -1,10 +1,10 @@
 # The Input directory
 
-Inside here should be the main input for a PyFHD run, the uvfits files which should be named by their observation id (obs_id). There should be two files for each observation to start a run, the `uvfits` and the metadata file `metafits`. So for example if the observation id I'm interested in is `1061316296`, then inside here should be the two files:
+Inside here should be the main input for a PyFHD run, the uvfits files which should be named by their observation id (obs_id). There should be two files for each observation to start a run, the `uvfits` and the metadata file `metafits`. So for example if the observation id I'm interested in is `1088285600`, then inside here should be the two files:
 
-`1061316296.uvfits`
+`1088285600.uvfits`
 
-`1061316296.metafits`
+`1088285600.metafits`
 
 Of course you can set an alternate directory to search for the `uvfits` and `metafits` files.
 

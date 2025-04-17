@@ -7,7 +7,7 @@ from logging import Logger
 
 def filter_uv_uniform(
     image_uv: NDArray[np.complex128],
-    vis_count: NDArray[np.integer] | None,
+    vis_count: NDArray[np.float64] | None,
     obs: dict | None = None,
     params: dict | None = None,
     pyfhd_config: dict | None = None,
@@ -24,7 +24,7 @@ def filter_uv_uniform(
     ----------
     image_uv : NDArray[np.complex128]
         A 2D {u,v} gridded plane to be filtered
-    vis_count : NDArray[np.int\_] | None
+    vis_count : NDArray[np.float64] | None
         2D array of number of contributing visibilities per pixel on the {u,v} grid
     obs : dict | None, optional
         Observation metadata dictionary, by default None
@@ -73,10 +73,10 @@ def filter_uv_uniform(
                 mask_mirror_indices,
             )
         elif weights is not None and np.size(weights) == np.size(image_uv):
-            if np.max(weights == 0):
+            if np.max(weights) == 0:
                 vis_count = weights
             else:
-                vis_count = weights / np.min(weights[weights > 0])
+                vis_count = np.abs(weights) / np.min(np.abs(weights[weights > 0]))
         else:
             raise TypeError("obs and params must not be None when vis_count is None")
 
