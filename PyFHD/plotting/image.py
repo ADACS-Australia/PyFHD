@@ -2,12 +2,36 @@ import numpy as np
 import matplotlib.pyplot as plt
 import os
 
-def quick_image(image, xvals=None, yvals=None, data_range=None, data_min_abs=None,
-                xrange=None, yrange=None, data_aspect=None, log=False, color_profile='log_cut',
-                xtitle=None, ytitle=None, title=None, cb_title=None, note=None,
-                charsize=None, xlog=False, ylog=False, window_num=1, multi_pos=None,
-                start_multi_params=None, alpha=None,
-                missing_value=None, savefile=None, png=False, eps=False, pdf=False):
+
+def quick_image(
+    image,
+    xvals=None,
+    yvals=None,
+    data_range=None,
+    data_min_abs=None,
+    xrange=None,
+    yrange=None,
+    data_aspect=None,
+    log=False,
+    color_profile="log_cut",
+    xtitle=None,
+    ytitle=None,
+    title=None,
+    cb_title=None,
+    note=None,
+    charsize=None,
+    xlog=False,
+    ylog=False,
+    window_num=1,
+    multi_pos=None,
+    start_multi_params=None,
+    alpha=None,
+    missing_value=None,
+    savefile=None,
+    png=False,
+    eps=False,
+    pdf=False,
+):
     """
     Python translation of the IDL quick_image procedure with additional features.
     """
@@ -20,11 +44,11 @@ def quick_image(image, xvals=None, yvals=None, data_range=None, data_min_abs=Non
             if savefile:
                 _, extension = os.path.splitext(savefile)
                 extension = extension.lower()
-                if extension == '.eps':
+                if extension == ".eps":
                     eps = True
-                elif extension == '.png':
+                elif extension == ".png":
                     png = True
-                elif extension == '.pdf':
+                elif extension == ".pdf":
                     pdf = True
                 else:
                     print("Unrecognized extension, using PNG")
@@ -33,7 +57,9 @@ def quick_image(image, xvals=None, yvals=None, data_range=None, data_min_abs=Non
         # Set default savefile if not provided
         if not savefile:
             savefile = "idl_quick_image"
-            print(f"No filename specified for quick_image output. Using {os.getcwd()}/{savefile}")
+            print(
+                f"No filename specified for quick_image output. Using {os.getcwd()}/{savefile}"
+            )
 
         # Ensure only one output format is set
         formats_set = sum([png, eps, pdf])
@@ -77,7 +103,7 @@ def quick_image(image, xvals=None, yvals=None, data_range=None, data_min_abs=Non
         wh_missing = None
         missing_color = None
 
-    # Apply logarithmic scaling if set. This modifies the image input directly 
+    # Apply logarithmic scaling if set. This modifies the image input directly
     # to be logarithmically scaled in the color bar range.
     if log:
         image, cb_ticks, cb_ticknames = log_color_calc(
@@ -89,20 +115,24 @@ def quick_image(image, xvals=None, yvals=None, data_range=None, data_min_abs=Non
             count_missing=count_missing,
             wh_missing=wh_missing,
             missing_color=missing_color,
-            invert_colorbar=False
+            invert_colorbar=False,
         )
     else:
         # Apply linear scaling by default. This modifies the image input directly
         # to be linearly scaled in the color bar range.
         if data_range is None:
             data_range = [np.nanmin(image), np.nanmax(image)]
-        
-        data_color_range, data_n_colors = color_range(image, count_missing=count_missing)
-        
+
+        data_color_range, data_n_colors = color_range(
+            image, count_missing=count_missing
+        )
+
         # Scale image data to be in the color range
-        image = (image - data_range[0]) * (data_n_colors - 1) / (data_range[1] - data_range[0]) + data_color_range[0]
+        image = (image - data_range[0]) * (data_n_colors - 1) / (
+            data_range[1] - data_range[0]
+        ) + data_color_range[0]
         print(data_range, data_color_range, data_n_colors)
-        
+
         # Handle out-of-bounds values
         wh_low = np.where(image < data_range[0])
         if len(wh_low[0]) > 0:
@@ -110,19 +140,21 @@ def quick_image(image, xvals=None, yvals=None, data_range=None, data_min_abs=Non
         wh_high = np.where(image > data_range[1])
         if len(wh_high[0]) > 0:
             image[wh_high] = data_color_range[1]
-        
+
         # Handle missing values
         if missing_value is not None and count_missing > 0:
             image[wh_missing] = missing_color
 
         cb_ticks = np.linspace(data_color_range[0], data_color_range[1], num=5)
-        cb_ticknames = [f"{tick * (data_range[1] - data_range[0]) / (data_n_colors - 1) + data_range[0]:.2g}" 
-                        for tick in cb_ticks]
+        cb_ticknames = [
+            f"{tick * (data_range[1] - data_range[0]) / (data_n_colors - 1) + data_range[0]:.2g}"
+            for tick in cb_ticks
+        ]
         print(cb_ticks, cb_ticknames)
 
     # Set up the plot
     fig, ax = plt.subplots(num=window_num)  # Use window_num to manage figure windows
-    cmap = plt.get_cmap('viridis')
+    cmap = plt.get_cmap("viridis")
 
     # Set up the x and y ranges
     extent = None
@@ -131,8 +163,15 @@ def quick_image(image, xvals=None, yvals=None, data_range=None, data_min_abs=Non
     elif xrange is not None and yrange is not None:
         extent = [xrange[0], xrange[1], yrange[0], yrange[1]]
 
-    im = ax.imshow(image, extent=extent, aspect=data_aspect or 'auto', cmap=cmap,
-                   vmin=0, vmax=255, alpha=alpha)
+    im = ax.imshow(
+        image,
+        extent=extent,
+        aspect=data_aspect or "auto",
+        cmap=cmap,
+        vmin=0,
+        vmax=255,
+        alpha=alpha,
+    )
 
     # Add titles and labels
     if title:
@@ -144,13 +183,13 @@ def quick_image(image, xvals=None, yvals=None, data_range=None, data_min_abs=Non
 
     # Handle logarithmic axes
     if xlog:
-        ax.set_xscale('log')
+        ax.set_xscale("log")
     if ylog:
-        ax.set_yscale('log')
+        ax.set_yscale("log")
 
     # Add colorbar
     cbar = plt.colorbar(im, ax=ax)
-    #if log:
+    # if log:
     cbar.set_ticks(cb_ticks)
     cbar.set_ticklabels(cb_ticknames)
     if cb_title:
@@ -158,29 +197,35 @@ def quick_image(image, xvals=None, yvals=None, data_range=None, data_min_abs=Non
 
     # Add note if provided
     if note:
-        plt.figtext(0.99, 0.02, note, horizontalalignment='right', fontsize=charsize or 8)
+        plt.figtext(
+            0.99, 0.02, note, horizontalalignment="right", fontsize=charsize or 8
+        )
 
     # Multi-panel plotting
     if multi_pos is not None:
         if len(multi_pos) != 4:
-            raise ValueError("multi_pos must be a 4-element list defining the plot position.")
+            raise ValueError(
+                "multi_pos must be a 4-element list defining the plot position."
+            )
         ax.set_position(multi_pos)
 
     # Handle start_multi_params for multi-panel layout
     if start_multi_params is not None:
-        nrows = start_multi_params.get('nrow', 1)
-        ncols = start_multi_params.get('ncol', 1)
-        index = start_multi_params.get('index', 1) - 1  # Convert to 0-based index
-        ax.set_position([
-            (index % ncols) / ncols,
-            1 - (index // ncols + 1) / nrows,
-            1 / ncols,
-            1 / nrows
-        ])
+        nrows = start_multi_params.get("nrow", 1)
+        ncols = start_multi_params.get("ncol", 1)
+        index = start_multi_params.get("index", 1) - 1  # Convert to 0-based index
+        ax.set_position(
+            [
+                (index % ncols) / ncols,
+                1 - (index // ncols + 1) / nrows,
+                1 / ncols,
+                1 / nrows,
+            ]
+        )
 
     # Save or show the plot
     if pub:
-        plt.savefig(savefile, dpi=300, bbox_inches='tight')
+        plt.savefig(savefile, dpi=300, bbox_inches="tight")
         print(f"Image saved to {savefile}")
     else:
         plt.show()
@@ -188,17 +233,27 @@ def quick_image(image, xvals=None, yvals=None, data_range=None, data_min_abs=Non
     plt.close(fig)
 
 
-def log_color_calc(data, data_range=None, color_profile='log_cut', log_cut_val=None, 
-                   min_abs=None, count_missing=None, wh_missing=None,
-                   missing_color=None, invert_colorbar=False):
+def log_color_calc(
+    data,
+    data_range=None,
+    color_profile="log_cut",
+    log_cut_val=None,
+    min_abs=None,
+    count_missing=None,
+    wh_missing=None,
+    missing_color=None,
+    invert_colorbar=False,
+):
     """
     Translated version of log_color_calc from IDL to Python.
     """
     # Define valid color profiles
-    color_profile_enum = ['log_cut', 'sym_log', 'abs']
+    color_profile_enum = ["log_cut", "sym_log", "abs"]
     if color_profile not in color_profile_enum:
-        raise ValueError(f"Color profile must be one of: {', '.join(color_profile_enum)}")
-    
+        raise ValueError(
+            f"Color profile must be one of: {', '.join(color_profile_enum)}"
+        )
+
     # Handle data_range
     if data_range is None:
         no_input_data_range = True
@@ -207,17 +262,19 @@ def log_color_calc(data, data_range=None, color_profile='log_cut', log_cut_val=N
         if len(data_range) != 2:
             raise ValueError("data_range must be a 2-element vector")
         no_input_data_range = False
-    
+
     if data_range[1] < data_range[0]:
         raise ValueError("data_range[0] must be less than data_range[1]")
-    
+
     # Handle sym_log profile constraints
-    if color_profile == 'sym_log' and data_range[0] > 0:
-        print("sym_log profile cannot be selected with an entirely positive data range. Switching to log_cut")
-        color_profile = 'log_cut'
-    
+    if color_profile == "sym_log" and data_range[0] > 0:
+        print(
+            "sym_log profile cannot be selected with an entirely positive data range. Switching to log_cut"
+        )
+        color_profile = "log_cut"
+
     data_color_range, data_n_colors = color_range(data, count_missing=count_missing)
-    
+
     # Handle positive values
     wh_pos = np.where(data > 0)
     count_pos = len(wh_pos[0])
@@ -243,18 +300,20 @@ def log_color_calc(data, data_range=None, color_profile='log_cut', log_cut_val=N
     # Handle zero values
     wh_zero = np.where(data == 0)
     count_zero = len(wh_zero[0])
-    
+
     # Handle log_cut color profile
-    if color_profile == 'log_cut':
+    if color_profile == "log_cut":
         if data_range[1] < 0:
-            raise ValueError("log_cut color profile will not work for entirely negative arrays.")
-        
+            raise ValueError(
+                "log_cut color profile will not work for entirely negative arrays."
+            )
+
         if log_cut_val is None:
             if data_range[0] > 0:
                 log_cut_val = np.log10(data_range[0])
             else:
                 log_cut_val = np.log10(min_pos)
-        
+
         log_data_range = [log_cut_val, np.log10(data_range[1])]
 
         # Handle zero values
@@ -264,32 +323,39 @@ def log_color_calc(data, data_range=None, color_profile='log_cut', log_cut_val=N
             zero_val = log_data_range[0]
         else:
             min_pos_color = 1
-        
+
         neg_color = 0
         neg_val = log_data_range[0]
-        
+
         data_log = np.log10(data)
         wh_under = np.where(data < 10**log_cut_val)
         if len(wh_under[0]) > 0:
             data_log[wh_under] = log_data_range[0]
-        
+
         wh_over = np.where(data_log > log_data_range[1])
         if len(wh_over[0]) > 0:
             data_log[wh_over] = log_data_range[1]
-        
+
         # Normalize data
-        data_log_norm = ((data_log - log_data_range[0]) * (data_n_colors - min_pos_color - 1) / \
-                        (log_data_range[1] - log_data_range[0]) + data_color_range[0] + min_pos_color) 
-        
+        data_log_norm = (
+            (data_log - log_data_range[0])
+            * (data_n_colors - min_pos_color - 1)
+            / (log_data_range[1] - log_data_range[0])
+            + data_color_range[0]
+            + min_pos_color
+        )
+
         if count_neg > 0:
             data_log_norm[wh_neg] = neg_color
         if count_zero > 0:
             data_log_norm[wh_zero] = zero_color
-    
-    elif color_profile == 'sym_log':
+
+    elif color_profile == "sym_log":
         if data_range[1] < 0:
-            raise ValueError("sym_log color profile will not work for entirely negative arrays.")
-        
+            raise ValueError(
+                "sym_log color profile will not work for entirely negative arrays."
+            )
+
         # Calculate the minimum absolute value
         if min_abs is None:
             if count_pos > 0 and count_neg > 0:
@@ -300,70 +366,79 @@ def log_color_calc(data, data_range=None, color_profile='log_cut', log_cut_val=N
                 min_abs = abs(max_neg)
             else:
                 min_abs = 1.0
-        
+
         log_data_range = [np.log10(min_abs), np.log10(data_range[1])]
-        
+
         # Normalize data
         data_log_norm = np.zeros_like(data, dtype=float)
         wh_pos = np.where(data > 0)
         wh_neg = np.where(data < 0)
         wh_zero = np.where(data == 0)
-        
+
         if len(wh_pos[0]) > 0:
-            data_log_norm[wh_pos] = (np.log10(data[wh_pos]) - log_data_range[0]) * \
-                                    (data_n_colors - 1) / (log_data_range[1] - log_data_range[0]) + \
-                                    data_color_range[0]
-        
+            data_log_norm[wh_pos] = (np.log10(data[wh_pos]) - log_data_range[0]) * (
+                data_n_colors - 1
+            ) / (log_data_range[1] - log_data_range[0]) + data_color_range[0]
+
         if len(wh_neg[0]) > 0:
-            data_log_norm[wh_neg] = (np.log10(abs(data[wh_neg])) - log_data_range[0]) * \
-                                    (data_n_colors - 1) / (log_data_range[1] - log_data_range[0]) + \
-                                    data_color_range[0]
-        
+            data_log_norm[wh_neg] = (
+                np.log10(abs(data[wh_neg])) - log_data_range[0]
+            ) * (data_n_colors - 1) / (
+                log_data_range[1] - log_data_range[0]
+            ) + data_color_range[
+                0
+            ]
+
         if len(wh_zero[0]) > 0:
             data_log_norm[wh_zero] = data_color_range[0]
-        
+
         # Handle out-of-bounds values
         wh_under = np.where(data_log_norm < data_color_range[0])
         if len(wh_under[0]) > 0:
             data_log_norm[wh_under] = data_color_range[0]
-        
+
         wh_over = np.where(data_log_norm > data_color_range[1])
         if len(wh_over[0]) > 0:
             data_log_norm[wh_over] = data_color_range[1]
-    
+
     # Handle abs color profile
-    elif color_profile == 'abs':
+    elif color_profile == "abs":
         data_abs = np.abs(data)
-        data_log_norm = (data_abs - data_range[0]) * (data_n_colors - 1) / \
-                        (data_range[1] - data_range[0]) + data_color_range[0]
-        
+        data_log_norm = (data_abs - data_range[0]) * (data_n_colors - 1) / (
+            data_range[1] - data_range[0]
+        ) + data_color_range[0]
+
         # Handle out-of-bounds values
         wh_under = np.where(data_log_norm < data_color_range[0])
         if len(wh_under[0]) > 0:
             data_log_norm[wh_under] = data_color_range[0]
-        
+
         wh_over = np.where(data_log_norm > data_color_range[1])
         if len(wh_over[0]) > 0:
             data_log_norm[wh_over] = data_color_range[1]
-    
+
     # Handle missing values
     if count_missing > 0:
         data_log_norm[wh_missing] = missing_color
-    
+
     # Handle invert_colorbar option
     if invert_colorbar:
         data_log_norm = data_color_range[1] - (data_log_norm - data_color_range[0])
-    
+
     # Generate colorbar ticks and tick names
-    if color_profile == 'log_cut' or color_profile == 'sym_log':
+    if color_profile == "log_cut" or color_profile == "sym_log":
         cb_ticks = np.linspace(data_color_range[0], data_color_range[1], num=5)
-        cb_ticknames = [f"{10**(tick * (log_data_range[1] - log_data_range[0]) / (data_n_colors - 1) + log_data_range[0]):.2g}" 
-                        for tick in cb_ticks]
-    elif color_profile == 'abs':
+        cb_ticknames = [
+            f"{10**(tick * (log_data_range[1] - log_data_range[0]) / (data_n_colors - 1) + log_data_range[0]):.2g}"
+            for tick in cb_ticks
+        ]
+    elif color_profile == "abs":
         cb_ticks = np.linspace(data_color_range[0], data_color_range[1], num=5)
-        cb_ticknames = [f"{tick * (data_range[1] - data_range[0]) / (data_n_colors - 1) + data_range[0]:.2g}" 
-                        for tick in cb_ticks]
-    
+        cb_ticknames = [
+            f"{tick * (data_range[1] - data_range[0]) / (data_n_colors - 1) + data_range[0]:.2g}"
+            for tick in cb_ticks
+        ]
+
     return data_log_norm, cb_ticks, cb_ticknames
 
 
@@ -375,7 +450,7 @@ def color_range(data, count_missing=None):
         data_color_range = [1, 255]
     else:
         data_color_range = color_range
-    
+
     n_colors = color_range[1] - color_range[0] + 1
     data_n_colors = data_color_range[1] - data_color_range[0] + 1
 
