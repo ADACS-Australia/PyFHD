@@ -254,9 +254,9 @@ def visibility_degrid(
                         dx0dy1[ii],
                         dx1dy1[ii],
                     )
-                    box_matrix.flat[
-                        psf_dim3 * ii : psf_dim3 * ii + kernel.size
-                    ] = kernel
+                    box_matrix.flat[psf_dim3 * ii : psf_dim3 * ii + kernel.size] = (
+                        kernel
+                    )
             else:
                 group_id = group_arr[inds]
                 group_max = np.max(group_id) + 1

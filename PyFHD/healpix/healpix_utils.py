@@ -486,10 +486,18 @@ def vis_model_freq_split(
     freq_bin_i2 = np.arange(obs["n_freq"]) // pyfhd_config["n_avg"]
     nf = int(np.max(freq_bin_i2) + 1)
     if save_uvf:
-        dirty_uv_arr = np.zeros([nf, obs["dimension"], obs["dimension"]], dtype=np.complex128)
-        weights_uv_arr = np.zeros([nf, obs["dimension"], obs["dimension"]], dtype=np.complex128)
-        variance_uv_arr = np.zeros([nf, obs["dimension"], obs["dimension"]], dtype=np.complex128)
-        model_uv_arr = np.zeros([nf, obs["dimension"], obs["dimension"]], dtype=np.complex128)
+        dirty_uv_arr = np.zeros(
+            [nf, obs["dimension"], obs["dimension"]], dtype=np.complex128
+        )
+        weights_uv_arr = np.zeros(
+            [nf, obs["dimension"], obs["dimension"]], dtype=np.complex128
+        )
+        variance_uv_arr = np.zeros(
+            [nf, obs["dimension"], obs["dimension"]], dtype=np.complex128
+        )
+        model_uv_arr = np.zeros(
+            [nf, obs["dimension"], obs["dimension"]], dtype=np.complex128
+        )
     dirty_arr = np.zeros([nf, obs["dimension"], obs["dimension"]])
     weights_arr = np.zeros([nf, obs["dimension"], obs["dimension"]])
     variance_arr = np.zeros([nf, obs["dimension"], obs["dimension"]])

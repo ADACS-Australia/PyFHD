@@ -1553,7 +1553,10 @@ def vis_baseline_hist(
 
 
 def cal_auto_ratio_divide(
-    obs: dict, cal: dict, vis_auto: NDArray[np.float64], auto_tile_i: NDArray[np.integer]
+    obs: dict,
+    cal: dict,
+    vis_auto: NDArray[np.float64],
+    auto_tile_i: NDArray[np.integer],
 ) -> tuple[dict, NDArray[np.float64]]:
     """
     Remove antenna-dependent parameters (i.e. cable reflections) from the calculated gains

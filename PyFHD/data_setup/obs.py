@@ -540,7 +540,7 @@ def update_obs(
     )
     obs["astr"]["naxis"] = np.array([dimension, dimension])
     obs["astr"]["cdelt"] = np.full(2, obs["degpix"])
-    obs["astr"]["crpix"] = np.array([obs['obsx']+1, obs['obsy']+1])
+    obs["astr"]["crpix"] = np.array([obs["obsx"] + 1, obs["obsy"] + 1])
     obs["baseline_info"]["fbin_i"] = freq_bin_i
 
     return obs

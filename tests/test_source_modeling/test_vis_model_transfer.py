@@ -49,9 +49,11 @@ def before_file(tag, run, data_dir, model_dir):
     h5_save_dict["pyfhd_config"] = {
         "flag_model": False if "skip_model_flagging" in h5_save_dict["extra"] else True,
         "model_file_type": "uvfits" if tag == "point_zenith" else "sav",
-        "model_file_path": str(Path(model_dir, f"{tag}.uvfits"))
-        if tag == "point_zenith"
-        else str(model_dir),
+        "model_file_path": (
+            str(Path(model_dir, f"{tag}.uvfits"))
+            if tag == "point_zenith"
+            else str(model_dir)
+        ),
         "obs_id": tag,
         "instrument": "mwa",
         "n_pol": 2,

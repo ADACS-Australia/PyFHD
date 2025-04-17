@@ -217,7 +217,9 @@ def vis_calibrate_subroutine(
         hist_tile_A, _, riA = histogram(tile_A_i[baseline_use], min=0, max=n_tile - 1)
         hist_tile_B, _, riB = histogram(tile_B_i[baseline_use], min=0, max=n_tile - 1)
         tile_use = np.where(((hist_tile_A + hist_tile_B) > 0) & (tile_use_flag > 0))[0]
-        tile_flag = np.where(((hist_tile_A + hist_tile_B) == 0) & (tile_use_flag == 0))[0]
+        tile_flag = np.where(((hist_tile_A + hist_tile_B) == 0) & (tile_use_flag == 0))[
+            0
+        ]
 
         # Should be able to reduce precision if memory is a concern
         tile_A_i_use = np.zeros(np.size(baseline_use), dtype=np.int64)
@@ -225,14 +227,14 @@ def vis_calibrate_subroutine(
         for tile_i in range(np.size(tile_use)):
             if hist_tile_A[tile_use[tile_i]] > 0:
                 # Calculate tile contributions for each non-flagged baseline
-                tile_A_i_use[
-                    riA[riA[tile_use[tile_i]] : riA[tile_use[tile_i] + 1]]
-                ] = tile_i
+                tile_A_i_use[riA[riA[tile_use[tile_i]] : riA[tile_use[tile_i] + 1]]] = (
+                    tile_i
+                )
             if hist_tile_B[tile_use[tile_i]] > 0:
                 # Calculate tile contributions for each non-flagged baseline
-                tile_B_i_use[
-                    riB[riB[tile_use[tile_i]] : riB[tile_use[tile_i] + 1]]
-                ] = tile_i
+                tile_B_i_use[riB[riB[tile_use[tile_i]] : riB[tile_use[tile_i] + 1]]] = (
+                    tile_i
+                )
 
         ref_tile_use = np.where(reference_tile == tile_use)
         if ref_tile_use[0].size == 0:

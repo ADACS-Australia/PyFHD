@@ -412,9 +412,7 @@ def main():
             (obs["n_pol"], obs["elements"], obs["dimension"]), dtype=np.complex128
         )
         variance_uv = np.empty((obs["n_pol"], obs["elements"], obs["dimension"]))
-        uniform_filter_uv = np.empty(
-            (obs["elements"], obs["dimension"])
-        )
+        uniform_filter_uv = np.empty((obs["elements"], obs["dimension"]))
         if vis_model_arr is not None:
             model_uv = np.empty(
                 (obs["n_pol"], obs["elements"], obs["dimension"]),
