@@ -16,3 +16,4 @@ sphinx-rtd-theme
 sphinx-argparse
 myst-parser
 healpy
+black

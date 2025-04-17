@@ -288,7 +288,7 @@ def test_idl_example(data_dir: Path) :
     assert np.array_equal(indices, expected_indices)
 ```
 
-Pytest fixtures have the ability to group other fixtures too, take `test_cal_auto_ratio_divide` as an example, `test_cal_auto_ratio_divide` was set up with multiple pytest fixtures with multiple parameters. These pytest fixtures in `test_cal_auto_ratio_divide` automatically generate groups of tests without duplicating code for each test. You should also notice the use of the `numpy.testing` library as well. The below code generates 6 tests using the fixtures `tag` and `run` primarily. This test also shows how you can skip certain groups if you need to.
+Pytest fixtures have the ability to group other fixtures too, take `test_cal_auto_ratio_divide` as an example, `test_cal_auto_ratio_divide` was set up with multiple pytest fixtures with multiple parameters. These pytest fixtures in `test_cal_auto_ratio_divide` automatically generate groups of tests without duplicating code for each test. You should also notice the use of the `numpy.testing` library as well. The below code generates 6 tests using the fixtures `tag` and `run` primarily. This test also shows how you can skip certain groups if you need to. Please take note as the comments go into more detail and I've added doc strings that aren't present in the tests to be more descriptive.
 
 ```python
 from PyFHD.io.pyfhd_io import recarray_to_dict
@@ -301,29 +301,57 @@ from PyFHD.pyfhd_tools.test_utils import sav_file_vis_arr_swap_axes
 from PyFHD.io.pyfhd_io import save, load
 import numpy.testing as npt
 
+# Here we set up a fixture for the main data directory where all the files required for testing are
+# I set up the testing framework to utlise an environment variable PYFHD_TEST_PATH so where ever you store the 
+# files from the FHD runs, adjust it to that path.
 @pytest.fixture()
 def data_dir():
     return Path(env.get('PYFHD_TEST_PATH'), "cal_auto_ratio_divide")
 
+# With the FHD runs we used test tags, so all the files had consistent naming formats, 
+# for example, one of the test files was point_zenith_run1_before_cal_auto_ratio_divide.sav
+# In that file, we used the tags point_zenith, run1 and before to indicate to the developer
+# and to the tests, which test the files were for and if the files were used for input ("before")
+# or were used for validation ("after"). In this case we're using a fixture to set 3 different parameters.
 @pytest.fixture(scope="function", params=['point_zenith','point_offzenith', '1088716296'])
 def tag(request):
     return request.param
 
+# We're using another fixture to set the run identifiers.
 @pytest.fixture(scope="function", params=['run1', 'run3'])
 def run(request):
     return request.param
 
+# Using pairs of tag and run identifiers, we can skip certain tests in the case of the file not existing
+# or for some other reason, why this is needed will become clear soon.
 skip_tests = [['1088716296', "run3"]]
 
 # For each combination of tag and run, check if the hdf5 file exists, if not, create it and either way return the path
-# Tests will fail if the fixture fails, not too worried about exceptions here.
-
+# Tests will fail if the fixture fails, not too worried about exceptions here. The fixtures are re-executed for each test run.
+# The purpose of the best_file fixture is take each combination of the fixtures in the format f"{tag}_{run}_before_{data_dir.name}"
+# and create the required file.
 @pytest.fixture()
 def before_file(tag, run, data_dir):
+    """
+    Creates the before HDF5 from the sav files from FHD
+
+    Parameters
+    ----------
+    tag: str
+        The tag/name of the FHD run we're grabbing data from, these are often named from their observation
+        ID or from special ones that have been made like point_zenith (an observation at the zenith).
+    run: str
+        The identifier for the run, in FHD we often ran 3 (or more) different sets of parameters for each observation
+        we used to generate tests from FHD to ensure we covered the different functions in FHD.
+    data_dir: Path
+        The path to the directory containing the files required for each test 
+    """
+    # Note the check for skip tests right at the start
     if ([tag, run] in skip_tests):
         return None
     before_file = Path(data_dir, f"{tag}_{run}_before_{data_dir.name}.h5")
     # If the h5 file already exists and has been created, return the path to it
+    # This is done because the fixtures are re-executed for each test.
     if before_file.exists():
         return before_file
     
@@ -342,8 +370,11 @@ def before_file(tag, run, data_dir):
     h5_save_dict['vis_auto'] = vis_auto
     h5_save_dict['auto_tile_i'] = sav_dict['auto_tile_i']
 
+    # This function was made specifically for PyFHD but you could probably use it elsewhere
     save(before_file, h5_save_dict, "before_file")
 
+    # This seems like it does one return but with the power of fixtures each time we run a test it will get fed
+    # with the tag, run and data_dir to check the required file exists.
     return before_file
 
 # Same as the before_file fixture, except we're taking the the after files
@@ -374,7 +405,22 @@ def test_cal_auto_ratio_divide(before_file, after_file):
     """
     Runs all the given tests on `cal_auto_ratio_divide` reads in the data in before_file and after_file,
     and then calls `cal_auto_ratio_divide`, checking the outputs match expectations
+
+    Focusing on the before_file for a second, by using before_file as a parameter here it uses runs the 
+    before_file function which itself takes in the tag, run and data_dir fixtures which create the following combination
+    of tests and before files:
+    ['point_zenith', 'run1', Path(env.get('PYFHD_TEST_PATH'), "cal_auto_ratio_divide")] this outputs the point_zenith_run1_before_cal_auto_ratio_divide.h5
+    ['point_offzenith', 'run1', Path(env.get('PYFHD_TEST_PATH'), "cal_auto_ratio_divide")] this outputs the point_offzenith_run1_before_cal_auto_ratio_divide.h5
+    ['1088716296', 'run1', Path(env.get('PYFHD_TEST_PATH'), "cal_auto_ratio_divide")]] this outputs the 1088716296_run1_before_cal_auto_ratio_divide.h5
+    ['point_zenith', 'run3', Path(env.get('PYFHD_TEST_PATH'), "cal_auto_ratio_divide")] this outputs the point_zenith_run3_before_cal_auto_ratio_divide.h5
+    ['point_offzenith', 'run3', Path(env.get('PYFHD_TEST_PATH'), "cal_auto_ratio_divide")] this outputs the point_offzenith_run3_before_cal_auto_ratio_divide.h5
+    ['1088716296', 'run3', Path(env.get('PYFHD_TEST_PATH'), "cal_auto_ratio_divide")]] this outputs the 1088716296_run3_before_cal_auto_ratio_divide.h5
+
+    Which effectively means we create 6 files, and using the fixtures we have created a way to create 6 tests with 6 functions, rather than having to duplicate
+    our code to read in and write the files for every single test we want to run.
     """
+    # Take a note here that if the before_file or after_file returned None we tell pytest to skip the test, so if you see skips
+    # its not a bad thing!
     if (before_file == None or after_file == None):
         pytest.skip(f"This test has been skipped because the test was listed in the skipped tests due to FHD not outputting them: {skip_tests}")
 
@@ -391,6 +437,10 @@ def test_cal_auto_ratio_divide(before_file, after_file):
 
     result_cal, result_auto_ratio = cal_auto_ratio_divide(obs, cal, vis_auto, auto_tile_i)
 
+    # The only downside to doing things this way is that in order to have different atol or rtol
+    # for different tests or need to do something specific you'll need to do if statements to check for that test e.g.
+    # if "point_zenith" in before_file:
+    #    do something unique
     atol = 8e-6
     npt.assert_allclose(expected_auto_ratio, result_auto_ratio, atol=atol)
 
@@ -402,13 +452,55 @@ Once you have set up the tests, every time you change the code and re-run the te
 
 Another tool that will help you during testing is the debugging tools available in IDE's like those in VSCode and PyCharm. Debugging tools allow you to get away from using print statements to using breakpoints instead, allowing you to see the entire snapshot of your function at that point in time in the code. This does make it easier to track down issues, see portions of large arrays, watch certain variables throughout the code to see how they change etc. VSCode in particular can allow you to set log points which can act like print statements without you having to put anything into the code. Breakpoints can also have conditions attached to them, so if you know you're looping through frequencies and you know an issue happens with frequency index 13, you can make a breakpoint condition that will trigger only when the frequency index is 13. Check the debugging tools for VSCode [here](https://code.visualstudio.com/docs/python/debugging) and the tools for PyCharm [here](https://www.jetbrains.com/help/pycharm/debugging-code.html).
 
-This section wasn't about teaching you how to test, but to show why we do it. It's testing that has enabled us to be sure that `PyFHD` actually does the same things as `FHD` and even in some cases detect bugs on the `FHD` side. If you want to learn more about testing check out the numpy testing functions [here](https://numpy.org/doc/stable/reference/routines.testing.html) and also check out pytest [here](https://docs.pytest.org/en/7.4.x/).
+This section wasn't necessarily about teaching you the specifics on how to test, but to show why we do it. It's testing that has enabled us to be sure that `PyFHD` actually does the same things as `FHD` and even in some cases detect bugs on the `FHD` side. If you want to learn more about testing check out the numpy testing functions [here](https://numpy.org/doc/stable/reference/routines.testing.html) and also check out pytest [here](https://docs.pytest.org/en/7.4.x/).
 
 ### The Need for Speed
 
 If you're function is running a little slower than you'd like explore the [Numba](https://numba.readthedocs.io/en/stable/index.html) library. Numba is a **J**ust-**i**n-**T**ime (JIT) compiler that compiles your Python code at run time into machine code, it can make your code sveral magintudes faster than it is with little adjustments to the code. One of the nice things about Numba is that you can get away from using vectorization in NumPy and just do things in loops that require less thinking. However, Numba has a particular way of doing things and is harder to debug as the error messages are harder to decipher. Numba does also support CUDA, so if you want to write things for a GPU you can, however it's a slightly different paradigm when it comes to programming for GPUs vs CPUs so be aware your code will change significantly and will likely require you to have a CPU and GPU version of your function. If you are wanting to adopt GPUs consider using [CuPY](https://docs.cupy.dev/en/stable/user_guide/index.html) which can allow you to use GPUs by changing calls of NumPy via `np` to using CuPy using `cp`, it is also possible to create [CPU/GPU agnostic code](https://docs.cupy.dev/en/stable/user_guide/basic.html#how-to-write-cpu-gpu-agnostic-code) with CuPy. Another library that can support CPU/GPU agnostic code is [Dask](https://docs.dask.org/en/stable/10-minutes-to-dask.html) which is a library made for parallel computing with interpoability with NumPy and Pandas, however it does have less support for a lot of the mathematical functions and linear algebra done in `PyFHD`. 
 
 Given that we're using Python, you can of course create a module in C/C++/Fortran/Julia/Rust and use that within `PyFHD`. I have purposely for now not done anything in other languages to avoid having to compile either during installation or publication, I'll leave that upto the EoR community to decide.
+
+### Formatting
+
+PyFHD has adopted the black code formatter, and will run this as a check in the CI before on any PR or push to main. `black` is included in the dependencies for PyFHD, using black can be done in a variety of ways. The simplest one to setup and do is after creating your function inside the PyFHD run the following command:
+
+```
+black --check --diff .
+```
+
+This will run black over the entire repository and check if you code meets the black formatting standard. In the case that black finds a file that would be reformatted if you ran black it will show the differences that black would do in the same way git shows you differences, and give you this message at the end:
+
+```
+Oh no! 💥 💔 💥
+x file(s) would be reformatted, xx files would be left unchanged.
+```
+
+This is the same check that's done the in Github Actions. To fix this, simply run:
+
+```
+black .
+```
+
+And it will reformat the files following the black code styling standard. If you run the black command and get the following:
+
+```
+All done! ✨ 🍰 ✨
+xx files left unchanged.
+```
+
+Congrats on doing great styling throughout your new function. Alternatively, it might also mean you got your IDE like VSCode or PyCharm to automatically format any Python files on save using the black code formatter. For formatting in VSCode, check out the page here: [VSCode Python Formatting](https://code.visualstudio.com/docs/python/formatting) and follow the steps for setting a default formatter, making sure to set black as the formatter, you'll also need the extension which can be found here: [Black Extension](https://marketplace.visualstudio.com/items?itemName=ms-python.black-formatter). For doing automatic formatting in Pycharm you can check out this page: [PyCharm Formatting](https://www.jetbrains.com/help/pycharm/reformat-and-rearrange-code.html), there's a section called **Reformat Python code with Black**, follow the instructions there and also check out the rest as they also provide you the ability to format before commits as well.
+
+On that topic, if you do things in command line, `pre-commit` has also been setup in PyFHD with a black configuration done as a pre-commit, once you installed everything you can do:
+
+```
+pre-commit install
+```
+
+If you want to manually run the pre-commit, which runs black, you can do:
+
+```
+pre-commit run --all
+```
 
 ### Adding your new function to the Changelog
 
