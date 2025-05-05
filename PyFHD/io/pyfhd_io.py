@@ -448,7 +448,7 @@ def load_dataset(
             value = dataset[()]
         else:
             value = dataset[:]
-        if value.dtype.kind == "S":
+        if isinstance(value, np.ndarray) and value.dtype.kind == "S":
             value = _decode_byte_arr(value)
         if isinstance(value, bytes):
             value = value.decode()
