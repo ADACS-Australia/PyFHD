@@ -310,10 +310,12 @@ def flag_model_visibilities(
     if flaginfo_data.num_times != len(np.unique(model_times_to_use)):
 
         data_path = pyfhd_config["input_path"], pyfhd_config["obs_id"] + ".uvfits"
-        model_path = pyfhd_config["model_file_path"] + pyfhd_config["model_file_type"]
+        model_path = (
+            str(pyfhd_config["model_file_path"]) + pyfhd_config["model_file_type"]
+        )
         logger.error(
             f"Could not match the time steps in the data uvfits: {data_path}"
-            f" and model uvfits {model_path}. Please check the model "
+            f" and model uvfits in {model_path}. Please check the model "
             "and try again. Exiting now."
         )
         exit()
