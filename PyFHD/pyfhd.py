@@ -189,7 +189,10 @@ def main():
             )
     else:
         # Load the checkpoint and initialize the required variables
-        if pyfhd_config["obs_checkpoint"]:
+        if (
+            pyfhd_config["obs_checkpoint"]
+            and Path(pyfhd_config["obs_checkpoint"]).exists()
+        ):
             obs_checkpoint = load(pyfhd_config["obs_checkpoint"], logger=logger)
             obs = obs_checkpoint["obs"]
             params = obs_checkpoint["params"]
@@ -327,10 +330,10 @@ def main():
                 save(
                     Path(
                         pyfhd_config["checkpoint_dir"],
-                        f"{checkpoint_name}_calibration_checkpoint.h5",
+                        f"{checkpoint_name}_calibrate_checkpoint.h5",
                     ),
                     checkpoint,
-                    "calibration_checkpoint",
+                    "calibrate_checkpoint",
                     logger=logger,
                 )
                 logger.info(
@@ -338,7 +341,10 @@ def main():
                 )
     else:
         # Load the calibration checkpoint
-        if pyfhd_config["calibration_checkpoint"]:
+        if (
+            pyfhd_config["calibrate_checkpoint"]
+            and Path(pyfhd_config["calibrate_checkpoint"]).exists()
+        ):
             cal_checkpoint = load(pyfhd_config["calibrate_checkpoint"], logger=logger)
             obs = cal_checkpoint["obs"]
             params = cal_checkpoint["params"]

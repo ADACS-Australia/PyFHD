@@ -1,88 +1,147 @@
 .. _MWA ASVO: https://asvo.mwatelescope.org/
 .. _Birli: https://github.com/MWATelescope/Birli
+.. _WODEN: https://woden.readthedocs.io/en/latest/index.html
 
 Examples
 ===========
 
-Preamble - Inputs and Outputs ``PyFHD``
+Let's start with getting you off the ground and running using the sample data built into ``PyFHD``. 
+The example data is a small subset of the observation ``1088285600`` with a beam that uses only one frequency, 
+and a skymodel created using `WODEN`_. To run ``PyFHD`` you use the CLI, built with ``configargparse``
+which allows you to take in configuration files. The command below assumes you're running from inside the root directory of the repository.
+
+.. code-block:: bash
+
+  pyfhd -c ./input/1088285600_example/1088285600_example.yaml 1088285600
+
+The command on most machines takes 1-2 minutes to run, and the output is stored in the ``output`` directory. More details on the exact inputs and outputs is clarified in the next section.
+
+The Required Inputs and the outputs of ``PyFHD``
 ----------------------------------------------------------
 
-The input ``PyFHD`` requires at a minimum is the observation ID and a configuration file to be passed to ``configargparse`` using the ``-c`` option. 
-By default ``PyFHD`` will search for a ``pyfhd.yaml`` configuration file in the directory you run ``PyFHD`` from, so strictly speaking, 
-if you run ``PyFHD`` from a directory that contains a ``pyfhd.yaml`` file then only the observation ID is needed. It's assumed that the 
-configuration file you provide has valid options for all the files you require, some files can be discovered automatically through the ``input-path``
+The input ``PyFHD`` requires at a minimum is the observation ID and a configuration file to be passed to ``configargparse`` using the ``-c`` option.
+By default ``PyFHD`` will search for a ``pyfhd.yaml`` configuration file in the directory you run ``PyFHD`` from, so strictly speaking,
+if you run ``PyFHD`` from a directory that contains a ``pyfhd.yaml`` file then only the observation ID is needed.
+
+It's assumed that the configuration file you provide has valid options for all the files you require, some files can be discovered automatically through the ``input-path``
 option of ``PyFHD`` so read through the usage help text to work out how you wish to configure your input. ``PyFHD`` is rather flexible on how you do your input
 as many of the files you may require can be in completely separate directories.
 
-The output of ``PyFHD`` is automatically generated and stores everything in one directory with the name ``pyfhd_YYYY_MM_DD_HH_mm_ss`` if you don't use the ``--description`` option. 
-In the case of using the ``--description`` option then the output directory generated will be ``pyfhd_your_description_here``. The path where the output directory will be generated is ``--output-path``,
-with the generated output having the following directory structure (assuming 2 polarizations are used):
+The output of ``PyFHD`` is automatically generated and stores everything in one directory with the name ``pyfhd_YYYY_MM_DD_HH_mm_ss`` if you don't use the ``--description`` option.
+In the case of using the ``--description`` option then the output directory generated will be ``pyfhd_your_description_here``. The example run we used above uses the ``--description`` as ``'1088285600_example'``
+option so the output directory generated will be ``pyfhd_1088285600_example``. The path where the output directory will be generated is ``--output-path`` (by default ``./output``), assuming you're looking at the example run above,
+the output directory structure will look like this:
 
 .. code-block:: bash
-  
-  .
-  └── /path/to/the/output-path/
-      └── pyfhd_your_description_here/
-          ├── calibration/
-          │   └── obs_id_cal.h5
-          ├── checkpoints/
-          │   ├── obs_id__your_description_here_obs_checkpoint.h5
-          │   ├── obs_id__your_description_here_calibration_checkpoint.h5
-          │   └── obs_id__your_description_here_gridding_checkpoint.h5
-          ├── fits/
-          │   ├── obs_id_uniform_dirty_XX.fits
-          │   ├── obs_id_uniform_model_XX.fits
-          │   ├── obs_id_uniform_residual_XX.fits
-          │   ├── obs_id_beam_XX.fits
-          │   ├── obs_id_uv_weights_XX.fits
-          │   ├── obs_id_uniform_dirty_YY.fits
-          │   ├── obs_id_uniform_model_YY.fits
-          │   ├── obs_id_uniform_residual_YY.fits
-          │   ├── obs_id_beam_YY.fits
-          │   └── obs_id_uv_weights_YY.fits
-          ├── gridding/
-          │   ├── obs_id_image_uv.h5
-          │   ├── obs_id_weights_uv.h5
-          │   ├── obs_id_variance_uv.h5
-          │   ├── obs_id_uniform_filter_uv.h5
-          │   └── obs_id_model_uv.h5
-          ├── healpix/
-          │   ├── obs_id_hpx_even_XX.h5
-          │   ├── obs_id_hpx_even_YY.h5
-          │   ├── obs_id_hpx_odd_XX.h5
-          │   ├── obs_id_hpx_odd_YY.h5
-          │   └── uvf_grid/
-          │       ├── obs_id_even_dirty_uv_arr_gridded_uvf.h5
-          │       ├── obs_id_even_weights_uv_gridded_uvf.h5
-          │       ├── obs_id_even_variance_uv_arr_gridded_uvf.h5
-          │       ├── obs_id_even_model_uv_arr_gridded_uvf.h5
-          │       ├── obs_id_odd_dirty_uv_arr_gridded_uvf.h5
-          │       ├── obs_id_odd_weights_uv_gridded_uvf.h5
-          │       ├── obs_id_odd_variance_uv_arr_gridded_uvf.h5
-          │       └── obs_id_odd_model_uv_arr_gridded_uvf.h5
-          ├── metadata/
-          │   ├── obs_id_obs.h5
-          │   └── obs_id_params.h5
-          ├── plotting/
-          │   ├── calibration/
-          │   │   ├── cal_plot_1.png
-          │   │   └── cal_plot_2.png
-          │   ├── gridding/
-          │   │   └── gridding_plot_1.png
-          │   └── quickview/
-          │       └── quickview_plot_1.png
-          ├── visibilities/
-          │   ├── obs_id_calibrated_vis_arr.h5
-          │   └── obs_id_calibrated_vis_weights.h5
-          ├── pyfhd_your_description_here_YYYY_MM_DD_HH_mm_ss.log
-          ├── pyfhd_your_description_here_YYYY_MM_DD_HH_mm_ss.yaml
-          └── pyfhd_your_description_here_YYYY_MM_DD_HH_mm_ss-final.yaml
 
-The difference between the final and non-final yaml is that the final yaml is generated at the end of the run so you can observe any changes made to ``pyfhd_config``
+  output
+  └── pyfhd_1088285600_example
+      ├── calibration
+      │   └── 1088285600_cal.h5
+      ├── checkpoints
+      │   ├── 1088285600_example_calibration_checkpoint.h5
+      │   ├── 1088285600_example_gridding_checkpoint.h5
+      │   └── 1088285600_example_obs_checkpoint.h5
+      ├── config
+      │   ├── pyfhd_1088285600_example_2025_04_17_11_47_12-final.yaml
+      │   ├── pyfhd_1088285600_example_2025_04_17_11_47_12.yaml
+      │   └── pyfhd_config.h5
+      ├── fits
+      │   ├── 1088285600_beam_XX.fits
+      │   ├── 1088285600_beam_YY.fits
+      │   ├── 1088285600_uniform_dirty_XX.fits
+      │   ├── 1088285600_uniform_dirty_YY.fits
+      │   ├── 1088285600_uniform_model_XX.fits
+      │   ├── 1088285600_uniform_model_YY.fits
+      │   ├── 1088285600_uniform_residual_XX.fits
+      │   ├── 1088285600_uniform_residual_YY.fits
+      │   ├── 1088285600_uv_weights_XX.fits
+      │   └── 1088285600_uv_weights_YY.fits
+      ├── gridding
+      │   ├── 1088285600_image_uv.h5
+      │   ├── 1088285600_model_uv.h5
+      │   ├── 1088285600_uniform_filter_uv.h5
+      │   ├── 1088285600_variance_uv.h5
+      │   └── 1088285600_weights_uv.h5
+      ├── healpix
+      │   ├── 1088285600_hpx_even_XX.h5
+      │   ├── 1088285600_hpx_even_YY.h5
+      │   ├── 1088285600_hpx_odd_XX.h5
+      │   ├── 1088285600_hpx_odd_YY.h5
+      │   └── uvf_grid
+      │       ├── 1088285600_even_XX_dirty_uv_arr_gridded_uvf.h5
+      │       ├── 1088285600_even_XX_model_uv_arr_gridded_uvf.h5
+      │       ├── 1088285600_even_XX_variance_uv_arr_gridded_uvf.h5
+      │       ├── 1088285600_even_XX_weights_uv_gridded_uvf.h5
+      │       ├── 1088285600_even_YY_dirty_uv_arr_gridded_uvf.h5
+      │       ├── 1088285600_even_YY_model_uv_arr_gridded_uvf.h5
+      │       ├── 1088285600_even_YY_variance_uv_arr_gridded_uvf.h5
+      │       ├── 1088285600_even_YY_weights_uv_gridded_uvf.h5
+      │       ├── 1088285600_odd_XX_dirty_uv_arr_gridded_uvf.h5
+      │       ├── 1088285600_odd_XX_model_uv_arr_gridded_uvf.h5
+      │       ├── 1088285600_odd_XX_variance_uv_arr_gridded_uvf.h5
+      │       ├── 1088285600_odd_XX_weights_uv_gridded_uvf.h5
+      │       ├── 1088285600_odd_YY_dirty_uv_arr_gridded_uvf.h5
+      │       ├── 1088285600_odd_YY_model_uv_arr_gridded_uvf.h5
+      │       ├── 1088285600_odd_YY_variance_uv_arr_gridded_uvf.h5
+      │       └── 1088285600_odd_YY_weights_uv_gridded_uvf.h5
+      ├── layout.h5
+      ├── metadata
+      │   ├── 1088285600_obs.h5
+      │   └── 1088285600_params.h5
+      ├── plots
+      │   └── calibration
+      │       ├── 1088285600_cal_amp.png
+      │       ├── 1088285600_cal_phase.png
+      │       ├── 1088285600_cal_raw_amp.png
+      │       ├── 1088285600_cal_raw_phase.png
+      │       ├── 1088285600_cal_residual_amp.png
+      │       └── 1088285600_cal_residual_phase.png
+      ├── pyfhd_1088285600_example_2025_04_17_11_47_12.log
+      └── visibilities
+          ├── 1088285600_calibrated_vis_arr.h5
+          ├── 1088285600_calibrated_vis_weights.h5
+          ├── 1088285600_raw_vis_arr.h5
+          └── 1088285600_raw_vis_weights.h5
+
+The difference between the final and non-final yaml is that the final yaml is generated at the end of the run so you can observe any changes made to ``pyfhd_config``, the config is also saved as a HDF5 file at the end of the run.
+Changes may happen due to conflicts in the options of your configuration file, if they are minor that's when the configuration will change and you should see the change mentioned in the log file.
+Most of the directories should be self explanatory, but there are two I wish to explain in more detail.
+
+First the ``plots`` directory, for the plots directory, the intent is to store all the plots generated by ``PyFHD`` in there,
+with a directory for plots generated for each part of the pipeline. For example, if you wish to add diagnostic plots for ``gridding`` as a PyFHD developer, then the policy is to create a ``gridding`` directory in ``plots`` directory
+and store your plots generated from ``gridding`` there. If the plots aren't generated in ``gridding`` but are related to ``gridding`` then those plots should also go into the ``gridding`` subdirectory.
+
+The second directory I want to explain is the ``checkpoints`` directory, please read on to the next section for this explaantion.
+
+Checkpointing
+-------------
+The checkpointing system in ``PyFHD`` is designed to save the state of the pipeline after important, potentially long running steps.
+The checkpoints are store in the ``checkpoints`` directory and they are saved at th fopllowing points:
+
+- ``obs_checkpoint`` - ``obs`` dict creation, reading of visibilities and weights, creation of the ``params`` dict
+- ``calibration_checkpoint`` - End of calibration, creation of the ``cal`` dict which holds the calculated gains, metadata etc, the skymodel after being imported and the weights which have been updated after calibration.
+- ``gridding_checkpoint`` - End of gridding, creation of the ``gridding`` dict which holds the gridded visibilities and associated weights, variances, models, etc
+
+In the case that you wish to skip a step in the pipeline, you can use the ``--calibrate-checkpoint`` or ``--grid-checkpoint`` options to skip the calibration or gridding steps respectively. 
+
+.. attention::
+  The ``--obs-checkpoint`` and ``--calibrate-checkpoint`` will check for each other's existence and if both are used ``--calibrate-checkpoint`` will be prioritised and ``obs-checkpoint`` will be ignored.
+
+In the below example we will run ``PyFHD`` with the ``--calibrate-checkpoint`` option, which will skip the calibration and visibility step and go straight to gridding. 
+
+.. code-block:: bash
+
+  pyfhd -c ./input/1088285600_example/1088285600_example.yaml --calibrate-checkpoint ./output/pyfhd_1088285600_example/checkpoints/1088285600_example_calibration_checkpoint.h5 1088285600 
+
+Within the logs of the ``PyFHD`` you should see the following message::
+
+  yyyy-mm-dd HH:MM:SS - INFO:
+        Checkpoint Loaded: Calibrated and Flagged visibility parameters, array and weights, the flagged observation metadata dictionary and the calibration dictionary loaded from output/pyfhd_1088285600_example/calibrate_checkpoint.h5
 
 Downloading MWA Data
 ---------------------
-Data can be obtained via the `MWA ASVO`_ service (head to the webpage to get an account setup). There are multiple ways to download data (please refer to the `MWA ASVO`_ to learn more); here we will use the Web Dashboard as an example. 
+Data can be obtained via the `MWA ASVO`_ service (head to the webpage to get an account setup). There are multiple ways to download data (please refer to the `MWA ASVO`_ to learn more); here we will use the Web Dashboard as an example.
 
 ``PyFHD`` uses a UVFITS file as input. The raw data out of the MWA telescope comes in a bespoke format, so we must convert the data into a UVFITS file. On the `MWA ASVO`_, login with your credentials, then head to 'My Jobs' in the top right corner, and click "New Data Job". Select the 'Visibility Conversion Job' tab as shown below:
 
@@ -173,7 +232,6 @@ If you look in the ``/place/for/outputs/pyfhd_cal_data/fhd_pyfhd_cal_data/output
   :width: 600px
 
 We have solutions!
-
 
 Running advanced calibration (uses IDL)
 -------------------------------------------

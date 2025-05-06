@@ -31,13 +31,41 @@ For full installation notes, including dependencies on FHD, check out the [ReadT
 
 > Note: Once PyFHD is feature-complete, we aim to make this both a `conda` install and a `pip` install.
 
-To run the example included in the PyFHD repository, run the following command:
+To check if PyFHD is available on your path, run the following command:
 
 ```
-pyfhd -c ./input/1088285600_example/1088285600_example.yaml 1088285600
+pyfhd -v
 ```
 
-Please note the command is designed to run from the **root directory** of the repository.
+You should see output that resembles something like this:
+
+```
+   ________________________________________________________________________
+    |    ooooooooo.               oooooooooooo ooooo   ooooo oooooooooo.    |
+    |    8888   `Y88.             8888       8 8888    888   888     Y8b    |
+    |    888   .d88' oooo    ooo  888          888     888   888      888   |
+    |    888ooo88P'   `88.  .8'   888oooo8     888ooooo888   888      888   |
+    |    888           `88..8'    888          888     888   888      888   |
+    |    888            `888'     888          888     888   888     d88'   |
+    |    o888o            .8'     o888o        o888o   o888o o888bood8P'    |
+    |                 .o..P'                                                |
+    |                `Y8P'                                                  |
+    |_______________________________________________________________________|
+    
+    Python Fast Holographic Deconvolution 
+
+    Translated from IDL to Python as a collaboration between Astronomy Data and Computing Services (ADACS) and the Epoch of Reionisation (EoR) Team.
+
+    Repository: https://github.com/ADACS-Australia/PyFHD
+
+    Documentation: https://pyfhd.readthedocs.io/en/latest/
+
+    Version: 1.0
+
+    Git Commit Hash: a36c37a966eb00ddcd936b9acee6bb7c71f9bb5a
+```
+
+To run the examples built into the repository and beyond, please find them here: [PyFHD Examples](https://pyfhd.readthedocs.io/en/latest/examples/examples.html)
 
 ## Useful Documentation Resources
  - [PyFHD documentation](https://pyfhd.readthedocs.io/en/latest/)
