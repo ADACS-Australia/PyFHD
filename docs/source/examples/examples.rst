@@ -1,6 +1,7 @@
 .. _MWA ASVO: https://asvo.mwatelescope.org/
 .. _Birli: https://github.com/MWATelescope/Birli
 .. _WODEN: https://woden.readthedocs.io/en/latest/index.html
+.. _FHD: https://github.com/EoRImaging/FHD
 
 Examples
 ===========
@@ -132,12 +133,55 @@ In the below example we will run ``PyFHD`` with the ``--calibrate-checkpoint`` o
 
 .. code-block:: bash
 
-  pyfhd -c ./input/1088285600_example/1088285600_example.yaml --calibrate-checkpoint ./output/pyfhd_1088285600_example/checkpoints/1088285600_example_calibration_checkpoint.h5 1088285600 
+  pyfhd -c ./input/1088285600_example/1088285600_example.yaml --calibrate-checkpoint ./output/pyfhd_1088285600_example/checkpoints/1088285600_example_calibrate_checkpoint.h5 1088285600 
 
 Within the logs of the ``PyFHD`` you should see the following message::
 
   yyyy-mm-dd HH:MM:SS - INFO:
         Checkpoint Loaded: Calibrated and Flagged visibility parameters, array and weights, the flagged observation metadata dictionary and the calibration dictionary loaded from output/pyfhd_1088285600_example/calibrate_checkpoint.h5
+
+Configuration
+-------------
+We have shown that you can adjust the configuration of ``PyFHD`` using command like arguments like ``--calibrate-checkpoint`` and ``-c`` / ``--config``, however we have mentioned that we used `ConfigArgParse <https://pypi.org/project/ConfigArgParse/>`_
+to allow the use of ``YAML`` files. Inside the repository we have 2 examples of configuration files, one is in the root of the repository and is the template yaml file, ``pyfhd.yaml``, use this to create your own configuration file. Alternatively, you can
+use the example configuration file ``1088285600_example.yaml`` in the ``input/1088285600_example`` directory to build your configuration file. 
+All of these options replace the `dictionary.md <https://github.com/EoRImaging/FHD/blob/master/dictionary.md>`_ file that used in `FHD`_, most of the options come from `FHD`_, however some of the options are new specific to ``PyFHD`` and
+some have been renamed from `FHD`_ and in the case of being renamed, the old name is referenced inside the help text of the option.
+
+.. tip::
+
+  The hierarchy of the configuration in PyFHD is as follows:
+  YAML -> Command Line Argument -> Code
+  The command line argument will override the YAML file, and the code will override the command line argument in certain situations.
+  In situations where the code overrides the command line (or YAML), it's generally if a warning is triggered or some error is found, although
+  we try to avoid these when we can. If no warning is logged when the code overrides the YAML or command line options, either add
+  the warning to the code yourself and do a Pull request or open an issue on the repository.
+
+If you wish to see all the options ``PyFHD`` has available, find them in one of the following places:
+
+CLI
++++
+  .. code-block:: bash
+
+    pyfhd --help # -h also works, you're welcome to use either, you know how it should be.
+
+    usage: PyFHD [-h] [-c CONFIG] [-v] [-i INPUT_PATH] [-r] [-s] [-l] [--instrument {mwa}] [--dimension DIMENSION] [--elements ELEMENTS] [--kbinsize KBINSIZE] [--FoV FOV] [--deproject_w_term DEPROJECT_W_TERM] [--conserve-memory]
+                [--memory-threshold MEMORY_THRESHOLD] [--min-baseline MIN_BASELINE] [--n-pol {0,2,4}] [--save-checkpoints] [--obs-checkpoint OBS_CHECKPOINT] [--calibrate-checkpoint CALIBRATE_CHECKPOINT] [--gridding-checkpoint GRIDDING_CHECKPOINT]
+                ...
+
+Read The Docs
+++++++++++++++
+
+Go to the Usage section inside the API Documentation and you will see the full list of options available to you. The usage is generated using `sphinx <https://www.sphinx-doc.org/en/master/>`_.
+
+Find them Here: :doc:`Usage <../documentation/documentation>`
+
+``PyFHD.pyfhd_tools.pyfhd_setup.pyfhd_parser()``
++++++++++++++++++++++++++++++++++++++++++++++++++
+
+You can also find the options in the ``pyfhd_setup.py`` file, this is the file that is used to generate the command line interface and the configuration file.
+Specifically look for the ``pyfhd_parser()`` function. 
+You can see the source here: `pyfhd_parser <../_modules/PyFHD/pyfhd_tools/pyfhd_setup.html#pyfhd_parser>`_
 
 Downloading MWA Data
 ---------------------
@@ -160,10 +204,36 @@ You can check the status of your download by clicking 'My Jobs' in the top left.
 .. image:: jobs_ready.png
   :width: 800px
 
-Running basic calibration (uses IDL)
--------------------------------------------
+Running basic calibration
+-------------------------
 
-Full Pythonic calibration has not been implemented yet. In the interim, you can run limited calibration through ``PyFHD`` by using it as a wrapper to call ``FHD``. An extremely basic example is shown here:
+Calibration is fully available in ``PyFHD`` and can be enabled using the ``--calibrate-visibilities`` option being set to true. Most of the options for calibration are found under the 
+`Calibration <../documentation/documentation.html#PyFHD.pyfhd_tools.pyfhd_setup-pyfhd_parser-calibration>`_ group in the argument parser. 
+The first example we'll do is the a calibration of the sample data using only the command line interface to show the options that changed
+in comparison to the template in the root of the repository (which will be used by default here):
+
+.. code-block:: bash
+
+  pyfhd \
+    --input-path "./input/1088285600_example/" \
+    --beam-file-path "./input/1088285600_example/gauss_beam_pointing0_167635008Hz.h5" \
+    --beam-offset-time 0 \
+    --no-cable-bandpass-fit \
+    --no-cal-reflection-hyperresolve \
+    --cal-reflection-mode-theory 0 \
+    --no-calibration-auto-initialize \
+    --no-vis-baseline-hist \
+    --no-digital-gain-jump-polyfit \
+    --no-return-cal-visibilities \
+    --cal-stop \
+    --no-flag-frequencies \
+    --description "1088285600_example_cal_stop" \
+    --model-file-type "uvfits" \
+    --model-file-path "./input/1088285600_example/1088285600_model.uvfits" \
+    1088285600
+
+
+TODO: Do PyFHD run with 1091128160 and show the output
 
 .. code-block:: bash
 
@@ -401,50 +471,41 @@ Once run, this will produce the following outputs:
 
 These files contain the gridded data sets, with each frequency slice being a separate ``hdf5`` data object within the relevant file.
 
-Image gridded outputs and project to Healpix (uses IDL)
-----------------------------------------------------------
-Assuming we have run ``PyFHD`` to grid some visibilities (as detailed in `Gridding IDL calibration outputs`_ above), in this example we will use ``FHD`` to image and project them to Healpix. These outputs can then be input into :math:`\varepsilon`\ *ppsilon*. The example command is:
+HEALPIX
+-------
+The HEALPIX outputs from ``PyFHD`` are stored in the ``healpix`` directory. The parts of ``healpix_snapshot_cube_generate.pro`` from ``FHD``, however precision errors and potential bugs have caused differences
+in the resulting ``obs_id_hpx_even/odd_XX/YY.h5`` files the translation that exist in ``FHD``. So the ``obs_id_hpx_even/odd_XX/YY.h5`` files are not the same as the ``obs_id_even/odd_cubeXX/YY.sav`` files that exist in ``FHD``,
+however I'm not sure if they should be given the size of the files that get generated and the format, it's not easy to create in Python and takes a long time to create with regards to the rest of the ``PyFHD`` pipeline. 
+With that said, by default healpix files are generated as by default, the entirety of ``PyFHD`` runs in full. If you want to ensure that it runs then adjust a config of your choice with the followng options:
 
-.. code-block:: bash
+.. code-block:: yaml
 
-   pyfhd \
-       '1088281328' \
-       --input-path /path/to/data/ \
-       --output-path /current/working/directory/ \
-       --description my_first_run \
-       --grid-psf-file /path/to/beams/gauss_beams_pointing-2.sav \
-       --ps-kspan=200 \
-       --IDL_healpix_gridded_outputs
+  # Export
+  output-path : './output'
+  save-healpix-fits: true
+  snapshot-healpix-export : true
 
-Note that unlike in the `Gridding IDL calibration outputs`_ example, this time we point ``--grid-psf-file`` towards an ``IDL`` save file. This is because ``FHD`` needs to access the ``psf`` object within, and ``IDL`` cannot read the ``numpy`` format. This command will write a number of ``.pro`` files to launch ``FHD``, with a small amount of extra code to read in the gridded ``hdf5`` files. For those interested, the template is in ``PyFHD/PyFHD/templates/vis_model_freq_split_read_python.pro``.
+  # HEALPIX
+  ps-kbinsize : 0.5
+  ps-kspan : 600
+  ps-beam-threshold: 0
+  ps-fov: ~
+  ps-dimension: ~
+  ps-degpix: ~
+  ps-nfreq-avg: ~
+  ps-tile-flag-list: []
+  n-avg : 2
+  rephase-weights: True
+  restrict-healpix-inds : true
+  healpix-inds: ~
+  split-ps-export : true
+  
+The most important options are the ``save-healpix-fits`` and the ``snapshot-healpix-export`` options, which are set to ``true`` by default and are the toggles which allow the HEALPIX functions to be called. 
 
-Once this code is run, the following outputs are created:
+.. attention:: 
+  
+  This is a call to action!
 
-.. code-block:: bash
+  If you believe you have a better way of generating HEALPIX files than FHD did, then give it a go, please read the :doc:`Contribution Guide <../develop/contribution_guide>` and do a pull request!
 
-   /current/working/directory
-   └── fhd_pyfhd_my_first_run
-     └── Healpix
-         ├── 1088281328_even_cubeXX.sav
-         ├── 1088281328_even_cubeYY.sav
-         ├── 1088281328_odd_cubeXX.sav
-         └── 1088281328_odd_cubeYY.sav
-
-Both grid and image/project to Healpix
-----------------------------------------
-It is straight forward to run the gridding and imaging/healpix projection (detailed in examples `Gridding IDL calibration outputs`_ and `Image gridded outputs and project to Healpix (uses IDL)`_ above) in a single command:
-
-.. code-block:: bash
-
-   pyfhd \
-       '1088281328' \
-       --input-path /path/to/data/ \
-       --output-path /current/working/directory/ \
-       --description my_first_run \
-       --grid-psf-file /path/to/beams/gauss_beam_pointing-2.npz \
-                       /path/to/beams/gauss_beams_pointing-2.sav \
-       --ps-kspan=200 \
-       --grid_IDL_outputs \
-       --IDL_healpix_gridded_outputs
-
-The important thing to note is that we supply both the ``.npz`` and ``.sav`` format beams to the ``--grid-psf-file``, which keeps both ``Python`` and ``IDL`` happy.
+  We await your contributions!
