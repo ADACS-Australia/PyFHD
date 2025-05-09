@@ -30,7 +30,7 @@ Contents
    :maxdepth: 2
 
    installation/installation
-   examples/examples
+   tutorial/tutorial
    develop/contribution_guide
    documentation/documentation
    changelog/changelog
