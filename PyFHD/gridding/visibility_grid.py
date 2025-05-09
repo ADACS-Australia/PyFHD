@@ -490,6 +490,8 @@ def visibility_grid(
                 ymin_use : ymin_use + psf_dim, xmin_use : xmin_use + psf_dim
             ] += bin_n[bin_i[bi]]
 
+    logger.info(f"Main gridding loop completed for {n_bin_use} baselines.")
+
     # Free Up Memory
     del (
         vis_arr_use,
