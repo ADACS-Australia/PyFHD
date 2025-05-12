@@ -3,8 +3,8 @@
 .. _WODEN: https://woden.readthedocs.io/en/latest/index.html
 .. _FHD: https://github.com/EoRImaging/FHD
 
-PyFHD Tutorial
-==============
+Tutorial
+=========
 
 Let's start with getting you off the ground and running using the sample data built into ``PyFHD``. 
 The example data is a small subset of the observation ``1088285600`` with a beam that uses only one frequency, 
@@ -512,10 +512,11 @@ Other Telescopes
 .. important::
 
   Getting data for testing additional telescopes is under way, if you wish for PyFHD to support a new telescope we need the following for testing:
-  * uvfits file
-  * Any associated metadata files you use (MWA uses metafits, but other telescopes may use different formats if any at all)
-  * A beam file (sav files, HDF5 files, if the beam can be done with pyuvdata, please give an example of how to create the beam response)
-  * A skymodel file (ideally uvfits, but we can potentially support other file types as well depending on the complexity)
+
+  - UVFITS file
+  - Any associated metadata files you use - MWA uses metafits, but other telescopes may use different formats if any at all
+  - A beam file - IDL SAVE (sav) files, HDF5 (h5) files, if the beam can be done with pyuvdata, please give an example of how to create the beam response
+  - A skymodel file - ideally UVFITS, but we can potentially support other file types as well depending on the complexity
 
 HEALPIX
 -------
