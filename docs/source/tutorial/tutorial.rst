@@ -156,9 +156,14 @@ in case you wish to temporarily negate the options set in the configuration file
 
   The hierarchy of the configuration in PyFHD is as follows:
 
-  - Code
-    - Command Line Argument
-      - YAML
+  .. code-block:: 
+
+         Code
+          ⬇️
+      Command Line
+          ⬇️
+         YAML
+  
   The command line argument will override the YAML file, and the code will override the command line argument in certain situations.
   In situations where the code overrides the command line (or YAML), it's generally if a warning is triggered or some error is found, although
   we try to avoid these when we can. If no warning is logged when the code overrides the YAML or command line options, either add
@@ -520,19 +525,20 @@ Other Telescopes
 
 HEALPIX
 -------
-The HEALPIX outputs from ``PyFHD`` are stored in the ``healpix`` directory. The parts of ``healpix_snapshot_cube_generate.pro`` from ``FHD``, however precision errors and potential bugs have caused differences
-in the resulting ``obs_id_hpx_even/odd_XX/YY.h5`` files the translation that exist in ``FHD``. So the ``obs_id_hpx_even/odd_XX/YY.h5`` files are not the same as the ``obs_id_even/odd_cubeXX/YY.sav`` files that exist in ``FHD``,
-however I'm not sure if they should be given the size of the files that get generated and the format, it's not easy to create in Python and takes a long time to create with regards to the rest of the ``PyFHD`` pipeline. 
-With that said, by default healpix files are generated as by default, the entirety of ``PyFHD`` runs in full. If you want to ensure that it runs then adjust a config of your choice with the followng options:
+The HEALPIX outputs from ``PyFHD`` are stored in the ``healpix`` directory. The translated parts of ``healpix_snapshot_cube_generate.pro`` from ``FHD`` have precision errors and potential bugs and they have caused differences
+in the resulting ``obs_id_hpx_even/odd_XX/YY.h5`` files the translation that exist in ``FHD``. So the ``obs_id_hpx_even/odd_XX/YY.h5`` files generated from ``PyFHD`` as the ``obs_id_even/odd_cubeXX/YY.sav`` files that exist in ``FHD``.
+However I'm not sure if they should be given that the differentces could just precision in which case there might be a problem at all. Furthermore the size of the files that get generated and the format, is not easy to create in 
+Python and takes a long time to create with regards to the rest of the ``PyFHD`` pipeline (and the resulting files are also large in when compared to other outputs). 
+With that said, by default healpix files are generated, the entirety of ``PyFHD`` runs in full. If you want to ensure that HEALPIX files are generated then adjust a config of your choice with the followng options:
 
 .. code-block:: yaml
 
   # Export
   output-path : './output'
-  save-healpix-fits: true
-  snapshot-healpix-export : true
+  save-healpix-fits: true # IMPORTANT
+  snapshot-healpix-export : true # IMPORTANT
 
-  # HEALPIX
+  # HEALPIX (These are the defaults)
   ps-kbinsize : 0.5
   ps-kspan : 600
   ps-beam-threshold: 0
