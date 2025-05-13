@@ -25,6 +25,7 @@ def visibility_grid(
     model: NDArray[np.complex128] | None = None,
     fi_use: NDArray[np.integer] | None = None,
     bi_use: NDArray[np.integer] | None = None,
+    verbose_logging=True,
 ) -> dict:
     """
     Put visibilities on a discrete, hyperresolved 2D plane in {u,v}-space with the Fourier-transform of the
@@ -70,6 +71,9 @@ def visibility_grid(
         Frequency index array for gridding, i.e. gridding all frequencies for continuum images, by default None
     bi_use : NDArray[np.int\_] | None, optional
         Baseline index array for gridding, i.e even vs odd time stamps, by default None
+    verbose_logging : bool, optional
+        If True, will log the gridding process, by default True
+        Set to False if you're doing gridding per frequency (such as when creating HEALPIX files).
 
     Returns
     -------
@@ -490,7 +494,12 @@ def visibility_grid(
                 ymin_use : ymin_use + psf_dim, xmin_use : xmin_use + psf_dim
             ] += bin_n[bin_i[bi]]
 
-    logger.info(f"Main gridding loop completed for {n_bin_use} baselines.")
+        if verbose_logging and bi in np.arange(
+            n_bin_use // 10, n_bin_use, n_bin_use // 10
+        ):
+            logger.info(
+                f"Gridding  visibilities for baseline {bi} of {n_bin_use} for polarization {obs['pol_names'][polarization]}"
+            )
 
     # Free Up Memory
     del (

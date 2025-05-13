@@ -447,7 +447,9 @@ def main():
                 )
             # Since it's done per polarization, we can do multi-processing if it's not fast enough
             for pol_i in range(obs["n_pol"]):
-                logger.info(f"Gridding has begun for polarization {pol_i}")
+                logger.info(
+                    f"Gridding has begun for polarization {obs['pol_names'][pol_i]}"
+                )
                 if pol_i == 0:
                     uniform_flag = True
                 else:
@@ -478,7 +480,9 @@ def main():
                     obs["nf_vis"] = gridding_dict["obs"]["nf_vis"]
                     if vis_model_arr is not None:
                         model_uv[pol_i] = gridding_dict["model_return"]
-                    logger.info(f"Gridding has finished for polarization {pol_i}")
+                    logger.info(
+                        f"Gridding has finished for polarization {obs['pol_names'][pol_i]}"
+                    )
                 else:
                     logger.error("All data was flagged during gridding, exiting")
                     sys.exit(1)

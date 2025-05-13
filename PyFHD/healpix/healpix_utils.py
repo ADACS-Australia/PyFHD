@@ -539,10 +539,11 @@ def vis_model_freq_split(
             model=vis_model_arr[polarization],
             fi_use=fi_use,
             bi_use=bi_use,
+            verbose_logging=False,
         )
         if not gridding_dict:
             logger.warning(
-                f"No visibilities gridded for frequency channel {fi_use} and polarization {polarization}"
+                f"No visibilities gridded for frequency channel {fi_use} and polarization {obs['pol_names'][polarization]} ({polarization})"
             )
             continue
         n_vis_use += gridding_dict["n_vis"]
