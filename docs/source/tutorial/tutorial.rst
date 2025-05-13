@@ -523,6 +523,79 @@ Other Telescopes
   - A beam file - IDL SAVE (sav) files, HDF5 (h5) files, if the beam can be done with pyuvdata, please give an example of how to create the beam response
   - A skymodel file - ideally UVFITS, but we can potentially support other file types as well depending on the complexity
 
+Saving and Loading files
+------------------------------------------------
+``PyFHD`` uses ``HDF5`` files to store data in general.
+``PyFHD`` uses ``h5py`` to read and write the files, the main functions that you can see how ``PyFHD``
+saves and loads HDF5 files are in the ``pyfhd_io`` module, found here: `pyfhd_io <../_modules/PyFHD/io/pyfhd_io.html>`_. 
+More specifically look for the ``save`` and ``load`` functions.
+
+Examples of both can be seen below:
+
+.. code-block:: python
+
+  # Saving
+  from PyFHD.io.pyfhd_io import save
+  import numpy as np
+
+  example_dict = {
+    "example": np.arange(10),
+    "example_group": {
+      "example_in_group": np.arange(10),
+    }
+  }
+  
+  save("example.h5", example_dict, "example")
+
+  # Loading
+
+  from PyFHD.io.pyfhd_io import load
+  
+  loaded_example = load("example.h5")
+
+  print(loaded_example["example"]) # [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+  print(loaded_example["example_group"]["example_in_group"]) # [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+
+If you wish to see the contents of the HDF5 file, there are ways outside of PyFHD to do this, you could use extensions for your IDE like 
+`H5 Web <https://marketplace.visualstudio.com/items?itemName=h5web.vscode-h5web>`_ or you can use CLI tools like `h5dump <https://support.hdfgroup.org/documentation/hdf5/latest/_h5_t_o_o_l__d_p__u_g.html#sec_cltools_h5dump>`_.
+
+An example of the beam HDF5 file for the sample data seen inside VSCode using H5 Web is shown below:
+
+.. image:: h5_web.png
+  :width: 800px
+  :align: center
+  :alt: H5 Web example
+
+Lazy Loading
++++++++++++++
+The load function inside of ``PyFHD`` also has the capability to lazy load the data, which means that the data is not loaded into memory until you access it. 
+This is done by setting the ``lazy_load`` argument to ``True`` when calling the load function. It's important to note that when a HDF5 file is lazy loaded, then the
+loaded data is stored inside a ``HDF5 File`` object rather than a Python dictionary.
+
+.. code-block:: python
+
+  from PyFHD.io.pyfhd_io import load
+  
+  loaded_example = load("example.h5", lazy_load=True)
+
+  print(type(loaded_example)) # <class 'h5py._hl.files.File'>
+  print(loaded_example["example"]) # <HDF5 dataset "example": shape (10,), type "<i8">
+  print(loaded_example["example_group"]["example_in_group"]) # <HDF5 dataset "example_in_group": shape (10,), type "<i8">
+
+  # To access the data, you need to use the `[:]` operator which tells the H5File object to load the data into memory
+  # and return it as a numpy array
+  print(loaded_example["example"][:]) # [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+  print(loaded_example["example_group"]["example_in_group"][:]) # [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+
+This is useful primarily for any beam files that are large, as they can take a long time to load into memory and can use a lot of memory. 
+
+.. tip::
+  
+  If you are using lazy loading, then you need to be careful when using the data, as it is not loaded into memory until you access it. 
+  This means that if you try to use the data in a way that requires it to be loaded into memory, you will need to wait for data to transfer
+  from disk to memory, this can cause parts of the pipeline to be slow. Optimizations need to be done to better deal with the transfer of disk to memeory, 
+  to better chunk the data into memory for processing. If you're happy to take that task on yourself, do a Pull Request!
+
 HEALPIX
 -------
 The HEALPIX outputs from ``PyFHD`` are stored in the ``healpix`` directory. The translated parts of ``healpix_snapshot_cube_generate.pro`` from ``FHD`` have precision errors and potential bugs and they have caused differences

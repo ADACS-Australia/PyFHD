@@ -448,11 +448,89 @@ def test_cal_auto_ratio_divide(before_file, after_file):
     npt.assert_allclose(expected_cal['gain'], result_cal['gain'], atol=atol)
 ```
 
-Once you have set up the tests, every time you change the code and re-run the test you can be sure you haven't broken existing functionality accidentally giving you more confidence that the changes you have made will improve `PyFHD`. 
+Once you have set up the tests, every time you change the code and re-run the test you can be sure you haven't broken existing functionality accidentally giving you more confidence that the changes you have made will improve `PyFHD`. This section wasn't necessarily about teaching you the specifics on how to test, but to show why we do it. It's testing that has enabled us to be sure that `PyFHD` actually does the same things as `FHD` and even in some cases detect bugs on the `FHD` side. If you want to learn more about testing check out the numpy testing functions [here](https://numpy.org/doc/stable/reference/routines.testing.html) and also check out pytest [here](https://docs.pytest.org/en/7.4.x/).
 
-Another tool that will help you during testing is the debugging tools available in IDE's like those in VSCode and PyCharm. Debugging tools allow you to get away from using print statements to using breakpoints instead, allowing you to see the entire snapshot of your function at that point in time in the code. This does make it easier to track down issues, see portions of large arrays, watch certain variables throughout the code to see how they change etc. VSCode in particular can allow you to set log points which can act like print statements without you having to put anything into the code. Breakpoints can also have conditions attached to them, so if you know you're looping through frequencies and you know an issue happens with frequency index 13, you can make a breakpoint condition that will trigger only when the frequency index is 13. Check the debugging tools for VSCode [here](https://code.visualstudio.com/docs/python/debugging) and the tools for PyCharm [here](https://www.jetbrains.com/help/pycharm/debugging-code.html).
+### Debugging
 
-This section wasn't necessarily about teaching you the specifics on how to test, but to show why we do it. It's testing that has enabled us to be sure that `PyFHD` actually does the same things as `FHD` and even in some cases detect bugs on the `FHD` side. If you want to learn more about testing check out the numpy testing functions [here](https://numpy.org/doc/stable/reference/routines.testing.html) and also check out pytest [here](https://docs.pytest.org/en/7.4.x/).
+Tools that will help you during testing are the debugging tools available in IDE's like those in VSCode and PyCharm. Debugging tools allow you to get away from using print statements to using breakpoints instead, allowing you to see the entire snapshot of your function at that point in time in the code. This does make it easier to track down issues, see portions of large arrays, watch certain variables throughout the code to see how they change etc. VSCode in particular can allow you to set log points which can act like print statements without you having to put anything into the code. Breakpoints (and log points!) can also have conditions attached to them, so if you know you're looping through frequencies and you know an issue happens with frequency index 13, you can make a breakpoint condition that will trigger only when the frequency index is 13. To learn more about conditional breakpoints go [here](https://code.visualstudio.com/docs/debugtest/debugging#_conditional-breakpoints).
+
+For doing debugging on tests specifically while in VSCode, it's usually easiest to setup the Testing part of the VSCode IDE that is bundled in with the Python extension, I'll leave a guide here to set it up:
+
+1. First download the [Python extension](https://marketplace.visualstudio.com/items/?itemName=ms-python.python) from the VSCode marketplace (this should also download the Python Debugger).
+2. Navigate to the testing tab in VSCode on the left sidebar, it should look like a beaker
+
+<div style="text-align: center"><img src="beaker.png"></div>
+
+3. In that testing tab it should offer you some text or a button you can click to setup the tests. Alternatively you can bring up the command palette <kbd>Ctrl + Shift + P</kbd> on Windows/Linux or <kbd>Shift + Command + P</kbd> for Mac and search for **Python: Configure Tests**.
+
+4. When going through the process it should:
+    1. Ask if you're using pytests or unittest, choose **pytest**
+    2. For the directory, choose the root directory of the repository.
+    3. From there it should automatically discover the tests in the repository
+
+5. Hover one of the tests and you should see three buttons:
+    <div style="text-align: center"><img src="debug_buttons.png"></div>
+    Each of these buttons does the following things in order: Runs the test, Runs the test with Debugging enabled, Runs the test with coverage enabled.
+    In this case, click the second test with the bug on it.
+    From there the test should run with debugging enabled and stop at breakpoints set in the tests themselves or the code the test touches.
+
+It's also possible to setup a debug sesion for running ``PyFHD`` in the command line, this is setup using the ``launch.json`` file in the VSCode Workspace inside the ``.vscode`` directory. An example with comments that contain more detail is below, this is based on running the sample data as per the tutorial:
+
+```json
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            // You can name it whatever you want.
+            "name": "Python Debugger: Sample Data",
+            // This needs to be set to debugpy
+            "type": "debugpy",
+            // There's multiple ways to do this, you could also attach
+            // to a python process
+            "request": "launch",
+            // Tells debugpy to run the main pyfhd.py file.
+            "program": "PyFHD/pyfhd.py",
+            "console": "integratedTerminal",
+            // Set the arguments, if you want multiple configurations
+            // I'd suggest duplicating the configuration, and change the name
+            // and args to get multiple debugging profiles.
+            "args": [
+                "-c", 
+                "./input/1088285600_example/1088285600_example.yaml",
+                // Here's an example of using the command line to override or negate the yaml file
+                "--no-silent",
+                "1088285600"
+            ],
+            // If you select the Python Interpreter in VSCode this isn't needed.
+            "python": "/path/to/python/env/python"
+            // Set to false if you need to debug interactions with PyFHD and it's dependencies
+            "justMyCode": true,
+            // If you're inside a docker or singularity container, you likely need to also set the
+            // path mappings (this tells debugpy where to map your files on your machine to inside
+            // the container)
+            // "pathMappings": [
+            //     {
+            //         "localRoot": "${workspaceFolder}",
+            //         "remoteRoot": "/pyfhd"
+            //     }
+            // ]
+        }
+    ]
+}
+```
+
+Once you have added that to the ``launch.json`` file go to the Play button with a bug on the left sidebar, and at the top of the sidebar you should no see a dropdown with the name you set:
+<div style="text-align: center"><img src="debug_bar.png"></div>
+
+Click the Play button by the dropdown to run the debug session. Below is an example what it it looks like when you have set a breakpoint and debugging has stopped at that breakpoint:
+<div style="text-align: center"><img src="debug_example.png"></div>
+
+What has been particuarly useful is the ability at this breakpoint to go deeper into the arrays and see their values, that way you can keep an eye on certain values as they go through parts of the `PyFHD` pipeline. There's also a **Watch** feature, right clicking on a variable can allow you to add it to the watch list, so instead of finding the variable each time you can just check the watch list. 
+
+There are lots of other debugging features that I haven't gove over or explored, if you're interested check out the documentation for the debugging tools in VSCode [here](https://code.visualstudio.com/docs/python/debugging) and the tools for PyCharm [here](https://www.jetbrains.com/help/pycharm/debugging-code.html).
 
 ### The Need for Speed
 
