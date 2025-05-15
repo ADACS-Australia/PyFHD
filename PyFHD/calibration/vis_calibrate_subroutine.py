@@ -430,7 +430,7 @@ def vis_calibrate_subroutine(
                 )
             del A_ind_arr
             logger.info(
-                f"Convergence was reached for polarization: {obs['pol_names'][pol_i]} ({pol_i}) and frequency: {fi}, with a convergence of: {conv_test[fii, -1]} and the threshold was: {conv_thresh}"
+                f"Convergence was reached for polarization: {obs['pol_names'][pol_i]} ({pol_i}) and frequency: {fi}, with a convergence of: {conv_test[fii, i]} and the threshold was: {conv_thresh}"
             )
             gain_arr[fi, tile_use] = gain_curr
         nan_i = np.where(np.isnan(gain_curr))[0]
