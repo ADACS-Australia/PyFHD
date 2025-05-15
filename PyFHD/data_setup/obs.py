@@ -330,7 +330,7 @@ def read_metafits(
         meta["phasera"] = hdr["RAPHASE"]
         meta["phasedec"] = hdr["DECPHASE"]
         meta["time_res"] = hdr["INTTIME"]
-        meta["delays"] = hdr["DELAYS"].split(",")
+        meta["delays"] = np.asarray(hdr["DELAYS"].split(","), np.float64)
     else:
         logger.warning(
             "METAFITS file has not been found, Calculating obs meta settings from the uvfits header instead"

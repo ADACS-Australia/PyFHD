@@ -187,6 +187,7 @@ def main():
                     "obs_checkpoint",
                     logger=logger,
                 )
+                del checkpoint
                 logger.info(
                     f"Checkpoint Saved: Uncalibrated visibility parameters, array and weights and the observation metadata dictionary saved into {Path(pyfhd_config['output_dir'], 'obs_checkpoint.h5')}"
                 )
@@ -201,6 +202,7 @@ def main():
                 params = obs_checkpoint["params"]
                 vis_arr = obs_checkpoint["vis_arr"]
                 vis_weights = obs_checkpoint["vis_weights"]
+                del obs_checkpoint
                 logger.info(
                     f"Checkpoint Loaded: Uncalibrated visibility parameters, array and weights and the observation metadata dictionary loaded from {Path(pyfhd_config['output_dir'], 'obs_checkpoint.h5')}"
                 )
@@ -352,6 +354,7 @@ def main():
                         "calibrate_checkpoint",
                         logger=logger,
                     )
+                    del checkpoint
                     logger.info(
                         f"Checkpoint Saved: Calibrated and Flagged visibility parameters, array and weights, the flagged observation metadata dictionary and the calibration dictionary saved into {Path(pyfhd_config['output_dir'], 'calibrate_checkpoint.h5')}"
                     )
@@ -370,6 +373,7 @@ def main():
                 vis_model_arr = cal_checkpoint["vis_model_arr"]
                 vis_weights = cal_checkpoint["vis_weights"]
                 cal = cal_checkpoint["cal"]
+                del cal_checkpoint
                 logger.info(
                     f"Checkpoint Loaded: Calibrated and Flagged visibility parameters, array and weights, the flagged observation metadata dictionary and the calibration dictionary loaded from {Path(pyfhd_config['output_dir'], 'calibrate_checkpoint.h5')}"
                 )
@@ -510,6 +514,7 @@ def main():
                     "gridding_checkpoint",
                     logger=logger,
                 )
+                del checkpoint
                 logger.info(
                     f"Checkpoint Saved: The Gridded UV Planes saved into {Path(pyfhd_config['output_dir'], 'gridding_checkpoint.h5')}"
                 )
@@ -526,6 +531,7 @@ def main():
                 uniform_filter_uv = grid_checkpoint["uniform_filter_uv"]
                 if "model_uv" in grid_checkpoint:
                     model_uv = grid_checkpoint["model_uv"]
+                del grid_checkpoint
                 logger.info(
                     f"Checkpoint Loaded: The Gridded UV Planes loaded from {Path(pyfhd_config['output_dir'], 'gridding_checkpoint.h5')}"
                 )
