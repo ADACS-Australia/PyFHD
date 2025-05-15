@@ -1,0 +1,61 @@
+[project]
+name = "PyFHD"
+version = "1.0"
+readme = "README.md"
+license = { file = "LICENSE" }
+description = "Python Fast Holograhic Deconvolution: A Python package that does efficient image deconvolution for general radio astronomy, fast-mode Epoch of Reionization analysis, and simulation."
+authors = [
+    { name = "Joel Dunstan (SkyWa7ch3r)", email = "joel.g.w.dunstan@gmail.com"},
+    { name = "Jack Line (JLBLine"},
+    { name = "Nichole Barry (nicholebarry)", email = "nichole.barry@unsw.edu.au"}
+]
+requires-python = ">=3.10"
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "Topic :: Scientific/Engineering :: Astronomy",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "astropy>=6.1.7",
+    "colorama>=0.4.6",
+    "configargparse>=1.7",
+    "h5py>=3.13.0",
+    "healpy>=1.18.1",
+    "importlib-resources>=6.5.2",
+    "matplotlib>=3.10.3",
+    "numba>=0.61.2",
+    "numpy>=2.2.5",
+    "scipy>=1.15.3",
+]
+
+[project.scripts]
+pyfhd = "PyFHD.pyfhd:main"
+
+[project.urls]
+"Repository" = "https://github.com/ADACS-Australia/PyFHD"
+"Documentation" = "https://pyfhd.readthedocs.io/en/latest/"
+"Bug Tracker" = "https://github.com/ADACS-Australia/PyFHD/Issues"
+"Changelog" = "https://pyfhd.readthedocs.io/en/latest/changelog/changelog.html"
+
+[dependency-groups]
+dev = [
+    "black>=25.1.0",
+    "myst-parser>=4.0.1",
+    "pre-commit>=4.2.0",
+    "pytest>=8.3.5",
+    "pytest-cov>=6.1.1",
+    "sphinx>=8.1.3",
+    "sphinx-argparse>=0.5.2",
+    "sphinx-rtd-theme>=3.0.2",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
