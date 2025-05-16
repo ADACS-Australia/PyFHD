@@ -820,6 +820,12 @@ def pyfhd_parser():
         action=OrderedBooleanOptionalAction,
         help="Turns on the plotting of calibration solutions",
     )
+    plotting.add_argument(
+        "--gridding-plots",
+        default=False,
+        action=OrderedBooleanOptionalAction,
+        help="Turns on the plotting of the continuum gridding outputs",
+    )
 
     # Model Group
     model.add_argument(
