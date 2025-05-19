@@ -1,0 +1,25 @@
+# IDE/editor settings
+.vscode/
+.idea/
+
+# Version control
+.github/
+
+# Build artifacts, docs, outputs
+output/**
+docs/**
+build/
+dist/
+
+# Virtual envs, caches
+.venv/
+__pycache__/
+*.py[cod]
+*.pyo
+*.egg-info/
+root/.cache/
+
+# Ignore all of input/ except your instrument config
+input/**
+!input/instrument_config.yaml
+!input/1088285600_example
