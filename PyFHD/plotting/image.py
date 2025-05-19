@@ -1,103 +1,110 @@
 import numpy as np
+from numpy.typing import NDArray
 import matplotlib.pyplot as plt
+from pathlib import Path
+from astropy.wcs import WCS
+from astropy.io import fits
+from astropy import units as u
+from logging import Logger
 import os
 
 
 def quick_image(
-    image,
-    xvals=None,
-    yvals=None,
-    data_range=None,
-    data_min_abs=None,
-    xrange=None,
-    yrange=None,
-    data_aspect=None,
-    log=False,
-    color_profile="log_cut",
-    xtitle=None,
-    ytitle=None,
-    title=None,
-    cb_title=None,
-    note=None,
-    charsize=None,
-    xlog=False,
-    ylog=False,
-    window_num=1,
-    multi_pos=None,
-    start_multi_params=None,
-    alpha=None,
-    missing_value=None,
-    savefile=None,
-    png=False,
-    eps=False,
-    pdf=False,
-):
+    image: NDArray[int | np.float64 | np.complex128],
+    xvals: NDArray[int | np.float64] = None,
+    yvals: NDArray[int | np.float64] = None,
+    data_range: NDArray[int | np.float64] = None,
+    data_min_abs: float = None,
+    xrange: NDArray[int | np.float64] = None,
+    yrange: NDArray[int | np.float64] = None,
+    data_aspect: float = None,
+    log: bool = False,
+    color_profile: str = "log_cut",
+    xtitle: str = None,
+    ytitle: str = None,
+    title: str = None,
+    cb_title: str = None,
+    note: str = None,
+    charsize: int = None,
+    xlog: bool = False,
+    ylog: bool = False,
+    multi_pos: list = None,
+    start_multi_params: dict = None,
+    alpha: float = None,
+    missing_value: int | float | complex = None,
+    savefile: str = None,
+    png: bool = False,
+    eps: bool = False,
+    pdf: bool = False,
+) -> None:
     """
-    Python translation of the IDL quick_image procedure with additional features.
+    General function to display and/or save a 2D data array as an image with an appropriately 
+    scaled color bar.
 
 
     Parameters
     ----------
-    image : _type_
-        _description_
-    xvals : _type_, optional
-        _description_, by default None
-    yvals : _type_, optional
-        _description_, by default None
-    data_range : _type_, optional
-        _description_, by default None
-    data_min_abs : _type_, optional
-        _description_, by default None
-    xrange : _type_, optional
-        _description_, by default None
-    yrange : _type_, optional
-        _description_, by default None
-    data_aspect : _type_, optional
-        _description_, by default None
+    image : NDArray[int | np.float64 | np.complex128]
+        A 2D array of data to be displayed as an image. 
+        The data can be of type int, float, or complex.
+    xvals : NDArray[int | np.float64], optional
+        An array of x-axis values, by default None
+    yvals : NDArray[int | np.float64], optional
+        An array of y-axis values, by default None
+    data_range : NDArray[int | np.float64], optional
+        Min/max color bar range, by default [np.nanmin(image), np.nanmax(image)]
+    data_min_abs : float, optional
+        The minimum absolute value for the color bar, by default None
+    xrange : NDArray[int | np.float64], optional
+        The indices (or xvals, if provided) to zoom the image, by default None
+    yrange : NDArray[int | np.float64], optional
+        The indices (or yvals, if provided) to zoom the image, by default None
+    data_aspect : int | float, optional
+        The aspect ratio of y to x, by default None
     log : bool, optional
-        _description_, by default False
+        Color bar on logarithmic scale, by default False
     color_profile : str, optional
-        _description_, by default "log_cut"
-    xtitle : _type_, optional
-        _description_, by default None
-    ytitle : _type_, optional
-        _description_, by default None
-    title : _type_, optional
-        _description_, by default None
-    cb_title : _type_, optional
-        _description_, by default None
-    note : _type_, optional
-        _description_, by default None
-    charsize : _type_, optional
-        _description_, by default None
+        Color bar profiles for logarithmic scaling. 
+        "log_cut", "sym_log", "abs", by default "log_cut"
+    xtitle : str, optional
+        The title of the x-axis, by default None
+    ytitle : str, optional
+        The title of the x-axis, by default None
+    title : str, optional
+        The title of the image, by default None
+    cb_title : str, optional
+        The title of the color bar, by default None
+    note : str, optional
+        A small note to place on the bottom right of the image, by default None
+    charsize : int, optional
+        The size of the font, by default None
     xlog : bool, optional
-        _description_, by default False
+        Use logarithmic scale for the x-axis, by default False
     ylog : bool, optional
-        _description_, by default False
-    window_num : int, optional
-        _description_, by default 1
-    multi_pos : _type_, optional
-        _description_, by default None
-    start_multi_params : _type_, optional
-        _description_, by default None
-    alpha : _type_, optional
-        _description_, by default None
-    missing_value : _type_, optional
-        _description_, by default None
-    savefile : _type_, optional
-        _description_, by default None
+        Use logarithmic scale for the y-axis, by default False
+    multi_pos : list, optional
+        A list of 4 elements defining the position of the plot in a multi-panel layout, by default None
+    start_multi_params : dict, optional
+        Parameters for starting a multi-panel layout, by default None
+    alpha : float, optional
+        Transparency for the image, by default None
+    missing_value : int | float | complex, optional
+        Exclude value from the color bar, by default None
+    savefile : str, optional
+        The save file name, by default None
     png : bool, optional
-        _description_, by default False
+        Create a png of the image, by default False
     eps : bool, optional
-        _description_, by default False
+        Create an eps of the image, by default False
     pdf : bool, optional
-        _description_, by default False
-
-    Raises
-    ------
-    ValueError
-        _description_
+        Create a pdf of the image, by default False
+        
+    Returns
+    -------
+    None
+        Displays the image and/or saves it to disk.
     """
+
     # Determine if the output is to be saved to disk
     pub = bool(savefile or png or eps or pdf)
 
@@ -105,8 +112,9 @@ def quick_image(
     if pub:
         if not (png or eps or pdf):
             if savefile:
-                _, extension = os.path.splitext(savefile)
-                extension = extension.lower()
+                # Convert savefile to a Path object if it's a string
+                savefile = Path(savefile) if isinstance(savefile, str) else savefile
+                extension = savefile.suffix.lower()
                 if extension == ".eps":
                     eps = True
                 elif extension == ".png":
@@ -132,12 +140,20 @@ def quick_image(
             png = True
 
         # Append the appropriate file extension
-        if png:
-            savefile += ".png"
-        elif pdf:
-            savefile += ".pdf"
-        elif eps:
-            savefile += ".eps"
+        if isinstance(savefile, Path):
+            if png:
+                savefile = savefile.with_suffix(".png")
+            elif pdf:
+                savefile = savefile.with_suffix(".pdf")
+            elif eps:
+                savefile = savefile.with_suffix(".eps")
+        elif isinstance(savefile, str):
+            if png:
+                savefile += ".png"
+            elif pdf:
+                savefile += ".pdf"
+            elif eps:
+                savefile += ".eps"
 
     # Validate the image input
     if image is None or not isinstance(image, np.ndarray):
@@ -166,6 +182,17 @@ def quick_image(
         wh_missing = None
         missing_color = None
 
+    # Validate that 2-value inputs are only 2 values
+    if data_range is not None:
+        if not isinstance(data_range, np.ndarray) or len(data_range) != 2:
+            raise ValueError("data_range must be an array with exactly two values.")
+    if xrange is not None:
+        if not isinstance(xrange, np.ndarray) or len(xrange) != 2:
+            raise ValueError("xrange must be an array with exactly two values.")
+    if yrange is not None:
+        if not isinstance(yrange, np.ndarray) or len(yrange) != 2:
+            raise ValueError("yrange must be an array with exactly two values.")
+
     # Apply logarithmic scaling if set. This modifies the image input directly
     # to be logarithmically scaled in the color bar range.
     if log:
@@ -187,7 +214,7 @@ def quick_image(
             data_range = [np.nanmin(image), np.nanmax(image)]
 
         data_color_range, data_n_colors = color_range(
-            image, count_missing=count_missing
+            count_missing=count_missing
         )
 
         # Scale image data to be in the color range
@@ -216,15 +243,30 @@ def quick_image(
         print(cb_ticks, cb_ticknames)
 
     # Set up the plot
-    fig, ax = plt.subplots(num=window_num)  # Use window_num to manage figure windows
+    fig, ax = plt.subplots()
     cmap = plt.get_cmap("viridis")
 
     # Set up the x and y ranges
     extent = None
     if xvals is not None and yvals is not None:
+        # Default extent based on full xvals and yvals
         extent = [xvals[0], xvals[-1], yvals[0], yvals[-1]]
+        # Apply xrange to crop the image and adjust extent
+        if xrange is not None:
+            x_indices = np.logical_and(xvals >= xrange[0], xvals <= xrange[1])
+            image = image[:, x_indices]
+            xvals = xvals[x_indices]  # Update xvals to match cropped image
+            extent[0], extent[1] = xrange[0], xrange[1]
+        # Apply yrange to crop the image and adjust extent
+        if yrange is not None:
+            y_indices = np.logical_and(yvals >= yrange[0], yvals <= yrange[1])
+            image = image[y_indices, :]
+            yvals = yvals[y_indices]  # Update yvals to match cropped image
+            extent[2], extent[3] = yrange[0], yrange[1]
     elif xrange is not None and yrange is not None:
+        # If xvals and yvals are not provided, use xrange and yrange directly
         extent = [xrange[0], xrange[1], yrange[0], yrange[1]]
+        image = image[np.ix_(yrange, xrange)]
 
     im = ax.imshow(
         image,
@@ -289,7 +331,6 @@ def quick_image(
     # Save or show the plot
     if pub:
         plt.savefig(savefile, dpi=300, bbox_inches="tight")
-        print(f"Image saved to {savefile}")
     else:
         plt.show()
 
@@ -297,58 +338,50 @@ def quick_image(
 
 
 def log_color_calc(
-    data,
-    data_range=None,
-    color_profile="log_cut",
-    log_cut_val=None,
-    min_abs=None,
-    count_missing=None,
-    wh_missing=None,
-    missing_color=None,
-    invert_colorbar=False,
-):
+    data: NDArray[int | np.float64 | np.complex128],
+    data_range: NDArray[int | np.float64] = None,
+    color_profile: str = "log_cut",
+    log_cut_val: float = None,
+    min_abs: float = None,
+    count_missing: int = None,
+    wh_missing: NDArray[int] = None,
+    missing_color: int = None,
+    invert_colorbar: bool = False,
+) -> tuple:
     """
     Translated version of log_color_calc from IDL to Python.
 
     Parameters
     ----------
-    data : _type_
-        _description_
-    data_range : _type_, optional
-        _description_, by default None
+    data : NDArray[int | np.float64 | np.complex128]
+        A 2D array of data to be displayed as an image. 
+        The data can be of type int, float, or complex.
+    data_range : NDArray[np.int | np.float64], optional
+        Min/max color bar range, by default [np.nanmin(image), np.nanmax(image)]
     color_profile : str, optional
-        _description_, by default "log_cut"
-    log_cut_val : _type_, optional
-        _description_, by default None
-    min_abs : _type_, optional
-        _description_, by default None
-    count_missing : _type_, optional
-        _description_, by default None
-    wh_missing : _type_, optional
-        _description_, by default None
-    missing_color : _type_, optional
-        _description_, by default None
+        Color bar profiles for logarithmic scaling. 
+        "log_cut", "sym_log", "abs", by default "log_cut"
+    log_cut_val : int | float, optional
+        Minimum log value to cut at, by default None
+    data_min_abs : int | float, optional
+        The minimum absolute value for the color bar, by default None
+    count_missing : int, optional
+        The number of missing values, by default None
+    wh_missing : int, optional
+        The location of the missing values, by default None
+    missing_color : int, optional
+        The index of the color bar for missing values, by default None
     invert_colorbar : bool, optional
-        _description_, by default False
-
+        Invert the color bar, by default False
+        
     Returns
     -------
-    _type_
-        _description_
-
-    Raises
-    ------
-    ValueError
-        _description_
-    ValueError
-        _description_
-    ValueError
-        _description_
-    ValueError
-        _description_
-    ValueError
-        _description_
-
+    data_log_norm : NDArray[np.int | np.float64]
+        The normalized data array.
+    cb_ticks : NDArray[np.int | np.float64]
+        The color bar ticks.
+    cb_ticknames : NDArray[np.int | np.float64]
+        The color bar tick names.  
     """
     # Define valid color profiles
     color_profile_enum = ["log_cut", "sym_log", "abs"]
@@ -359,13 +392,11 @@ def log_color_calc(
 
     # Handle data_range
     if data_range is None:
-        no_input_data_range = True
-        data_range = [np.min(data), np.max(data)]
+        data_range = [np.nanmin(data), np.nanmax(data)]
     else:
         if len(data_range) != 2:
             raise ValueError("data_range must be a 2-element vector")
-        no_input_data_range = False
-
+    
     if data_range[1] < data_range[0]:
         raise ValueError("data_range[0] must be less than data_range[1]")
 
@@ -376,13 +407,13 @@ def log_color_calc(
         )
         color_profile = "log_cut"
 
-    data_color_range, data_n_colors = color_range(data, count_missing=count_missing)
+    data_color_range, data_n_colors = color_range(count_missing=count_missing)
 
     # Handle positive values
     wh_pos = np.where(data > 0)
     count_pos = len(wh_pos[0])
     if count_pos > 0:
-        min_pos = np.min(data[wh_pos])
+        min_pos = np.nanmin(data[wh_pos])
     elif data_range[0] > 0:
         min_pos = data_range[0]
     elif data_range[1] > 0:
@@ -394,7 +425,7 @@ def log_color_calc(
     wh_neg = np.where(data < 0)
     count_neg = len(wh_neg[0])
     if count_neg > 0:
-        max_neg = np.max(data[wh_neg])
+        max_neg = np.nanmax(data[wh_neg])
     elif data_range[1] < 0:
         max_neg = data_range[1]
     else:
@@ -454,10 +485,8 @@ def log_color_calc(
             data_log_norm[wh_zero] = zero_color
 
     elif color_profile == "sym_log":
-        if data_range[1] < 0:
-            raise ValueError(
-                "sym_log color profile will not work for entirely negative arrays."
-            )
+        if data_range[0] >= 0 or data_range[1] <= 0:
+            raise ValueError("sym_log color profile requires both negative and positive values in data_range.")
 
         # Calculate the minimum absolute value
         if min_abs is None:
@@ -478,22 +507,23 @@ def log_color_calc(
         wh_neg = np.where(data < 0)
         wh_zero = np.where(data == 0)
 
+        midpoint = (data_color_range[1] - data_color_range[0]) // 2
+
         if len(wh_pos[0]) > 0:
             data_log_norm[wh_pos] = (np.log10(data[wh_pos]) - log_data_range[0]) * (
-                data_n_colors - 1
-            ) / (log_data_range[1] - log_data_range[0]) + data_color_range[0]
+                midpoint
+            ) / (log_data_range[1] - log_data_range[0]) + data_color_range[0] + midpoint
 
         if len(wh_neg[0]) > 0:
-            data_log_norm[wh_neg] = (
-                np.log10(abs(data[wh_neg])) - log_data_range[0]
-            ) * (data_n_colors - 1) / (
-                log_data_range[1] - log_data_range[0]
-            ) + data_color_range[
-                0
-            ]
-
+            # Reverse the mapping for negative values
+            data_log_norm[wh_neg] = data_color_range[0] + midpoint - (
+                (np.log10(abs(data[wh_neg])) - log_data_range[0])
+                * midpoint
+                / (log_data_range[1] - log_data_range[0])
+            )
+    
         if len(wh_zero[0]) > 0:
-            data_log_norm[wh_zero] = data_color_range[0]
+            data_log_norm[wh_zero] = data_color_range[0] + midpoint
 
         # Handle out-of-bounds values
         wh_under = np.where(data_log_norm < data_color_range[0])
@@ -529,12 +559,21 @@ def log_color_calc(
         data_log_norm = data_color_range[1] - (data_log_norm - data_color_range[0])
 
     # Generate colorbar ticks and tick names
-    if color_profile == "log_cut" or color_profile == "sym_log":
+    if color_profile == "log_cut":
         cb_ticks = np.linspace(data_color_range[0], data_color_range[1], num=5)
         cb_ticknames = [
             f"{10**(tick * (log_data_range[1] - log_data_range[0]) / (data_n_colors - 1) + log_data_range[0]):.2g}"
             for tick in cb_ticks
         ]
+    elif color_profile == "sym_log":
+        pos_ticks = np.linspace(midpoint, data_color_range[1], num=5)
+        neg_ticks = np.linspace(data_color_range[0], midpoint, num=5)
+        cb_ticks = np.concatenate([neg_ticks, [midpoint], pos_ticks])
+        cb_ticknames = (
+            [f"-{10**(log_data_range[1] - (tick - data_color_range[0]) * (log_data_range[1] - log_data_range[0]) / midpoint):.2g}" for tick in neg_ticks]
+            + ["0"]
+            + [f"{10**((tick - midpoint) * (log_data_range[1] - log_data_range[0]) / midpoint + log_data_range[0]):.2g}" for tick in pos_ticks]
+        )
     elif color_profile == "abs":
         cb_ticks = np.linspace(data_color_range[0], data_color_range[1], num=5)
         cb_ticknames = [
@@ -545,21 +584,21 @@ def log_color_calc(
     return data_log_norm, cb_ticks, cb_ticknames
 
 
-def color_range(data, count_missing=None):
+def color_range(
+    count_missing: int = None
+) -> tuple:
     """
-    _summary_
+    Define the color range for the image data.
 
     Parameters
     ----------
-    data : _type_
-        _description_
-    count_missing : _type_, optional
-        _description_, by default None
+    count_missing : int, optional
+        Count of missing values, by default None
 
     Returns
     -------
-    _type_
-        _description_
+    tuple
+        A tuple containing the color range and the number of colors.
     """
 
     # Initialize color range
@@ -569,7 +608,109 @@ def color_range(data, count_missing=None):
     else:
         data_color_range = color_range
 
-    n_colors = color_range[1] - color_range[0] + 1
     data_n_colors = data_color_range[1] - data_color_range[0] + 1
 
     return data_color_range, data_n_colors
+
+
+def plot_fits_image(
+    fits_file: str, 
+    output_path: str, 
+    logger: Logger,
+    title: str = "FITS Image",
+) -> None:
+    """
+    Plot a FITS image using Astropy and save it to the specified output directory.
+
+    Parameters
+    ----------
+    fits_file : str
+        Path to the FITS file.
+    output_path : str
+        Path to output image file.
+    title : str, optional
+        Title of the plot, by default "FITS Image".
+    logger : Logger
+        PyFHD's logger for displaying errors and info to the log files
+        
+    Returns
+    -------
+    None
+        The function saves the plot to the specified output path.
+    """
+    # Open the FITS file
+    with fits.open(fits_file) as hdul:
+        # Get the data from the first extension
+        data = hdul[0].data
+        
+        # Check that the data is 2D and non-zero
+        if data is None or data.ndim != 2:
+            logger.warning(f"FITS data must be a 2D array, no image made for {fits_file}.")
+            return
+        if not np.any(data):
+            logger.warning(f"FITS data array contains only zeros, no image made for {fits_file}.")
+            return
+        
+        # Get the data from the first extension
+        header = hdul[0].header
+        
+        header["CTYPE1"] = "RA---TAN"
+        header["CTYPE2"] = "DEC--TAN"
+        
+        # Get units from header
+        if "BUNIT" not in header:
+            unit = "Jy/str"
+        else:
+            unit = header["BUNIT"]
+
+        # Create a WCS object for the image
+        wcs = WCS(header, relax=True)
+
+        # Calculate the extent of the image in degrees
+        ny, nx = data.shape
+        x_min, x_max = wcs.wcs_pix2world([0, nx - 1], [0, 0], 0)[0]
+        y_min, y_max = wcs.wcs_pix2world([0, 0], [0, ny - 1], 0)[1]
+        
+        x_extent = abs(x_max - x_min)  # Extent in degrees along the x-axis
+        y_extent = abs(y_max - y_min)  # Extent in degrees along the y-axis
+
+        # Set grid spacing to the extent divided by 4
+        min_spacing = 2 * u.deg
+        spacing_x = max(x_extent / 4, min_spacing.value) * u.deg
+        spacing_y = max(y_extent / 4, min_spacing.value) * u.deg
+
+        # Calculate the percentile-based color bar range
+        percentile_range = (1, 99)
+        vmin, vmax = np.percentile(data[np.isfinite(data)], percentile_range)
+
+        # Create a figure and axis with WCS projection
+        fig, ax = plt.subplots(subplot_kw={"projection": wcs})
+
+        # Plot the image data
+        im = ax.imshow(data, origin="lower", cmap="gray", aspect="auto", vmin=vmin, vmax=vmax)
+
+        # Add a WCS-based grid
+        ax.grid(color="white", ls="--", alpha=0.5)
+        ax.coords.grid(True, color="white", linestyle="--", alpha=0.5)
+        ax.coords[0].set_axislabel("Right Ascension (J2000)")
+        ax.coords[1].set_axislabel("Declination (J2000)")
+
+        # Customize tick labels for grid lines with dynamic spacing
+        ax.coords[0].set_ticks(spacing=spacing_x, color="white", size=8, width=1)
+        ax.coords[0].set_ticklabel(size=10, exclude_overlapping=True)
+        ax.coords[1].set_ticks(spacing=spacing_y, color="white", size=8, width=1)
+        ax.coords[1].set_ticklabel(size=10, exclude_overlapping=True)
+        
+        # Add colorbar
+        cbar = plt.colorbar(im, ax=ax, orientation="vertical")
+        cbar.set_label("Flux density (" + unit + ")")
+
+        # Set title
+        if title:
+            ax.set_title(title)
+        elif title is None:
+            ax.set_title("FITS Image")
+
+        # Save the plot to the output path
+        plt.savefig(output_path, dpi=300)
+        plt.close(fig)

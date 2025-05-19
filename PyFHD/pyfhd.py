@@ -35,7 +35,7 @@ from PyFHD.source_modeling.vis_model_transfer import (
 from PyFHD.io.pyfhd_io import save, load
 from PyFHD.io.pyfhd_quickview import quickview
 from PyFHD.healpix.export import healpix_snapshot_cube_generate
-
+from PyFHD.plotting.gridding import plot_gridding
 
 def _print_time_diff(
     start: float, end: float, description: str, logger: logging.Logger
@@ -496,6 +496,11 @@ def main():
                 weights_uv = crosspol_reformat(weights_uv)
                 if vis_model_arr is not None:
                     model_uv = crosspol_reformat(model_uv)
+            if pyfhd_config["gridding_plots"]:
+                logger.info(
+                    f"Plotting the continuum gridding outputs into {pyfhd_config['output_dir']/'plots'/'gridding'}"
+                )
+                plot_gridding(obs, image_uv, weights_uv, variance_uv, pyfhd_config, model_uv = model_uv, logger=logger)
             if pyfhd_config["save_checkpoints"]:
                 checkpoint = {
                     "image_uv": image_uv,
