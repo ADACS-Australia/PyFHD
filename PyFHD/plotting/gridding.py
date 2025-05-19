@@ -2,6 +2,7 @@ import numpy as np
 from numpy.typing import NDArray
 from pathlib import Path
 from PyFHD.plotting.image import quick_image
+from logging import Logger
 
 
 def plot_gridding(
@@ -10,7 +11,8 @@ def plot_gridding(
     weights_uv: NDArray[np.complex128],
     variance_uv: NDArray[np.float64],
     pyfhd_config: dict,
-    model_uv: NDArray[np.complex64] | None
+    model_uv: NDArray[np.complex64] | None,
+    logger: Logger,
 ) -> None:
     """
     Plot the continuum uv-planes for data, model, and weights.
@@ -29,13 +31,15 @@ def plot_gridding(
         UV-plane of the gridded model
     pyfhd_config : dict
         Run option dictionary
+    logger : Logger
+        PyFHD's logger for displaying errors and info to the log files
     """
 
     # Check if image, weights, and variance contain any non-zero elements
     if (not np.any(image_uv != 0)) or (not np.any(weights_uv != 0)) or (
         not np.any(variance_uv != 0)
     ):
-        print("Gridded image, weights, or variance are all zeros. Plotting skipped.")
+        logger.warning("Gridded image, weights, or variance are all zeros. Plotting skipped.")
         return
 
     # Plotting paths for apparent gridded image (weighted gridded data), variance,

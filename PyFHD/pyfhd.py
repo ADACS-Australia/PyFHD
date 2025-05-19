@@ -500,7 +500,7 @@ def main():
                 logger.info(
                     f"Plotting the continuum gridding outputs into {pyfhd_config['output_dir']/'plots'/'gridding'}"
                 )
-                plot_gridding(obs, image_uv, weights_uv, variance_uv, pyfhd_config, model_uv = model_uv)
+                plot_gridding(obs, image_uv, weights_uv, variance_uv, pyfhd_config, model_uv = model_uv, logger=logger)
             if pyfhd_config["save_checkpoints"]:
                 checkpoint = {
                     "image_uv": image_uv,

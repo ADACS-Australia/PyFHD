@@ -1,38 +1,42 @@
 import numpy as np
+from numpy.typing import NDArray
 import matplotlib.pyplot as plt
 from pathlib import Path
+from astropy.wcs import WCS
+from astropy.io import fits
+from astropy import units as u
+from logging import Logger
 import os
 
 
 def quick_image(
-    image,
-    xvals=None,
-    yvals=None,
-    data_range=None,
-    data_min_abs=None,
-    xrange=None,
-    yrange=None,
-    data_aspect=None,
-    log=False,
-    color_profile="log_cut",
-    xtitle=None,
-    ytitle=None,
-    title=None,
-    cb_title=None,
-    note=None,
-    charsize=None,
-    xlog=False,
-    ylog=False,
-    window_num=1,
-    multi_pos=None,
-    start_multi_params=None,
-    alpha=None,
-    missing_value=None,
-    savefile=None,
-    png=False,
-    eps=False,
-    pdf=False,
-):
+    image: NDArray[int | np.float64 | np.complex128],
+    xvals: NDArray[int | np.float64] = None,
+    yvals: NDArray[int | np.float64] = None,
+    data_range: NDArray[int | np.float64] = None,
+    data_min_abs: float = None,
+    xrange: NDArray[int | np.float64] = None,
+    yrange: NDArray[int | np.float64] = None,
+    data_aspect: float = None,
+    log: bool = False,
+    color_profile: str = "log_cut",
+    xtitle: str = None,
+    ytitle: str = None,
+    title: str = None,
+    cb_title: str = None,
+    note: str = None,
+    charsize: int = None,
+    xlog: bool = False,
+    ylog: bool = False,
+    multi_pos: list = None,
+    start_multi_params: dict = None,
+    alpha: float = None,
+    missing_value: int | float | complex = None,
+    savefile: str = None,
+    png: bool = False,
+    eps: bool = False,
+    pdf: bool = False,
+) -> None:
     """
     General function to display and/or save a 2D data array as an image with an appropriately 
     scaled color bar.
@@ -40,20 +44,20 @@ def quick_image(
 
     Parameters
     ----------
-    image : NDArray[np.int_ | np.float_ | np.complex_]
+    image : NDArray[int | np.float64 | np.complex128]
         A 2D array of data to be displayed as an image. 
         The data can be of type int, float, or complex.
-    xvals : NDArray[np.int_ | np.float_], optional
+    xvals : NDArray[int | np.float64], optional
         An array of x-axis values, by default None
-    yvals : NDArray[np.int_ | np.float_], optional
+    yvals : NDArray[int | np.float64], optional
         An array of y-axis values, by default None
-    data_range : NDArray[np.int_ | np.float_], optional
+    data_range : NDArray[int | np.float64], optional
         Min/max color bar range, by default [np.nanmin(image), np.nanmax(image)]
-    data_min_abs : _type_, optional
+    data_min_abs : float, optional
         The minimum absolute value for the color bar, by default None
-    xrange : NDArray[np.int_ | np.float_], optional
+    xrange : NDArray[int | np.float64], optional
         The indices (or xvals, if provided) to zoom the image, by default None
-    yrange : NDArray[np.int_ | np.float_], optional
+    yrange : NDArray[int | np.float64], optional
         The indices (or yvals, if provided) to zoom the image, by default None
     data_aspect : int | float, optional
         The aspect ratio of y to x, by default None
@@ -75,18 +79,16 @@ def quick_image(
     charsize : int, optional
         The size of the font, by default None
     xlog : bool, optional
-        _description_, by default False
+        Use logarithmic scale for the x-axis, by default False
     ylog : bool, optional
-        _description_, by default False
-    window_num : int, optional
-        _description_, by default 1
-    multi_pos : _type_, optional
-        _description_, by default None
-    start_multi_params : _type_, optional
-        _description_, by default None
-    alpha : _type_, optional
-        Transparancy for the image, by default None
-    missing_value : _type_, optional
+        Use logarithmic scale for the y-axis, by default False
+    multi_pos : list, optional
+        A list of 4 elements defining the position of the plot in a multi-panel layout, by default None
+    start_multi_params : dict, optional
+        Parameters for starting a multi-panel layout, by default None
+    alpha : float, optional
+        Transparency for the image, by default None
+    missing_value : int | float | complex, optional
         Exclude value from the color bar, by default None
     savefile : str, optional
         The save file name, by default None
@@ -96,12 +98,13 @@ def quick_image(
         Create an eps of the image, by default False
     pdf : bool, optional
         Create a pdf of the image, by default False
-
-    Raises
-    ------
-    ValueError
-        _description_
+        
+    Returns
+    -------
+    None
+        Displays the image and/or saves it to disk.
     """
+
     # Determine if the output is to be saved to disk
     pub = bool(savefile or png or eps or pdf)
 
@@ -211,7 +214,7 @@ def quick_image(
             data_range = [np.nanmin(image), np.nanmax(image)]
 
         data_color_range, data_n_colors = color_range(
-            image, count_missing=count_missing
+            count_missing=count_missing
         )
 
         # Scale image data to be in the color range
@@ -335,25 +338,25 @@ def quick_image(
 
 
 def log_color_calc(
-    data,
-    data_range=None,
-    color_profile="log_cut",
-    log_cut_val=None,
-    min_abs=None,
-    count_missing=None,
-    wh_missing=None,
-    missing_color=None,
-    invert_colorbar=False,
-):
+    data: NDArray[int | np.float64 | np.complex128],
+    data_range: NDArray[int | np.float64] = None,
+    color_profile: str = "log_cut",
+    log_cut_val: float = None,
+    min_abs: float = None,
+    count_missing: int = None,
+    wh_missing: NDArray[int] = None,
+    missing_color: int = None,
+    invert_colorbar: bool = False,
+) -> tuple:
     """
     Translated version of log_color_calc from IDL to Python.
 
     Parameters
     ----------
-    data : NDArray[np.int\_ | np.float\_ | np.complex\_]
+    data : NDArray[int | np.float64 | np.complex128]
         A 2D array of data to be displayed as an image. 
         The data can be of type int, float, or complex.
-    data_range : NDArray[np.int\_ | np.float\_], optional
+    data_range : NDArray[np.int | np.float64], optional
         Min/max color bar range, by default [np.nanmin(image), np.nanmax(image)]
     color_profile : str, optional
         Color bar profiles for logarithmic scaling. 
@@ -370,25 +373,15 @@ def log_color_calc(
         The index of the color bar for missing values, by default None
     invert_colorbar : bool, optional
         Invert the color bar, by default False
-
+        
     Returns
     -------
-    _type_
-        _description_
-
-    Raises
-    ------
-    ValueError
-        _description_
-    ValueError
-        _description_
-    ValueError
-        _description_
-    ValueError
-        _description_
-    ValueError
-        _description_
-
+    data_log_norm : NDArray[np.int | np.float64]
+        The normalized data array.
+    cb_ticks : NDArray[np.int | np.float64]
+        The color bar ticks.
+    cb_ticknames : NDArray[np.int | np.float64]
+        The color bar tick names.  
     """
     # Define valid color profiles
     color_profile_enum = ["log_cut", "sym_log", "abs"]
@@ -414,7 +407,7 @@ def log_color_calc(
         )
         color_profile = "log_cut"
 
-    data_color_range, data_n_colors = color_range(data, count_missing=count_missing)
+    data_color_range, data_n_colors = color_range(count_missing=count_missing)
 
     # Handle positive values
     wh_pos = np.where(data > 0)
@@ -591,21 +584,21 @@ def log_color_calc(
     return data_log_norm, cb_ticks, cb_ticknames
 
 
-def color_range(data, count_missing=None):
+def color_range(
+    count_missing: int = None
+) -> tuple:
     """
-    _summary_
+    Define the color range for the image data.
 
     Parameters
     ----------
-    data : _type_
-        _description_
-    count_missing : _type_, optional
-        _description_, by default None
+    count_missing : int, optional
+        Count of missing values, by default None
 
     Returns
     -------
-    _type_
-        _description_
+    tuple
+        A tuple containing the color range and the number of colors.
     """
 
     # Initialize color range
@@ -615,7 +608,109 @@ def color_range(data, count_missing=None):
     else:
         data_color_range = color_range
 
-    n_colors = color_range[1] - color_range[0] + 1
     data_n_colors = data_color_range[1] - data_color_range[0] + 1
 
     return data_color_range, data_n_colors
+
+
+def plot_fits_image(
+    fits_file: str, 
+    output_path: str, 
+    logger: Logger,
+    title: str = "FITS Image",
+) -> None:
+    """
+    Plot a FITS image using Astropy and save it to the specified output directory.
+
+    Parameters
+    ----------
+    fits_file : str
+        Path to the FITS file.
+    output_path : str
+        Path to output image file.
+    title : str, optional
+        Title of the plot, by default "FITS Image".
+    logger : Logger
+        PyFHD's logger for displaying errors and info to the log files
+        
+    Returns
+    -------
+    None
+        The function saves the plot to the specified output path.
+    """
+    # Open the FITS file
+    with fits.open(fits_file) as hdul:
+        # Get the data from the first extension
+        data = hdul[0].data
+        
+        # Check that the data is 2D and non-zero
+        if data is None or data.ndim != 2:
+            logger.warning(f"FITS data must be a 2D array, no image made for {fits_file}.")
+            return
+        if not np.any(data):
+            logger.warning(f"FITS data array contains only zeros, no image made for {fits_file}.")
+            return
+        
+        # Get the data from the first extension
+        header = hdul[0].header
+        
+        header["CTYPE1"] = "RA---TAN"
+        header["CTYPE2"] = "DEC--TAN"
+        
+        # Get units from header
+        if "BUNIT" not in header:
+            unit = "Jy/str"
+        else:
+            unit = header["BUNIT"]
+
+        # Create a WCS object for the image
+        wcs = WCS(header, relax=True)
+
+        # Calculate the extent of the image in degrees
+        ny, nx = data.shape
+        x_min, x_max = wcs.wcs_pix2world([0, nx - 1], [0, 0], 0)[0]
+        y_min, y_max = wcs.wcs_pix2world([0, 0], [0, ny - 1], 0)[1]
+        
+        x_extent = abs(x_max - x_min)  # Extent in degrees along the x-axis
+        y_extent = abs(y_max - y_min)  # Extent in degrees along the y-axis
+
+        # Set grid spacing to the extent divided by 4
+        min_spacing = 2 * u.deg
+        spacing_x = max(x_extent / 4, min_spacing.value) * u.deg
+        spacing_y = max(y_extent / 4, min_spacing.value) * u.deg
+
+        # Calculate the percentile-based color bar range
+        percentile_range = (1, 99)
+        vmin, vmax = np.percentile(data[np.isfinite(data)], percentile_range)
+
+        # Create a figure and axis with WCS projection
+        fig, ax = plt.subplots(subplot_kw={"projection": wcs})
+
+        # Plot the image data
+        im = ax.imshow(data, origin="lower", cmap="gray", aspect="auto", vmin=vmin, vmax=vmax)
+
+        # Add a WCS-based grid
+        ax.grid(color="white", ls="--", alpha=0.5)
+        ax.coords.grid(True, color="white", linestyle="--", alpha=0.5)
+        ax.coords[0].set_axislabel("Right Ascension (J2000)")
+        ax.coords[1].set_axislabel("Declination (J2000)")
+
+        # Customize tick labels for grid lines with dynamic spacing
+        ax.coords[0].set_ticks(spacing=spacing_x, color="white", size=8, width=1)
+        ax.coords[0].set_ticklabel(size=10, exclude_overlapping=True)
+        ax.coords[1].set_ticks(spacing=spacing_y, color="white", size=8, width=1)
+        ax.coords[1].set_ticklabel(size=10, exclude_overlapping=True)
+        
+        # Add colorbar
+        cbar = plt.colorbar(im, ax=ax, orientation="vertical")
+        cbar.set_label("Flux density (" + unit + ")")
+
+        # Set title
+        if title:
+            ax.set_title(title)
+        elif title is None:
+            ax.set_title("FITS Image")
+
+        # Save the plot to the output path
+        plt.savefig(output_path, dpi=300)
+        plt.close(fig)
