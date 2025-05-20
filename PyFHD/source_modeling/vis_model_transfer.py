@@ -556,16 +556,9 @@ def flag_model_visibilities(
             t_data_ind * flaginfo_data.num_visi_per_time_step
             + flaginfo_data.cross_locs_per_time
         )
-        t_flag_inds_autos = (
-            t_data_ind * flaginfo_data.num_visi_per_time_step
-            + flaginfo_data.auto_locs_per_time
-        )
         # Subset of cross-corrs from full model to select for this time step
         t_model_inds = (
             t_model_ind * flaginfo_model.num_visi_per_time_step + include_cross_per_time
-        )
-        t_model_inds_autos = (
-            t_model_ind * flaginfo_model.num_visi_per_time_step + include_auto_per_time
         )
         # Stick it in the flagged model
         vis_model_arr_flagged[:, :, t_flag_inds] = vis_model_arr[:, :, t_model_inds]
