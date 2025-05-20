@@ -37,6 +37,7 @@ from PyFHD.io.pyfhd_quickview import quickview
 from PyFHD.healpix.export import healpix_snapshot_cube_generate
 from PyFHD.plotting.gridding import plot_gridding
 
+
 def _print_time_diff(
     start: float, end: float, description: str, logger: logging.Logger
 ):
@@ -262,7 +263,9 @@ def main():
 
             # Get the vis_model_arr from a UVFITS file or SAV files and flag any issues
             vis_model_arr_start = time.time()
-            vis_model_arr, params_model = vis_model_transfer(pyfhd_config, obs, logger)
+            vis_model_arr, params_model = vis_model_transfer(
+                pyfhd_config, obs, params, logger
+            )
             if pyfhd_config["flag_model"]:
                 vis_model_arr = flag_model_visibilities(
                     vis_model_arr, params, params_model, obs, pyfhd_config, logger
@@ -500,7 +503,15 @@ def main():
                 logger.info(
                     f"Plotting the continuum gridding outputs into {pyfhd_config['output_dir']/'plots'/'gridding'}"
                 )
-                plot_gridding(obs, image_uv, weights_uv, variance_uv, pyfhd_config, model_uv = model_uv, logger=logger)
+                plot_gridding(
+                    obs,
+                    image_uv,
+                    weights_uv,
+                    variance_uv,
+                    pyfhd_config,
+                    model_uv=model_uv,
+                    logger=logger,
+                )
             if pyfhd_config["save_checkpoints"]:
                 checkpoint = {
                     "image_uv": image_uv,
@@ -586,7 +597,6 @@ def main():
         )
         logger.exception(
             f"An error occurred in PyFHD: {e}\n\tExiting PyFHD.",
-            stack_info=True,
             exc_info=True,
         )
         # Close the handlers in the log

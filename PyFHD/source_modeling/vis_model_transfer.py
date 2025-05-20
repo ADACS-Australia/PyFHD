@@ -14,7 +14,7 @@ import sys
 
 
 def vis_model_transfer(
-    pyfhd_config: dict, obs: dict, logger: logging.Logger
+    pyfhd_config: dict, obs: dict, params: dict, logger: logging.Logger
 ) -> tuple[NDArray[np.complex128], dict]:
     """
     Transfer in a simulated model of the visibilities from either a sav file or uvfits file.
@@ -25,6 +25,10 @@ def vis_model_transfer(
         PyFHD's configuration dictionary containing all the options for a PyFHD run
     obs : dict
         The Observation Metadata dictionary
+    params : dict
+        Visibility metadata dictionary
+    logger : logging.Logger
+        PyFHD's logger
 
     Returns
     -------
@@ -39,12 +43,132 @@ def vis_model_transfer(
     PyFHD.source_modeling.vis_model_transfer.import_vis_model_from_uvfits : Import model from a uvfits file
     """
     if pyfhd_config["model_file_type"] == "sav":
-        return import_vis_model_from_sav(pyfhd_config, obs, logger)
+        vis_model, params_model = import_vis_model_from_sav(pyfhd_config, obs, logger)
     elif pyfhd_config["model_file_type"] == "uvfits":
-        return import_vis_model_from_uvfits(pyfhd_config, obs, logger)
+        vis_model, params_model = import_vis_model_from_uvfits(
+            pyfhd_config, obs, logger
+        )
     else:
-        logger.error("You chose a file type PyFHD can't import, existing")
-        sys.exit()
+        logger.error("You chose a file type PyFHD can't import, exiting")
+        raise ValueError(
+            f"File type {pyfhd_config['model_file_type']} not supported. Please use 'sav' or 'uvfits'."
+        )
+
+    # Check the model and data have the same number of time steps
+    data_n_time = obs["n_time"]
+    model_n_time = np.unique(params_model["time"]).size
+    if model_n_time != data_n_time:
+        logger.info(
+            f"The number of time steps in the model ({model_n_time}) and data ({data_n_time}) don't match. Attempting to find matching times"
+        )
+        # Extract the relevant timesteps and baselines from the model that match the data
+        data_nbaselines = obs["n_baselines"]
+        _, param_model_uniq_idxs = np.unique(params_model["time"], return_index=True)
+        model_nbaselines = param_model_uniq_idxs[1]
+        data_Jdate = obs["baseline_info"]["jdate"]
+        time_res_Jdate = (obs["time_res"] / 2) / (24 * 3600)
+        model_time = np.unique(params_model["time"])
+        data_time = np.unique(params["time"])
+        tolerance = 1e-5
+
+        """
+        Match times betweeen model and data
+        Option 1: You are working with a model made by FHD. Thus the timing convention in the params is the same
+        Option 2: You are working with a model made by WODEN above version 1.4. This is different from FHD convention
+                  by half a timestep.
+        Option 3: You are working with a model made by WODEN below version 1.4. Thus the timing convention in the 
+                  params is different and you need to convert the model Jdate to the data Jdate within precision.
+        """
+        matched_times_opt1 = np.full(data_n_time, -1)
+        matched_times_opt2 = np.full(data_n_time, -1)
+        matched_times_opt3 = np.full(data_n_time, -1)
+
+        for data_time_i in range(data_n_time):
+            opt_1_test = np.abs(model_time - data_time[data_time_i])
+            min_val_idx = np.argmin(opt_1_test)
+            if opt_1_test[min_val_idx] < tolerance:
+                matched_times_opt1[data_time_i] = min_val_idx
+
+            opt2_test = np.abs(model_time - data_time[data_time_i] - time_res_Jdate)
+            min_val_idx = np.argmin(opt2_test)
+            if opt2_test[min_val_idx] < tolerance:
+                matched_times_opt2[data_time_i] = min_val_idx
+
+            opt3_test = np.abs(model_time - data_Jdate[data_time_i] - time_res_Jdate)
+            min_val_idx = np.argmin(opt3_test)
+            if opt3_test[min_val_idx] < tolerance:
+                matched_times_opt3[data_time_i] = min_val_idx
+
+        n_matched_times_opt1 = np.count_nonzero(matched_times_opt1 >= 0)
+        n_matched_times_opt2 = np.count_nonzero(matched_times_opt2 >= 0)
+        n_matched_times_opt3 = np.count_nonzero(matched_times_opt3 >= 0)
+        if (
+            n_matched_times_opt1 == 0
+            and n_matched_times_opt2 == 0
+            and n_matched_times_opt3 == 0
+        ):
+            logger.error(
+                "No matching times between transferred model and data. Exiting"
+            )
+            raise ValueError(
+                "The number of time steps in the transferred model and data didn't match. Attempted to find matching itmes, No matching times were found between transferred model and data. Exiting"
+            )
+        # Keep in mind here, that if two or more options have the same number of matches, it will always pick the first one in the list
+        matched_time_idx = np.argmax(
+            [n_matched_times_opt1, n_matched_times_opt2, n_matched_times_opt3]
+        )
+        if matched_time_idx == 0:
+            logger.info("Matched model times to data times using FHD timing convention")
+            matched_times = matched_times_opt1
+        elif matched_time_idx == 1:
+            logger.info(
+                "Matched model times to data times using WODEN (>= v1.4) timing convention"
+            )
+            matched_times = matched_times_opt2
+        else:
+            logger.info(
+                "Matched model times to data times using WODEN (< v1.4) timing convention"
+            )
+            matched_times = matched_times_opt3
+        if np.count_nonzero(matched_times >= 0) != data_n_time:
+            logger.error(
+                "The number of matched time steps between model and data is not equal to the number of time steps in the data. Exiting"
+            )
+            raise ValueError(
+                "The number of time steps in the transferred model and data didn't match. Attempted to find matching itmes, but not all model times matched to data times. Exiting"
+            )
+
+        baseline_mod = obs["n_tile"] * 2
+        data_baseline_index = params["antenna1"] * baseline_mod + params["antenna2"]
+        model_baseline_index = (
+            params_model["antenna1"] * baseline_mod + params_model["antenna2"]
+        )
+
+        vis_model_matched = np.zeros(
+            [obs["n_pol"], obs["n_freq"], data_nbaselines * data_n_time],
+            dtype=np.complex128,
+        )
+        for time_i in range(data_n_time):
+            data_time_i = data_baseline_index[
+                time_i * data_nbaselines : (time_i + 1) * data_nbaselines
+            ]
+            model_time_i = model_baseline_index[
+                matched_times[time_i]
+                * model_nbaselines : (matched_times[time_i] + 1)
+                * model_nbaselines
+            ]
+            # suba is the subset of indices of data_time_i that are in model_time_i, importantly they are the first found indices
+            # subb is the subset of indices of model_time_i that are in data_time_i, importantly they are the first found indices
+            _, suba, subb = np.intersect1d(
+                data_time_i, model_time_i, return_indices=True
+            )
+            vis_model_matched[:, :, suba + time_i * data_nbaselines] = vis_model[
+                :, :, subb + matched_times[time_i] * model_nbaselines
+            ]
+
+        return vis_model_matched, params_model
+
+    return vis_model, params_model
 
 
 def import_vis_model_from_sav(
@@ -292,10 +416,9 @@ def flag_model_visibilities(
         and rounded_offset <= obs["time_res"] / 2.0
     ):
         flaginfo_model.unique_times += rounded_offset / (24.0 * 60 * 60)
-
-    logger.warning(
-        f"Model time stamps are offset from data by an average of {rounded_offset}. Accounting for this to match model time steps to data"
-    )
+        logger.warning(
+            f"Model time stamps are offset from data by an average of {rounded_offset}. Accounting for this to match model time steps to data"
+        )
 
     model_times_to_use = []
     for time in flaginfo_data.unique_times:
@@ -313,12 +436,11 @@ def flag_model_visibilities(
         model_path = (
             str(pyfhd_config["model_file_path"]) + pyfhd_config["model_file_type"]
         )
-        logger.error(
+        raise ValueError(
             f"Could not match the time steps in the data uvfits: {data_path}"
             f" and model uvfits in {model_path}. Please check the model "
             "and try again. Exiting now."
         )
-        exit()
 
     # Now to flag the model - some models have no flagged tiles (antennas),
     # whereas the data might have flagged tiles (and so missing baselines).
@@ -329,13 +451,12 @@ def flag_model_visibilities(
     # dataset so just error for now
     if flaginfo_model.num_ants < flaginfo_data.num_ants:
         model_path = pyfhd_config["model_file_path"] + pyfhd_config["model_file_type"]
-        logger.error(
+        raise ValueError(
             f"There are less antennas (tiles) in the model "
             f"{model_path} than in the data, so cannot calibrate the "
             "whole dataset. Please check the model "
             "and try again. Exiting now."
         )
-        exit()
 
     # Test to see if there are auto-correlations in data
     # If they are in the data, but not the model, we need to reshape the
@@ -435,9 +556,16 @@ def flag_model_visibilities(
             t_data_ind * flaginfo_data.num_visi_per_time_step
             + flaginfo_data.cross_locs_per_time
         )
+        t_flag_inds_autos = (
+            t_data_ind * flaginfo_data.num_visi_per_time_step
+            + flaginfo_data.auto_locs_per_time
+        )
         # Subset of cross-corrs from full model to select for this time step
         t_model_inds = (
             t_model_ind * flaginfo_model.num_visi_per_time_step + include_cross_per_time
+        )
+        t_model_inds_autos = (
+            t_model_ind * flaginfo_model.num_visi_per_time_step + include_auto_per_time
         )
         # Stick it in the flagged model
         vis_model_arr_flagged[:, :, t_flag_inds] = vis_model_arr[:, :, t_model_inds]
