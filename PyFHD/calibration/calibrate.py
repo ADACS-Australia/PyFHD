@@ -58,6 +58,8 @@ def calibrate(
         The updated calibration dictionary
     obs : dict
         Updated observation metadata dictionary
+    pyfhd_config : dict
+        Updated PyFHD configuration dictionary (possibly - check for any warnings in the log)
     """
     # Initialize cal dict
     cal = {}
@@ -111,7 +113,7 @@ def calibrate(
             logger.info(
                 "You have selected to perform polynomial fits over the frequency band"
             )
-            cal_polyfit = vis_cal_polyfit(
+            cal_polyfit, pyfhd_config = vis_cal_polyfit(
                 obs, cal_remainder, auto_ratio, pyfhd_config, logger
             )
             # Replace vis_cal_combine with this line as the gain is the same size for polyfit and bandpass
@@ -125,7 +127,7 @@ def calibrate(
         if pyfhd_config["auto_ratio_calibration"]:
             cal = cal_auto_ratio_remultiply(cal, auto_ratio, auto_tile_i)
     elif pyfhd_config["calibration_polyfit"]:
-        cal = vis_cal_polyfit(cal, obs, None, pyfhd_config, logger)
+        cal, pyfhd_config = vis_cal_polyfit(cal, obs, None, pyfhd_config, logger)
 
     # Get the gain residuals
     if pyfhd_config["calibration_auto_fit"]:
@@ -184,7 +186,7 @@ def calibrate(
         plot_cals(obs, cal, pyfhd_config)
 
     # Return the calibrated visibility array
-    return vis_cal, cal, obs
+    return vis_cal, cal, obs, pyfhd_config
 
 
 def calibrate_qu_mixing(

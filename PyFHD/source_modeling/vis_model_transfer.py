@@ -53,8 +53,8 @@ def vis_model_transfer(
         )
 
     if pyfhd_config["flag_model"]:
-        vis_model_arr = flag_model_visibilities(
-            vis_model_arr, params, params_model, obs, pyfhd_config, logger
+        vis_model = flag_model_visibilities(
+            vis_model, params, params_model, obs, pyfhd_config, logger
         )
     else:
         logger.warning(
@@ -62,7 +62,7 @@ def vis_model_transfer(
             "or any flagged tiles. This may lead to incorrect calibration results if the model visibilities are not compatible with the data visibilities."
         )
 
-    return vis_model_arr
+    return vis_model
 
 
 def import_vis_model_from_sav(

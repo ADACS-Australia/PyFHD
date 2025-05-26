@@ -891,6 +891,9 @@ def vis_cal_polyfit(
     -------
     cal : dict
         Calibration dictionary with polynomial gain fits
+    pyfhd_config : dict
+        PyFHD's configuration dictionary containing all the options set for a PyFHD run
+        Is returned in case the digital_gain_jump_polyfit was set here.
     """
     # Keep the og_gain_arr for calculations later
     og_gain_arr = np.copy(cal["gain"])
@@ -911,6 +914,24 @@ def vis_cal_polyfit(
         cal_mode_fit = False
     freq_use = np.where(obs["baseline_info"]["freq_use"])[0]
     tile_use = np.where(obs["baseline_info"]["tile_use"])[0]
+
+    pre_dig_inds = np.where(obs["baseline_info"]["freq"][freq_use] < 187.515e6)
+    if pre_dig_inds[0].size == 0:
+        logger.warning(
+            "No frequencies below 187.515MHz, using full band polyfit, digital gain jump polyfit disabled."
+        )
+        pyfhd_config["digital_gain_jump_polyfit"] = False
+    else:
+        f_d = np.max(pre_dig_inds[0])
+        f_end = freq_use.size
+
+    if ((f_d + 1) == f_end) and pyfhd_config["digital_gain_jump_polyfit"]:
+        logger.warning(
+            "No frequency found above 187.515MHz, using full band polyfit, digital gain jump polyfit disabled."
+        )
+        pyfhd_config["digital_gain_jump_polyfit"] = False
+
+    # TODO: Check the date of the observation if it's beyond the date, turn off the digital gain jump polyfit, also get date from Nichole.
 
     # If the amp_degree or phase_degree weren't used, then apply the defaults
     if not pyfhd_config["cal_amp_degree_fit"]:
@@ -950,12 +971,7 @@ def vis_cal_polyfit(
             gain_fit = np.zeros(obs["n_freq"])
             # Pre and post digital gain jump separately for highband MWA data
             if pyfhd_config["digital_gain_jump_polyfit"]:
-                pre_dig_inds = np.where(
-                    obs["baseline_info"]["freq"][freq_use] < 187.515e6
-                )
                 if pre_dig_inds[0].size > 0:
-                    f_d = np.max(pre_dig_inds[0])
-                    f_end = freq_use.size
                     fit_params1 = (
                         np.polynomial.Polynomial.fit(
                             freq_use[0 : f_d + 1],
@@ -1253,7 +1269,7 @@ def vis_cal_polyfit(
                     cal["mode_params"][pol_i, tile_i] = np.array(
                         [mode_i, amp_use, phase_use]
                     )
-    return cal
+    return cal, pyfhd_config
 
 
 def vis_cal_auto_fit(

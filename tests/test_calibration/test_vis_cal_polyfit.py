@@ -224,7 +224,7 @@ def test_vis_cal_polyfit(before_file, after_file):
     pyfhd_config["cable_lengths"] = Path(pyfhd_config["cable_lengths"])
     logger = Logger(1)
 
-    cal_polyfit = vis_cal_polyfit(obs, cal, auto_ratio, pyfhd_config, logger)
+    cal_polyfit, _ = vis_cal_polyfit(obs, cal, auto_ratio, pyfhd_config, logger)
     npt.assert_allclose(
         cal_polyfit["amp_params"], expected_cal_return["amp_params"], atol=2e-7
     )

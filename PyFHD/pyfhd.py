@@ -279,7 +279,7 @@ def main():
             if pyfhd_config["calibrate_visibilities"]:
                 logger.info("Beginning Calibration")
                 cal_start = time.time()
-                vis_arr, cal, obs = calibrate(
+                vis_arr, cal, obs, pyfhd_config = calibrate(
                     obs,
                     params,
                     vis_arr,
