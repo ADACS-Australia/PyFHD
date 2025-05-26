@@ -136,10 +136,10 @@ def main():
             )
 
             # Save the raw visibilities and weights if the option is set
+            pyfhd_config["visibilities_path"] = Path(
+                pyfhd_config["output_dir"], "visibilities"
+            )
             if pyfhd_config["save_visibilities"]:
-                pyfhd_config["visibilities_path"] = Path(
-                    pyfhd_config["output_dir"], "visibilities"
-                )
                 pyfhd_config["visibilities_path"].mkdir(exist_ok=True)
                 raw_vis_arr_path = Path(
                     pyfhd_config["visibilities_path"],
@@ -148,6 +148,7 @@ def main():
                 save(raw_vis_arr_path, vis_arr, "visibilities", logger=logger)
 
             if pyfhd_config["save_weights"]:
+                pyfhd_config["visibilities_path"].mkdir(exist_ok=True)
                 weights_path = Path(
                     pyfhd_config["visibilities_path"],
                     f"{pyfhd_config['obs_id']}_raw_vis_weights.h5",
@@ -263,13 +264,7 @@ def main():
 
             # Get the vis_model_arr from a UVFITS file or SAV files and flag any issues
             vis_model_arr_start = time.time()
-            vis_model_arr, params_model = vis_model_transfer(
-                pyfhd_config, obs, params, logger
-            )
-            if pyfhd_config["flag_model"]:
-                vis_model_arr = flag_model_visibilities(
-                    vis_model_arr, params, params_model, obs, pyfhd_config, logger
-                )
+            vis_model_arr = vis_model_transfer(pyfhd_config, obs, params, logger)
             vis_model_arr_end = time.time()
             _print_time_diff(
                 vis_model_arr_start,

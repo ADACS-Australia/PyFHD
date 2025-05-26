@@ -34,8 +34,6 @@ def vis_model_transfer(
     -------
     vis_model_arr : NDArray[np.complex128]
         Simulated model for the visibilities
-    params_model : dict
-        The parameters for said model used for flagging
 
     See Also
     --------
@@ -54,121 +52,17 @@ def vis_model_transfer(
             f"File type {pyfhd_config['model_file_type']} not supported. Please use 'sav' or 'uvfits'."
         )
 
-    # Check the model and data have the same number of time steps
-    data_n_time = obs["n_time"]
-    model_n_time = np.unique(params_model["time"]).size
-    if model_n_time != data_n_time:
-        logger.info(
-            f"The number of time steps in the model ({model_n_time}) and data ({data_n_time}) don't match. Attempting to find matching times"
+    if pyfhd_config["flag_model"]:
+        vis_model_arr = flag_model_visibilities(
+            vis_model_arr, params, params_model, obs, pyfhd_config, logger
         )
-        # Extract the relevant timesteps and baselines from the model that match the data
-        data_nbaselines = obs["n_baselines"]
-        _, param_model_uniq_idxs = np.unique(params_model["time"], return_index=True)
-        model_nbaselines = param_model_uniq_idxs[1]
-        data_Jdate = obs["baseline_info"]["jdate"]
-        time_res_Jdate = (obs["time_res"] / 2) / (24 * 3600)
-        model_time = np.unique(params_model["time"])
-        data_time = np.unique(params["time"])
-        tolerance = 1e-5
-
-        """
-        Match times betweeen model and data
-        Option 1: You are working with a model made by FHD. Thus the timing convention in the params is the same
-        Option 2: You are working with a model made by WODEN above version 1.4. This is different from FHD convention
-                  by half a timestep.
-        Option 3: You are working with a model made by WODEN below version 1.4. Thus the timing convention in the 
-                  params is different and you need to convert the model Jdate to the data Jdate within precision.
-        """
-        matched_times_opt1 = np.full(data_n_time, -1)
-        matched_times_opt2 = np.full(data_n_time, -1)
-        matched_times_opt3 = np.full(data_n_time, -1)
-
-        for data_time_i in range(data_n_time):
-            opt_1_test = np.abs(model_time - data_time[data_time_i])
-            min_val_idx = np.argmin(opt_1_test)
-            if opt_1_test[min_val_idx] < tolerance:
-                matched_times_opt1[data_time_i] = min_val_idx
-
-            opt2_test = np.abs(model_time - data_time[data_time_i] - time_res_Jdate)
-            min_val_idx = np.argmin(opt2_test)
-            if opt2_test[min_val_idx] < tolerance:
-                matched_times_opt2[data_time_i] = min_val_idx
-
-            opt3_test = np.abs(model_time - data_Jdate[data_time_i] - time_res_Jdate)
-            min_val_idx = np.argmin(opt3_test)
-            if opt3_test[min_val_idx] < tolerance:
-                matched_times_opt3[data_time_i] = min_val_idx
-
-        n_matched_times_opt1 = np.count_nonzero(matched_times_opt1 >= 0)
-        n_matched_times_opt2 = np.count_nonzero(matched_times_opt2 >= 0)
-        n_matched_times_opt3 = np.count_nonzero(matched_times_opt3 >= 0)
-        if (
-            n_matched_times_opt1 == 0
-            and n_matched_times_opt2 == 0
-            and n_matched_times_opt3 == 0
-        ):
-            logger.error(
-                "No matching times between transferred model and data. Exiting"
-            )
-            raise ValueError(
-                "The number of time steps in the transferred model and data didn't match. Attempted to find matching itmes, No matching times were found between transferred model and data. Exiting"
-            )
-        # Keep in mind here, that if two or more options have the same number of matches, it will always pick the first one in the list
-        matched_time_idx = np.argmax(
-            [n_matched_times_opt1, n_matched_times_opt2, n_matched_times_opt3]
-        )
-        if matched_time_idx == 0:
-            logger.info("Matched model times to data times using FHD timing convention")
-            matched_times = matched_times_opt1
-        elif matched_time_idx == 1:
-            logger.info(
-                "Matched model times to data times using WODEN (>= v1.4) timing convention"
-            )
-            matched_times = matched_times_opt2
-        else:
-            logger.info(
-                "Matched model times to data times using WODEN (< v1.4) timing convention"
-            )
-            matched_times = matched_times_opt3
-        if np.count_nonzero(matched_times >= 0) != data_n_time:
-            logger.error(
-                "The number of matched time steps between model and data is not equal to the number of time steps in the data. Exiting"
-            )
-            raise ValueError(
-                "The number of time steps in the transferred model and data didn't match. Attempted to find matching itmes, but not all model times matched to data times. Exiting"
-            )
-
-        baseline_mod = obs["n_tile"] * 2
-        data_baseline_index = params["antenna1"] * baseline_mod + params["antenna2"]
-        model_baseline_index = (
-            params_model["antenna1"] * baseline_mod + params_model["antenna2"]
+    else:
+        logger.warning(
+            "You have chosen not to flag the model visibilities, so PyFHD will not account for difference in time steps between the data and the model "
+            "or any flagged tiles. This may lead to incorrect calibration results if the model visibilities are not compatible with the data visibilities."
         )
 
-        vis_model_matched = np.zeros(
-            [obs["n_pol"], obs["n_freq"], data_nbaselines * data_n_time],
-            dtype=np.complex128,
-        )
-        for time_i in range(data_n_time):
-            data_time_i = data_baseline_index[
-                time_i * data_nbaselines : (time_i + 1) * data_nbaselines
-            ]
-            model_time_i = model_baseline_index[
-                matched_times[time_i]
-                * model_nbaselines : (matched_times[time_i] + 1)
-                * model_nbaselines
-            ]
-            # suba is the subset of indices of data_time_i that are in model_time_i, importantly they are the first found indices
-            # subb is the subset of indices of model_time_i that are in data_time_i, importantly they are the first found indices
-            _, suba, subb = np.intersect1d(
-                data_time_i, model_time_i, return_indices=True
-            )
-            vis_model_matched[:, :, suba + time_i * data_nbaselines] = vis_model[
-                :, :, subb + matched_times[time_i] * model_nbaselines
-            ]
-
-        return vis_model_matched, params_model
-
-    return vis_model, params_model
+    return vis_model_arr
 
 
 def import_vis_model_from_sav(
@@ -381,9 +275,6 @@ def flag_model_visibilities(
         The flagged model visibility array
     """
 
-    # TODO - check if auto-correlations are present. If not, turn off
-    # auto-correlation calibration options
-
     # Calculate a number of things we'll need to compare the data to the model
     flaginfo_data = _FlaggingInfoCounter(params_data)
     flaginfo_model = _FlaggingInfoCounter(params_model)
@@ -421,6 +312,7 @@ def flag_model_visibilities(
         )
 
     model_times_to_use = []
+    # For each time step in the data, find the closest time step in the model
     for time in flaginfo_data.unique_times:
         t_ind = np.argmin(np.abs(flaginfo_model.unique_times - time))
         model_times_to_use.append(t_ind)
@@ -459,26 +351,8 @@ def flag_model_visibilities(
         )
 
     # Test to see if there are auto-correlations in data
-    # If they are in the data, but not the model, we need to reshape the
-    # model to include empty autocorrelations in the correct spots
-
-    include_autos = True
     if flaginfo_model.num_autos == 0:
-        logger.warning(
-            "There are no auto-correlations present in model, "
-            "filling with zeros to match data shape, and switching "
-            "off all auto-correlation calibration"
-        )
-        include_autos = False
-
-    elif flaginfo_model.num_autos < flaginfo_model.num_times * flaginfo_model.num_ants:
-        logger.warning(
-            "There are some auto-correlations present in model, "
-            "but less than number of antennas times number of time steps. "
-            "Cannot deal with missing autocorrelations so setting all "
-            "autos to zero and switching off all auto-correlation calibration"
-        )
-        include_autos = False
+        logger.warning("There are no auto-correlations present in model.")
 
     # This is where the fun begins - pyuvdata uses the tile number as written
     # in the 'TILE' column in the metafits file to encode baselines (and so
@@ -525,22 +399,13 @@ def flag_model_visibilities(
     )
 
     # Doing a logic union combines info from ant1 and ant2
-    include_per_time = include_per_time_ant1 & include_per_time_ant2
+    model_include_per_time = np.nonzero(include_per_time_ant1 & include_per_time_ant2)[
+        0
+    ]
 
-    # To get indexes of cross-correlations to use, ensure ant1 != ant2
-    # These are now indexes of unflagged cross-correlations to grab from model
-    # However we need the actual indexes, so we use include_per_time and
-    # check for where there is non_zeros. This previously check where they didn't
-    # match but that resulted in us getting the indexes of the antenna arrays rather
-    # than the baseline indexes
-    include_cross_per_time = np.nonzero(include_per_time)[0]
-
-    # To get indexes of auto-correlations to use, ensure ant1 == ant2
-    # These are now indexes of unflagged auto-correlations to grab from model
-    include_auto_per_time = np.where(
-        flaginfo_model.ant1_single_time[include_per_time]
-        == flaginfo_model.ant2_single_time[include_per_time]
-    )[0]
+    data_include_per_time = np.sort(
+        np.concat([flaginfo_data.cross_locs_per_time, flaginfo_data.auto_locs_per_time])
+    )
 
     # empty holder for the flagged model - this should be the same shape
     vis_model_arr_flagged = np.zeros(
@@ -553,28 +418,14 @@ def flag_model_visibilities(
 
         # Subset of cross-corrs from flagged model to select for this time step
         t_flag_inds = (
-            t_data_ind * flaginfo_data.num_visi_per_time_step
-            + flaginfo_data.cross_locs_per_time
+            t_data_ind * flaginfo_data.num_visi_per_time_step + data_include_per_time
         )
         # Subset of cross-corrs from full model to select for this time step
         t_model_inds = (
-            t_model_ind * flaginfo_model.num_visi_per_time_step + include_cross_per_time
+            t_model_ind * flaginfo_model.num_visi_per_time_step + model_include_per_time
         )
         # Stick it in the flagged model
         vis_model_arr_flagged[:, :, t_flag_inds] = vis_model_arr[:, :, t_model_inds]
-
-        # If we're doing autocorrelations, jam them in as well
-        if include_autos:
-            t_flag_inds = (
-                t_data_ind * flaginfo_data.num_visi_per_time_step
-                + flaginfo_data.auto_locs_per_time
-            )
-            t_model_inds = (
-                t_model_ind * flaginfo_model.num_visi_per_time_step
-                + include_auto_per_time
-            )
-
-            vis_model_arr_flagged[:, :, t_flag_inds] = vis_model_arr[:, :, t_model_inds]
 
     return vis_model_arr_flagged
 

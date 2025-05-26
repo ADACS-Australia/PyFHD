@@ -374,7 +374,7 @@ def quickview(
     filter_name = pyfhd_config["image_filter"].split("_")[-1]
     fits_output: Path = pyfhd_config["output_dir"] / "fits"
     fits_output.mkdir(exist_ok=True)
-    if pyfhd_config["image_plots"]:  
+    if pyfhd_config["image_plots"]:
         png_output: Path = pyfhd_config["output_dir"] / "plots" / "images"
         png_output.mkdir(exist_ok=True)
     for pol_i in range(obs["n_pol"]):
@@ -386,7 +386,9 @@ def quickview(
 
         # Write the fits files for the dirty images
         fits_file_apparent.data = instr_dirty
-        instr_dirty_name = f"{pyfhd_config['obs_id']}_{filter_name}_dirty_{pol_names[pol_i]}"
+        instr_dirty_name = (
+            f"{pyfhd_config['obs_id']}_{filter_name}_dirty_{pol_names[pol_i]}"
+        )
         fits_file_apparent.writeto(
             Path(
                 fits_output,
@@ -395,7 +397,9 @@ def quickview(
             overwrite=True,
         )
         fits_file_apparent.data = instr_model
-        instr_model_name = f"{pyfhd_config['obs_id']}_{filter_name}_model_{pol_names[pol_i]}"
+        instr_model_name = (
+            f"{pyfhd_config['obs_id']}_{filter_name}_model_{pol_names[pol_i]}"
+        )
         fits_file_apparent.writeto(
             Path(
                 fits_output,
@@ -404,7 +408,9 @@ def quickview(
             overwrite=True,
         )
         fits_file_apparent.data = instr_residual
-        instr_residual_name = f"{pyfhd_config['obs_id']}_{filter_name}_residual_{pol_names[pol_i]}"
+        instr_residual_name = (
+            f"{pyfhd_config['obs_id']}_{filter_name}_residual_{pol_names[pol_i]}"
+        )
         fits_file_apparent.writeto(
             Path(
                 fits_output,
@@ -428,37 +434,37 @@ def quickview(
             overwrite=True,
         )
 
-        if pyfhd_config["image_plots"]:  
-                logger.info(
-                    f"Plotting the continuum images for polarization {pol_names[pol_i]} into {pyfhd_config['output_dir']/'plots'/'images'}"
-                )
-                plot_fits_image(
-                    Path(fits_output,f"{instr_dirty_name}.fits"),
-                    Path(png_output,f"{instr_dirty_name}.png"),
-                    title = f"Dirty Image {pol_names[pol_i]}",
-                    logger=logger,
-                )
-                plot_fits_image(
-                    Path(fits_output,f"{instr_model_name}.fits"),
-                    Path(png_output,f"{instr_model_name}.png"),
-                    title = f"Model Image {pol_names[pol_i]}",
-                    logger=logger,
-                )
-                plot_fits_image(
-                    Path(fits_output,f"{instr_residual_name}.fits"),
-                    Path(png_output,f"{instr_residual_name}.png"),
-                    title = f"Residual Image {pol_names[pol_i]}",
-                    logger=logger,
-                )
-                plot_fits_image(
-                    Path(fits_output,f"{beam_name}.fits"),
-                    Path(png_output,f"{beam_name}.png"),
-                    title = f"Beam Image {pol_names[pol_i]}",
-                    logger=logger,
-                )
-                plot_fits_image(
-                    Path(fits_output,f"{weights_name}.fits"),
-                    Path(png_output,f"{weights_name}.png"),
-                    title = f"Weight Image {pol_names[pol_i]}",
-                    logger=logger,
-                )
+        if pyfhd_config["image_plots"]:
+            logger.info(
+                f"Plotting the continuum images for polarization {pol_names[pol_i]} into {pyfhd_config['output_dir']/'plots'/'images'}"
+            )
+            plot_fits_image(
+                Path(fits_output, f"{instr_dirty_name}.fits"),
+                Path(png_output, f"{instr_dirty_name}.png"),
+                title=f"Dirty Image {pol_names[pol_i]}",
+                logger=logger,
+            )
+            plot_fits_image(
+                Path(fits_output, f"{instr_model_name}.fits"),
+                Path(png_output, f"{instr_model_name}.png"),
+                title=f"Model Image {pol_names[pol_i]}",
+                logger=logger,
+            )
+            plot_fits_image(
+                Path(fits_output, f"{instr_residual_name}.fits"),
+                Path(png_output, f"{instr_residual_name}.png"),
+                title=f"Residual Image {pol_names[pol_i]}",
+                logger=logger,
+            )
+            plot_fits_image(
+                Path(fits_output, f"{beam_name}.fits"),
+                Path(png_output, f"{beam_name}.png"),
+                title=f"Beam Image {pol_names[pol_i]}",
+                logger=logger,
+            )
+            plot_fits_image(
+                Path(fits_output, f"{weights_name}.fits"),
+                Path(png_output, f"{weights_name}.png"),
+                title=f"Weight Image {pol_names[pol_i]}",
+                logger=logger,
+            )

@@ -6,7 +6,7 @@ from logging import Logger
 
 
 def plot_gridding(
-    obs: dict, 
+    obs: dict,
     image_uv: NDArray[np.complex128],
     weights_uv: NDArray[np.complex128],
     variance_uv: NDArray[np.float64],
@@ -36,10 +36,14 @@ def plot_gridding(
     """
 
     # Check if image, weights, and variance contain any non-zero elements
-    if (not np.any(image_uv != 0)) or (not np.any(weights_uv != 0)) or (
-        not np.any(variance_uv != 0)
+    if (
+        (not np.any(image_uv != 0))
+        or (not np.any(weights_uv != 0))
+        or (not np.any(variance_uv != 0))
     ):
-        logger.warning("Gridded image, weights, or variance are all zeros. Plotting skipped.")
+        logger.warning(
+            "Gridded image, weights, or variance are all zeros. Plotting skipped."
+        )
         return
 
     # Plotting paths for apparent gridded image (weighted gridded data), variance,
@@ -61,28 +65,65 @@ def plot_gridding(
         apparent_model = np.abs(np.divide(model_uv, weights_uv, where=weights_uv != 0))
 
     # Calculate the x- and y-axis values and labels
-    xvals = (np.arange(apparent_image.shape[1]) - apparent_image.shape[1] / 2) * obs['kpix']
-    xtitle = 'u (wavelengths)'
-    yvals = (np.arange(apparent_image.shape[2]) - apparent_image.shape[2] / 2) * obs['kpix']
-    ytitle = 'v (wavelengths)'
-    
+    xvals = (np.arange(apparent_image.shape[1]) - apparent_image.shape[1] / 2) * obs[
+        "kpix"
+    ]
+    xtitle = "u (wavelengths)"
+    yvals = (np.arange(apparent_image.shape[2]) - apparent_image.shape[2] / 2) * obs[
+        "kpix"
+    ]
+    ytitle = "v (wavelengths)"
+
     # Get the pol_names
     pol_names = obs["pol_names"]
-    
+
     for pol_i in range(obs["n_pol"]):
         # Plot the apparent image, variance, and the optional model for each polarization
-        
+
         # Add a suffix to each path
-        save_path_pol = [path.with_stem(path.stem + "_" + pol_names[pol_i]) for path in save_path_roots]
-        
-        quick_image(apparent_image[pol_i,:,:], xvals = xvals, yvals = yvals, xtitle = xtitle, ytitle = ytitle, 
-                    title = 'Apparent Gridded Continuum Data ' + pol_names[pol_i], cb_title = 'Amplitude (Jy/beam)', 
-                    savefile = save_path_pol[0], missing_value = 0, log = True, png = True)
-        quick_image(variance_uv[pol_i,:,:], xvals = xvals, yvals = yvals, xtitle = xtitle, ytitle = ytitle, 
-                    title = 'Gridded Continuum Variance ' + pol_names[pol_i], cb_title = '(Jy/beam)$^2$', 
-                    savefile = save_path_pol[1], missing_value = 0, log = True, png = True)
+        save_path_pol = [
+            path.with_stem(path.stem + "_" + pol_names[pol_i])
+            for path in save_path_roots
+        ]
+
+        quick_image(
+            apparent_image[pol_i, :, :],
+            xvals=xvals,
+            yvals=yvals,
+            xtitle=xtitle,
+            ytitle=ytitle,
+            title="Apparent Gridded Continuum Data " + pol_names[pol_i],
+            cb_title="Amplitude (Jy/beam)",
+            savefile=save_path_pol[0],
+            missing_value=0,
+            log=True,
+            png=True,
+        )
+        quick_image(
+            variance_uv[pol_i, :, :],
+            xvals=xvals,
+            yvals=yvals,
+            xtitle=xtitle,
+            ytitle=ytitle,
+            title="Gridded Continuum Variance " + pol_names[pol_i],
+            cb_title="(Jy/beam)$^2$",
+            savefile=save_path_pol[1],
+            missing_value=0,
+            log=True,
+            png=True,
+        )
 
         if model_uv is not None:
-            quick_image(apparent_model[pol_i,:,:], xvals = xvals, yvals = yvals, xtitle = xtitle, ytitle = ytitle, 
-                        title = 'Apparent Gridded Continuum Model ' + pol_names[pol_i], cb_title = 'Amplitude (Jy/beam)', 
-                        savefile = save_path_pol[2], missing_value = 0, log = True, png = True)
+            quick_image(
+                apparent_model[pol_i, :, :],
+                xvals=xvals,
+                yvals=yvals,
+                xtitle=xtitle,
+                ytitle=ytitle,
+                title="Apparent Gridded Continuum Model " + pol_names[pol_i],
+                cb_title="Amplitude (Jy/beam)",
+                savefile=save_path_pol[2],
+                missing_value=0,
+                log=True,
+                png=True,
+            )

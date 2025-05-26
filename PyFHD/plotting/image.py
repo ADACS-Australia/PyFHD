@@ -38,14 +38,14 @@ def quick_image(
     pdf: bool = False,
 ) -> None:
     """
-    General function to display and/or save a 2D data array as an image with an appropriately 
+    General function to display and/or save a 2D data array as an image with an appropriately
     scaled color bar.
 
 
     Parameters
     ----------
     image : NDArray[int | np.float64 | np.complex128]
-        A 2D array of data to be displayed as an image. 
+        A 2D array of data to be displayed as an image.
         The data can be of type int, float, or complex.
     xvals : NDArray[int | np.float64], optional
         An array of x-axis values, by default None
@@ -64,7 +64,7 @@ def quick_image(
     log : bool, optional
         Color bar on logarithmic scale, by default False
     color_profile : str, optional
-        Color bar profiles for logarithmic scaling. 
+        Color bar profiles for logarithmic scaling.
         "log_cut", "sym_log", "abs", by default "log_cut"
     xtitle : str, optional
         The title of the x-axis, by default None
@@ -98,7 +98,7 @@ def quick_image(
         Create an eps of the image, by default False
     pdf : bool, optional
         Create a pdf of the image, by default False
-        
+
     Returns
     -------
     None
@@ -213,9 +213,7 @@ def quick_image(
         if data_range is None:
             data_range = [np.nanmin(image), np.nanmax(image)]
 
-        data_color_range, data_n_colors = color_range(
-            count_missing=count_missing
-        )
+        data_color_range, data_n_colors = color_range(count_missing=count_missing)
 
         # Scale image data to be in the color range
         image = (image - data_range[0]) * (data_n_colors - 1) / (
@@ -354,12 +352,12 @@ def log_color_calc(
     Parameters
     ----------
     data : NDArray[int | np.float64 | np.complex128]
-        A 2D array of data to be displayed as an image. 
+        A 2D array of data to be displayed as an image.
         The data can be of type int, float, or complex.
     data_range : NDArray[np.int | np.float64], optional
         Min/max color bar range, by default [np.nanmin(image), np.nanmax(image)]
     color_profile : str, optional
-        Color bar profiles for logarithmic scaling. 
+        Color bar profiles for logarithmic scaling.
         "log_cut", "sym_log", "abs", by default "log_cut"
     log_cut_val : int | float, optional
         Minimum log value to cut at, by default None
@@ -373,7 +371,7 @@ def log_color_calc(
         The index of the color bar for missing values, by default None
     invert_colorbar : bool, optional
         Invert the color bar, by default False
-        
+
     Returns
     -------
     data_log_norm : NDArray[np.int | np.float64]
@@ -381,7 +379,7 @@ def log_color_calc(
     cb_ticks : NDArray[np.int | np.float64]
         The color bar ticks.
     cb_ticknames : NDArray[np.int | np.float64]
-        The color bar tick names.  
+        The color bar tick names.
     """
     # Define valid color profiles
     color_profile_enum = ["log_cut", "sym_log", "abs"]
@@ -396,7 +394,7 @@ def log_color_calc(
     else:
         if len(data_range) != 2:
             raise ValueError("data_range must be a 2-element vector")
-    
+
     if data_range[1] < data_range[0]:
         raise ValueError("data_range[0] must be less than data_range[1]")
 
@@ -486,7 +484,9 @@ def log_color_calc(
 
     elif color_profile == "sym_log":
         if data_range[0] >= 0 or data_range[1] <= 0:
-            raise ValueError("sym_log color profile requires both negative and positive values in data_range.")
+            raise ValueError(
+                "sym_log color profile requires both negative and positive values in data_range."
+            )
 
         # Calculate the minimum absolute value
         if min_abs is None:
@@ -510,18 +510,26 @@ def log_color_calc(
         midpoint = (data_color_range[1] - data_color_range[0]) // 2
 
         if len(wh_pos[0]) > 0:
-            data_log_norm[wh_pos] = (np.log10(data[wh_pos]) - log_data_range[0]) * (
-                midpoint
-            ) / (log_data_range[1] - log_data_range[0]) + data_color_range[0] + midpoint
+            data_log_norm[wh_pos] = (
+                (np.log10(data[wh_pos]) - log_data_range[0])
+                * (midpoint)
+                / (log_data_range[1] - log_data_range[0])
+                + data_color_range[0]
+                + midpoint
+            )
 
         if len(wh_neg[0]) > 0:
             # Reverse the mapping for negative values
-            data_log_norm[wh_neg] = data_color_range[0] + midpoint - (
-                (np.log10(abs(data[wh_neg])) - log_data_range[0])
-                * midpoint
-                / (log_data_range[1] - log_data_range[0])
+            data_log_norm[wh_neg] = (
+                data_color_range[0]
+                + midpoint
+                - (
+                    (np.log10(abs(data[wh_neg])) - log_data_range[0])
+                    * midpoint
+                    / (log_data_range[1] - log_data_range[0])
+                )
             )
-    
+
         if len(wh_zero[0]) > 0:
             data_log_norm[wh_zero] = data_color_range[0] + midpoint
 
@@ -570,9 +578,15 @@ def log_color_calc(
         neg_ticks = np.linspace(data_color_range[0], midpoint, num=5)
         cb_ticks = np.concatenate([neg_ticks, [midpoint], pos_ticks])
         cb_ticknames = (
-            [f"-{10**(log_data_range[1] - (tick - data_color_range[0]) * (log_data_range[1] - log_data_range[0]) / midpoint):.2g}" for tick in neg_ticks]
+            [
+                f"-{10**(log_data_range[1] - (tick - data_color_range[0]) * (log_data_range[1] - log_data_range[0]) / midpoint):.2g}"
+                for tick in neg_ticks
+            ]
             + ["0"]
-            + [f"{10**((tick - midpoint) * (log_data_range[1] - log_data_range[0]) / midpoint + log_data_range[0]):.2g}" for tick in pos_ticks]
+            + [
+                f"{10**((tick - midpoint) * (log_data_range[1] - log_data_range[0]) / midpoint + log_data_range[0]):.2g}"
+                for tick in pos_ticks
+            ]
         )
     elif color_profile == "abs":
         cb_ticks = np.linspace(data_color_range[0], data_color_range[1], num=5)
@@ -584,9 +598,7 @@ def log_color_calc(
     return data_log_norm, cb_ticks, cb_ticknames
 
 
-def color_range(
-    count_missing: int = None
-) -> tuple:
+def color_range(count_missing: int = None) -> tuple:
     """
     Define the color range for the image data.
 
@@ -614,8 +626,8 @@ def color_range(
 
 
 def plot_fits_image(
-    fits_file: str, 
-    output_path: str, 
+    fits_file: str,
+    output_path: str,
     logger: Logger,
     title: str = "FITS Image",
 ) -> None:
@@ -632,7 +644,7 @@ def plot_fits_image(
         Title of the plot, by default "FITS Image".
     logger : Logger
         PyFHD's logger for displaying errors and info to the log files
-        
+
     Returns
     -------
     None
@@ -642,21 +654,25 @@ def plot_fits_image(
     with fits.open(fits_file) as hdul:
         # Get the data from the first extension
         data = hdul[0].data
-        
+
         # Check that the data is 2D and non-zero
         if data is None or data.ndim != 2:
-            logger.warning(f"FITS data must be a 2D array, no image made for {fits_file}.")
+            logger.warning(
+                f"FITS data must be a 2D array, no image made for {fits_file}."
+            )
             return
         if not np.any(data):
-            logger.warning(f"FITS data array contains only zeros, no image made for {fits_file}.")
+            logger.warning(
+                f"FITS data array contains only zeros, no image made for {fits_file}."
+            )
             return
-        
+
         # Get the data from the first extension
         header = hdul[0].header
-        
+
         header["CTYPE1"] = "RA---TAN"
         header["CTYPE2"] = "DEC--TAN"
-        
+
         # Get units from header
         if "BUNIT" not in header:
             unit = "Jy/str"
@@ -670,7 +686,7 @@ def plot_fits_image(
         ny, nx = data.shape
         x_min, x_max = wcs.wcs_pix2world([0, nx - 1], [0, 0], 0)[0]
         y_min, y_max = wcs.wcs_pix2world([0, 0], [0, ny - 1], 0)[1]
-        
+
         x_extent = abs(x_max - x_min)  # Extent in degrees along the x-axis
         y_extent = abs(y_max - y_min)  # Extent in degrees along the y-axis
 
@@ -687,7 +703,9 @@ def plot_fits_image(
         fig, ax = plt.subplots(subplot_kw={"projection": wcs})
 
         # Plot the image data
-        im = ax.imshow(data, origin="lower", cmap="gray", aspect="auto", vmin=vmin, vmax=vmax)
+        im = ax.imshow(
+            data, origin="lower", cmap="gray", aspect="auto", vmin=vmin, vmax=vmax
+        )
 
         # Add a WCS-based grid
         ax.grid(color="white", ls="--", alpha=0.5)
@@ -700,7 +718,7 @@ def plot_fits_image(
         ax.coords[0].set_ticklabel(size=10, exclude_overlapping=True)
         ax.coords[1].set_ticks(spacing=spacing_y, color="white", size=8, width=1)
         ax.coords[1].set_ticklabel(size=10, exclude_overlapping=True)
-        
+
         # Add colorbar
         cbar = plt.colorbar(im, ax=ax, orientation="vertical")
         cbar.set_label("Flux density (" + unit + ")")
