@@ -12,6 +12,29 @@ def gaussian_decomp(
     model_npix: float | None = None,
     model_res: float | None = None,
 ) -> tuple[np.ndarray, float, float]:
+    """
+    _summary_
+
+    Parameters
+    ----------
+    x : np.ndarray
+        _description_
+    y : np.ndarray
+        _description_
+    p : np.ndarray
+        _description_
+    ftransform : bool, optional
+        _description_, by default False
+    model_npix : float | None, optional
+        _description_, by default None
+    model_res : float | None, optional
+        _description_, by default None
+
+    Returns
+    -------
+    tuple[np.ndarray, float, float]
+        _description_
+    """
     decomp_beam = np.zeros([x.size, y.size])
     i = 1j
     # Expand the p vector into readable names

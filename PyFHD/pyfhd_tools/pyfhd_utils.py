@@ -1343,7 +1343,11 @@ def idl_median(
     even: bool = False,
 ) -> float:
     """
-    TODO:_summary_
+    The IDL Median function doesn't always work as you'd expect, as generally you need to use the
+    EVEN keyword to get the median of an even number of elements, otherwise it returns the
+    maximum element of the two numbers in the middle of an even sorted array.
+    This function replicates the IDL median function, in case you need that functionality.
+    Typically though, we recommend using `numpy.median` or `scipy.ndimage.median_filter`.
 
     Parameters
     ----------
@@ -1352,8 +1356,7 @@ def idl_median(
     width : int
         If set, perform a type of median filtering.
     even : bool, optional
-        _description_, by default False
-
+        In this case it will just run numpy.median, by default False
 
 
     When `width` is set. unfortunately the edge conditions when using cannot be
@@ -1362,7 +1365,12 @@ def idl_median(
     Returns
     -------
     float
-        _description_
+        The median of the array
+
+    See Also
+    --------
+    numpy.median: Computes the median of an array
+    scipy.ndimage.median_filter: Applies a median filter to an array
     """
 
     if width:
