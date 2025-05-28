@@ -10,13 +10,13 @@ import os
 
 
 def quick_image(
-    image: NDArray[int | np.float64 | np.complex128],
-    xvals: NDArray[int | np.float64] = None,
-    yvals: NDArray[int | np.float64] = None,
-    data_range: NDArray[int | np.float64] = None,
+    image: NDArray[np.integer | np.floating | np.complexfloating],
+    xvals: NDArray[np.integer | np.floating] = None,
+    yvals: NDArray[np.integer | np.floating] = None,
+    data_range: NDArray[np.integer | np.floating] = None,
     data_min_abs: float = None,
-    xrange: NDArray[int | np.float64] = None,
-    yrange: NDArray[int | np.float64] = None,
+    xrange: NDArray[np.integer | np.floating] = None,
+    yrange: NDArray[np.integer | np.floating] = None,
     data_aspect: float = None,
     log: bool = False,
     color_profile: str = "log_cut",
@@ -44,20 +44,20 @@ def quick_image(
 
     Parameters
     ----------
-    image : NDArray[int | np.float64 | np.complex128]
+    image : NDArray[np.integer | np.floating | np.complexfloating]
         A 2D array of data to be displayed as an image.
         The data can be of type int, float, or complex.
-    xvals : NDArray[int | np.float64], optional
+    xvals : NDArray[np.integer | np.floating], optional
         An array of x-axis values, by default None
-    yvals : NDArray[int | np.float64], optional
+    yvals : NDArray[np.integer | np.floating], optional
         An array of y-axis values, by default None
-    data_range : NDArray[int | np.float64], optional
+    data_range : NDArray[np.integer | np.floating], optional
         Min/max color bar range, by default [np.nanmin(image), np.nanmax(image)]
     data_min_abs : float, optional
         The minimum absolute value for the color bar, by default None
-    xrange : NDArray[int | np.float64], optional
+    xrange : NDArray[np.integer | np.floating], optional
         The indices (or xvals, if provided) to zoom the image, by default None
-    yrange : NDArray[int | np.float64], optional
+    yrange : NDArray[np.integer | np.floating], optional
         The indices (or yvals, if provided) to zoom the image, by default None
     data_aspect : int | float, optional
         The aspect ratio of y to x, by default None
@@ -336,13 +336,13 @@ def quick_image(
 
 
 def log_color_calc(
-    data: NDArray[int | np.float64 | np.complex128],
-    data_range: NDArray[int | np.float64] = None,
+    data: NDArray[np.integer | np.floating | np.complexfloating],
+    data_range: NDArray[np.integer | np.floating] = None,
     color_profile: str = "log_cut",
     log_cut_val: float = None,
     min_abs: float = None,
     count_missing: int = None,
-    wh_missing: NDArray[int] = None,
+    wh_missing: NDArray[np.integer] = None,
     missing_color: int = None,
     invert_colorbar: bool = False,
 ) -> tuple:
@@ -351,10 +351,10 @@ def log_color_calc(
 
     Parameters
     ----------
-    data : NDArray[int | np.float64 | np.complex128]
+    data : NDArray[np.integer | np.floating | np.complexfloating]
         A 2D array of data to be displayed as an image.
         The data can be of type int, float, or complex.
-    data_range : NDArray[np.int | np.float64], optional
+    data_range : NDArray[np.integer | np.floating], optional
         Min/max color bar range, by default [np.nanmin(image), np.nanmax(image)]
     color_profile : str, optional
         Color bar profiles for logarithmic scaling.
@@ -365,7 +365,7 @@ def log_color_calc(
         The minimum absolute value for the color bar, by default None
     count_missing : int, optional
         The number of missing values, by default None
-    wh_missing : int, optional
+    wh_missing : NDArray[np.integer], optional
         The location of the missing values, by default None
     missing_color : int, optional
         The index of the color bar for missing values, by default None

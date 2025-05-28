@@ -21,7 +21,7 @@ Started as a project created in IDL, FHD is an open-source imaging algorithm for
 specifically tested on MWA Phase I, MWA Phase II, PAPER, and HERA. There are three main use-cases for FHD: 
 efficient image deconvolution for general radio astronomy, fast-mode Epoch of Reionization analysis, and simulation.
 
-Now, FHD has been translated to Python, giving us **PyFHD**, license free, free to use and free of IDL.
+Now, FHD has been translated to Python, giving us **PyFHD**, free to use and free of IDL.
 
 Contents
 -----------------

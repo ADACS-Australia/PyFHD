@@ -204,7 +204,11 @@ Data can be obtained via the `MWA ASVO`_ service (head to the webpage to get an 
 .. image:: data_job_form.png
   :width: 800px
 
-In this download we are using an observation with Observation ID (which is the GPS time) 1091128160. We choose to use `Birli`_ as the 'Preprocessor', and swap the 'Output' format to UVFITS. Click Submit to launch the job.
+In this download we are using an observation with Observation ID (which is the GPS time) 1091128160. We set the Time Resolution(s) to ``2``, Frequency Resolution and Edge Width to ``80 kHz``, Phase Centre to ``Centre on pointing centre`` and swap the 'Output' format to ``UVFITS``. Click Submit to launch the job.
+
+.. tip::
+
+  If you change these values for time resolution, frequency resolution and/or edge width double check your skymodel is using the same parameters.
 
 We also need a metafits tile, which we can access via the 'Visibility Download Job' tab. Input the Obs ID, and be sure to click the 'PPD, Metafits, and Flags' option like below (otherwise you download the raw data as well, which we don't need):
 
@@ -216,17 +220,24 @@ You can check the status of your download by clicking 'My Jobs' in the top left.
 .. image:: jobs_ready.png
   :width: 800px
 
-Running basic calibration
--------------------------
+Calibration
+-----------
 
 Calibration is fully available in ``PyFHD`` and can be enabled using the ``--calibrate-visibilities`` option being set to true. Most of the options for calibration are found under the 
 `Calibration <../documentation/documentation.html#PyFHD.pyfhd_tools.pyfhd_setup-pyfhd_parser-calibration>`_ group in the argument parser. 
 The first example we'll do is the a calibration of the sample data using only the command line interface to show the options that changed
-in comparison to the template in the root of the repository (which will be used by default here):
+in comparison to the template in the root of the repository (which will be used by default here).
+
+Running calibration on the sample data
+++++++++++++++++++++++++++++++++++++++
 
 .. code-block:: bash
 
   pyfhd \
+    # The configuration file is a required argument
+    # If you wish to do just command line arguments 
+    # you can use the default one in the root of the repository
+    --config "./pyfhd.yaml" \
     --input-path "./input/1088285600_example/" \
     --beam-file-path "./input/1088285600_example/gauss_beam_pointing0_167635008Hz.h5" \
     --beam-offset-time 0 \
@@ -254,6 +265,9 @@ Here you some some solutions from the calibration of the sample data:
 
 TODO: Do PyFHD run with 1091128160 and show the output
 
+Running calibration on a full MWA observation
++++++++++++++++++++++++++++++++++++++++++++++
+
 .. code-block:: bash
 
     pyfhd \
@@ -264,6 +278,181 @@ TODO: Do PyFHD run with 1091128160 and show the output
         --calibration_catalog_file_path=/path/to/sky_model/GLEAM_v2_plus_rlb2019.sav \
         --conserve_memory --memory_threshold=1000000000 \
         --IDL_calibrate
+
+.. tip::
+
+  The full configuration file to set all the options in the above command can be seen below
+
+  .. raw:: html
+
+    <details>
+    <summary>1091128160.yaml</summary>
+    <p>
+
+  .. code-block:: yaml
+
+    # Default Arguments for PyFHD
+    # ~ returns None in Python (i.e. NULL)
+    input-path : './input/uvfits/1091128160'
+    recalculate-all : false
+    silent : false
+    log-file : true
+    conserve-memory : false
+    instrument : 'mwa'
+    memory-threshold : 100000000
+    dimension : 2048
+    elements : 2048
+    kbinsize : 0.5
+    FoV : ~
+    min-baseline : 1.
+    n-pol : 2
+    deproject-w-term : ~
+
+    # Checkpointing
+    save-checkpoints: true
+    obs-checkpoint: ~
+    calibration-checkpoint: ~
+    gridding-checkpoint: ~
+
+    # Instrument
+    override-target-phasera: ~
+    override-target-phasedec: ~
+
+    # Beam Setup
+    beam-file-path: './input/beams/decomp_beam_pointing0.h5'
+    lazy-load-beam: true
+    recalculate-beam : true
+    beam-clip-floor : true
+    interpolate-kernel : true
+    dipole-mutual-coupling-factor : true
+    beam-nfreq-avg : 16
+    psf-dim: 54
+    psf-resolution : 100
+    beam-mask-threshold: 100
+    beam-model-version : 2
+    beam-offset-time : 0
+    beam-per-baseline: false
+
+    # Calibration
+    calibrate-visibilities : true
+    cable-bandpass-fit : true # Depends on instrument cable length text file
+    cal-bp-transfer : ~
+    calibration-polyfit : true
+    allow-sidelobe-cal-sources : true
+    cal-amp-degree-fit : 2
+    cal-phase-degree-fit : 1
+    cal-reflection-hyperresolve : false
+    cal-reflection-mode-theory : 150
+    cal-reflection-mode-delay : false
+    cal-reflection-mode-file : false
+    calibration-auto-fit: false
+    calibration-auto-initialize: false
+    cal-gain-init: 1
+    cal-convergence-threshold: 1e-7
+    cal-adaptive-calibration-gain: false
+    cal-base-gain: ~ # This is set to None by default to set the default based on cal-adaptive-calibration-gain as per FHD
+    cal-phase-fit-iter: 4
+    min-cal-baseline : 50.
+    vis-baseline-hist : true
+    bandpass-calibrate : true
+    auto-ratio-calibration: true
+    cal-time-average: false
+    digital-gain-jump-polyfit: true
+    return-cal-visibilities : true
+    calibration-flag-iterate : 0
+    diffuse-calibrate : ~
+    calibration-catalog-file-path  :  ~ # 'GLEAM_v2_plus_rlb2019.sav' (FHD Default)
+    transfer-calibration : ~
+    cal-stop : false
+    transfer-model-uv : ~
+    max-cal-iter: 100
+    calibration-plots: true
+
+    # Flagging
+    flag-basic: true
+    flag-freq-start : ~
+    flag-freq-end : ~
+    flag-tiles: []
+    flag-frequencies: false
+    flag-model: true
+    flag-calibration : true
+    flag-calibration-frequencies: false
+    flag-visibilities : false
+    transfer-weights : ~
+    time-cut: ~
+
+    # Gridding
+    recalculate-grid : true
+    image-filter : 'filter_uv_uniform'
+    mask-mirror-indices: false
+    grid-spectral: false
+    grid-weights: true
+    grid-variance: true
+    grid-uniform: false
+
+    # Deconvolution
+    deconvolve : false
+    max-deconvolution-components : 20000
+    filter-background : true
+    smooth-width : 32
+    dft-threshold : true
+    return-decon-visibilities : false
+    deconvolution-filter : 'filter_uv_uniform'
+
+    # Export
+    output-path : './output'
+    export-images : true
+    cleanup : false
+    save-obs: true
+    save-params: true
+    save-cal: true
+    save-visibilities : false
+    save-weights: false
+    save-healpix-fits: false
+    snapshot-healpix-export : false
+    pad-uv-image : 1.
+    ring-radius-multi : 10.
+    description : 1091128160
+
+    # Model
+    # Current choices of model-file-type are sav and uvfits
+    model-file-type : 'uvfits'
+    # If you set model-file-type to uvfits, set import-model-uvfits to the (ideally absolute) path of the fits file
+    # If model-file-type is set to sav then it will look for the sav files as said in the function import_vis_model_from_sav
+    model-file-path: './input/models/1091128160/1091128160_puma_LoBES_2s_80kHz_hbeam_woden_2.5.uvfits'
+    diffuse-model : ~
+    model-catalog-file-path  :  ~ # 'GLEAM_v2_plus_rlb2019.sav' (FHD Default)
+    allow-sidelobe-model-sources : false
+
+    # Simulation
+    run-simulation : false
+    in-situ-sim-input : ~
+    eor-vis-filepath : ~
+    enhance-eor : 1
+    sim-noise : ~
+    tile-flag-list : ~
+    remove-sim-flags : false
+
+    # HEALPIX
+    ps-kbinsize : 0.5
+    ps-kspan : 200
+    ps-beam-threshold: 0
+    ps-fov: ~
+    ps-dimension: ~
+    ps-degpix: ~
+    ps-nfreq-avg: ~
+    ps-tile-flag-list: []
+    n-avg : 2
+    rephase-weights: True
+    restrict-healpix-inds : true
+    healpix-inds: ~
+    split-ps-export : true
+
+
+  .. raw:: html
+
+    </p>
+    </details>
 
 .. note:: This command took 260 minutes using 1 core of a Intel Gold 6140 processor and < 25GB RAM on the OzStar cluster
 
@@ -323,7 +512,7 @@ If you look in the ``/place/for/outputs/pyfhd_cal_data/fhd_pyfhd_cal_data/output
 We have solutions!
 
 Running advanced calibration (uses IDL)
--------------------------------------------
++++++++++++++++++++++++++++++++++++++++
 .. todo::
    
    Check what this calibration is actually doing, and whether it is actually updating the solutions in the second part. The add motivation as to why we have to run in this manner
@@ -417,7 +606,10 @@ Gridding
 
 Running the gridding step in ``PyFHD`` is relatively simple as its enabled by default, and the small number of options available to you are found in the `Gridding <../documentation/documentation.html#PyFHD.pyfhd_tools.pyfhd_setup-pyfhd_parser-gridding>`_ section of the argument parser.
 
-We'll use the calibrate-checkpoint example earlier to run it:
+Running Gridding with the sample data
++++++++++++++++++++++++++++++++++++++
+
+We'll use the calibrate-checkpoint example earlier to run it
 
 .. code-block:: bash
 
@@ -428,6 +620,7 @@ This would be the same as runnning the command below:
 .. code-block:: bash
 
   pyfhd \
+    --config "./pyfhd.yaml" \
     --input-path "./input/1088285600_example/" \
     --description "1088285600_example"
     --beam-file-path "./input/1088285600_example/gauss_beam_pointing0_167635008Hz.h5" 
@@ -442,6 +635,9 @@ This would be the same as runnning the command below:
     --ps-kspan 200
 
 TODO: Add Gridding plot output to the example, check with nichole
+
+Running Gridding with a full MWA observation
+++++++++++++++++++++++++++++++++++++++++++++
 
 TODO: Add more advanced grididng example with 1088281328
    

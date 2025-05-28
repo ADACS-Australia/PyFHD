@@ -32,14 +32,14 @@ def vis_extract_autocorr(
         Uncalibrated data visiblities
     pyfhd_config : dict
         PyFHD's configuration dictionary containing all the options set for a PyFHD run
-    auto_tile_i : NDArray[np.int\_] | None, optional
+    auto_tile_i : NDArray[np.integer] | None, optional
         Index array for auto-correlation visibilities, by default None
 
     Returns
     -------
     autocorr: NDArray[np.float64]
         The auto-correlation visibilities
-    auto_tile_i : NDArray[np.int\_]
+    auto_tile_i : NDArray[np.integer]
         The index array for auto-correlation visibilities
     """
 
@@ -131,7 +131,7 @@ def vis_cal_auto_init(
         Data auto-correlations
     vis_auto_model : NDArray[np.float64]
         Simulated model auto-correlations
-    auto_tile_i : NDArray[np.int\_]
+    auto_tile_i : NDArray[np.integer]
         Index array for auto-correlation visibilities
 
     Returns
@@ -1296,7 +1296,7 @@ def vis_cal_auto_fit(
         Data autocorrelations
     vis_auto_model : NDArray[np.float64]
         Simulated model autocorrelations
-    auto_tile_i : NDArray[np.int\_]
+    auto_tile_i : NDArray[np.integer]
         Index array of the tile array that have defined autocorrelations
 
     Returns
@@ -1588,7 +1588,7 @@ def cal_auto_ratio_divide(
         Calibration dictionary
     vis_auto : NDArray[np.float64]
         Data autocorrelations
-    auto_tile_i : NDArray[np.int\_]
+    auto_tile_i : NDArray[np.integer]
         Index array of the tile array that have defined autocorrelations
 
     Returns
@@ -1628,7 +1628,7 @@ def cal_auto_ratio_remultiply(
         Calibration dictionary
     auto_ratio : NDArray[np.float64]
         Square root of the autocorrelation visibilities normalized via a reference tile
-    auto_tile_i : NDArray[np.int\_]
+    auto_tile_i : NDArray[np.integer]
         Index array of the tile array that have defined autocorrelations
 
     Returns

@@ -36,9 +36,9 @@ def filter_uv_uniform(
         PyFHD's logger, by default None
     weights : NDArray[np.float64] | None, optional
         The weights array (aka vis_weights), by default None
-    fi_use : NDArray[np.int\_] | None, optional
+    fi_use : NDArray[np.integer] | None, optional
         Frequency index array for gridding, i.e. gridding all frequencies for continuum images, by default None
-    bi_use : NDArray[np.int\_] | None, optional
+    bi_use : NDArray[np.integer] | None, optional
         Baseline index array for gridding, i.e even vs odd time stamps, by default None
     mask_mirror_indices : bool, optional
         Exclude baselines mirrored along the v-axis, by default False

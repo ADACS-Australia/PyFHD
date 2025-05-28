@@ -1,13 +1,12 @@
 API Documentation
-++++++++++++++++++
++++++++++++++++++
 
 Usage
-=======
+=====
 
 .. argparse::
    :ref: PyFHD.pyfhd_tools.pyfhd_setup.pyfhd_parser
    :prog: pyfhd
-
 
 PyFHD Setup
 ===========
@@ -31,6 +30,12 @@ Beam Setup
    :members:
 
 .. automodule:: PyFHD.beam_setup.beam_utils
+   :members:
+
+Source Modeling
+================
+
+.. automodule:: PyFHD.source_modeling.vis_model_transfer
    :members:
 
 Calibration
@@ -97,6 +102,27 @@ HEALPix
    :members:
 
 .. automodule:: PyFHD.healpix.healpix_utils
+   :members:
+
+Plotting
+========
+
+Calibration Plots
+-----------------
+
+.. automodule:: PyFHD.plotting.calibration
+   :members:
+
+Gridding Plots
+--------------
+
+.. automodule:: PyFHD.plotting.gridding
+   :members:
+
+Plotting Utils and FITS imaging
+-------------------------------
+
+.. automodule:: PyFHD.plotting.image
    :members:
 
 Tools & Utilities

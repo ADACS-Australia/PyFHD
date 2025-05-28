@@ -67,9 +67,9 @@ def visibility_grid(
         Do not perform the conjugate mirror to fill half of the {u,v} plane, by default False
     model : NDArray[np.complex128] | None, optional
         Simulated model visibilites, by default None
-    fi_use : NDArray[np.int\_] | None, optional
+    fi_use : NDArray[np.integer] | None, optional
         Frequency index array for gridding, i.e. gridding all frequencies for continuum images, by default None
-    bi_use : NDArray[np.int\_] | None, optional
+    bi_use : NDArray[np.integer] | None, optional
         Baseline index array for gridding, i.e even vs odd time stamps, by default None
     verbose_logging : bool, optional
         If True, will log the gridding process, by default True
