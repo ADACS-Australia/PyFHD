@@ -211,7 +211,7 @@ def main():
 
         # Read in the beam from a file returning a psf dictionary
         psf_start = time.time()
-        psf = create_psf(pyfhd_config, logger)
+        psf = create_psf(obs, pyfhd_config, logger)
         psf_end = time.time()
         _print_time_diff(
             psf_start, psf_end, "Beam and PSF dictionary imported.", logger
@@ -583,16 +583,17 @@ def main():
         finish_pyfhd(pyfhd_start, logger, psf, pyfhd_config)
     except Exception as e:
         pyfhd_end = time.time()
+        logger.exception(
+            f"An error occurred in PyFHD: {e}\n\tExiting PyFHD.",
+            exc_info=True,
+        )
+    finally:
         runtime = timedelta(seconds=pyfhd_end - pyfhd_start)
         # Close all open h5 files
         if "psf" in locals() and isinstance(psf, h5py.File):
             psf.close()
         logger.info(
             f'PyFHD Run Stopped for {pyfhd_config["obs_id"]}\nTotal Runtime (Days:Hours:Minutes:Seconds.Millseconds): {runtime}'
-        )
-        logger.exception(
-            f"An error occurred in PyFHD: {e}\n\tExiting PyFHD.",
-            exc_info=True,
         )
         # Close the handlers in the log
         for handler in logger.handlers:

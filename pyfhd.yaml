@@ -6,7 +6,7 @@ silent : false
 log-file : true
 conserve-memory : false
 instrument : 'mwa'
-memory-threshold : 100000000
+memory-threshold : 1000000000
 dimension : 2048
 elements : 2048
 kbinsize : 0.5

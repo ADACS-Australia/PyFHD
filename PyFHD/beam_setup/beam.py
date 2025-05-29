@@ -3,6 +3,7 @@ from astropy.constants import c
 from logging import Logger
 from scipy.interpolate import interp1d
 from scipy.io import readsav
+from PyFHD.beam_setup.antenna import init_beam
 from PyFHD.io.pyfhd_io import recarray_to_dict
 from pathlib import Path
 from PyFHD.io.pyfhd_io import save, load
@@ -10,7 +11,7 @@ from h5py import File
 import sys
 
 
-def create_psf(pyfhd_config: dict, logger: Logger) -> dict | File:
+def create_psf(obs: dict, pyfhd_config: dict, logger: Logger) -> dict | File:
     """
     Creates the psf dictionary by loading in a `sav` or `HDF5` file from a FHD run.
     In the future it would be nice to have the ability to read in a beam fits file.
@@ -20,17 +21,33 @@ def create_psf(pyfhd_config: dict, logger: Logger) -> dict | File:
 
     Parameters
     ----------
+    obs : dict
+        The observation metadata dictionary
     pyfhd_config : dict
-        _description_
+        The PyFHD configuration dictionary
     logger : Logger
-        _description_
+        PyFHD's logger
+
+    Raises
+    ------
+    ValueError
+        If the beam file type is not recognized or if the beam file path is not set correctly.
 
     Returns
     -------
     dict | h5py.File
         _description_
     """
-    if pyfhd_config["beam_file_path"].suffix == ".sav":
+    if pyfhd_config["beam_file_path"] is None:
+        # Form the beam from scratch using pyuvdata for the Jones Matrix
+        # and translations from FHD for the antenna response.
+        logger.info(
+            "PyFHD will do the beam forming from scratch using pyuvdata and the antenna response from FHD."
+            "Please note, gaussian decomp for MWA is not implemented yet."
+        )
+        antenna, psf = init_beam(obs, pyfhd_config, logger)
+        return psf
+    elif pyfhd_config["beam_file_path"].suffix == ".sav":
         # Read in a sav file containing the psf structure as we expect from FHD
         logger.info(
             "Reading in a beam sav file probably will take a long time. You will require double the storage size of the sav file in RAM at least. Do some other work or maybe watch your favourite long movie, for example the extended edition of LOTR: Return of the King is 4 hours 10 minutes. Check back when the Battle of the Pelennor Fields has finished or roughly 3 hours in."
@@ -79,4 +96,8 @@ def create_psf(pyfhd_config: dict, logger: Logger) -> dict | File:
         # FHD's beam setup while reading in a beam fits file.
         logger.error("The ability to read in a beam fits hasn't been implemented yet")
         sys.exit(1)
-    return None
+    raise ValueError(
+        f"Unknown beam file type {pyfhd_config['beam_file_path'].suffix}. "
+        "Please use a .sav, .h5, .hdf5"
+        "If you meant for PyFHD to do the beam forming, please set the beam_file_path to None (~ in YAML)."
+    )

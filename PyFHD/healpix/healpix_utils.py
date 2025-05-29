@@ -150,7 +150,7 @@ def healpix_cnv_generate(
             freq_dist = np.abs(np.array(freq_dist) - (obs["freq_center"] / 1e6))
             min_i = np.argmin(freq_dist)
             pyfhd_config["healpix_inds"] = importlib_resources.files(
-                "PyFHD.templates"
+                "PyFHD.resources.healpix"
             ).joinpath(files[min_i]["name"])
         hpx_inds = load(pyfhd_config["healpix_inds"], logger=logger)
         if type(hpx_inds) is dict:
