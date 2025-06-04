@@ -303,36 +303,42 @@ def l_m_n(
     right_ascension_arr: NDArray[np.floating] | None = None,
 ) -> tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]]:
     """
-    Calculates the l mode, m mode and the n_tracked
-    TODO: Add Detailed Description of l_m_n
+    Calculate the directional cosines l,m,n given an RA, Dec, and phase centre for 
+    each pixel in the input arrays given, or from the hyperresolved RA/Dec array
+    created during beam creation. 
 
     Parameters
     ----------
     obs: dict
-
+        Observation metadata dictionary.
     psf: dict | h5py.File
-
+        Beam dictionary.
     obsdec: float | None, optional
-        By default is set to None, as such by default this value will be set to
-        obs['obsdec']
+        The Dec phase centre for the observation, by default None and set to 
+        the phase centre saved in the observation metadata dicitonary
+        (obs['obsdec'])
     obsra: float | None, optional
-        By default is set to None, as such by default this value will be set to
-        obs['obsra']
+        The RA phase centre for the observation, by default None and set to 
+        the phase centre saved in the observation metadata dicitonary
+        (obs['obsra'])
     declination_arr: NDArray[np.floating] | None, optional
-        By default is set to None, as such by default this value will be set to
-        psf['image_info']['dec_arr']
+        An array of declinations, by default None and set to the hyperresolved Dec
+        array in psf['image_info']['dec_arr']
     right_ascension_arr: NDArray[np.floating] | None, optional
-        By default is set to None, as such by default this value will be set to
-        psf['image_info']['ra_arr']
+        An array of right ascensions, by default None and set to the hyperresolved RA
+        array in psf['image_info']['ra_arr']
 
     Returns
     -------
     l_mode : NDArray[np.float64]
-        TODO: Add description for l_mode
+        Directional cosine l array, or the cosine of the vector that contributes 
+        to the x-axis
     m_mode : NDArray[np.float64]
-        TODO: Add description for m_mode
+        Directional cosine m array, or the cosine of the vector that contributes 
+        to the y-axis
     n_tracked : NDArray[np.float64]
-        TODO: Add description for n_tracked.
+        Directional cosine n array, or the cosine of the vector that contributes 
+        to the z-axis, dependent on the phase centre.
     """
     # If the variables passed through are None them
     if obsdec is None:
@@ -727,27 +733,31 @@ def array_match(
     array_2: NDArray[np.integer | np.floating | np.complexfloating] | None = None,
 ) -> NDArray[np.int64]:
     """
-    TODO: Description for array match
+    Find the indices of the input array which match the array of values provided. 
+    If a second input array is provided, then find the indices where the values 
+    provided match in both input arrays. This matching can only be done between
+    integer values.
 
     Parameters
     ----------
     array_1: NDArray[np.integer | np.floating | np.complexfloating]
-        TODO: Add Description for Array_1
+        The input array to match the values in
     value_match: NDArray[np.integer | np.floating | np.complexfloating]
-        TODO: Add Description for Value_Match
+        The values to find in the input array
     array_2: NDArray[np.integer | np.floating | np.complexfloating] | None, optional
-        TODO: Add Description for Array_2, by default is None
+        A second array to match the values in via a logical AND, by default is None
 
     Returns
     -------
     match_indices: NDArray[np.int64]
-        TODO: Add Description for return of array_match
+        The indices of the input array(s) which match the values provided
 
     Raises
     ------
     ValueError
         Gets raised if value_match is None
     """
+
     if value_match is None:
         raise ValueError("Value Match Should be a value not None")
     # If array_2 has been supplied, compare which mins and maxes to use based on two arrays
@@ -1107,25 +1117,28 @@ def vis_weights_update(
     vis_weights: NDArray[np.float64], obs: dict, psf: dict | h5py.File, params: dict
 ) -> tuple[NDArray[np.float64], dict]:
     """
-    TODO: _summary_
+    Update the visibility weights array to match any updates to the observation 
+    metadata dictionary, including flagged times, frequencies, tiles, and 
+    min/max baseline length.
 
     Parameters
     ----------
     vis_weights : NDArray[np.float64]
-        _description_
+        Visibility weights array.
     obs : dict
-        _description_
+        Observation metadata dictionary
     psf: dict | h5py.File
-        _description_
+        Beam dictionary
     params : dict
-        _description_
+        Visibility metadata dictionary
 
     Returns
     -------
     vis_weights : NDArray[np.float64]
-        Updated vis_weights
+        Updated vis_weights given the modified observation metadata dictionary
     obs : dict
-        The observation metadata dictionary now containing the sums of the flags
+        The observation metadata dictionary, now containing the correct summary
+        statistics of the new flagging
     """
     kx_arr = params["uu"] / obs["kpix"]
     ky_arr = params["vv"] / obs["kpix"]
@@ -1563,21 +1576,26 @@ def crosspol_split_real_imaginary(
     image: NDArray[np.complex128], pol_names: list[str] | None = None
 ) -> tuple[NDArray[np.complex128], list[str] | None]:
     """
-    TODO: _summary_
+    Reformat the input full polarisation image, containing PP, PQ, QP, and QQ,
+    into PP, real(PQ), imaginary(PQ), and QQ. PQ and QP (i.e. XY and YX) 
+    are complex and conjugate mirrors of one another. To make a understandable
+    image, we can plot the real and imaginary parts of PQ separately without
+    loss of information. 
 
     Parameters
     ----------
     image : NDArray[np.complex128]
-        _description_
+        Image array ordered in polarisation by PP, PQ, QP, and QQ.
     pol_names : list[str] | None, optional
-        _description_, by default None
+        The name of the polarisations, by default None
 
     Returns
     -------
     image : NDArray[np.complex128]
-        _description_
+        Image array ordered in polarisation by PP, real(PQ), imaginary(PQ), 
+        and QQ
     pol_names : list[str]|None]
-        _description_
+        New polarisation name array to reflect real(PQ) and imaginary(PQ)
     """
     crosspol_image: NDArray[np.complex128] = image[2]
     image[2] = crosspol_image.real
