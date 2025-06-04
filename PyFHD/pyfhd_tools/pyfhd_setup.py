@@ -10,6 +10,7 @@ from PyFHD.pyfhd_tools.git_helper import retrieve_gitdict
 from importlib.metadata import version
 from glob import glob
 import re
+import sys
 
 
 class OrderedBooleanOptionalAction(argparse.BooleanOptionalAction):
@@ -1604,7 +1605,7 @@ def pyfhd_setup(options: argparse.Namespace) -> Tuple[dict, logging.Logger]:
     #     pyfhd_config['elements'] = dimension_use
 
     # --------------------------------------------------------------------------
-    # Checks are finished, report any errors or warings
+    # Checks are finished, report any errors or warnings
     # --------------------------------------------------------------------------
     # If there are any errors exit the program.
     if errors:
@@ -1616,7 +1617,7 @@ def pyfhd_setup(options: argparse.Namespace) -> Tuple[dict, logging.Logger]:
         # Close the handlers in the log
         for handler in logger.handlers:
             handler.close()
-        exit()
+        sys.exit()
 
     if warnings:
         logger.warning(

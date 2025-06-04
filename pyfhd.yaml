@@ -64,6 +64,7 @@ vis-baseline-hist : true
 bandpass-calibrate : true
 auto-ratio-calibration: true
 cal-time-average: false
+# Only set to true if you're using MWA data before date 2014-07-23 (23rd July 2014)
 digital-gain-jump-polyfit: false
 return-cal-visibilities : true
 calibration-flag-iterate : 0
@@ -73,7 +74,6 @@ transfer-calibration : ~
 cal-stop : false
 transfer-model-uv : ~
 max-cal-iter: 100
-calibration-plots: true
 
 # Flagging
 flag-basic: true
@@ -120,6 +120,11 @@ snapshot-healpix-export : true
 pad-uv-image : 1.
 ring-radius-multi : 10.
 description : ~
+
+# Plotting
+calibration-plots: true
+gridding-plots: true
+image-plots: true
 
 # Model
 # Current choices of model-file-type are sav and uvfits
