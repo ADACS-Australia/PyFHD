@@ -1215,21 +1215,27 @@ def split_vis_weights(
     obs: dict, vis_weights: NDArray[np.float64]
 ) -> tuple[NDArray[np.float64], NDArray[np.int64]]:
     """
-    TODO: _summary_
+    Separate the indices in the visibility array (data/model/res/weights) into 
+    interleaved time samples, generally called "even" and "odd" depending on 
+    whether the time index is even or odd. Interleaved data can be used to generate
+    cross power spectra and propagate uncertainties, see eq 2 of Jacobs et al. 2016.
+    Ensures that the same flagging is applied to both sets. 
 
     Parameters
     ----------
     obs : dict
-        _description_
+        Observation metadata dictionary
     vis_weights : NDArray[np.float64]
-        _description_
+        Visibility weights array
 
     Returns
     -------
     vis_weights : NDArray[np.float64]
-        _description_
+        Full visibility weights array with the same flagging applied 
+        to both interleaved sets.
     bi_use  NDArray[np.int64]
-        _description_
+        Baseline index arrays for interleaved time samples, separated
+        by "even" and "odd" indices.
     """
     # Not always used in vis_noise_calc requires this check in other cases
     if obs["n_time"] < 2:
@@ -1294,7 +1300,11 @@ def vis_noise_calc(
     bi_use: NDArray[np.int64] | None = None,
 ) -> NDArray[np.float64]:
     """
-    TODO: _summary_
+    Calculate the noise from the calibrated visibilities by taking
+    the difference between the imaginary parts of the interleaved 
+    time samples. A factor of sqrt(2) is required because there is 
+    half as many independent noise samples when calculated from just 
+    the imaginary part.
 
     Parameters
     ----------
@@ -1305,12 +1315,14 @@ def vis_noise_calc(
     vis_weights : NDArray[np.float64]
         The visibility weights array
     bi_use : NDArray[np.int64] | None, optional
-        If provided, indexes for the baselines to use, by default None
+        Baseline index arrays for interleaved time samples, separated
+        by "even" and "odd" indices, by default None
 
     Returns
     -------
     noise_arr: NDArray[np.float64]
-        TODO: _description_
+        Calculated variance of the noise as a function of polarisation
+        and frequency. 
     """
     noise_arr = np.zeros([obs["n_pol"], obs["n_freq"]])
 

@@ -219,7 +219,7 @@ def create_params(
     pyfhd_header: dict, params_data: np.recarray, logger: logging.Logger
 ) -> dict:
     """
-    Given the extarcted header, params data from the uvfits file, create the params dictionary to store
+    Given the extracted header, params data from the uvfits file, create the params dictionary to store
     the relevant visibility metadata
 
     Parameters
@@ -379,7 +379,11 @@ def create_layout(
     logger: logging.Logger,
 ) -> dict:
     """
-    TODO: _summary_
+    Create a very explicit antenna and telescope position dictionary, incorperating 
+    timing (e.g.  time system, reference, leap seconds), location (e.g. array center, 
+    coordinate frame, Earth's rotation), and antenna information (e.g. names, numbers,
+    coordinates, mount type, feed polarization). This is used to create the layout
+    dictionary which is compatible with pyuvdata.
 
     Parameters
     ----------

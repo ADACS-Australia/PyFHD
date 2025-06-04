@@ -29,18 +29,21 @@ def healpix_cnv_apply(
     In FHD the healpix_cnv_apply was mainly used as a wrapper for sprsax2, as such I will put the code
     for sprsax2 in here as PyFHD will only use sprsax2 here as we don't have the holographic mapping
     function at this time.
+    
+    Vectors 'sa' (interpolation) and 'ija' (index) follow the row-index sparse storage mode as described 
+    in section 2.7 of Numerical Recipes in C, 2nd edition.
 
     Parameters
     ----------
     image : NDArray[np.integer | np.floating | np.complexfloating]
-        _description_
+        An orthoslant image array that is to be converted to a HEALPix map.
     hpx_cnv : dict
-        The HEALPix convention dictionary
+        The HEALPix index/interpolation dictionary
 
     Returns
     -------
     hpx_map: NDArray[np.float64]
-        TODO: _description_
+        A flattened 1D HEALPix array with the interpolated values from the image.
     """
     # Is B in sprsax2
     hpx_map = np.zeros(np.size(hpx_cnv["inds"]))
@@ -56,37 +59,46 @@ def healpix_cnv_apply(
 
 def healpix_cnv_generate(
     obs: dict,
-    mask: NDArray[np.int64],
+    mask: NDArray[np.int64] | None,
     hpx_radius: float,
     pyfhd_config: dict,
     logger: Logger,
     nside: float = None,
 ) -> dict:
     """
-    TODO:_summary_
-
-    All angles are in degrees
-    Uses the RING index scheme
+    Generate the HEALPix index/interpolation dictionary that is used to convert
+    between orthoslant image pixelization and the RING index HEALPix pixelization 
+    scheme. Binlinear interpolation is performed to HEALPix pixels centers. All 
+    angles are in degrees.
 
     Parameters
     ----------
     obs : dict
-        _description_
+        Observation metadata dictionary
     mask : np.ndarray
-        _description_
+        If HEALPix indices are not provided in the config file, this boolean
+        mask map of the orthoslant image can be used to mask out areas from the
+        HEALPix conversion.
     hpx_radius : float
-        _description_
+        If HEALPix indices are not provided in the config file, this selects 
+        a radius in degrees, centred on the RA/Dec of the observation, to be
+        converted to HEALPix pixels. 
     pyfhd_config : dict
-        _description_
+        PyFHD configuration settings
     logger : Logger
-        _description_
+        PyFHD's Logger
     nside : float
-        _description_
+        The HEALPix nside parameter, calculated based on the observation
+        metadata if none provided. Defaults to None.
 
     Returns
     -------
     dict
-        _description_
+        A dictionary containing the orthoslant to HEALPix pixel mapping and
+        interpolation. Vectors 'sa' (bilinear interpolation calculated from 
+        fractional offsets) and 'ija' (flattened index) follow the row-index 
+        sparse storage mode as described in section 2.7 of Numerical Recipes 
+        in C, 2nd edition.
     """
     # TODO: Add ability to restore old healpix_inds from PyFHD runs
 
@@ -186,15 +198,16 @@ def healpix_cnv_generate(
         )
         xv_hpx = xv_hpx[pix_i_use]
         yv_hpx = yv_hpx[pix_i_use]
-        hpx_mask00 = mask[np.floor(xv_hpx), np.floor(yv_hpx)]
-        hpx_mask01 = mask[np.floor(xv_hpx), np.ceil(yv_hpx)]
-        hpx_mask10 = mask[np.ceil(xv_hpx), np.floor(yv_hpx)]
-        hpx_mask11 = mask[np.ceil(xv_hpx), np.ceil(yv_hpx)]
-        hpx_mask = hpx_mask00 * hpx_mask01 * hpx_mask10 * hpx_mask11
-        pix_i_use2 = np.nonzero(hpx_mask)
-        xv_hpx = xv_hpx[pix_i_use2]
-        yv_hpx = yv_hpx[pix_i_use2]
-        pix_i_use = pix_i_use[pix_i_use2]
+        if mask is not None:
+            hpx_mask00 = mask[np.floor(xv_hpx), np.floor(yv_hpx)]
+            hpx_mask01 = mask[np.floor(xv_hpx), np.ceil(yv_hpx)]
+            hpx_mask10 = mask[np.ceil(xv_hpx), np.floor(yv_hpx)]
+            hpx_mask11 = mask[np.ceil(xv_hpx), np.ceil(yv_hpx)]
+            hpx_mask = hpx_mask00 * hpx_mask01 * hpx_mask10 * hpx_mask11
+            pix_i_use2 = np.nonzero(hpx_mask)
+            xv_hpx = xv_hpx[pix_i_use2]
+            yv_hpx = yv_hpx[pix_i_use2]
+            pix_i_use = pix_i_use[pix_i_use2]
         hpx_inds = hpx_inds[pix_i_use]
 
     # Test for pixels past the horizon. We don't need to be precise with this, so turn off precession, etc..
@@ -308,31 +321,36 @@ def beam_image_cube(
     beam_threshold: float | None = None,
 ) -> tuple[NDArray[np.complex128], NDArray[np.float64]]:
     """
-    TODO: _summary_
+    Calculate the beam image per unflagged frequency channel to build a cube. 
+    Build a contiguous mask in x and y based off of a threshold value. 
 
     Parameters
     ----------
     obs : dict
-        _description_
+        Observation metadata dictionary
     psf : dict | h5py.File
-        _description_
+        Beam dictionary
     logger : Logger
-        _description_
+        PyFHD's Logger
     freq_i_arr : np.ndarray | None, optional
-        _description_, by default None
+        Index array of the beam frequency binning in the observation
+        metadata dictionary, by default None
     pol_i_arr : np.ndarray | None, optional
-        _description_, by default None
+        Index array of the polarizations in the observation metadata 
+        dictionary, by default None
     n_freq_bin : int | None, optional
-        _description_, by default None
+        Number of frequency channels to divide the full observation bandwidth
+        into for the beam image cube, by default None
     square : bool, optional
-        _description_, by default True
+        Square the beam image, by default True
     beam_threshold : float | None, optional
-        _description_, by default None
+        Fractional threshold in which to build a mask for all smaller 
+        beam values, by default None
 
     Returns
     -------
     tuple[NDArray[np.complex128], NDArray[np.float64]]
-        _description_
+        Beam image frequency cube and mask threshold array.
     """
 
     if beam_threshold is None:
@@ -388,7 +406,7 @@ def beam_image_cube(
 
 def phase_shift_uv_image(obs: dict) -> NDArray[np.complex128]:
     """
-    TODO: _summary_
+    Phase shift the entire u-v plane to the original phase center.
 
     Parameters
     ----------
@@ -398,7 +416,8 @@ def phase_shift_uv_image(obs: dict) -> NDArray[np.complex128]:
     Returns
     -------
     NDArray[np.float64]
-        _description_
+        A 2D u-v phase shift array that will shift the current phase centre to
+        the original phase centre.
     """
     # Since we only use it once in PyFHD, assume we always want to do /to_orig_phase
     # Implement the other options if you decide to use this function elsewhere
@@ -446,41 +465,49 @@ def vis_model_freq_split(
     bi_use: NDArray[np.integer] = None,
 ) -> dict:
     """
-    TODO: _summary_
+    Grid as a function of frequency, which can be split into larger channels. This
+    uvf cube can be saved as is or used to create an orthoslant image as a function
+    of frequency. Optional bi_use argument allows for the separate gridding of even/odd
+    interleaved time samples for error propagation in the power spectrum. 
 
     Parameters
     ----------
     obs : dict
-        _description_
+        Observation metadata dictionary
     psf : dict | h5py.File
-        _description_
+        Beam dictionary
     params : dict
-        _description_
+        Visibility metadata dictionary
     vis_weights : NDArray[np.float64]
-        _description_
+        Visibility weights array
     vis_model_arr : NDArray[np.complex128]
-        _description_
+        Model visibility array
     vis_arr : NDArray[np.complex128]
-        _description_
+        Calibrated visibility array
     polarization : int
-        _description_
+        The polarization index
     pyfhd_config : dict
-        _description_
+        PyFHD configuration settings
     logger : Logger
-        _description_
+        PyFHD's Logger
     fft : bool, optional
-        _description_, by default True
+        Calculate the orthoslant image instead of the u-v plane, 
+        by default True
     save_uvf : bool, optional
-        _description_, by default True
+        Save the uvf cube, by default True
     uvf_name : str, optional
-        _description_, by default ''
+        The name after the obsid in the uvf cube filename, by default ''
     bi_use : NDArray[np.integer], optional
-        _description_, by default None
+       The visibility indices to use in gridding, i.e. even/odd
+       interleaved time samples, by default None
 
     Returns
     -------
-    model_split: dict
-        _description_
+    cube_split: dict
+        Dictionary of the gridded u-v planes or orthoslant images as a function
+        of frequency for the calibrated data, model (if present), residual data
+        (if present), sampling map, and variance map, along with the observation
+        metadata dictionary.
     """
 
     freq_bin_i2 = np.arange(obs["n_freq"]) // pyfhd_config["n_avg"]
@@ -646,7 +673,7 @@ def vis_model_freq_split(
             logger=logger,
         )
 
-    model_split = {
+    cube_split = {
         "obs": obs,
         "residual_arr": dirty_arr,
         "weights_arr": weights_arr,
@@ -654,4 +681,4 @@ def vis_model_freq_split(
         "model_arr": model_arr,
     }
 
-    return model_split
+    return cube_split
