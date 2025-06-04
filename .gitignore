@@ -156,3 +156,6 @@ tests/test_source_modelling
 
 # VSCode
 .vscode/
+
+# GitHub Information
+__git__.py

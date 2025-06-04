@@ -20,12 +20,14 @@ The command on most machines takes 1-2 minutes to run, and the output is stored 
 The Required Inputs and the outputs of ``PyFHD``
 ----------------------------------------------------------
 
-The input ``PyFHD`` requires at a minimum is the observation ID and a configuration file to be passed to ``configargparse`` using the ``-c`` option.
-By default ``PyFHD`` will search for a ``pyfhd.yaml`` configuration file in the directory you run ``PyFHD`` from, so strictly speaking,
-if you run ``PyFHD`` from a directory that contains a ``pyfhd.yaml`` file then only the observation ID is needed.
+``PyFHD`` only requires an observation ID to run.
+``PyFHD`` will get a default ``pyfhd.yaml`` configuration file from it's resources directory inside the package, so when specifying only
+the observation ID, it will use the default configuration file. The default configuration is not suitable for every observation, so it's
+likely you'll need to adjust the default configuration file to suit your needs. Some validation is performed before and during runtime of 
+``PyFHD`` to check for incompatibilities though it is not exhaustive.
 
-It's assumed that the configuration file you provide has valid options for all the files you require, some files can be discovered automatically through the ``input-path``
-option of ``PyFHD`` so read through the usage help text to work out how you wish to configure your input. ``PyFHD`` is rather flexible on how you do your input
+Some files can be discovered automatically through the ``input-path`` option of ``PyFHD`` so read through the usage help text to work 
+out how you wish to configure your input. ``PyFHD`` is rather flexible on how you do your input
 as many of the files you may require can be in completely separate directories.
 
 The output of ``PyFHD`` is automatically generated and stores everything in one directory with the name ``pyfhd_YYYY_MM_DD_HH_mm_ss`` if you don't use the ``--description`` option.
@@ -191,7 +193,7 @@ CLI
 +++
   .. code-block:: bash
 
-    pyfhd --help # -h also works, you're welcome to use either, you know how it should be.
+    pyfhd --help # -h also works
 
     usage: PyFHD [-h] [-c CONFIG] [-v] [-i INPUT_PATH] [-r] [-s] [-l] [--instrument {mwa}] [--dimension DIMENSION] [--elements ELEMENTS] [--kbinsize KBINSIZE] [--FoV FOV] [--deproject_w_term DEPROJECT_W_TERM] [--conserve-memory]
                 [--memory-threshold MEMORY_THRESHOLD] [--min-baseline MIN_BASELINE] [--n-pol {0,2,4}] [--save-checkpoints] [--obs-checkpoint OBS_CHECKPOINT] [--calibrate-checkpoint CALIBRATE_CHECKPOINT] [--gridding-checkpoint GRIDDING_CHECKPOINT]
@@ -833,3 +835,80 @@ The most important options are the ``save-healpix-fits`` and the ``snapshot-heal
   If you believe you have a better way of generating HEALPIX files than FHD did, then give it a go, please read the :doc:`Contribution Guide <../develop/contribution_guide>` and do a pull request!
 
   We await your contributions!
+
+Docker
+------
+``PyFHD`` has a docker image available to use available on `Docker Hub <https://hub.docker.com/r/skywa7ch3r/pyfhd>`_.
+There will be multiple images available, there will be an image for each version that should get pushed on every release of ``PyFHD``,
+there will also be a ``latest`` tag that will be the latest version of ``PyFHD`` based on commits from the main branch (though this may not be stable and subject to change).
+
+To run the docker image of PyFHD, you can use the following commands:
+
+.. code-block:: bash
+
+  # To see the PyFHD version of latest
+  docker run -it skywa7ch3r/pyfhd:latest pyfhd -v
+
+.. code-block:: bash
+  
+  # To run PyFHD with the sample data (with the output going to the current directory)
+  docker run -it --volume /path/to/output:/pyfhd/output --user $(id -u):$(id -g) skywa7ch3r/pyfhd:latest  \
+    pyfhd -c ./input/1088285600_example/1088285600_example.yaml \
+    --description 108825600_docker_example \
+    1088285600
+
+The folllwing example will run with the full MWA observation, you will need to make sure the yaml configuration file points to directories that are mounted to the docker container.
+The YAML configuration also should point to directories inside the container as well, by default ``PyFHD`` is configured to look for things inside the ``input`` and ``output`` directories inside the container.
+
+.. code-block:: bash
+
+  # To run PyFHD with full MWA observation
+  docker run -it \
+    --volume /absolute/path/to/config/1091128160.yaml:/pyfhd/input/1091128160.yaml \
+    --volume /absolute/path/to/data/1091128160/:/pyfhd/input/1091128160 \
+    --volume /absolute/path/to/beams/:/pyfhd/input/beams \
+    --volume /absolute/path/to/output/:/pyfhd \
+    --user $(id -u):$(id -g) 
+    skywa7ch3r/pyfhd:latest \
+    pyfhd -c ./input/1091128160.yaml \
+    --description 1091128160_docker_example \
+    1091128160
+
+Apptainer (formerly Singularity)
+--------------------------------
+
+Creating an Apptainer image for using ``PyFHD`` where using docker isn't possible (such as on HPCs) can be done like so:
+
+.. code-block:: bash
+
+  apptainer build pyfhd.sif docker://skywa7ch3r/pyfhd:latest
+
+.. code-block:: bash
+
+  # To see the PyFHD version of latest
+  apptainer run --pwd /pyfhd pyfhd.sif pyfhd -v
+
+.. code-block:: bash
+  
+  # To run PyFHD with the sample data (with the output going to the current directory)
+  apptainer run --pwd /pyfhd -B /path/to/output:/pyfhd/output pyfhd.sif \
+    pyfhd -c ./input/1088285600_example/1088285600_example.yaml \
+    --description 108825600_docker_example \
+    1088285600
+
+The following example will run with the full MWA observation, you will need to make sure the yaml configuration file points to directories that are mounted to the docker container.
+The YAML configuration also should point to directories inside the container as well, by default ``PyFHD`` is configured to look for things inside the ``input`` and ``output`` directories inside the container.
+
+.. code-block:: bash
+
+  # To run PyFHD with full MWA observation
+  apptainer run --pwd /pyfhd \
+    -B /absolute/path/to/config/1091128160.yaml:/pyfhd/input/1091128160.yaml \
+    -B /absolute/path/to/data/1091128160/:/pyfhd/input/1091128160 \
+    -B /absolute/path/to/beams/:/pyfhd/input/beams \
+    -B /absolute/path/to/output/:/pyfhd \
+    pyfhd.sif \
+    pyfhd -c ./input/1091128160.yaml \
+    --description 1091128160_docker_example \
+    1091128160
+

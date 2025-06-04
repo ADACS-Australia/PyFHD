@@ -18,21 +18,32 @@ ENV UV_PYTHON_DOWNLOADS=0
 # Copy everything over except what's in the .dockerignore
 COPY . /pyfhd
 
-# Install the dependencies and project
+ENV XDG_CACHE_HOME="/pyfhd/.cache"
+
+RUN mkdir -p /pyfhd/.cache/astropy /pyfhd/.config
+
+# Install the dependencies and project (This also creates the __git__.py file)
 RUN uv sync --locked --no-dev
+
+# Remove the cache directory for uv to reduce image size
+RUN rm -rf /pyfhd/.cache/uv
+
+# Update the astropy caches
+RUN .venv/bin/python -c "from astropy.utils.iers import IERS_Auto; iers_a = IERS_Auto.open()"
+RUN .venv/bin/python -c "from astropy.coordinates import EarthLocation; site_names = EarthLocation.get_site_names()"
+
+RUN rm -rf /pyfhd/.git /pyfhd/.cache/uv 
 
 # Separate build stage as uv is not needed in the final image
 FROM python:3.13-slim-bookworm AS runner
 
-# Install git to get the git commit hash during PyFHD run.
-RUN apt-get update && \
-    apt-get install --no-install-recommends git -y \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
-
 # This essentially "installs" PyFHD into the final image
-COPY --from=builder --chown=app:app /pyfhd /pyfhd
+COPY --from=builder --chown=1000:1000 /pyfhd /pyfhd
 
+# Set the cache for astropy
+ENV XDG_CACHE_HOME="/pyfhd/.cache"
+
+# Set the path to the virtual environment so it can find pyfhd
 ENV PATH="/pyfhd/.venv/bin:$PATH"
 
 WORKDIR /pyfhd
