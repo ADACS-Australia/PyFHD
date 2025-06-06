@@ -63,7 +63,7 @@ requires = ["hatchling", "hatch-build-scripts"]
 build-backend = "hatchling.build"
 
 [[tool.hatch.build.hooks.build-scripts.scripts]]
-out_dir = "PyFHD"
+out_dir = "."
 work_dir = "."
 artifacts = [
     "__git__.py"
