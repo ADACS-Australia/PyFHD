@@ -931,7 +931,13 @@ def vis_cal_polyfit(
         )
         pyfhd_config["digital_gain_jump_polyfit"] = False
 
-    # TODO: Check the date of the observation if it's beyond the date, turn off the digital gain jump polyfit, also get date from Nichole.
+    # If the observation date is beyond the date where digital gain jump polyfit is required, disable it
+    # Date is 2014-07-23 (23rd July 2014) or Julian Day 2456861.5000000
+    if obs["jd0"] > 2456861.5000000 and pyfhd_config["digital_gain_jump_polyfit"]:
+        logger.warning(
+            "Observation date is beyond the date where digital gain jump polyfit is required, using full band polyfit, digital gain jump polyfit disabled."
+        )
+        pyfhd_config["digital_gain_jump_polyfit"] = False
 
     # If the amp_degree or phase_degree weren't used, then apply the defaults
     if not pyfhd_config["cal_amp_degree_fit"]:

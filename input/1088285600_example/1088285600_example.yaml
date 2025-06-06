@@ -121,6 +121,11 @@ pad-uv-image : 1.
 ring-radius-multi : 10.
 description : 1088285600_example
 
+# Plotting
+calibration-plots: true
+gridding-plots: true
+image-plots: true
+
 # Model
 # Current choices of model-file-type are sav and uvfits
 model-file-type : 'uvfits'

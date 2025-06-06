@@ -215,7 +215,9 @@ def vis_flag(
     logger: Logger,
 ) -> tuple[np.ndarray, dict]:
     """
-    TODO: __summary__
+    Flag frequencies, times, and tiles which are 3 sigma away from the median
+    of the visibility amplitudes, along with baselines which are outside the
+    supplied minimum and maximum baseline distances.
 
     Parameters
     ----------

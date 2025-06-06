@@ -13,27 +13,39 @@ def gaussian_decomp(
     model_res: float | None = None,
 ) -> tuple[np.ndarray, float, float]:
     """
-    _summary_
+    Create an analytically built Gaussian decomposition of the beam on
+    the supplied x-y grid given the input Gaussian parameters. If
+    ftransform is True, then the analytic Fourier Transform of the input
+    gaussians on the supplied x-y grid is returned. Any number of Gaussians
+    can be supplied in the p vector. To transfer Gaussian parameters from
+    a different grid to the current x-y grid, the model_npix and model_res
+    parameters can be supplied.
 
     Parameters
     ----------
     x : np.ndarray
-        _description_
+        X-axis vector of pixel numbers
     y : np.ndarray
-        _description_
+        Y-axis vector of pixel numbers
     p : np.ndarray
-        _description_
+        Gaussian parameter vector, ordered as amp, offset x, sigma x, offset y,
+        sigma y per lobe
     ftransform : bool, optional
-        _description_, by default False
+        Return the analytic Fourier Transform of the input gaussians on the supplied
+        x-y grid, by default False
     model_npix : float | None, optional
-        _description_, by default None
+        The number of pixels on an axis used to derive the input parameters to
+        convert to the current x-y grid, by default None
     model_res : float | None, optional
-        _description_, by default None
+        The grid resolution used to derive the input parameters to convert to
+        the current grid resolution, by default None
 
     Returns
     -------
     tuple[np.ndarray, float, float]
-        _description_
+        The Gaussian decomposition of the beam on the supplied x-y grid given the input
+        Gaussian parameters, along with the analytic volume and squared volume of the
+        Gaussian decomposition.
     """
     decomp_beam = np.zeros([x.size, y.size])
     i = 1j
@@ -110,27 +122,33 @@ def beam_image(
     square=False,
 ) -> np.ndarray:
     """
-    TODO: _summary_
+    Generates the average beam in image space for one polarization over all
+    frequencies, or optionally for one frequency. The UV->sky transformation
+    uses the inverse FFT for the beam, but the forward FFT for the image.
+    This convention ensures the correct orientation of the UV-space beam
+    for gridding visibilities. If the psf dictionary has Gaussian parameters,
+    then the Gaussian decomposition is used to generate the analytic beam image.
 
     Parameters
     ----------
     psf : dict
-        _description_
+        Beam dictionary
     obs : dict
-        _description_
+        Observation metadata dictionary
     pol_i : int
-        _description_
+        Index of the polarization to use
     freq_i : int
-        _description_
+        Index of the frequency to use, by default None
     abs : bool, optional
-        _description_, by default False
+        Return the absolute value of the beam image, by default False
     square : bool, optional
-        _description_, by default False
+        Return the square of the beam image, by default False
 
     Returns
     -------
     beam_base : np.ndarray
-        _description_
+        The average beam in image space for the specified polarization
+        and all frequencies, or for a specific frequency if freq_i is set.
     """
 
     psf_dim = psf["dim"]

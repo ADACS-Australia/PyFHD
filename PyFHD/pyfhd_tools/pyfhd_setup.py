@@ -6,10 +6,11 @@ import subprocess
 import logging
 from typing import Tuple
 import os
-from PyFHD.pyfhd_tools.git_helper import retrieve_gitdict
 from importlib.metadata import version
 from glob import glob
 import re
+import sys
+import importlib_resources
 
 
 class OrderedBooleanOptionalAction(argparse.BooleanOptionalAction):
@@ -54,7 +55,9 @@ def pyfhd_parser():
     parser.add_argument(
         "-c",
         "--config",
-        default="./pyfhd.yaml",
+        default=importlib_resources.files("PyFHD.resources.config").joinpath(
+            "pyfhd.yaml"
+        ),
         is_config_file=True,
         help="Configuration File Path for PyFHD",
     )
@@ -91,18 +94,14 @@ def pyfhd_parser():
     )
 
     # Version Argument
-    commit = "Could not find git info"
-    # Try and get git_information from the pip install method
-    git_dict = retrieve_gitdict()
-    if git_dict:
-        commit = git_dict["describe"]
-    # If that doesn't exist, try directly find the information (we might be
-    # running from within the git repo)
-    else:
-        commit = subprocess.run(
-            ["git", "rev-parse", "HEAD"], stdout=subprocess.PIPE, text=True
-        ).stdout
-        commit.replace("\n", "")
+    try:
+        from PyFHD.__git__ import __git_commit__, __git_branch__
+
+        commit = __git_commit__
+        branch = __git_branch__
+    except ImportError:
+        # If the git commit is not available, set it to unknown
+        commit = "Unknown"
     version_string = f"""\
     ________________________________________________________________________
     |    ooooooooo.               oooooooooooo ooooo   ooooo oooooooooo.    |
@@ -126,7 +125,7 @@ def pyfhd_parser():
 
     Version: {version('PyFHD')}
 
-    Git Commit Hash: {commit}
+    Git Commit Hash: {commit} ({branch})
     """
     parser.add_argument("-v", "--version", action="version", version=version_string)
 
@@ -1167,25 +1166,22 @@ def pyfhd_logger(pyfhd_config: dict) -> Tuple[logging.Logger, Path]:
     stdout_time = time.strftime("%c", run_time)
     log_time = time.strftime("%Y_%m_%d_%H_%M_%S", run_time)
 
-    commit = "Could not find git info"
-    # Try and get git_information from the pip install method
-    git_dict = retrieve_gitdict()
-    if git_dict:
-        commit = git_dict["describe"]
-    # If that doesn't exist, try directly find the information (we might be
-    # running from within the git repo)
-    else:
-        commit = subprocess.run(
-            ["git", "rev-parse", "HEAD"], stdout=subprocess.PIPE, text=True
-        ).stdout
-        commit.replace("\n", "")
-
     if pyfhd_config["description"] is None:
         log_name = "pyfhd_" + log_time
     else:
         log_name = (
             "pyfhd_" + pyfhd_config["description"].replace(" ", "_") + "_" + log_time
         )
+
+    try:
+        from PyFHD.__git__ import __git_commit__, __git_branch__, __git_commit_date__
+
+        commit = __git_commit__
+        branch = __git_branch__
+    except ImportError:
+        # If the git commit is not available, set it to unknown
+        commit = "Unknown"
+
     pyfhd_config["commit"] = commit
     pyfhd_config["log_name"] = log_name
     pyfhd_config["log_time"] = log_time
@@ -1210,7 +1206,7 @@ def pyfhd_logger(pyfhd_config: dict) -> Tuple[logging.Logger, Path]:
 
         Documentation: https://pyfhd.readthedocs.io/en/latest/
 
-        Git Commit Hash: {commit}
+        Git Commit Hash: {commit} ({branch})
 
         PyFHD Run Started At: {stdout_time}
 
@@ -1628,7 +1624,7 @@ def pyfhd_setup(options: argparse.Namespace) -> Tuple[dict, logging.Logger]:
     #     pyfhd_config['elements'] = dimension_use
 
     # --------------------------------------------------------------------------
-    # Checks are finished, report any errors or warings
+    # Checks are finished, report any errors or warnings
     # --------------------------------------------------------------------------
     # If there are any errors exit the program.
     if errors:
@@ -1640,7 +1636,7 @@ def pyfhd_setup(options: argparse.Namespace) -> Tuple[dict, logging.Logger]:
         # Close the handlers in the log
         for handler in logger.handlers:
             handler.close()
-        exit()
+        sys.exit()
 
     if warnings:
         logger.warning(

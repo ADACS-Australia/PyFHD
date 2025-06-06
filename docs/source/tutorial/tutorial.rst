@@ -20,12 +20,14 @@ The command on most machines takes 1-2 minutes to run, and the output is stored 
 The Required Inputs and the outputs of ``PyFHD``
 ----------------------------------------------------------
 
-The input ``PyFHD`` requires at a minimum is the observation ID and a configuration file to be passed to ``configargparse`` using the ``-c`` option.
-By default ``PyFHD`` will search for a ``pyfhd.yaml`` configuration file in the directory you run ``PyFHD`` from, so strictly speaking,
-if you run ``PyFHD`` from a directory that contains a ``pyfhd.yaml`` file then only the observation ID is needed.
+``PyFHD`` only requires an observation ID to run.
+``PyFHD`` will get a default ``pyfhd.yaml`` configuration file from it's resources directory inside the package, so when specifying only
+the observation ID, it will use the default configuration file. The default configuration is not suitable for every observation, so it's
+likely you'll need to adjust the default configuration file to suit your needs. Some validation is performed before and during runtime of 
+``PyFHD`` to check for incompatibilities though it is not exhaustive.
 
-It's assumed that the configuration file you provide has valid options for all the files you require, some files can be discovered automatically through the ``input-path``
-option of ``PyFHD`` so read through the usage help text to work out how you wish to configure your input. ``PyFHD`` is rather flexible on how you do your input
+Some files can be discovered automatically through the ``input-path`` option of ``PyFHD`` so read through the usage help text to work 
+out how you wish to configure your input. ``PyFHD`` is rather flexible on how you do your input
 as many of the files you may require can be in completely separate directories.
 
 The output of ``PyFHD`` is automatically generated and stores everything in one directory with the name ``pyfhd_YYYY_MM_DD_HH_mm_ss`` if you don't use the ``--description`` option.
@@ -40,12 +42,12 @@ the output directory structure will look like this:
       ├── calibration
       │   └── 1088285600_cal.h5
       ├── checkpoints
-      │   ├── 1088285600_example_calibration_checkpoint.h5
+      │   ├── 1088285600_example_calibrate_checkpoint.h5
       │   ├── 1088285600_example_gridding_checkpoint.h5
       │   └── 1088285600_example_obs_checkpoint.h5
       ├── config
-      │   ├── pyfhd_1088285600_example_2025_04_17_11_47_12-final.yaml
-      │   ├── pyfhd_1088285600_example_2025_04_17_11_47_12.yaml
+      │   ├── pyfhd_1088285600_example_2025_05_30_09_52_35-final.yaml
+      │   ├── pyfhd_1088285600_example_2025_05_30_09_52_35.yaml
       │   └── pyfhd_config.h5
       ├── fits
       │   ├── 1088285600_beam_XX.fits
@@ -91,14 +93,30 @@ the output directory structure will look like this:
       │   ├── 1088285600_obs.h5
       │   └── 1088285600_params.h5
       ├── plots
-      │   └── calibration
-      │       ├── 1088285600_cal_amp.png
-      │       ├── 1088285600_cal_phase.png
-      │       ├── 1088285600_cal_raw_amp.png
-      │       ├── 1088285600_cal_raw_phase.png
-      │       ├── 1088285600_cal_residual_amp.png
-      │       └── 1088285600_cal_residual_phase.png
-      ├── pyfhd_1088285600_example_2025_04_17_11_47_12.log
+      │   ├── calibration
+      │   │   ├── 1088285600_cal_amp.png
+      │   │   ├── 1088285600_cal_phase.png
+      │   │   ├── 1088285600_cal_raw_amp.png
+      │   │   ├── 1088285600_cal_raw_phase.png
+      │   │   ├── 1088285600_cal_residual_amp.png
+      │   │   └── 1088285600_cal_residual_phase.png
+      │   ├── gridding
+      │   │   ├── 1088285600_grid_apparent_image_XX.png
+      │   │   ├── 1088285600_grid_apparent_image_YY.png
+      │   │   ├── 1088285600_grid_apparent_model_XX.png
+      │   │   ├── 1088285600_grid_apparent_model_YY.png
+      │   │   ├── 1088285600_grid_variance_XX.png
+      │   │   └── 1088285600_grid_variance_YY.png
+      │   └── images
+      │       ├── 1088285600_beam_XX.png
+      │       ├── 1088285600_beam_YY.png
+      │       ├── 1088285600_uniform_dirty_XX.png
+      │       ├── 1088285600_uniform_dirty_YY.png
+      │       ├── 1088285600_uniform_model_XX.png
+      │       ├── 1088285600_uniform_model_YY.png
+      │       ├── 1088285600_uniform_residual_XX.png
+      │       └── 1088285600_uniform_residual_YY.png
+      ├── pyfhd_1088285600_example_2025_05_30_09_52_35.log
       └── visibilities
           ├── 1088285600_calibrated_vis_arr.h5
           ├── 1088285600_calibrated_vis_weights.h5
@@ -121,7 +139,7 @@ The checkpointing system in ``PyFHD`` is designed to save the state of the pipel
 The checkpoints are store in the ``checkpoints`` directory and they are saved at th fopllowing points:
 
 - ``obs_checkpoint`` - ``obs`` dict creation, reading of visibilities and weights, creation of the ``params`` dict
-- ``calibration_checkpoint`` - End of calibration, creation of the ``cal`` dict which holds the calculated gains, metadata etc, the skymodel after being imported and the weights which have been updated after calibration.
+- ``calibrate_checkpoint`` - End of calibration, creation of the ``cal`` dict which holds the calculated gains, metadata etc, the skymodel after being imported and the weights which have been updated after calibration.
 - ``gridding_checkpoint`` - End of gridding, creation of the ``gridding`` dict which holds the gridded visibilities and associated weights, variances, models, etc
 
 In the case that you wish to skip a step in the pipeline, you can use the ``--calibrate-checkpoint`` or ``--grid-checkpoint`` options to skip the calibration or gridding steps respectively. 
@@ -175,7 +193,7 @@ CLI
 +++
   .. code-block:: bash
 
-    pyfhd --help # -h also works, you're welcome to use either, you know how it should be.
+    pyfhd --help # -h also works
 
     usage: PyFHD [-h] [-c CONFIG] [-v] [-i INPUT_PATH] [-r] [-s] [-l] [--instrument {mwa}] [--dimension DIMENSION] [--elements ELEMENTS] [--kbinsize KBINSIZE] [--FoV FOV] [--deproject_w_term DEPROJECT_W_TERM] [--conserve-memory]
                 [--memory-threshold MEMORY_THRESHOLD] [--min-baseline MIN_BASELINE] [--n-pol {0,2,4}] [--save-checkpoints] [--obs-checkpoint OBS_CHECKPOINT] [--calibrate-checkpoint CALIBRATE_CHECKPOINT] [--gridding-checkpoint GRIDDING_CHECKPOINT]
@@ -253,6 +271,9 @@ Running calibration on the sample data
     --description "1088285600_example_cal_stop" \
     --model-file-type "uvfits" \
     --model-file-path "./input/1088285600_example/1088285600_model.uvfits" \
+    --calibration-plots \
+    --gridding-plots \
+    --image-plots \
     1088285600
 
 Here you some some solutions from the calibration of the sample data:
@@ -268,11 +289,25 @@ TODO: Do PyFHD run with 1091128160 and show the output
 Running calibration on a full MWA observation
 +++++++++++++++++++++++++++++++++++++++++++++
 
+For this observation I put everything inside the ``/place/for/input`` directory under ``uvfits``, ``models`` and ``beams`` sub-directories.
+The input visibility data is inside the ``uvfits`` directory, the model generated by WODEN is inside the ``models`` directory and
+the beam is inside the ``beams`` directory (not that we need it for this run, as we use ``--cal-stop`` to stop ``PyFHD`` after calibration).
+
 .. code-block:: bash
 
     pyfhd \
         1091128160 \
-        --input_path=data \
+        --input_path=/place/for/input/uvfits/1091128160 \
+        --save-checkpoints \
+        --beam-file-path=/place/for/input/beams/decomp_beam_pointing0.h5 \
+        --calibrate-visibilities \
+        --cable-bandpass-fit \
+        --calibration-polyfit \
+        --cal-reflection-mode-theory=150 \
+        --vis-baseline-hist \
+        --bandpass-calibrate \
+        --auto-ratio-calibration \
+        --digital-gain-jump-polyfit \
         --output_path=/place/for/outputs/ \
         --description=cal_data \
         --calibration_catalog_file_path=/path/to/sky_model/GLEAM_v2_plus_rlb2019.sav \
@@ -357,13 +392,14 @@ Running calibration on a full MWA observation
     bandpass-calibrate : true
     auto-ratio-calibration: true
     cal-time-average: false
-    digital-gain-jump-polyfit: true
+    # Only set to true if you're using MWA data before date 2014-07-23 (23rd July 2014)
+    digital-gain-jump-polyfit: false
     return-cal-visibilities : true
     calibration-flag-iterate : 0
     diffuse-calibrate : ~
     calibration-catalog-file-path  :  ~ # 'GLEAM_v2_plus_rlb2019.sav' (FHD Default)
     transfer-calibration : ~
-    cal-stop : false
+    cal-stop : true
     transfer-model-uv : ~
     max-cal-iter: 100
     calibration-plots: true
@@ -414,6 +450,11 @@ Running calibration on a full MWA observation
     ring-radius-multi : 10.
     description : 1091128160
 
+    # Plotting
+    calibration-plots: true
+    gridding-plots: true
+    image-plots: true
+
     # Model
     # Current choices of model-file-type are sav and uvfits
     model-file-type : 'uvfits'
@@ -449,6 +490,7 @@ Running calibration on a full MWA observation
     split-ps-export : true
 
 
+
   .. raw:: html
 
     </p>
@@ -456,52 +498,7 @@ Running calibration on a full MWA observation
 
 .. note:: This command took 260 minutes using 1 core of a Intel Gold 6140 processor and < 25GB RAM on the OzStar cluster
 
-For this command to work, the following two inputs must exist:
-
-.. code-block:: bash
-
-  ./data/1091128160.uvfits # the input visibility data
-  ./data/1091128160.metafits # the input metafits file
-
-These paths are inferred from the observation number (1091128160) and ``--input-path`` argument. By including the ``--IDL_calibrate`` option, ``PyFHD`` will simply write out a ``.pro`` file (a format that can be fed directly into ``FHD``). ``PyFHD`` will fall back and use any default values as described by ``pyfhd --help``. Beyond those, we set the following arguments explicitly:
-
-.. list-table::
-   :widths: 25 25
-   :header-rows: 1
-
-   * - Argument
-     - Meaning
-   * - -\-calibration-catalog-file-path
-     - Explicitly point to the sky model catalogue that we want to use
-   * - -\-conserve-memory
-     - Tells FHD that we want to limit large arrays to conserve memory
-   * - -\-memory-threshold
-     - Sets the memory threshold to 1GB
-
-
-Using the ``--output-path`` and ``--description`` arguments sets the topmost output directory to ``/place/for/outputs/pyfhd_cal_data``. Upon successful running of this command, the output directory structure should look like this:
-
-.. code-block:: bash
-
-    /place/for/outputs/
-    └── pyfhd_cal_data
-      ├── fhd_calibration_only.pro        # used to run FHD
-      ├── general_calibration_only.pro    # used to run FHD
-      ├── pyfhd_config.pro                # used to run FHD
-      ├── run_fhd_calibration_only.pro    # topmost file used to run FHD
-      ├── pyfhd_cal_data_2022_12_12_17_19_58.log   # log with date and time (YY-MM-DD-hh-mm-ss) of run
-      ├── pyfhd_cal_data_2022_12_12_17_19_58.yaml  # yaml containing all keywords used
-      └── fhd_pyfhd_cal_data              # location for FHD outputs
-        ├── 1091128160_variables.sav      # extra set of variables saved by PyFHD so python gridding can be run on these FHD outputs
-        ├── beams                         # FHD outputs
-        ├── calibration                   # FHD outputs
-        ├── Healpix                       # FHD outputs
-        ├── metadata                      # FHD outputs
-        ├── output_data                   # FHD outputs
-        ├── output_images                 # FHD outputs
-        └── vis_data                      # FHD outputs
-
-If you look in the ``/place/for/outputs/pyfhd_cal_data/fhd_pyfhd_cal_data/output_images`` you will find plots including the calibration amplitude and phases:
+If you look in the ``/place/for/output/pyfhd_1091128160/plots/calibration`` you will find plots including the calibration amplitude and phases:
 
 .. image:: 1091128160_cal_amp.png
   :width: 600px
@@ -633,8 +630,15 @@ This would be the same as runnning the command below:
     --grid-variance \
     --no-grid-uniform \
     --ps-kspan 200
+    --gridding-plots
 
-TODO: Add Gridding plot output to the example, check with nichole
+Below we have the example plots of the gridded continuum data for the two polarizations, XX and YY, for the sample data.
+
+.. image:: 1088285600_grid_apparent_image_XX.png
+  :width: 600px
+
+.. image:: 1088285600_grid_apparent_image_YY.png
+  :width: 600px
 
 Running Gridding with a full MWA observation
 ++++++++++++++++++++++++++++++++++++++++++++
@@ -831,3 +835,80 @@ The most important options are the ``save-healpix-fits`` and the ``snapshot-heal
   If you believe you have a better way of generating HEALPIX files than FHD did, then give it a go, please read the :doc:`Contribution Guide <../develop/contribution_guide>` and do a pull request!
 
   We await your contributions!
+
+Docker
+------
+``PyFHD`` has a docker image available to use available on `Docker Hub <https://hub.docker.com/r/skywa7ch3r/pyfhd>`_.
+There will be multiple images available, there will be an image for each version that should get pushed on every release of ``PyFHD``,
+there will also be a ``latest`` tag that will be the latest version of ``PyFHD`` based on commits from the main branch (though this may not be stable and subject to change).
+
+To run the docker image of PyFHD, you can use the following commands:
+
+.. code-block:: bash
+
+  # To see the PyFHD version of latest
+  docker run -it skywa7ch3r/pyfhd:latest pyfhd -v
+
+.. code-block:: bash
+  
+  # To run PyFHD with the sample data (with the output going to the current directory)
+  docker run -it --volume /path/to/output:/pyfhd/output --user $(id -u):$(id -g) skywa7ch3r/pyfhd:latest  \
+    pyfhd -c ./input/1088285600_example/1088285600_example.yaml \
+    --description 108825600_docker_example \
+    1088285600
+
+The folllwing example will run with the full MWA observation, you will need to make sure the yaml configuration file points to directories that are mounted to the docker container.
+The YAML configuration also should point to directories inside the container as well, by default ``PyFHD`` is configured to look for things inside the ``input`` and ``output`` directories inside the container.
+
+.. code-block:: bash
+
+  # To run PyFHD with full MWA observation
+  docker run -it \
+    --volume /absolute/path/to/config/1091128160.yaml:/pyfhd/input/1091128160.yaml \
+    --volume /absolute/path/to/data/1091128160/:/pyfhd/input/1091128160 \
+    --volume /absolute/path/to/beams/:/pyfhd/input/beams \
+    --volume /absolute/path/to/output/:/pyfhd \
+    --user $(id -u):$(id -g) 
+    skywa7ch3r/pyfhd:latest \
+    pyfhd -c ./input/1091128160.yaml \
+    --description 1091128160_docker_example \
+    1091128160
+
+Apptainer (formerly Singularity)
+--------------------------------
+
+Creating an Apptainer image for using ``PyFHD`` where using docker isn't possible (such as on HPCs) can be done like so:
+
+.. code-block:: bash
+
+  apptainer build pyfhd.sif docker://skywa7ch3r/pyfhd:latest
+
+.. code-block:: bash
+
+  # To see the PyFHD version of latest
+  apptainer run --pwd /pyfhd pyfhd.sif pyfhd -v
+
+.. code-block:: bash
+  
+  # To run PyFHD with the sample data (with the output going to the current directory)
+  apptainer run --pwd /pyfhd -B /path/to/output:/pyfhd/output pyfhd.sif \
+    pyfhd -c ./input/1088285600_example/1088285600_example.yaml \
+    --description 108825600_docker_example \
+    1088285600
+
+The following example will run with the full MWA observation, you will need to make sure the yaml configuration file points to directories that are mounted to the docker container.
+The YAML configuration also should point to directories inside the container as well, by default ``PyFHD`` is configured to look for things inside the ``input`` and ``output`` directories inside the container.
+
+.. code-block:: bash
+
+  # To run PyFHD with full MWA observation
+  apptainer run --pwd /pyfhd \
+    -B /absolute/path/to/config/1091128160.yaml:/pyfhd/input/1091128160.yaml \
+    -B /absolute/path/to/data/1091128160/:/pyfhd/input/1091128160 \
+    -B /absolute/path/to/beams/:/pyfhd/input/beams \
+    -B /absolute/path/to/output/:/pyfhd \
+    pyfhd.sif \
+    pyfhd -c ./input/1091128160.yaml \
+    --description 1091128160_docker_example \
+    1091128160
+

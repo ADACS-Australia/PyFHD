@@ -28,27 +28,30 @@ def get_image_renormalization(
     logger: Logger,
 ) -> np.ndarray:
     """
-    TODO: _summary_
+    Use the weights to renormalize the image for Jy/beam to Jy/sr. While
+    Jy/beam is more common in radio astronomy, Jy/str is a physical
+    brightness unit, rather than an instrumental brightness unit.
 
     Parameters
     ----------
     obs : dict
-        _description_
+        Observation metadata dictionary.
     weights : NDArray[np.float64]
-        _description_
+        Visibility weights array.
     beam_base : NDArray[np.complex128]
-        _description_
+        Beam orthoslant image per polarization.
     filter_arr : NDArray[np.float64]
-        _description_
+        u-v array of filter weights, relevant for
+        a uniform filter.
     pyfhd_config : dict
-        _description_
+        PyFHD configuration settings.
     logger : Logger
-        _description_
+        PyFHD's Logger.
 
     Returns
     -------
     NDArray[np.float64]
-        _description_
+        Conversion in image space from Jy/beam to Jy/sr per pixel.
     """
     # Use the weights to renormalize the image to units of Jy/sr
     renorm_factor = np.empty(obs["n_pol"])
@@ -88,36 +91,37 @@ def quickview(
     logger: Logger,
 ) -> None:
     """
-    TODO: _summary_
+    Generate continuum images from all gridded u-v planes, and save as
+    FITS files and optionally PNG files.
 
     Parameters
     ----------
     obs : dict
-        _description_
+        Observation metadata dictionary.
     psf : dict
-        _description_
+        Beam dictionary.
     params : dict
-        _description_
+        Visibility metadata dictionary.
     cal : dict
-        _description_
+        Calibration dictionary.
     vis_arr : NDArray[np.complex128]
-        _description_
+        Calibrated visibilities array.
     vis_weights : NDArray[np.float64]
-        _description_
+        Visibility weights array.
     image_uv : NDArray[np.complex128]
-        _description_
+        Continuum uv-plane of the calibrated data.
     weights_uv : NDArray[np.complex128]
-        _description_
+        Continuum uv-plane of the weights (the sampling map).
     variance_uv : NDArray[np.float64]
-        _description_
+        Continuum uv-plane of the variance (the variance map).
     uniform_filter_uv : NDArray[np.float64]
-        _description_
+        Continuum uv-plane of the uniform filter (if used).
     model_uv : NDArray[np.complex128]
-        _description_
+        Continuum uv-plane of the model data.
     pyfhd_config : dict
-        _description_
+        PyFHD configuration settings.
     logger : Logger
-        _description_
+        PyFHD's Logger.
     """
     # Save all the things into the output directory
     pyfhd_config["metadata_dir"] = Path(pyfhd_config["output_dir"], "metadata")

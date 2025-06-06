@@ -6,7 +6,7 @@ license = { file = "LICENSE" }
 description = "Python Fast Holograhic Deconvolution: A Python package that does efficient image deconvolution for general radio astronomy, fast-mode Epoch of Reionization analysis, and simulation."
 authors = [
     { name = "Joel Dunstan (SkyWa7ch3r)", email = "joel.g.w.dunstan@gmail.com"},
-    { name = "Jack Line (JLBLine"},
+    { name = "Jack Line (JLBLine)"},
     { name = "Nichole Barry (nicholebarry)", email = "nichole.barry@unsw.edu.au"}
 ]
 requires-python = ">=3.10"
@@ -49,6 +49,7 @@ dev = [
     "black>=25.1.0",
     "ipykernel>=6.29.5",
     "myst-parser>=4.0.1",
+    "pip>=25.1.1",
     "pre-commit>=4.2.0",
     "pytest>=8.3.5",
     "pytest-cov>=6.1.1",
@@ -58,5 +59,19 @@ dev = [
 ]
 
 [build-system]
-requires = ["hatchling"]
+requires = ["hatchling", "hatch-build-scripts"]
 build-backend = "hatchling.build"
+
+[[tool.hatch.build.hooks.build-scripts.scripts]]
+out_dir = "PyFHD"
+work_dir = "."
+artifacts = [
+    "__git__.py"
+]
+commands = [
+    'echo __git_commit__ = \"$(git rev-parse HEAD)\" > PyFHD/__git__.py',
+    'echo __git_commit_date__ = \"$(git log -1 --format=%cd)\" >> PyFHD/__git__.py',
+    'echo __git_branch__ = \"$(git rev-parse --abbrev-ref HEAD)\" >> PyFHD/__git__.py'
+]
+clean_artifacts = true
+
