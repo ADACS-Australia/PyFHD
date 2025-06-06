@@ -46,6 +46,8 @@ def create_psf(obs: dict, pyfhd_config: dict, logger: Logger) -> dict | File:
             "Please note, gaussian decomp for MWA is not implemented yet."
         )
         antenna, psf = init_beam(obs, pyfhd_config, logger)
+
+        beam_arr = np.zeros()
         return psf
     elif pyfhd_config["beam_file_path"].suffix == ".sav":
         # Read in a sav file containing the psf structure as we expect from FHD

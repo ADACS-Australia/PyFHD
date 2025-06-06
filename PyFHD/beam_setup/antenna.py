@@ -1,11 +1,17 @@
+import importlib_resources
 import numpy as np
 from numpy.typing import NDArray
 from logging import Logger
 from astropy.constants import c
-from astropy.coordinates import EarthLocation
+from astropy.coordinates import SkyCoord, EarthLocation
 from scipy.interpolate import interp1d
 from PyFHD.beam_setup.mwa import dipole_mutual_coupling
 from PyFHD.pyfhd_tools.unit_conv import pixel_to_radec, radec_to_altaz
+from pyuvdata import ShortDipoleBeam, BeamInterface, UVBeam
+from pyuvdata.telescopes import known_telescope_location
+from pyuvdata.analytic_beam import AnalyticBeam
+from typing import Literal
+from astropy.time import Time
 
 
 def init_beam(obs: dict, pyfhd_config: dict, logger: Logger) -> dict:
@@ -140,60 +146,224 @@ def init_beam(obs: dict, pyfhd_config: dict, logger: Logger) -> dict:
     psf["scale"] = obs["dimension"] * psf["intermediate_res"] / psf["image_dim"]
     psf["pix_horizon"] = obs["dimension"] / psf["scale"]
 
-    # We'll need chunk the data to get the to fit more into memory
-    memory_threshold = pyfhd_config["memory_threshold"]  # default 1 GB
-    required_bytes = 8 * (psf["image_dim"] ** 2)
-    mem_iter = np.ceil(required_bytes / memory_threshold)
-    chunk_size = int(np.ceil(psf["image_dim"] / mem_iter))
     location = EarthLocation.of_site(obs["instrument"])
 
     # Get the zenith angle and azimuth angle arrays
     xvals_celestial, yvals_celestial = np.meshgrid(
-        np.arange(chunk_size),
-        np.arange(chunk_size),
+        psf["image_dim"],
+        psf["image_dim"],
     )
-    for chunk_i in range(mem_iter):
-        xvals_celestial = (
-            (xvals_celestial + chunk_i * chunk_size) * psf["scale"]
-            - psf["image_dim"] * psf["scale"] / 2
-            + obs["obsx"]
-        )
-        yvals_celestial = (
-            (yvals_celestial + chunk_i * chunk_size) * psf["scale"]
-            - psf["image_dim"] * psf["scale"] / 2
-            + obs["obsy"]
-        )
-        ra_arr, dec_arr = pixel_to_radec(xvals_celestial, yvals_celestial, obs["astr"])
-        del xvals_celestial, yvals_celestial
-        valid_i = np.where(np.isfinite(ra_arr))
-        ra_arr = ra_arr[valid_i]
-        dec_arr = dec_arr[valid_i]
-        alt_arr, az_arr = radec_to_altaz(
-            ra_arr.value,
-            dec_arr.value,
-            location.lat.value,
-            location.lon.value,
-            location.height.value,
-            jdate_use,
-        )
-        # Initialize the zenith angle array in degrees
-        za_arr = np.full([psf["image_dim"], psf["image_dim"]], 90)
-        za_arr[valid_i] = 90 - alt_arr.value
-        # Initialize the azimuth angle array in degrees
-        az_arr = np.zeros([psf["image_dim"], psf["image_dim"]])
-        az_arr[valid_i] = az_arr.value
+    xvals_celestial = (
+        xvals_celestial * psf["scale"]
+        - psf["image_dim"] * psf["scale"] / 2
+        + obs["obsx"]
+    )
+    yvals_celestial = (
+        yvals_celestial * psf["scale"]
+        - psf["image_dim"] * psf["scale"] / 2
+        + obs["obsy"]
+    )
+    ra_arr, dec_arr = pixel_to_radec(xvals_celestial, yvals_celestial, obs["astr"])
+    del xvals_celestial, yvals_celestial
+    valid_i = np.where(np.isfinite(ra_arr))
+    ra_arr = ra_arr[valid_i]
+    dec_arr = dec_arr[valid_i]
+    alt_arr, az_arr = radec_to_altaz(
+        ra_arr.value,
+        dec_arr.value,
+        location.lat.value,
+        location.lon.value,
+        location.height.value,
+        jdate_use,
+    )
+    zenith_angle_arr = np.full([psf["image_dim"], psf["image_dim"]], 90)
+    zenith_angle_arr[valid_i] = 90 - alt_arr.value
+    # Initialize the azimuth angle array in degrees
+    azimuth_arr = np.zeros([psf["image_dim"], psf["image_dim"]])
+    azimuth_arr[valid_i] = az_arr.value
+    # Save some memory by deleting the unused arrays
+    del ra_arr, dec_arr, alt_arr, az_arr
+
+    if pyfhd_config["instrument"] == "mwa":
+        mwa_beam_file = importlib_resources.files(
+            "PyFHD.resources.instrument_config"
+        ).joinpath("mwa_full_embedded_element_pattern.h5")
+        if not mwa_beam_file.exists():
+            # Download the MWA beam file if it does not exist
+            raise FileNotFoundError(
+                f"MWA beam file {mwa_beam_file} does not exist. "
+                "Please download it from http://ws.mwatelescope.org/static/mwa_full_embedded_element_pattern.h5 into the."
+                "directory PyFHD/resources/instrument_config/"
+            )
+        beam = UVBeam.from_file(mwa_beam_file, delays=obs["delays"])
+    # If you wish to add a different insturment, do it by adding a new elif here
+    else:
+        # Do an analytic beam as a placeholder
+        beam = ShortDipoleBeam()
 
     # Get the jones matrix for the antenna
+    antenna["jones"] = general_jones_matrix(
+        beam, za_array=zenith_angle_arr, az_array=azimuth_arr
+    )
 
     # Get the antenna response
     antenna["response"] = general_antenna_response(
         obs,
         antenna,
-        za_arr=np.zeros((n_tiles, nfreq_bin)),
-        az_arr=np.zeros((n_tiles, nfreq_bin)),
+        za_arr=zenith_angle_arr,
+        az_arr=azimuth_arr,
     )
 
     return antenna, psf
+
+
+def general_jones_matrix(
+    beam_obj: UVBeam | AnalyticBeam | BeamInterface,
+    za_array: np.ndarray[float] | None = None,
+    alt_array: np.ndarray[float] | None = None,
+    az_array: np.ndarray[float] | None = None,
+    ra_array: np.ndarray[float] | None = None,
+    dec_array: np.ndarray[float] | None = None,
+    az_convention: Literal["east of north", "north of east"] = "east of north",
+    frame: str = "icrs",
+    time: Time | None = None,
+    telescope_location: EarthLocation | None = None,
+    freq_array: np.ndarray[float] | None = None,
+    spline_opts: dict | None = None,
+    check_azza_domain: bool = True,
+) -> NDArray[np.complexfloating]:
+    """
+    Get beam values from a pyuvdata beam for a set of directions on the sky.
+
+    Accepts zenith angle and azimuth, altitude and aziumth or RA/Dec arrays
+    along with the associated frame and astropy Time and EarthLocation objects.
+    Azimuth convention is specified using the `az_convention` parameter,
+    options are "north of east" (the UVBeam convention) or "east of north"
+    (the astropy alt/az frame convention and the FHD convention).
+
+    Parameters
+    ----------
+    beam_obj : UVBeam or AnalyticBeam or BeamInterface
+        A pyuvdata beam, can be a UVBeam, and AnalyticBeam subclass, or a
+        BeamInterface object.
+    alt_array : np.ndarray[float]
+        Array of altitudes (also called elevations) in radians. Must be a 1D array.
+    za_array : np.ndarray[float]
+        Array of zenith angles (zenith is zero, horizon is 90 degrees). Must be
+        a 1D array.
+    az_array : np.ndarray[float]
+        Array of azimuths in radians. Defined according to the az_convention parameter.
+        Must be a 1D array.
+    ra_array : np.ndarray[float]
+        Array of right ascensions in radians. Must be a 1D array.
+    dec_array : np.ndarray[float]
+        Array of declinations in radians. Must be a 1D array.
+    az_convention : str
+        either "east of north" N=0, E=90 degrees or "north of east" E=0, N=90 degrees.
+    frame : str
+        The frame for RA and Dec, ignored if alt/az are provided. Must be a frame
+        known to astropy.
+    time : astropy.time.Time
+        Astropy Time object specifying the center of the observation time. Used
+        for converting RA/Dec to AltAz, ignored if alt/az are provided.
+    telescope_location : astropy.coordinates.EarthLocation
+        Astropy EarthLocation object specifying the telescope location. Used
+        for converting RA/Dec to AltAz, ignored if alt/az are provided.
+    freq_array : np.ndarray[float]
+        Frequencies to get the beam response for in Hz. Requried for analytic beams,
+        defaults to the frequencies defined on the beam object for UVBeams.
+    spline_opts : dict
+        Provide options to numpy.RectBivariateSpline. This includes spline
+        order parameters `kx` and `ky`, and smoothing parameter `s`. Only
+        applies if beam is a UVBeam.
+    check_azza_domain : bool
+        Whether to check the domain of az/za to ensure that they are covered by the
+        intrinsic data array. Checking them can be quite computationally expensive.
+        Conversely, if the passed az/za are outside of the domain, they will be
+        silently extrapolated and the behavior is not well-defined. Only
+        applies if beam is a UVBeam. Should be set to False if it is known that
+        the beam covers the whole sky.
+
+    Returns
+    -------
+    NDArray[np.complexfloating]
+        An array of computed values, shape (number of vector directions (usually 2),
+        number of feeds (usually 2), number of frequencies, number of directions).
+        The first axis indexes over the polarization vector components, generally
+        aligned with the azimuthal then zenith angle directions. The second axis
+        indexes over the feeds (order defined in the beam feed array).
+    """
+    alt_az_in = alt_array is not None and az_array is not None
+    za_az_in = za_array is not None and az_array is not None
+    ra_dec_in = np.all(
+        [var is not None for var in [ra_array, dec_array, time, telescope_location]]
+    )
+
+    if not alt_az_in and not za_az_in and not ra_dec_in:
+        raise ValueError(
+            "Either alt_array and az_array must be provided or ra_array, dec_array, "
+            "time and telescope_location must all be provided."
+        )
+
+    allowed_az_convention = ["east of north", "north of east"]
+    if (alt_az_in or za_az_in) and (az_convention not in allowed_az_convention):
+        raise ValueError(
+            f"az_convention must be one of {allowed_az_convention}. "
+            f"It was {az_convention}."
+        )
+
+    # FHD requires an Efield beam, so set it here to be explicit
+    beam = BeamInterface(beam_obj, beam_type="efield")
+
+    if ra_dec_in:
+        if ra_array.shape != dec_array.shape:
+            raise ValueError("ra_array and dec_array must have the same shape")
+
+        # convert to alt/az
+        skycoord = SkyCoord(
+            ra=ra_array * units.rad,
+            dec=dec_array * units.rad,
+            frame=frame,
+            obstime=time,
+            location=telescope_location,
+        ).transform_to("altaz")
+
+        alt_array = skycoord.alt.to("rad").value
+        az_array = skycoord.az.to("rad").value
+        az_convention = "east of north"
+    elif alt_az_in:
+        if alt_array.shape != az_array.shape:
+            raise ValueError("alt_array and az_array must have the same shape")
+    else:
+        if za_array.shape != az_array.shape:
+            raise ValueError("za_array and az_array must have the same shape")
+
+    if alt_az_in or ra_dec_in:
+        za_array = np.pi / 2 - alt_array
+
+    if az_convention == "east of north":
+        noe_az_array = np.pi / 2 - az_array
+    else:
+        noe_az_array = az_array
+
+    # Wrap the azimuth array to [0, 2pi] to match the extent of the UVBeam azimuth
+    where_neg_az = np.nonzero(noe_az_array < 0)
+    noe_az_array[where_neg_az] = noe_az_array[where_neg_az] + np.pi * 2.0
+
+    # use the faster interpolation method if appropriate
+    if beam._isuvbeam and beam.beam.pixel_coordinate_system == "az_za":
+        interpol_fn = "az_za_map_coordinates"
+    else:
+        interpol_fn = None
+
+    return beam.compute_response(
+        az_array=noe_az_array,
+        za_array=za_array,
+        freq_array=freq_array,
+        interpolation_function=interpol_fn,
+        spline_opts=spline_opts,
+        check_azza_domain=check_azza_domain,
+    )
 
 
 def general_antenna_response(
