@@ -303,9 +303,9 @@ def l_m_n(
     right_ascension_arr: NDArray[np.floating] | None = None,
 ) -> tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]]:
     """
-    Calculate the directional cosines l,m,n given an RA, Dec, and phase centre for 
+    Calculate the directional cosines l,m,n given an RA, Dec, and phase centre for
     each pixel in the input arrays given, or from the hyperresolved RA/Dec array
-    created during beam creation. 
+    created during beam creation.
 
     Parameters
     ----------
@@ -314,11 +314,11 @@ def l_m_n(
     psf: dict | h5py.File
         Beam dictionary.
     obsdec: float | None, optional
-        The Dec phase centre for the observation, by default None and set to 
+        The Dec phase centre for the observation, by default None and set to
         the phase centre saved in the observation metadata dicitonary
         (obs['obsdec'])
     obsra: float | None, optional
-        The RA phase centre for the observation, by default None and set to 
+        The RA phase centre for the observation, by default None and set to
         the phase centre saved in the observation metadata dicitonary
         (obs['obsra'])
     declination_arr: NDArray[np.floating] | None, optional
@@ -331,13 +331,13 @@ def l_m_n(
     Returns
     -------
     l_mode : NDArray[np.float64]
-        Directional cosine l array, or the cosine of the vector that contributes 
+        Directional cosine l array, or the cosine of the vector that contributes
         to the x-axis
     m_mode : NDArray[np.float64]
-        Directional cosine m array, or the cosine of the vector that contributes 
+        Directional cosine m array, or the cosine of the vector that contributes
         to the y-axis
     n_tracked : NDArray[np.float64]
-        Directional cosine n array, or the cosine of the vector that contributes 
+        Directional cosine n array, or the cosine of the vector that contributes
         to the z-axis, dependent on the phase centre.
     """
     # If the variables passed through are None them
@@ -733,8 +733,8 @@ def array_match(
     array_2: NDArray[np.integer | np.floating | np.complexfloating] | None = None,
 ) -> NDArray[np.int64]:
     """
-    Find the indices of the input array which match the array of values provided. 
-    If a second input array is provided, then find the indices where the values 
+    Find the indices of the input array which match the array of values provided.
+    If a second input array is provided, then find the indices where the values
     provided match in both input arrays. This matching can only be done between
     integer values.
 
@@ -1117,8 +1117,8 @@ def vis_weights_update(
     vis_weights: NDArray[np.float64], obs: dict, psf: dict | h5py.File, params: dict
 ) -> tuple[NDArray[np.float64], dict]:
     """
-    Update the visibility weights array to match any updates to the observation 
-    metadata dictionary, including flagged times, frequencies, tiles, and 
+    Update the visibility weights array to match any updates to the observation
+    metadata dictionary, including flagged times, frequencies, tiles, and
     min/max baseline length.
 
     Parameters
@@ -1228,11 +1228,11 @@ def split_vis_weights(
     obs: dict, vis_weights: NDArray[np.float64]
 ) -> tuple[NDArray[np.float64], NDArray[np.int64]]:
     """
-    Separate the indices in the visibility array (data/model/res/weights) into 
-    interleaved time samples, generally called "even" and "odd" depending on 
+    Separate the indices in the visibility array (data/model/res/weights) into
+    interleaved time samples, generally called "even" and "odd" depending on
     whether the time index is even or odd. Interleaved data can be used to generate
     cross power spectra and propagate uncertainties, see eq 2 of Jacobs et al. 2016.
-    Ensures that the same flagging is applied to both sets. 
+    Ensures that the same flagging is applied to both sets.
 
     Parameters
     ----------
@@ -1244,7 +1244,7 @@ def split_vis_weights(
     Returns
     -------
     vis_weights : NDArray[np.float64]
-        Full visibility weights array with the same flagging applied 
+        Full visibility weights array with the same flagging applied
         to both interleaved sets.
     bi_use  NDArray[np.int64]
         Baseline index arrays for interleaved time samples, separated
@@ -1314,9 +1314,9 @@ def vis_noise_calc(
 ) -> NDArray[np.float64]:
     """
     Calculate the noise from the calibrated visibilities by taking
-    the difference between the imaginary parts of the interleaved 
-    time samples. A factor of sqrt(2) is required because there is 
-    half as many independent noise samples when calculated from just 
+    the difference between the imaginary parts of the interleaved
+    time samples. A factor of sqrt(2) is required because there is
+    half as many independent noise samples when calculated from just
     the imaginary part.
 
     Parameters
@@ -1335,7 +1335,7 @@ def vis_noise_calc(
     -------
     noise_arr: NDArray[np.float64]
         Calculated variance of the noise as a function of polarisation
-        and frequency. 
+        and frequency.
     """
     noise_arr = np.zeros([obs["n_pol"], obs["n_freq"]])
 
@@ -1577,10 +1577,10 @@ def crosspol_split_real_imaginary(
 ) -> tuple[NDArray[np.complex128], list[str] | None]:
     """
     Reformat the input full polarisation image, containing PP, PQ, QP, and QQ,
-    into PP, real(PQ), imaginary(PQ), and QQ. PQ and QP (i.e. XY and YX) 
+    into PP, real(PQ), imaginary(PQ), and QQ. PQ and QP (i.e. XY and YX)
     are complex and conjugate mirrors of one another. To make a understandable
     image, we can plot the real and imaginary parts of PQ separately without
-    loss of information. 
+    loss of information.
 
     Parameters
     ----------
@@ -1592,7 +1592,7 @@ def crosspol_split_real_imaginary(
     Returns
     -------
     image : NDArray[np.complex128]
-        Image array ordered in polarisation by PP, real(PQ), imaginary(PQ), 
+        Image array ordered in polarisation by PP, real(PQ), imaginary(PQ),
         and QQ
     pol_names : list[str]|None]
         New polarisation name array to reflect real(PQ) and imaginary(PQ)

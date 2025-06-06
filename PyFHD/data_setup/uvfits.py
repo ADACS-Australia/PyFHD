@@ -379,8 +379,8 @@ def create_layout(
     logger: logging.Logger,
 ) -> dict:
     """
-    Create a very explicit antenna and telescope position dictionary, incorperating 
-    timing (e.g.  time system, reference, leap seconds), location (e.g. array center, 
+    Create a very explicit antenna and telescope position dictionary, incorperating
+    timing (e.g.  time system, reference, leap seconds), location (e.g. array center,
     coordinate frame, Earth's rotation), and antenna information (e.g. names, numbers,
     coordinates, mount type, feed polarization). This is used to create the layout
     dictionary which is compatible with pyuvdata.

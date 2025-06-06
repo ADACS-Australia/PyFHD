@@ -29,8 +29,8 @@ def healpix_cnv_apply(
     In FHD the healpix_cnv_apply was mainly used as a wrapper for sprsax2, as such I will put the code
     for sprsax2 in here as PyFHD will only use sprsax2 here as we don't have the holographic mapping
     function at this time.
-    
-    Vectors 'sa' (interpolation) and 'ija' (index) follow the row-index sparse storage mode as described 
+
+    Vectors 'sa' (interpolation) and 'ija' (index) follow the row-index sparse storage mode as described
     in section 2.7 of Numerical Recipes in C, 2nd edition.
 
     Parameters
@@ -67,8 +67,8 @@ def healpix_cnv_generate(
 ) -> dict:
     """
     Generate the HEALPix index/interpolation dictionary that is used to convert
-    between orthoslant image pixelization and the RING index HEALPix pixelization 
-    scheme. Binlinear interpolation is performed to HEALPix pixels centers. All 
+    between orthoslant image pixelization and the RING index HEALPix pixelization
+    scheme. Binlinear interpolation is performed to HEALPix pixels centers. All
     angles are in degrees.
 
     Parameters
@@ -80,9 +80,9 @@ def healpix_cnv_generate(
         mask map of the orthoslant image can be used to mask out areas from the
         HEALPix conversion.
     hpx_radius : float
-        If HEALPix indices are not provided in the config file, this selects 
+        If HEALPix indices are not provided in the config file, this selects
         a radius in degrees, centred on the RA/Dec of the observation, to be
-        converted to HEALPix pixels. 
+        converted to HEALPix pixels.
     pyfhd_config : dict
         PyFHD configuration settings
     logger : Logger
@@ -95,9 +95,9 @@ def healpix_cnv_generate(
     -------
     dict
         A dictionary containing the orthoslant to HEALPix pixel mapping and
-        interpolation. Vectors 'sa' (bilinear interpolation calculated from 
-        fractional offsets) and 'ija' (flattened index) follow the row-index 
-        sparse storage mode as described in section 2.7 of Numerical Recipes 
+        interpolation. Vectors 'sa' (bilinear interpolation calculated from
+        fractional offsets) and 'ija' (flattened index) follow the row-index
+        sparse storage mode as described in section 2.7 of Numerical Recipes
         in C, 2nd edition.
     """
     # TODO: Add ability to restore old healpix_inds from PyFHD runs
@@ -321,8 +321,8 @@ def beam_image_cube(
     beam_threshold: float | None = None,
 ) -> tuple[NDArray[np.complex128], NDArray[np.float64]]:
     """
-    Calculate the beam image per unflagged frequency channel to build a cube. 
-    Build a contiguous mask in x and y based off of a threshold value. 
+    Calculate the beam image per unflagged frequency channel to build a cube.
+    Build a contiguous mask in x and y based off of a threshold value.
 
     Parameters
     ----------
@@ -336,7 +336,7 @@ def beam_image_cube(
         Index array of the beam frequency binning in the observation
         metadata dictionary, by default None
     pol_i_arr : np.ndarray | None, optional
-        Index array of the polarizations in the observation metadata 
+        Index array of the polarizations in the observation metadata
         dictionary, by default None
     n_freq_bin : int | None, optional
         Number of frequency channels to divide the full observation bandwidth
@@ -344,7 +344,7 @@ def beam_image_cube(
     square : bool, optional
         Square the beam image, by default True
     beam_threshold : float | None, optional
-        Fractional threshold in which to build a mask for all smaller 
+        Fractional threshold in which to build a mask for all smaller
         beam values, by default None
 
     Returns
@@ -468,7 +468,7 @@ def vis_model_freq_split(
     Grid as a function of frequency, which can be split into larger channels. This
     uvf cube can be saved as is or used to create an orthoslant image as a function
     of frequency. Optional bi_use argument allows for the separate gridding of even/odd
-    interleaved time samples for error propagation in the power spectrum. 
+    interleaved time samples for error propagation in the power spectrum.
 
     Parameters
     ----------
@@ -491,7 +491,7 @@ def vis_model_freq_split(
     logger : Logger
         PyFHD's Logger
     fft : bool, optional
-        Calculate the orthoslant image instead of the u-v plane, 
+        Calculate the orthoslant image instead of the u-v plane,
         by default True
     save_uvf : bool, optional
         Save the uvf cube, by default True

@@ -31,10 +31,10 @@ def healpix_snapshot_cube_generate(
     logger: Logger,
 ) -> None:
     """
-    Generate and save HEALPix images per polarization and per frequency channel for 
-    each of the gridded visibility products, creating calibrated data, model 
-    data, sampling map, and variance map cubes. General settings split up the 
-    outputs into even and odd interleaved time samples. Interpolation is 
+    Generate and save HEALPix images per polarization and per frequency channel for
+    each of the gridded visibility products, creating calibrated data, model
+    data, sampling map, and variance map cubes. General settings split up the
+    outputs into even and odd interleaved time samples. Interpolation is
     performed from the orthoslant projection to the HEALPix grid.
 
     Parameters
@@ -58,7 +58,7 @@ def healpix_snapshot_cube_generate(
     logger : Logger
         PyFHD's Logger
     """
-    
+
     if pyfhd_config["split_ps_export"]:
         cube_name = ["hpx_even", "hpx_odd"]
     else:

@@ -29,7 +29,7 @@ def get_image_renormalization(
 ) -> np.ndarray:
     """
     Use the weights to renormalize the image for Jy/beam to Jy/sr. While
-    Jy/beam is more common in radio astronomy, Jy/str is a physical 
+    Jy/beam is more common in radio astronomy, Jy/str is a physical
     brightness unit, rather than an instrumental brightness unit.
 
     Parameters
@@ -41,7 +41,7 @@ def get_image_renormalization(
     beam_base : NDArray[np.complex128]
         Beam orthoslant image per polarization.
     filter_arr : NDArray[np.float64]
-        u-v array of filter weights, relevant for 
+        u-v array of filter weights, relevant for
         a uniform filter.
     pyfhd_config : dict
         PyFHD configuration settings.
@@ -92,7 +92,7 @@ def quickview(
 ) -> None:
     """
     Generate continuum images from all gridded u-v planes, and save as
-    FITS files and optionally PNG files. 
+    FITS files and optionally PNG files.
 
     Parameters
     ----------
