@@ -137,9 +137,17 @@ def init_beam(obs: dict, pyfhd_config: dict, logger: Logger) -> dict:
         "image_resolution": 10,  # Add psf_image_resolution to the config file
         "fbin_i": obs["baseline_info"]["fbin_i"],
     }
+    # Set up coordinates to generate the high uv resolution model.
+    # Remember that field of view = uv resolution, image pixel scale = uv span.
+    # So, the cropped uv span (psf_dim) means we do not need to calculate at full image resolution,
+    # while the increased uv resolution can correspond to super-horizon scales. We construct the beam model in
+    # image space, and while we don't need the full image resolution we need to avoid quantization errors that
+    # come in if we make too small an image and then take the FFT
     psf["intermediate_res"] = np.min(
         [np.ceil(np.sqrt(psf["resolution"]) / 2) * 2, psf["resolution"]]
     )
+    # use a larger box to build the model than will ultimately be used, to
+    # allow higher resolution in the initial image space beam model
     psf["image_dim"] = int(
         psf["dim"] * psf["image_resolution"] * psf["intermediate_res"]
     )
@@ -151,8 +159,8 @@ def init_beam(obs: dict, pyfhd_config: dict, logger: Logger) -> dict:
 
     # Get the zenith angle and azimuth angle arrays
     xvals_celestial, yvals_celestial = np.meshgrid(
-        psf["image_dim"],
-        psf["image_dim"],
+        np.arange(psf["image_dim"]),
+        np.arange(psf["image_dim"]),
     )
     xvals_celestial = (
         xvals_celestial * psf["scale"]

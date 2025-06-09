@@ -46,8 +46,57 @@ def create_psf(obs: dict, pyfhd_config: dict, logger: Logger) -> dict | File:
             "Please note, gaussian decomp for MWA is not implemented yet."
         )
         antenna, psf = init_beam(obs, pyfhd_config, logger)
+        # TODO: Adjust out to the correct shape later
+        beam_arr = np.zeros([obs["n_pol"], np.max(obs["baseline_info"]["fbin_i"]) + 1])
+        xvals_i, yvals_i = np.meshgrid(
+            np.arange(psf["resolution"]), np.arange(psf["resolution"]), indexing="ij"
+        )
+        xvals_i *= psf["resolution"]
+        yvals_i *= psf["resolution"]
+        xvals_i = xvals_i.flatten()
+        yvals_i = yvals_i.flatten()
+        xvals_psf_dim, yvals_psf_dim = np.meshgrid(
+            np.arange(psf["dim"]), np.arange(psf["dim"]), indexing="ij"
+        )
+        psf["xvals"] = np.zeros(
+            [psf["resolution"], psf["resolution"], psf["dim"], psf["dim"]]
+        )
+        psf["yvals"] = np.zeros(
+            [psf["resolution"], psf["resolution"], psf["dim"], psf["dim"]]
+        )
+        for i in range(psf["resolution"]):
+            for j in range(psf["resolution"]):
+                psf["xvals"][i, j, :, :] = (
+                    xvals_psf_dim - psf["dim"] / 2 + i / psf["resolution"]
+                )
+                psf["yvals"][i, j, :, :] = (
+                    yvals_psf_dim - psf["dim"] / 2 + j / psf["resolution"]
+                )
 
-        beam_arr = np.zeros()
+        zen_int_x = (obs["zenx"] - obs["obsx"]) / psf["scale"] + psf["image_dim"] / 2
+        zen_int_y = (obs["zeny"] - obs["obsy"]) / psf["scale"] + psf["image_dim"] / 2
+        # Calculate the hyperresolved uv-vals of the beam kernel at highest precision prior to cast to
+        # be accurate yet small
+        res_super = 1 / (psf["resolution"] / psf["intermediate_res"])
+
+        xvals_uv_superres, yvals_uv_superres = np.meshgrid(
+            np.arange(psf["superres_dim"]),
+            np.arange(psf["superres_dim"]),
+        )
+        xvals_superres = (
+            xvals_superres * res_super
+            - np.floor(psf["dim"] / 2) * psf["intermediate_res"]
+            + np.floor(psf["dim"] / 2)
+        )
+        yvals_superres = (
+            yvals_superres * res_super
+            - np.floor(psf["dim"] / 2) * psf["intermediate_res"]
+            + np.floor(psf["dim"] / 2)
+        )
+
+        for pol_i in range(obs["n_pol"]):
+            continue
+
         return psf
     elif pyfhd_config["beam_file_path"].suffix == ".sav":
         # Read in a sav file containing the psf structure as we expect from FHD
