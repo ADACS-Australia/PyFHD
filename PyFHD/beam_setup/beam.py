@@ -4,6 +4,7 @@ from logging import Logger
 from scipy.interpolate import interp1d
 from scipy.io import readsav
 from PyFHD.beam_setup.antenna import init_beam
+from PyFHD.beam_setup.beam_utils import beam_power
 from PyFHD.io.pyfhd_io import recarray_to_dict
 from pathlib import Path
 from PyFHD.io.pyfhd_io import save, load
@@ -46,8 +47,19 @@ def create_psf(obs: dict, pyfhd_config: dict, logger: Logger) -> dict | File:
             "Please note, gaussian decomp for MWA is not implemented yet."
         )
         antenna, psf = init_beam(obs, pyfhd_config, logger)
-        # TODO: Adjust out to the correct shape later
-        beam_arr = np.zeros([obs["n_pol"], np.max(obs["baseline_info"]["fbin_i"]) + 1])
+        # TODO: we'll see if the +1 is necessary, IDL indexing thing
+        n_freq_bin = np.max(obs["baseline_info"]["fbin_i"]) + 1
+        # TODO: Double check the shape
+        beam_arr = np.zeros(
+            [
+                obs["n_pol"],
+                n_freq_bin,
+                psf["resolution"] + 1,
+                psf["resolution"] + 1,
+                psf["superres_dim"] * 2,
+            ],
+            dtype=np.complex128,
+        )
         xvals_i, yvals_i = np.meshgrid(
             np.arange(psf["resolution"]), np.arange(psf["resolution"]), indexing="ij"
         )
@@ -83,19 +95,75 @@ def create_psf(obs: dict, pyfhd_config: dict, logger: Logger) -> dict | File:
             np.arange(psf["superres_dim"]),
             np.arange(psf["superres_dim"]),
         )
-        xvals_superres = (
-            xvals_superres * res_super
+        xvals_uv_superres = (
+            xvals_uv_superres * res_super
             - np.floor(psf["dim"] / 2) * psf["intermediate_res"]
             + np.floor(psf["dim"] / 2)
         )
-        yvals_superres = (
-            yvals_superres * res_super
+        yvals_uv_superres = (
+            yvals_uv_superres * res_super
             - np.floor(psf["dim"] / 2) * psf["intermediate_res"]
             + np.floor(psf["dim"] / 2)
         )
 
+        freq_center = antenna["freq"][0]
         for pol_i in range(obs["n_pol"]):
-            continue
+            for freq_i in range(n_freq_bin):
+                beam_int = 0
+                beam_int_2 = 0
+                # Calculate power beam from antenna beams
+                psf_base_superres = beam_power(
+                    antenna,
+                    obs,
+                    pol_i,
+                    freq_i,
+                    psf,
+                    zen_int_x,
+                    zen_int_y,
+                    xvals_uv_superres,
+                    yvals_uv_superres,
+                    pyfhd_config,
+                )
+
+                # divide by psf_resolution^2 since the FFT is done at
+                # a different resolution and requires a different normalization
+                # TODO: add bi_use calcs for baseline_group_n
+                # beam_int += baseline_group_n + np.sum(psf_base_superres) / psf["resolution"] ** 2
+                # beam_int_2 += baseline_group_n + np.sum(np.abs(psf_base_superres)) / psf["resolution"] ** 2
+                psf_single = np.zeros(
+                    [psf["resolution"] + 1, psf["resolution"] + 1],
+                    dtype=np.complex128,
+                )
+
+                for i in range(psf["resolution"]):
+                    for j in range(psf["resolution"]):
+                        psf_single[psf["resolution"] - i, psf["resolution"] - j] = (
+                            psf_base_superres[xvals_i + i, yvals_i + j]
+                        )
+                # TODO: check the rolling (shifting) and reshaping done here
+                for i in range(psf["resolution"]):
+                    psf_single[psf["resolution"] - i, psf["resolution"]] = np.roll(
+                        psf_base_superres[xvals_i + i, yvals_i + psf["resolution"]],
+                        1,
+                        0,
+                    ).flatten()
+                for j in range(psf["resolution"]):
+                    psf_single[psf["resolution"], psf["resolution"] - j] = np.roll(
+                        psf_base_superres[xvals_i + psf["resolution"], yvals_i + j],
+                        1,
+                        1,
+                    ).flatten()
+                psf_single[psf["resolution"], psf["resolution"]] = np.roll(
+                    np.roll(
+                        psf_base_superres[
+                            xvals_i + psf["resolution"], yvals_i + psf["resolution"]
+                        ],
+                        1,
+                        1,
+                    ),
+                    1,
+                    0,
+                ).flatten()
 
         return psf
     elif pyfhd_config["beam_file_path"].suffix == ".sav":
