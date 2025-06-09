@@ -145,6 +145,7 @@ def init_beam(obs: dict, pyfhd_config: dict, logger: Logger) -> dict:
     )
     psf["scale"] = obs["dimension"] * psf["intermediate_res"] / psf["image_dim"]
     psf["pix_horizon"] = obs["dimension"] / psf["scale"]
+    psf["superres_dim"] = psf["dim"] * psf["resolution"]
 
     location = EarthLocation.of_site(obs["instrument"])
 
