@@ -288,14 +288,18 @@ def beam_image(
 
 
 def beam_image_hyperresolved(
-    antenna, ant_pol, freq_i, zen_int_x, zen_int_y, psf
+    antenna, ant_pol_1, ant_pol_2, freq_i, zen_int_x, zen_int_y, psf
 ) -> NDArray[np.complexfloating]:
     """
-    TODO: _summary_
+    _summary_
 
     Parameters
     ----------
     antenna : _type_
+        _description_
+    ant_pol_1 : _type_
+        _description_
+    ant_pol_2 : _type_
         _description_
     freq_i : _type_
         _description_
@@ -315,20 +319,20 @@ def beam_image_hyperresolved(
     # So we will just use the first antenna twice as I PyFHD does not support multiple antennas at this time,
     # If you want to use multiple antennas, please open an issue on the PyFHD GitHub repository or do the translation and/or
     # adjustments yourself.
-    beam_ant = antenna["response"][ant_pol, freq_i]
-    beam_ant_conj = np.conjugate(beam_ant)
+    beam_ant_1 = antenna["response"][ant_pol_1, freq_i]
+    beam_ant_2 = np.conjugate(antenna["response"][ant_pol_2, freq_i])
 
     # Amplitude of the response from "ant1" (again FHD takes more than one antenna)
     # is Sqrt(|J1[0,pol1]|^2 + |J1[1,pol1]|^2)
     amp_1 = (
-        np.abs(antenna["jones"][0, ant_pol]) ** 2
-        + np.abs(antenna["jones"][1, ant_pol]) ** 2
+        np.abs(antenna["jones"][0, ant_pol_1]) ** 2
+        + np.abs(antenna["jones"][1, ant_pol_1]) ** 2
     )
     # Amplitude of the response from "ant2" (again FHD takes more than one antenna)
     # is Sqrt(|J2[0,pol2]|^2 + |J2[1,pol2]|^2)
     amp_2 = (
-        np.abs(antenna["jones"][0, ant_pol]) ** 2
-        + np.abs(antenna["jones"][1, ant_pol]) ** 2
+        np.abs(antenna["jones"][0, ant_pol_2]) ** 2
+        + np.abs(antenna["jones"][1, ant_pol_2]) ** 2
     )
     # Amplitude of the baseline response is the product of the "two" antenna responses
     power_zenith_beam = np.sqrt(amp_1 * amp_2)
@@ -348,7 +352,7 @@ def beam_image_hyperresolved(
 
     # Normalize the image power beam to the zenith
     image_power_beam[antenna["pix_use"]] = (
-        power_zenith_beam * beam_ant * beam_ant_conj
+        power_zenith_beam * beam_ant_1 * beam_ant_2
     ) / power_zenith
 
     return image_power_beam
@@ -356,8 +360,8 @@ def beam_image_hyperresolved(
 
 def beam_power(
     antenna,
-    obs,
-    ant_pol,
+    ant_pol_1,
+    ant_pol_2,
     freq_i,
     psf,
     zen_int_x,
@@ -393,7 +397,7 @@ def beam_power(
     """
     # For now we will ignore beam_gaussian_decomp and much of the debug keywords
     image_power_beam = beam_image_hyperresolved(
-        antenna, ant_pol, freq_i, zen_int_x, zen_int_y, psf, pyfhd_config
+        antenna, ant_pol_1, ant_pol_2, freq_i, zen_int_x, zen_int_y, psf, pyfhd_config
     )
     if pyfhd_config["kernel_window"]:
         image_power_beam *= antenna["pix_window"]

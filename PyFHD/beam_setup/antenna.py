@@ -33,8 +33,7 @@ def init_beam(obs: dict, pyfhd_config: dict, logger: Logger) -> dict:
         _description_
     """
 
-    #     # Setup the constants and variables
-    n_tiles = obs["n_tile"]
+    # Setup the constants and variables
     # Almost all instruments have two instrumental polarizations (either linear or circular)
     n_ant_pol = 2
     frequency_array = obs["baseline_info"]["freq"]
@@ -107,7 +106,8 @@ def init_beam(obs: dict, pyfhd_config: dict, logger: Logger) -> dict:
         "coords": coords,
         "delays": delays,
         "response": None,
-        "group_id": np.full(n_ant_pol, -1, dtype=np.int64),
+        # PyFHD supports one instrument at a time, so we setup the group so they're all in the same group.
+        "group_id": np.zeros([n_ant_pol, obs["n_tile"]], dtype=np.int8),
         "pix_window": None,
         "pix_use": None,
     }
