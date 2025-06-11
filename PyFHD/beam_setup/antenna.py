@@ -4,6 +4,7 @@ from numpy.typing import NDArray
 from logging import Logger
 from astropy.constants import c
 from astropy.coordinates import SkyCoord, EarthLocation
+from astropy import units
 from scipy.interpolate import interp1d
 from PyFHD.beam_setup.mwa import dipole_mutual_coupling
 from PyFHD.pyfhd_tools.unit_conv import pixel_to_radec, radec_to_altaz
@@ -29,8 +30,19 @@ def init_beam(obs: dict, pyfhd_config: dict, logger: Logger) -> dict:
 
     Returns
     -------
-    dict
+    antenna : dict
         _description_
+    psf : dict
+        _description_
+    beam : UVBeam or AnalyticBeam
+        _description_
+
+    Raises
+    ------
+    FileNotFoundError
+        If the MWA beam file does not exist and needs to be downloaded.
+    ValueError
+        If the instrument is not supported or if the antenna configuration is invalid.
     """
 
     # Setup the constants and variables
@@ -212,7 +224,11 @@ def init_beam(obs: dict, pyfhd_config: dict, logger: Logger) -> dict:
 
     # Get the jones matrix for the antenna
     antenna["jones"] = general_jones_matrix(
-        beam, za_array=zenith_angle_arr, az_array=azimuth_arr
+        beam,
+        za_array=zenith_angle_arr,
+        az_array=azimuth_arr,
+        freq_array=frequency_array,
+        telescope_location=location,
     )
 
     # Get the antenna response
@@ -223,7 +239,7 @@ def init_beam(obs: dict, pyfhd_config: dict, logger: Logger) -> dict:
         az_arr=azimuth_arr,
     )
 
-    return antenna, psf
+    return antenna, psf, beam
 
 
 def general_jones_matrix(

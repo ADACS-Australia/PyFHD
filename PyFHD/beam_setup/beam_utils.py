@@ -1,8 +1,11 @@
 import numpy as np
 from astropy.constants import c
+from pyuvdata import BeamInterface, UVBeam
+from pyuvdata.analytic_beam import AnalyticBeam
 from PyFHD.pyfhd_tools.pyfhd_utils import histogram, region_grow
 import h5py
 from numpy.typing import NDArray
+from scipy.ndimage import map_coordinates
 
 
 def gaussian_decomp(
@@ -288,26 +291,35 @@ def beam_image(
 
 
 def beam_image_hyperresolved(
-    antenna, ant_pol_1, ant_pol_2, freq_i, zen_int_x, zen_int_y, psf
+    antenna: dict,
+    beam: UVBeam | AnalyticBeam,
+    ant_pol_1: int,
+    ant_pol_2: int,
+    freq_i: int,
+    zen_int_x: float,
+    zen_int_y: float,
+    psf: dict,
 ) -> NDArray[np.complexfloating]:
     """
     _summary_
 
     Parameters
     ----------
-    antenna : _type_
+    antenna : dict
         _description_
-    ant_pol_1 : _type_
+    beam : UVBeam | AnalyticBeam
         _description_
-    ant_pol_2 : _type_
+    ant_pol_1 : int
         _description_
-    freq_i : _type_
+    ant_pol_2 : int
         _description_
-    zen_int_x : _type_
+    freq_i : int
         _description_
-    zen_int_y : _type_
+    zen_int_x : float
         _description_
-    psf : _type_
+    zen_int_y : float
+        _description_
+    psf : dict
         _description_
 
     Returns
@@ -348,6 +360,11 @@ def beam_image_hyperresolved(
     # to change it.
     # The interp is a placeholder for now, but it should be replaced with a proper
     # interpolation function that matches the IDL Interpolate function.
+    # TODO: Replace with UVBeam interface object as_power_beam, then
+    # compute_response at za 0 az 0
+    # Initial trying out of using pyuvdata, not close at all. This is interpolating
+    # the zenith power using the x and y pixel coordinates, to use pyuvdata likely need to do
+    # pixel to ra/dec then to za/az
     power_zenith = np.interp(zen_int_x, zen_int_y, image_power_beam)
 
     # Normalize the image power beam to the zenith
@@ -359,35 +376,44 @@ def beam_image_hyperresolved(
 
 
 def beam_power(
-    antenna,
-    ant_pol_1,
-    ant_pol_2,
-    freq_i,
-    psf,
-    zen_int_x,
-    zen_int_y,
-    xvals_uv_superres,
-    yvals_uv_superres,
-    pyfhd_config,
+    antenna: dict,
+    beam: UVBeam | AnalyticBeam,
+    ant_pol_1: int,
+    ant_pol_2: int,
+    freq_i: int,
+    psf: dict,
+    zen_int_x: float,
+    zen_int_y: float,
+    xvals_uv_superres: np.ndarray,
+    yvals_uv_superres: np.ndarray,
+    pyfhd_config: dict,
 ) -> NDArray[np.complexfloating]:
     """
     _summary_
 
     Parameters
     ----------
-    antenna : _type_
+    antenna : dict
         _description_
-    obs : _type_
+    beam : UVBeam | AnalyticBeam
         _description_
-    freq_i : _type_
+    ant_pol_1 : int
         _description_
-    psf : _type_
+    ant_pol_2 : int
         _description_
-    pyfhd_config : _type_
+    freq_i : int
         _description_
-    zen_int_x : _type_
+    psf : dict
         _description_
-    zen_int_y : _type_
+    zen_int_x : np.ndarray
+        _description_
+    zen_int_y : np.ndarray
+        _description_
+    xvals_uv_superres : np.ndarray
+        _description_
+    yvals_uv_superres : np.ndarray
+        _description_
+    pyfhd_config : dict
         _description_
 
     Returns
@@ -397,13 +423,25 @@ def beam_power(
     """
     # For now we will ignore beam_gaussian_decomp and much of the debug keywords
     image_power_beam = beam_image_hyperresolved(
-        antenna, ant_pol_1, ant_pol_2, freq_i, zen_int_x, zen_int_y, psf, pyfhd_config
+        antenna,
+        beam,
+        ant_pol_1,
+        ant_pol_2,
+        freq_i,
+        zen_int_x,
+        zen_int_y,
+        psf,
+        pyfhd_config,
     )
     if pyfhd_config["kernel_window"]:
         image_power_beam *= antenna["pix_window"]
     psf_base_single = np.fft.fftshift(np.fft.ifftn(np.fft.fftshift(image_power_beam)))
     # TODO: Same cubic problem as in beam_image_hyperresolved here
-    psf_base_superres = np.interp(xvals_uv_superres, yvals_uv_superres, psf_base_single)
+    # Map Coordinates isn't the same as IDL Interpolate
+    # But its closish, more of a placeholder for now.
+    psf_base_superres = map_coordinates(
+        psf_base_single, (xvals_uv_superres, yvals_uv_superres)
+    )
 
     # Build a mask to create a well-defined finite beam
     uv_mask_superres = np.zeros(

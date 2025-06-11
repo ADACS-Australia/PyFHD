@@ -48,7 +48,7 @@ def create_psf(obs: dict, pyfhd_config: dict, logger: Logger) -> dict | File:
             "PyFHD will do the beam forming from scratch using pyuvdata and the antenna response from FHD."
             "Please note, gaussian decomp for MWA is not implemented yet."
         )
-        antenna, psf = init_beam(obs, pyfhd_config, logger)
+        antenna, psf, beam = init_beam(obs, pyfhd_config, logger)
         # TODO: we'll see if the +1 is necessary, IDL indexing thing
         n_freq_bin = np.max(obs["baseline_info"]["fbin_i"]) + 1
         # TODO: Double check the shape
@@ -128,7 +128,7 @@ def create_psf(obs: dict, pyfhd_config: dict, logger: Logger) -> dict | File:
             ]
         )
         bi_list = ant_b_list + ant_a_list * baseline_mod
-        bi_hist0, _, ri_bi = histogram(bi_list, min=0, bin_size=1)
+        bi_hist0, _, _ = histogram(bi_list, min=0, bin_size=1)
         bi_max = np.max(bi_list)
         pol_arr = np.array([[0, 0], [1, 1], [0, 1], [1, 0]], dtype=np.int8)
         for pol_i in range(obs["n_pol"]):
@@ -172,6 +172,7 @@ def create_psf(obs: dict, pyfhd_config: dict, logger: Logger) -> dict | File:
                 # Calculate power beam from antenna beams
                 psf_base_superres = beam_power(
                     antenna,
+                    beam,
                     ant_pol1,
                     ant_pol2,
                     freq_i,
@@ -185,9 +186,14 @@ def create_psf(obs: dict, pyfhd_config: dict, logger: Logger) -> dict | File:
 
                 # divide by psf_resolution^2 since the FFT is done at
                 # a different resolution and requires a different normalization
-                # TODO: add bi_use calcs for baseline_group_n
-                # beam_int += baseline_group_n + np.sum(psf_base_superres) / psf["resolution"] ** 2
-                # beam_int_2 += baseline_group_n + np.sum(np.abs(psf_base_superres)) / psf["resolution"] ** 2
+                beam_int += (
+                    baseline_group_n
+                    + np.sum(psf_base_superres) / psf["resolution"] ** 2
+                )
+                beam_int_2 += (
+                    baseline_group_n
+                    + np.sum(np.abs(psf_base_superres)) / psf["resolution"] ** 2
+                )
                 n_grp_use += baseline_group_n
                 psf_single = np.zeros(
                     [psf["resolution"] + 1, psf["resolution"] + 1],
