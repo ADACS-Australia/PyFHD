@@ -939,15 +939,23 @@ Beam Setup
 ++++++++++
 The beam setup in ``PyFHD`` has been translated from `FHD`_ and is a combination of using `pyuvdata`_ and translation from `FHD`_, it is by no means tested and is definitely a work in progress.
 More specifically, the ``beam_setup`` uses `pyuvdata`_ to create the ``Jones`` matrix for the beam, and then ``FHD`` translation is used to create the main response and the representation of the beam
-in UV space.
+in UV space. For the moment, PyFHD only supports using one beam per observation and does not currently support different beams for different antennas. Furthermore, mode advanced features like gaussian decomp and
+many of the debugging options are not implemented, as such there are plenty of opportunities to add to the ``beam_setup``, both in small and large pieces of code.
 
 You can see test out the beam_setup by setting the ``beam-file-path`` to ``None`` (~ in the yaml configuration file) and setting the ``recalculate-beam`` option to ``True``. You'll likely run into
 memory limitations with your machine during testing. The ``beam_setup`` branch has been purposely left there ready for you to directly contribute code to it.
 
 Deconvolution
 ++++++++++++++
-Deconvolution is not currently implemented in ``PyFHD``, with that said, inside the gridding director isu ``visibility_degrid.py``, which has been translated from `FHD`_ and has not been tested at all.
-That should give you a good start if you wish to implement deconvolution in ``PyFHD``. As a bonus, the deconvolution code in `FHD`_ has many dependencies that are used in the model generation, so if for some
-reason you want the skymodel generation from `FHD`_ you might get most of that model generation code for free, if someone also does deconvolution in ``PyFHD`` (Although, there's a good chance tools like `WODEN`_ 
-will always be faster and better at producing skymodels, so use those first before you try to implement model generation in ``PyFHD``).
+Deconvolution is not currently implemented in ``PyFHD``, with that said, inside the gridding directory is ``visibility_degrid.py``, which has been translated from `FHD`_ and has not been tested at all.
+That should give you a good start if you wish to implement deconvolution in ``PyFHD``. As a bonus, the deconvolution code in `FHD`_ has many dependencies that are used in the model generation, so if for whatever
+reason you want the skymodel generation from `FHD`_ you might get most of that model generation code for free, if someone also does deconvolution in ``PyFHD``, you'll likely be only a week or two away from having model generation also.
+Although, there's a good chance tools like `WODEN`_ will likely be faster and better at producing skymodels, so use those first before you try to implement model generation in ``PyFHD``.
 
+4 Polarizations
++++++++++++++++
+The ability for PyFHD to handle 4 polarizations is not well tested, and may not be fully implemented in places, another great opportunity to contribute.
+
+Simulation
+++++++++++
+`FHD`_ has ability to do simulations, many of these simulation features haven't been translated to ``PyFHD``, this would be a large piece of work.
