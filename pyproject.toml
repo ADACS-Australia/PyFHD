@@ -3,7 +3,7 @@ name = "PyFHD"
 version = "1.0"
 readme = "README.md"
 license = { file = "LICENSE" }
-description = "Python Fast Holograhic Deconvolution: A Python package that does efficient image deconvolution for general radio astronomy, fast-mode Epoch of Reionization analysis, and simulation."
+description = "Python Fast Holograhic Deconvolution: A Python package that does fast-mode Epoch of Reionization analysis."
 authors = [
     { name = "Joel Dunstan (SkyWa7ch3r)", email = "joel.g.w.dunstan@gmail.com"},
     { name = "Jack Line (JLBLine)"},

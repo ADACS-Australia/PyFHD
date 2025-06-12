@@ -209,6 +209,14 @@ def main():
                     f"Checkpoint Loaded: Uncalibrated visibility parameters, array and weights and the observation metadata dictionary loaded from {Path(pyfhd_config['output_dir'], 'obs_checkpoint.h5')}"
                 )
 
+        # Read in the beam from a file returning a psf dictionary
+        psf_start = time.time()
+        psf = create_psf(pyfhd_config, logger)
+        psf_end = time.time()
+        _print_time_diff(
+            psf_start, psf_end, "Beam and PSF dictionary imported.", logger
+        )
+
         # Check if the calibrate checkpoint has been used, if not run the calibration steps
         if pyfhd_config["calibrate_checkpoint"] is None:
             if pyfhd_config["deproject_w_term"] is not None:
@@ -412,14 +420,6 @@ def main():
             )
             finish_pyfhd(pyfhd_start, logger, psf, pyfhd_config)
             exit(0)
-
-        # Read in the beam from a file returning a psf dictionary
-        psf_start = time.time()
-        psf = create_psf(pyfhd_config, logger)
-        psf_end = time.time()
-        _print_time_diff(
-            psf_start, psf_end, "Beam and PSF dictionary imported.", logger
-        )
 
         if (
             psf["image_info"]["image_power_beam_arr"] is not None
