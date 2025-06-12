@@ -337,7 +337,7 @@ the beam is inside the ``beams`` directory (not that we need it for this run, as
         --output_path "/path/to/outputs/" \
         --description 1091128160 \
         --model_file_type "uvfits" \
-        --model_file_path "./path/to/model/1091128160/1091128160_puma_LoBES_2s_80kHz_hbeam_woden_2.5.uvfits" 
+        --model_file_path "./path/to/model/1091128160/puma_LoBES_2s_80kHz_hbeam_1091128160.uvfits" 
 
 .. tip::
 
@@ -483,7 +483,7 @@ the beam is inside the ``beams`` directory (not that we need it for this run, as
     model-file-type : 'uvfits'
     # If you set model-file-type to uvfits, set import-model-uvfits to the (ideally absolute) path of the fits file
     # If model-file-type is set to sav then it will look for the sav files as said in the function import_vis_model_from_sav
-    model-file-path: '/path/to/models/1091128160/1091128160_puma_LoBES_2s_80kHz_hbeam_woden_2.5.uvfits'
+    model-file-path: '/path/to/models/1091128160/puma_LoBES_2s_80kHz_hbeam_1091128160.uvfits'
     diffuse-model : ~
     model-catalog-file-path  :  ~ # 'GLEAM_v2_plus_rlb2019.sav' (FHD Default)
     allow-sidelobe-model-sources : false
@@ -649,7 +649,6 @@ This would be the same as runnning the command below:
     --grid-weights \
     --grid-variance \
     --no-grid-uniform \
-    --ps-kspan 200
     --gridding-plots
 
 Below we have the example plots of the gridded continuum data for the two polarizations, XX and YY, for the sample data.
@@ -663,72 +662,49 @@ Below we have the example plots of the gridded continuum data for the two polari
 Running Gridding with a full MWA observation
 ++++++++++++++++++++++++++++++++++++++++++++
 
-TODO: Add more advanced grididng example with 1088281328
-   
+In this observation we will run calibration and then use the results for gridding, you'll notice some more advanced options
+being used here. Such options like ``--digital-gain-jump-polyfit`` should only be used if you know that it's needed (although
+``PyFHD`` will warn you if you try to use it in the wrong conditions). Also take notice that the beam is being loaded here, through
+the use of the ``--beam-file-path`` option, this is required for gridding to work. If you wish to learn more about the ``--lazy-load-beam``
+option refer to :ref:`lazy-loading` section below.
 
-.. In this example, calibration should already have been run using ``FHD``. We will then take the calibrated visibilities/model and grid them into two groups: even and odd time steps. This is the first step towards creating a power spectrum (:math:`\varepsilon`\ *ppsilon* uses the difference between the even and odd to estimate the noise).
+.. code-block:: bash
 
-.. .. code-block:: bash
+   pyfhd \
+      1088281328 \
+      --input-path "/path/to/input/uvfits/1088281328" \
+      --output-path "/path/to/output/" \
+      --description 1088281328 \
+      --beam-file-path "path/to/beams/decomp_beam_pointing0.h5" \
+      --lazy-load-beam: true \
+      --model-file-type "uvfits" \
+      --model-file-path "./path/to/models/1088281328/puma_LoBES_2s_80kHz_hbeam_1088281328.uvfits" \
+      --recalculate-grid \
+      --image-filter "filter_uv_uniform" \
+      --grid-weights \
+      --grid-variance \
+      --calibrate-visibilities \
+      --cable-bandpass-fit \
+      --calibration-polyfit \
+      --cal-amp-degree-fit 2 \
+      --cal-phase-degree-fit 1 \
+      --cal-reflection-hyperresolve \
+      --cal-reflection-mode-theory 150 \
+      --no-cal-reflection-mode-delay \
+      --no-cal-reflection-mode-file \
+      --no-calibration-auto-fit \
+      --no-calibration-auto-initialize \
+      --no-cal-adaptive-calibration-gain \
+      --vis-baseline-hist \
+      --bandpass-calibrate \
+      --auto-ratio-calibration \
+      --no-cal-time-average \
+      --digital-gain-jump-polyfit \
+      --calibration-plots \
+      --gridding-plots
+      
 
-..    pyfhd \
-..        '1088281328' \
-..        --input-path /path/to/data/ \
-..        --output-path /current/working/directory/ \
-..        --description my_first_run \
-..        --grid-psf-file /path/to/beams/gauss_beam_pointing-2.npz \
-..        --ps-kspan=200 \
-..        --grid_IDL_outputs
-
-.. For this command to work, the raw data (which ``FHD`` needs to work out some metadata-type things) should exist as specified above as::
-
-..     /path/to/data/1088281328.uvfits
-
-.. The following ``FHD`` outputs must also exist, in these locations:
-
-.. .. code-block:: bash
-
-..     /current/working/directory
-..     └── pyfhd_my_first_run
-..       └── fhd_pyfhd_my_first_run
-..         ├── 1088281328_variables.sav
-..         ├── metadata
-..         | ├── 1088281328_obs.sav
-..         | └── 1088281328_params.sav
-..         └── vis_data
-..           ├── 1088281328_vis_XX.sav
-..           ├── 1088281328_vis_YY.sav
-..           ├── 1088281328_vis_model_XX.sav
-..           ├── 1088281328_vis_model_YY.sav
-..           └── 1088281328_flags.sav 
-
-.. Other than specifying file paths, the other necessary arguments have the following effect:
-
-.. .. list-table::
-..    :widths: 25 25
-..    :header-rows: 1
-
-..    * - Argument
-..      - Meaning
-..    * - -\-grid-psf-file
-..      - A converted ``FHD`` ``psf`` object to use as a gridding kernel
-..    * - -\-ps-kspan=200
-..      - Set the width of the gridded visibilities (wavelengths)
-..    * - -\-grid_IDL_outputs
-..      - Switches on gridding using ``FHD`` outputs
-
-.. Once run, this will produce the following outputs:
-
-.. .. code-block:: bash
-
-..    /current/working/directory
-..    └── pyfhd_my_first_run
-..      └── gridding_outputs
-..          ├── 1088281328_gridded_uv_cube_even_XX.h5
-..          ├── 1088281328_gridded_uv_cube_even_YY.h5
-..          ├── 1088281328_gridded_uv_cube_odd_XX.h5
-..          └── 1088281328_gridded_uv_cube_odd_YY.h5
-
-.. These files contain the gridded data sets, with each frequency slice being a separate ``hdf5`` data object within the relevant file.
+TODO: Add gridding plots here
 
 Other Telescopes
 ----------------
@@ -785,6 +761,8 @@ An example of the beam HDF5 file for the sample data seen inside VSCode using H5
   :width: 800px
   :align: center
   :alt: H5 Web example
+
+.. _lazy-loading:
 
 Lazy Loading
 +++++++++++++
