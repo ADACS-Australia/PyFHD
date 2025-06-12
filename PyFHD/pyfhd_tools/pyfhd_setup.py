@@ -811,6 +811,12 @@ def pyfhd_parser():
         action=OrderedBooleanOptionalAction,
         help="Create Healpix fits files. Healpix fits maps are in units Jy/sr. Replaces write_healpix_fits",
     )
+    export.add_argument(
+        "--save-model",
+        default=False,
+        action=OrderedBooleanOptionalAction,
+        help="Save the model visibilities created transferred in during PyFHD's run as HDF5.",
+    )
 
     # Plotting Group
     plotting.add_argument(

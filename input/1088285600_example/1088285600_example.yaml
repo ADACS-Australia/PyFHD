@@ -117,6 +117,7 @@ save-visibilities : true
 save-weights: true
 save-healpix-fits: true
 snapshot-healpix-export : true
+save-model: true
 pad-uv-image : 1.
 ring-radius-multi : 10.
 description : 1088285600_example

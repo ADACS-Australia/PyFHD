@@ -116,6 +116,7 @@ save-cal: true
 save-visibilities : true
 save-weights: true
 save-healpix-fits: true
+save-model: true
 snapshot-healpix-export : true
 pad-uv-image : 1.
 ring-radius-multi : 10.
@@ -127,9 +128,9 @@ gridding-plots: true
 image-plots: true
 
 # Model
-# Current choices of model-file-type are sav and uvfits
+# Current choices of model-file-type are sav, uvfits and h5 (prefer sav and uvfits)
 model-file-type : 'sav'
-# If you set model-file-type to uvfits, set import-model-uvfits to the (ideally absolute) path of the fits file
+# If you set model-file-type to uvfits or HDF5, set import-model-uvfits to the (ideally absolute) path of the fits file
 # If model-file-type is set to sav then it will look for the sav files as said in the function import_vis_model_from_sav
 model-file-path: './input'
 diffuse-model : ~

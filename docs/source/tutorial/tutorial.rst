@@ -807,7 +807,7 @@ loaded data is stored inside a ``HDF5 File`` object rather than a Python diction
   print(loaded_example["example"][:]) # [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
   print(loaded_example["example_group"]["example_in_group"][:]) # [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
 
-This is useful primarily for any beam files that are large, as they can take a long time to load into memory and can use a lot of memory. 
+This is useful primarily for any beam files that are large, as they can take a long time to load into memory and can use a lot of memory.
 
 .. tip::
   
@@ -815,6 +815,267 @@ This is useful primarily for any beam files that are large, as they can take a l
   This means that if you try to use the data in a way that requires it to be loaded into memory, you will need to wait for data to transfer
   from disk to memory, this can cause parts of the pipeline to be slow. Optimizations need to be done to better deal with the transfer of disk to memeory, 
   to better chunk the data into memory for processing. If you're happy to take that task on yourself, do a Pull Request!
+
+Loading PyFHD Outputs into FHD
+++++++++++++++++++++++++++++++
+``PyFHD`` outputs can be loaded into ``FHD`` if you need it, PyFHD outputs are typically ``HDF5`` files, IDL is capable of reading in HDF5 files using functions like
+`H5F_OPEN <https://www.nv5geospatialsoftware.com/docs/H5F_OPEN.html>`_, `H5D_OPEN <https://www.nv5geospatialsoftware.com/docs/H5D_OPEN.html>`_ and `H5D_READ <https://www.nv5geospatialsoftware.com/docs/H5D_READ.html>`_ 
+(There are also the same functions for groups, replace ``F`` or ``D`` with ``G``). Loading the ``PyFHD`` into `FHD`_ does require some data manipulation to get it in the same format that `FHD`_ expects, for example,
+the beam array is stored as pointer arrays in `FHD`_ on a per baseline basis, where the every baseline points to the to the first baseline. These sort of pointer array structures are used in many places across `FHD`_,
+so to help you in the future, I'll supply two examples of how to load the sample data beam and models into IDL and convert them to the sav files which have the arrays in the format that `FHD`_ expects. These examples
+are not complete (for example the model doesn't also create the params file), but they should give you a good idea of how to load the data into IDL and convert it to the format that `FHD`_ expects.
+
+.. raw:: html
+
+  <details>
+  <summary>convert_model_arr_to_sav.pro</summary>
+  <p>
+
+.. code-block:: idl
+
+  PRO convert_model_arr_to_sav,save_dir, obs_id, n_pol
+
+    ;this is the model visibilities as written out by PyFHD
+    hdf5_filepath = save_dir + "/" + obs_id + "_vis_model.h5"
+
+    ;load in the hdf5 file
+    print, "Now loading model data from ", hdf5_filepath
+    file_id = H5F_OPEN(hdf5_filepath)
+    
+    ;for as many polarisations as specified by n_pol, write out FHD style .sav
+    ;files
+    pol_names = ['XX', 'YY', 'XY', 'YX']
+
+    model_dataset_id = H5D_OPEN(file_id, "vis_model_arr")
+    ;this reads into a struct containing real and imaginary as separate values
+    model_data = H5D_READ(model_dataset_id)
+
+    ; for pol = 0, 0 do begin
+    for pol = 0, n_pol-1 do begin
+
+        ;read in this polarisation from the hdf5 file
+        ;things have to be saved inside a pointer array for FHD to load it back
+        ;in correctly
+        vis_model_ptr=PTRARR(1, /allocate)
+        *vis_model_ptr[0] = COMPLEX(model_data.r, model_data.i)
+
+        print, "Writing model uvfits to .sav file: " + obs_id + "_vis_model_" + pol_names[pol] + ".sav"
+
+        ;save into the FHD vis_model format and naming convention
+        idl_save = save_dir + "/" + obs_id + "_vis_model_" + pol_names[pol] + ".sav"
+        save, vis_model_ptr, filename = idl_save
+
+    endfor
+    ;close the hdf5 data struct, done with it now
+    H5D_CLOSE, model_dataset_id
+    ;close file, let's be tidy
+    H5F_CLOSE, file_id
+  END
+
+.. raw:: html
+
+  </p>
+  </details>
+
+.. raw:: html
+
+  <details>
+  <summary>convert_beam_to_sav.pro</summary>
+  <p>
+
+.. code-block:: idl
+
+  PRO convert_beam_to_sav, save_dir, beam_file, obs_file
+
+    ;this is the model visibilities as written out by PyFHD run
+    beam_filepath = save_dir + "/" + beam_file
+    obs_filepath = save_dir + "/" + obs_file
+
+    ;load in the hdf5 file
+    print, "Now loading model data from ", beam_filepath
+    file_id = H5F_OPEN(beam_filepath)
+    
+    ;Get all the ints and floats from the hdf5 file
+    beam_mask_threshold = H5D_OPEN(file_id, "beam_mask_threshold")
+    beam_mask_threshold = H5D_READ(beam_mask_threshold)
+    complex_flag = H5D_OPEN(file_id, "complex_flag")
+    complex_flag = (H5D_READ(complex_flag))[0]
+    dim = H5D_OPEN(file_id, "dim")
+    dim = H5D_READ(dim)
+    fbin_i = H5D_OPEN(file_id, "fbin_i")
+    fbin_i = H5D_READ(fbin_i)
+    fnorm = H5D_OPEN(file_id, "fnorm")
+    fnorm = H5D_READ(fnorm)
+    freq = H5D_OPEN(file_id, "freq")
+    freq = H5D_READ(freq)
+    id = H5D_OPEN(file_id, "id")
+    id = transpose(H5D_READ(id))
+    interpolate_kernel = H5D_OPEN(file_id, "interpolate_kernel")
+    interpolate_kernel = (H5D_READ(interpolate_kernel))[0]
+    n_freq = H5D_OPEN(file_id, "n_freq")
+    n_freq = (H5D_READ(n_freq))[0]
+    n_pol = H5D_OPEN(file_id, "n_pol")
+    n_pol = (H5D_READ(n_pol))[0]
+    pix_horizon = H5D_OPEN(file_id, "pix_horizon")
+    pix_horizon = H5D_READ(pix_horizon)
+    pnorm = H5D_OPEN(file_id, "pnorm")
+    pnorm = H5D_READ(pnorm)
+    resolution = H5D_OPEN(file_id, "resolution")
+    resolution = H5D_READ(resolution)
+    xvals = H5D_OPEN(file_id, "xvals")
+    xvals = transpose(H5D_READ(xvals))
+    yvals = H5D_OPEN(file_id, "yvals")
+    yvals = transpose(H5D_READ(yvals))
+
+    ; image_info
+    image_info = H5G_OPEN(file_id, "image_info")
+    dec_arr = H5D_OPEN(image_info, "dec_arr")
+    dec_arr = transpose(H5D_READ(dec_arr))
+    ra_arr = H5D_OPEN(image_info, "ra_arr")
+    ra_arr = transpose(H5D_READ(ra_arr))
+    psf_image_dim = H5D_OPEN(image_info, "psf_image_dim")
+    psf_image_dim = (H5D_READ(psf_image_dim))[0]
+    psf_image_resolution = H5D_OPEN(image_info, "psf_image_resolution")
+    psf_image_resolution = (H5D_READ(psf_image_resolution))[0]
+    h5g_close, image_info
+    image_info = ptr_new( $
+        create_struct( $
+            'dec_arr', dec_arr,$
+            'ra_arr', ra_arr, $
+            'psf_image_dim', psf_image_dim, $
+            'psf_image_resolution', psf_image_resolution $
+        ) $
+    ) 
+    
+
+    beam_gaussian_params_h5 = H5D_OPEN(file_id, "beam_gaussian_params")
+    beam_gaussian_params_h5 = H5D_READ(beam_gaussian_params_h5)
+    beam_gaussian_params_h5 = transpose(beam_gaussian_params_h5)
+    beam_gaussian_params_dims = reverse(size(beam_gaussian_params_h5, /dim))
+    beam_gaussian_params = PTRARR(beam_gaussian_params_dims[0])
+    for pol_i = 0, n_pol - 1 do begin
+        beam_gaussian_params[pol_i] = PTR_NEW(beam_gaussian_params_h5[pol_i, *, *])
+    endfor
+
+
+    beam_ptr_h5 = H5D_OPEN(file_id, "beam_ptr")
+    beam_ptr_h5 = H5D_READ(beam_ptr_h5)
+    dims = size(beam_ptr_h5, /dim)
+    beam_ptr = PTR_NEW(PTRARR(n_pol, n_freq, (size(id, /dim))[-1]))
+    for pol_i = 0, n_pol-1 do begin
+        for freq_i = 0, n_freq-1 do begin
+            box_matrix = ptrarr(dims[2], dims[1])
+            for box_x = 0, dims[1] - 1 do begin
+                for box_y = 0, dims[2] - 1 do begin                    
+                    box_matrix[box_x, box_y] = ptr_new(COMPLEX(beam_ptr_h5[*, box_y, box_x, freq_i, pol_i].r, beam_ptr_h5[*, box_y, box_x, freq_i, pol_i].i))
+                endfor
+            endfor
+            (*beam_ptr)[pol_i, freq_i, *] = PTR_NEW(box_matrix)
+        endfor
+    endfor
+
+    psf = create_struct( $
+        'beam_mask_threshold', beam_mask_threshold, $
+        'beam_ptr', beam_ptr, $
+        'beam_gaussian_params', beam_gaussian_params, $
+        'complex_flag', complex_flag, $
+        'dim', dim, $
+        'fbin_i', fbin_i, $
+        'fnorm', fnorm, $
+        'freq', freq, $
+        'id', id, $
+        'interpolate_kernel', interpolate_kernel, $
+        'n_freq', n_freq, $
+        'n_pol', n_pol, $
+        'pix_horizon', pix_horizon, $
+        'pnorm', pnorm, $
+        'resolution', resolution, $
+        'xvals', xvals, $
+        'yvals', yvals, $
+        'image_info', image_info $
+    )
+
+    obs_file_id = H5F_OPEN(obs_filepath)
+    baseline_info_id = H5G_OPEN(obs_file_id, "baseline_info")
+    ; dataset     /baseline_info/bin_offset      H5T_INTEGER [2]
+    bin_offset = H5D_OPEN(baseline_info_id, "bin_offset")
+    bin_offset = H5D_READ(bin_offset)
+    ; dataset     /baseline_info/fbin_i          H5T_INTEGER [16]
+    fbin_i = H5D_OPEN(baseline_info_id, "fbin_i")
+    fbin_i = H5D_READ(fbin_i)
+    ; dataset     /baseline_info/freq            H5T_FLOAT [16]
+    freq = H5D_OPEN(baseline_info_id, "freq")
+    freq = H5D_READ(freq)
+    ; dataset     /baseline_info/freq_use        H5T_INTEGER [16]
+    freq_use = H5D_OPEN(baseline_info_id, "freq_use")
+    freq_use = H5D_READ(freq_use)
+    ; dataset     /baseline_info/jdate           H5T_FLOAT [2]
+    jdate = H5D_OPEN(baseline_info_id, "jdate")
+    jdate = H5D_READ(jdate)
+    ; dataset     /baseline_info/tile_a          H5T_INTEGER [16002]
+    tile_a = H5D_OPEN(baseline_info_id, "tile_a")
+    tile_a = H5D_READ(tile_a)
+    ; dataset     /baseline_info/tile_b          H5T_INTEGER [16002]
+    tile_b = H5D_OPEN(baseline_info_id, "tile_b")
+    tile_b = H5D_READ(tile_b)
+    ; dataset     /baseline_info/tile_flag       H5T_INTEGER [128]
+    tile_flag = H5D_OPEN(baseline_info_id, "tile_flag")
+    tile_flag = H5D_READ(tile_flag)
+    ; dataset     /baseline_info/tile_height     H5T_FLOAT [128]
+    tile_height = H5D_OPEN(baseline_info_id, "tile_height")
+    tile_height = H5D_READ(tile_height)
+    ; dataset     /baseline_info/tile_names      H5T_INTEGER [128]
+    tile_names = H5D_OPEN(baseline_info_id, "tile_names")
+    tile_names = H5D_READ(tile_names)
+    ; dataset     /baseline_info/tile_use        H5T_INTEGER [128]
+    tile_use = H5D_OPEN(baseline_info_id, "tile_use")
+    tile_use = H5D_READ(tile_use)
+    ; dataset     /baseline_info/time_use        H5T_INTEGER [2]
+    time_use = H5D_OPEN(baseline_info_id, "time_use")
+    time_use = H5D_READ(time_use)
+
+    baseline_info = create_struct( $
+        'bin_offset', bin_offset, $
+        'fbin_i', fbin_i, $
+        'freq', freq, $
+        'freq_use', freq_use, $
+        'jdate', jdate, $
+        'tile_a', tile_a, $
+        'tile_b', tile_b, $
+        'tile_flag', tile_flag, $
+        'tile_height', tile_height, $
+        'tile_names', tile_names, $
+        'tile_use', tile_use, $
+        'time_use', time_use $
+    )
+
+    H5G_CLOSE, baseline_info_id
+
+    n_baselines = H5D_OPEN(obs_file_id, "n_baselines")
+    n_baselines = (H5D_READ(n_baselines))[0]
+    n_pol = H5D_OPEN(obs_file_id, "n_pol")
+    n_pol = (H5D_READ(n_pol))[0]
+
+    baseline_info = ptr_new(baseline_info)
+    obs = create_struct( $
+        'baseline_info', baseline_info, $
+        'nbaselines', n_baselines, $
+        'n_pol', n_pol, $
+        'primary_beam_area', ptrarr(4),$
+        'primary_beam_sq_area', ptrarr(4) $
+    )
+
+    save, psf, obs, filename = save_dir + "/gauss_beam_pointing0_167635008Hz.sav"
+    ;close the hdf5 file
+    H5F_CLOSE, file_id
+    H5F_CLOSE, obs_file_id
+
+  END
+
+.. raw:: html
+
+  </p>
+  </details>
 
 Docker
 ------

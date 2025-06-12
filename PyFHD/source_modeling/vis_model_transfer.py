@@ -3,7 +3,7 @@ from numpy.typing import NDArray
 from PyFHD.data_setup.uvfits import extract_visibilities, create_params, extract_header
 import logging
 from PyFHD.pyfhd_tools.pyfhd_utils import run_command
-from PyFHD.io.pyfhd_io import recarray_to_dict
+from PyFHD.io.pyfhd_io import recarray_to_dict, save, load
 import importlib_resources
 import os
 import shutil
@@ -46,6 +46,11 @@ def vis_model_transfer(
         vis_model, params_model = import_vis_model_from_uvfits(
             pyfhd_config, obs, logger
         )
+    elif pyfhd_config["model_file_type"] == "h5":
+        # Assume it's a PyFHD h5 file
+        model = load(pyfhd_config["model_file_path"], logger=logger)
+        vis_model = model["vis_model_arr"]
+        params_model = model["params"]
     else:
         logger.error("You chose a file type PyFHD can't import, exiting")
         raise ValueError(
@@ -61,6 +66,16 @@ def vis_model_transfer(
             "You have chosen not to flag the model visibilities, so PyFHD will not account for difference in time steps between the data and the model "
             "or any flagged tiles. This may lead to incorrect calibration results if the model visibilities are not compatible with the data visibilities."
         )
+
+    if pyfhd_config["save_model"]:
+        model_dir = Path(pyfhd_config["output_dir"], "model")
+        model_dir.mkdir(parents=True, exist_ok=True)
+        model_file = Path(model_dir, f"{pyfhd_config['obs_id']}_vis_model.h5")
+        model = {
+            "vis_model_arr": vis_model,
+            "params": params_model,
+        }
+        save(model_file, model, "vis_model", logger=logger)
 
     return vis_model
 
