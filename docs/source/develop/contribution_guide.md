@@ -656,7 +656,7 @@ Matrix Multiply does the dot product for matrices, and because IDL is column bas
 In the case of an array containing only `NaNs` there is a slight difference between IDL's `total` and `mean`, where  `total(x,/nan)` will give you `0` while `mean(x, /nan)` will give you a `NaN`
 
 #### COMPLEX ATAN
-In IDL `ATAN` when used with complex numbers and the `/PHASE` keyword is actually an arctan with the imaginary part divided by the real part i.e. in IDL `ATAN(COMPLEX(2,1), /phase) EQ 0.46364760` while in Python the same code is done as `np.arctan(1/2)`. 
+In IDL `ATAN` when used with complex numbers and the `/PHASE` keyword is actually an arctan with the imaginary part divided by the real part i.e. in IDL `ATAN(COMPLEX(2,1), /phase) EQ 0.46364760` while in Python the same code is done as `np.arctan(1/2)` or alternatively `np.arctan2(1, 2)`. 
 
 #### DIVIDE BY ZERO: 1/0 + 10 = 11 Folks
 When doing a divide by 0 in IDL, it does produce an error `% Program caused arithmetic error: Integer divide by 0` however it doesn't actually break the program, IDL continues to work, watch out for it! Don't ask me why they've done it...and if you don't believe me here is an example in IDL 8.8.0:

@@ -998,7 +998,11 @@ def vis_cal_polyfit(
                     )
                     for di in range(pyfhd_config["cal_amp_degree_fit"]):
                         gain_fit[freq_use[0] : freq_use[f_d] + 1] += fit_params1[di] * (
-                            np.arange(freq_use[f_d]) ** di
+                            # Had to use the size as use freq_use[f_d] could cause
+                            # off by one indexing errors (due to freq_use[0] potentially being
+                            # 1 or 0 which throws off the np.arange indexing)
+                            np.arange(gain_fit[freq_use[0] : freq_use[f_d] + 1].size)
+                            ** di
                         )
                         gain_fit[freq_use[f_d + 1] : freq_use[f_end - 1] + 1] += (
                             fit_params2[di]
