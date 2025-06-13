@@ -11,7 +11,7 @@ import numpy.testing as npt
 
 @pytest.fixture()
 def data_dir():
-    return Path(env.get("PYFHD_TEST_PATH"), "cal_auto_ratio_divide")
+    return Path(env.get("PYFHD_TEST_PATH"), "calibration", "cal_auto_ratio_divide")
 
 
 @pytest.fixture(

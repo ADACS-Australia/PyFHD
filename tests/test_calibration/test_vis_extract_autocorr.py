@@ -11,7 +11,7 @@ from PyFHD.io.pyfhd_io import recarray_to_dict
 
 @pytest.fixture
 def data_dir():
-    return Path(env.get("PYFHD_TEST_PATH"), "vis_extract_autocorr")
+    return Path(env.get("PYFHD_TEST_PATH"), "calibration", "vis_extract_autocorr")
 
 
 @pytest.fixture(

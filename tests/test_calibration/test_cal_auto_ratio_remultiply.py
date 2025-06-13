@@ -12,7 +12,7 @@ from copy import deepcopy
 
 @pytest.fixture()
 def data_dir():
-    return Path(env.get("PYFHD_TEST_PATH"), "cal_auto_ratio_remultiply")
+    return Path(env.get("PYFHD_TEST_PATH"), "calibration", "cal_auto_ratio_remultiply")
 
 
 @pytest.fixture(

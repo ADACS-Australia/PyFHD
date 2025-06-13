@@ -17,7 +17,7 @@ from logging import Logger
 
 @pytest.fixture
 def data_dir():
-    return Path(env.get("PYFHD_TEST_PATH"), "vis_calibration_flag")
+    return Path(env.get("PYFHD_TEST_PATH"), "calibration", "vis_calibration_flag")
 
 
 @pytest.fixture(

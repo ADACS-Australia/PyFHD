@@ -11,7 +11,7 @@ import numpy.testing as npt
 
 @pytest.fixture
 def data_dir():
-    return Path(env.get("PYFHD_TEST_PATH"), "vis_calibrate_qu_mixing")
+    return Path(env.get("PYFHD_TEST_PATH"), "calibration", "vis_calibrate_qu_mixing")
 
 
 @pytest.fixture(scope="function", params=["point_zenith", "point_offzenith"])

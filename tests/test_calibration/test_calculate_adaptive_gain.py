@@ -10,7 +10,7 @@ import numpy.testing as npt
 
 @pytest.fixture
 def data_dir():
-    return Path(env.get("PYFHD_TEST_PATH"), "calculate_adaptive_gain")
+    return Path(env.get("PYFHD_TEST_PATH"), "calibration", "calculate_adaptive_gain")
 
 
 @pytest.fixture(scope="function", params=["point_zenith", "point_offzenith"])

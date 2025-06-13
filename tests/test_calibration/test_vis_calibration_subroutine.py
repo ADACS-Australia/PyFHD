@@ -14,12 +14,7 @@ from PyFHD.io.pyfhd_io import save, load
 
 @pytest.fixture
 def data_dir():
-    return Path(env.get("PYFHD_TEST_PATH"), "vis_calibrate_subroutine")
-
-
-@pytest.fixture
-def full_data_dir():
-    return glob("../**/full_size_vis_calibrate_subroutine/", recursive=True)[0]
+    return Path(env.get("PYFHD_TEST_PATH"), "calibration", "vis_calibrate_subroutine")
 
 
 @pytest.fixture(

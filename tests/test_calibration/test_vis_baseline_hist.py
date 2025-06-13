@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 
 @pytest.fixture
 def data_dir():
-    return Path(env.get("PYFHD_TEST_PATH"), "vis_baseline_hist")
+    return Path(env.get("PYFHD_TEST_PATH"), "calibration", "vis_baseline_hist")
 
 
 @pytest.fixture(
