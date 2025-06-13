@@ -1012,10 +1012,11 @@ def simple_deproject_w_term(
     """
 
     icomp = 1j
-    zcen = np.outer(params["ww"], obs["baseline_info"]["freq"])
+    zcen = np.outer(obs["baseline_info"]["freq"], params["ww"])
     sign = 1 if direction > 0 else -1
     phase = np.exp(direction * icomp * zcen)
-    vis_arr[: obs["n_pol"], :, :] *= np.tile(phase, (obs["n_pol"], 1))
+    for pol_i in range(obs["n_pol"]):
+        vis_arr[pol_i, :, :] *= phase
 
     sign_str = " +1" if sign > 0 else " -1"
     logger.info(f"Applying simple w-term deprojection:{sign_str}")

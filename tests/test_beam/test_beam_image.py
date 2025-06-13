@@ -10,7 +10,7 @@ from PyFHD.beam_setup.beam_utils import beam_image
 
 @pytest.fixture
 def data_dir():
-    return Path(env.get("PYFHD_TEST_PATH"), "beam_image")
+    return Path(env.get("PYFHD_TEST_PATH"), "beam_setup", "beam_image")
 
 
 @pytest.fixture

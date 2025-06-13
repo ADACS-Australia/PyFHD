@@ -10,7 +10,7 @@ from PyFHD.beam_setup.beam_utils import gaussian_decomp
 
 @pytest.fixture
 def data_dir():
-    return Path(env.get("PYFHD_TEST_PATH"), "gaussian_decomp")
+    return Path(env.get("PYFHD_TEST_PATH"), "beam_setup", "gaussian_decomp")
 
 
 @pytest.fixture(
