@@ -371,7 +371,7 @@ the beam is inside the ``beams`` directory (not that we need it for this run, as
     # Checkpointing
     save-checkpoints: false
     obs-checkpoint: ~
-    calibration-checkpoint: ~
+    calibrate-checkpoint: ~
     gridding-checkpoint: ~
 
     # Instrument

@@ -41,6 +41,8 @@ extensions = [
     "myst_parser",
 ]
 
+myst_enable_extensions = ["html_image", "attrs_inline"]
+
 # Display todos by setting to True
 todo_include_todos = True
 

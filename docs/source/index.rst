@@ -32,6 +32,7 @@ Contents
    installation/installation
    tutorial/tutorial
    develop/contribution_guide
+   develop/idl_translation
    documentation/documentation
    changelog/changelog
    
