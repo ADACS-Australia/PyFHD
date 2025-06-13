@@ -522,7 +522,7 @@ def load(
             key = list(h5_file.keys())[0]
             if logger:
                 logger.info(f"Loading {key} from {file_name} into an array")
-            array = h5_file[key][:]
+            array = load_dataset(h5_file, key, h5_file[key])
             return array
         else:
             return_dict = {}
