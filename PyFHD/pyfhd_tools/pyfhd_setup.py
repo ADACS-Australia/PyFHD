@@ -206,7 +206,7 @@ def pyfhd_parser():
     parser.add_argument(
         "--memory-threshold",
         type=int,
-        default=1e8,
+        default=1e9,
         help="Set a memory threshold for each chunk in set in bytes. By default it is set at ~100MB",
     )
     parser.add_argument(
@@ -1384,6 +1384,30 @@ def pyfhd_setup(options: argparse.Namespace) -> Tuple[dict, logging.Logger]:
             "Cannot have beam per baseline and interpolation at the same time, turning off interpolation"
         )
         pyfhd_config["interpolate_kernel"] = False
+
+    # If the user has set a beam file, check it exists (Error)
+    if (
+        pyfhd_config["beam_file_path"] is not None
+        and not Path(pyfhd_config["beam_file_path"]).exists()
+    ):
+        logger.error(
+            f"Beam file {pyfhd_config['beam_file_path']} does not exist, please check your input path"
+        )
+        errors += 1
+
+    if pyfhd_config["beam_file_path"] is None:
+        logger.info("No beam file was set, PyFHD will calculate the beam.")
+
+    if (
+        pyfhd_config["instrument"] == "mwa"
+        and pyfhd_config["beam_file_path"] is None
+        and not pyfhd_config["dipole_mutual_coupling_factor"]
+    ):
+        logger.warning(
+            "Since the instrument is MWA and we're calculating the beam, it's recommended to set the dipole mutual coupling factor to True."
+        )
+        pyfhd_config["dipole_mutual_coupling_factor"] = True
+        warnings += 1
 
     # If cable_bandpass_fit has been enabled an instrument text file should also exist. (Error)
     # TODO get this as a template file during pip install

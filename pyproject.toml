@@ -32,6 +32,7 @@ dependencies = [
     "matplotlib>=3.10.3",
     "numba>=0.61.2",
     "numpy>=2.2.5",
+    "pyuvdata>=3.2.1",
     "scipy>=1.15.3",
 ]
 
@@ -63,7 +64,7 @@ requires = ["hatchling", "hatch-build-scripts"]
 build-backend = "hatchling.build"
 
 [[tool.hatch.build.hooks.build-scripts.scripts]]
-out_dir = "PyFHD"
+out_dir = "."
 work_dir = "."
 artifacts = [
     "__git__.py"

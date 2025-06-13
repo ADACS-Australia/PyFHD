@@ -738,9 +738,9 @@ def vis_cal_bandpass(
     if pyfhd_config["cable_bandpass_fit"]:
         # Using preexisting file to extract information about which tiles have which cable length
         # cable_len = np.loadtxt(Path(pyfhd_config["input"], pyfhd_config["cable-reflection-coefficients"]), skiprows=1)[:, 2].flatten()
-        cable_len_filepath = importlib_resources.files("PyFHD.templates").joinpath(
-            f"{pyfhd_config['instrument']}_cable_reflection_coefficients.txt"
-        )
+        cable_len_filepath = importlib_resources.files(
+            "PyFHD.resources.instrument_config"
+        ).joinpath(f"{pyfhd_config['instrument']}_cable_reflection_coefficients.txt")
         cable_len = np.loadtxt(cable_len_filepath, skiprows=1)[:, 2].flatten()
 
         # Taking tile information and cross-matching it with the nonflagged tiles array, resulting in nonflagged tile arrays grouped by cable length
@@ -1056,7 +1056,9 @@ def vis_cal_polyfit(
             logger.info(
                 "Using mwa calibration reflections fits from instrument_config/mwa_cable_reflection_coefficients.txt."
             )
-            cable_len_filepath = importlib_resources.files("PyFHD.templates").joinpath(
+            cable_len_filepath = importlib_resources.files(
+                "PyFHD.resources.instrument_config"
+            ).joinpath(
                 f"{pyfhd_config['instrument']}_cable_reflection_coefficients.txt"
             )
             cable_reflections = np.loadtxt(cable_len_filepath, skiprows=1).transpose()
@@ -1085,9 +1087,9 @@ def vis_cal_polyfit(
                 "Using theory calculation in nominal reflection mode calibration."
             )
             # Get the nominal tile lengths and velocity factors
-            cable_len_filepath = importlib_resources.files("PyFHD.templates").joinpath(
-                f"{pyfhd_config['instrument']}_cable_length.txt"
-            )
+            cable_len_filepath = importlib_resources.files(
+                "PyFHD.resources.instrument_config"
+            ).joinpath(f"{pyfhd_config['instrument']}_cable_length.txt")
             cable_length_data = np.loadtxt(cable_len_filepath, skiprows=1).transpose()
             cable_length = cable_length_data[2]
             cable_vf = cable_length_data[3]

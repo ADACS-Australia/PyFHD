@@ -7,7 +7,6 @@ from PyFHD.io.pyfhd_io import convert_sav_to_dict
 from PyFHD.pyfhd_tools.test_utils import sav_file_vis_arr_swap_axes
 import numpy.testing as npt
 from PyFHD.io.pyfhd_io import save, load
-import importlib_resources
 import numpy as np
 
 from logging import Logger
@@ -82,14 +81,6 @@ def before_file(tag, run, data_dir):
         except KeyError:
             pyfhd_config[config_key] = None
 
-    pyfhd_config["cable_reflection_coefficients"] = str(
-        importlib_resources.files("PyFHD.templates").joinpath(
-            "mwa_cable_reflection_coefficients.txt"
-        )
-    )
-    pyfhd_config["cable_lengths"] = str(
-        importlib_resources.files("PyFHD.templates").joinpath("mwa_cable_length.txt")
-    )
     if "digital_gain_jump_polyfit" in sav_dict:
         pyfhd_config["digital_gain_jump_polyfit"] = sav_dict[
             "digital_gain_jump_polyfit"

@@ -533,6 +533,15 @@ wheels = [
 ]
 
 [[package]]
+name = "docstring-parser"
+version = "0.16"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/08/12/9c22a58c0b1e29271051222d8906257616da84135af9ed167c9e28f85cb3/docstring_parser-0.16.tar.gz", hash = "sha256:538beabd0af1e2db0146b6bd3caa526c35a34d61af9fd2887f3a8a27a739aa6e", size = 26565, upload-time = "2024-03-15T10:39:44.419Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/d5/7c/e9fcff7623954d86bdc17782036cbf715ecab1bec4847c008557affe1ca8/docstring_parser-0.16-py3-none-any.whl", hash = "sha256:bf0a1387354d3691d102edef7ec124f219ef639982d096e26e3b60aeffa90637", size = 36533, upload-time = "2024-03-15T10:39:41.527Z" },
+]
+
+[[package]]
 name = "docutils"
 version = "0.21.2"
 source = { registry = "https://pypi.org/simple" }
@@ -1513,6 +1522,7 @@ dependencies = [
     { name = "matplotlib" },
     { name = "numba" },
     { name = "numpy" },
+    { name = "pyuvdata" },
     { name = "scipy" },
 ]
 
@@ -1542,6 +1552,7 @@ requires-dist = [
     { name = "matplotlib", specifier = ">=3.10.3" },
     { name = "numba", specifier = ">=0.61.2" },
     { name = "numpy", specifier = ">=2.2.5" },
+    { name = "pyuvdata", specifier = ">=3.2.1" },
     { name = "scipy", specifier = ">=1.15.3" },
 ]
 
@@ -1617,6 +1628,37 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/66/c0/0c8b6ad9f17a802ee498c46e004a0eb49bc148f2fd230864601a86dcf6db/python-dateutil-2.9.0.post0.tar.gz", hash = "sha256:37dd54208da7e1cd875388217d5e00ebd4179249f90fb72437e91a35459a0ad3", size = 342432, upload-time = "2024-03-01T18:36:20.211Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/ec/57/56b9bcc3c9c6a792fcbaf139543cee77261f3651ca9da0c93f5c1221264b/python_dateutil-2.9.0.post0-py2.py3-none-any.whl", hash = "sha256:a8b2bc7bffae282281c8140a97d3aa9c14da0b136dfe83f850eea9a5f7470427", size = 229892, upload-time = "2024-03-01T18:36:18.57Z" },
+]
+
+[[package]]
+name = "pyuvdata"
+version = "3.2.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "astropy", version = "6.1.7", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
+    { name = "astropy", version = "7.0.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
+    { name = "docstring-parser" },
+    { name = "h5py" },
+    { name = "numpy" },
+    { name = "pyerfa" },
+    { name = "pyyaml" },
+    { name = "scipy" },
+    { name = "setuptools-scm" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/20/36/720b00ecc53f5c1ebffbb3304ab7302252bc4367390943690a99212a7699/pyuvdata-3.2.1.tar.gz", hash = "sha256:e4d6655d021fd95a1fa358834e15adf5cf55a0df0611f4e7bb765e6a9bde2b49", size = 52156684, upload-time = "2025-05-06T00:27:07.219Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/8e/aa/baac96a378c861d03651f8a7ae4b769d78ce25d065916381fcacba64064d/pyuvdata-3.2.1-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:a226de1f6037e3e81d2921581a799ee861f135548aa0a045ece37c647255f345", size = 49106147, upload-time = "2025-05-06T00:26:16.056Z" },
+    { url = "https://files.pythonhosted.org/packages/aa/89/ed11d3664ff94cc3e0c59c7a4370c2835d7176053b94e0b1263736b2cd1b/pyuvdata-3.2.1-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:d78278cc44a7841e83c05891ea6eda553e669cc21a6d9e04e3af2f5d3b0268f7", size = 49065916, upload-time = "2025-05-06T00:26:20.294Z" },
+    { url = "https://files.pythonhosted.org/packages/12/71/ae34c601ca5df617140915cfca5392dbaab87e6656096f424e8e28fdeb89/pyuvdata-3.2.1-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:12d4914d8785eda08aeed007da0beff99cf3ad64f9f1e5280d06f135998c786d", size = 51533104, upload-time = "2025-05-06T00:26:24.337Z" },
+    { url = "https://files.pythonhosted.org/packages/b4/6e/0fd224ac270a9296fd7d55543ad46fd7be11d9d0b7c84884c876f767807d/pyuvdata-3.2.1-cp310-cp310-win_amd64.whl", hash = "sha256:c7a0a305e9ed0382f228963719a2de3857323d4a37642df9e00484a000b1672f", size = 47986238, upload-time = "2025-05-06T00:26:28.226Z" },
+    { url = "https://files.pythonhosted.org/packages/ad/b3/8c3e255e945d6f5c194e58246c9f10af822fd06550e78f04bd45a27b48cc/pyuvdata-3.2.1-cp311-cp311-macosx_10_9_x86_64.whl", hash = "sha256:ba6f80da8b0ab7774ab51208123274a0d06af0105da763de5a4a29cfd8e399e2", size = 49106705, upload-time = "2025-05-06T00:26:35.002Z" },
+    { url = "https://files.pythonhosted.org/packages/ed/1a/a88f784dfc8bce49bf26730895466b16708126110c23b3f640fe8464d8eb/pyuvdata-3.2.1-cp311-cp311-macosx_11_0_arm64.whl", hash = "sha256:d50ad57377071c0d2947bae07291365fbc4d2950cb416eab747f978d6170bc2f", size = 49065183, upload-time = "2025-05-06T00:26:39.37Z" },
+    { url = "https://files.pythonhosted.org/packages/fd/9f/fce890aa513014ee31467dd21c5e950cad596e32f4a307f118f8e1ac1818/pyuvdata-3.2.1-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:0f92b6eb82623290fc561b4491e25c66b220c6c8613253b6599fef680f01bd46", size = 51773693, upload-time = "2025-05-06T00:26:43.53Z" },
+    { url = "https://files.pythonhosted.org/packages/b5/e5/eaff2488c8739741a59319d885ff76b25c58417bded82451f747d6112c88/pyuvdata-3.2.1-cp311-cp311-win_amd64.whl", hash = "sha256:0f345854c43c6b1046b756140ea879547027fa4b083c5139eb544e60bdf9e9e9", size = 47986387, upload-time = "2025-05-06T00:26:47.581Z" },
+    { url = "https://files.pythonhosted.org/packages/5c/03/a2b927bd936e3e8486446841c1c6af51b85e9df5471824a4188e45b84228/pyuvdata-3.2.1-cp312-cp312-macosx_10_13_x86_64.whl", hash = "sha256:1d82f2a1b84aea04beadd4ab384f6a8d05dcdc033e0c051e21c090541bcb7cce", size = 49110455, upload-time = "2025-05-06T00:26:50.981Z" },
+    { url = "https://files.pythonhosted.org/packages/ea/75/c4796e7aecb5486c4354366644b1839ffaf9e636b9bb586af35053c13dc4/pyuvdata-3.2.1-cp312-cp312-macosx_11_0_arm64.whl", hash = "sha256:ad622d53f679fe5a807430e5266711d3ef1a5ed51ccd3f55b78655dc65c9615e", size = 49067544, upload-time = "2025-05-06T00:26:54.819Z" },
+    { url = "https://files.pythonhosted.org/packages/6c/05/552a3339a40ec61be4444fcf7ababe665778d1e8383bedc4d95ab0e71773/pyuvdata-3.2.1-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:f5417068bb3bf571905c148a26bd63ce0caff99b4f0b15a79a20347604cc66d0", size = 51690768, upload-time = "2025-05-06T00:26:59.166Z" },
+    { url = "https://files.pythonhosted.org/packages/af/d8/f7e8539076881e2f0e4e1db21a75999bc1e2167ef596ebef7f540c3ea7f9/pyuvdata-3.2.1-cp312-cp312-win_amd64.whl", hash = "sha256:74ac0223137ecbda70a63e54c1364fbf2d1d119f695918f8e3714d65324b0104", size = 47990392, upload-time = "2025-05-06T00:27:03.189Z" },
 ]
 
 [[package]]
@@ -1833,6 +1875,29 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/b7/8e/038ccfe29d272b30086b25a4960f757f97122cb2ec42e62b460d02fe98e9/scipy-1.15.3-cp313-cp313t-musllinux_1_2_aarch64.whl", hash = "sha256:40e54d5c7e7ebf1aa596c374c49fa3135f04648a0caabcb66c52884b943f02b4", size = 36393132, upload-time = "2025-05-08T16:08:15.34Z" },
     { url = "https://files.pythonhosted.org/packages/10/7e/5c12285452970be5bdbe8352c619250b97ebf7917d7a9a9e96b8a8140f17/scipy-1.15.3-cp313-cp313t-musllinux_1_2_x86_64.whl", hash = "sha256:5e721fed53187e71d0ccf382b6bf977644c533e506c4d33c3fb24de89f5c3ed5", size = 38979503, upload-time = "2025-05-08T16:08:21.513Z" },
     { url = "https://files.pythonhosted.org/packages/81/06/0a5e5349474e1cbc5757975b21bd4fad0e72ebf138c5592f191646154e06/scipy-1.15.3-cp313-cp313t-win_amd64.whl", hash = "sha256:76ad1fb5f8752eabf0fa02e4cc0336b4e8f021e2d5f061ed37d6d264db35e3ca", size = 40308097, upload-time = "2025-05-08T16:08:27.627Z" },
+]
+
+[[package]]
+name = "setuptools"
+version = "80.9.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/18/5d/3bf57dcd21979b887f014ea83c24ae194cfcd12b9e0fda66b957c69d1fca/setuptools-80.9.0.tar.gz", hash = "sha256:f36b47402ecde768dbfafc46e8e4207b4360c654f1f3bb84475f0a28628fb19c", size = 1319958, upload-time = "2025-05-27T00:56:51.443Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/a3/dc/17031897dae0efacfea57dfd3a82fdd2a2aeb58e0ff71b77b87e44edc772/setuptools-80.9.0-py3-none-any.whl", hash = "sha256:062d34222ad13e0cc312a4c02d73f059e86a4acbfbdea8f8f76b28c99f306922", size = 1201486, upload-time = "2025-05-27T00:56:49.664Z" },
+]
+
+[[package]]
+name = "setuptools-scm"
+version = "8.3.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "packaging" },
+    { name = "setuptools" },
+    { name = "tomli", marker = "python_full_version < '3.11'" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/b9/19/7ae64b70b2429c48c3a7a4ed36f50f94687d3bfcd0ae2f152367b6410dff/setuptools_scm-8.3.1.tar.gz", hash = "sha256:3d555e92b75dacd037d32bafdf94f97af51ea29ae8c7b234cf94b7a5bd242a63", size = 78088, upload-time = "2025-04-23T11:53:19.739Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/ab/ac/8f96ba9b4cfe3e4ea201f23f4f97165862395e9331a424ed325ae37024a8/setuptools_scm-8.3.1-py3-none-any.whl", hash = "sha256:332ca0d43791b818b841213e76b1971b7711a960761c5bea5fc5cdb5196fbce3", size = 43935, upload-time = "2025-04-23T11:53:17.922Z" },
 ]
 
 [[package]]
