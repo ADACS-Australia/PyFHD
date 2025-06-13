@@ -10,7 +10,7 @@ from PyFHD.io.pyfhd_quickview import get_image_renormalization
 
 @pytest.fixture
 def data_dir():
-    return Path(env.get("PYFHD_TEST_PATH"), "get_image_renormalization")
+    return Path(env.get("PYFHD_TEST_PATH"), "quickview", "get_image_renormalization")
 
 
 @pytest.fixture(

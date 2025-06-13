@@ -11,7 +11,7 @@ from PyFHD.io.pyfhd_quickview import quickview
 
 @pytest.fixture
 def data_dir():
-    return Path(env.get("PYFHD_TEST_PATH"), "fhd_quickview")
+    return Path(env.get("PYFHD_TEST_PATH"), "quickview", "fhd_quickview")
 
 
 @pytest.fixture(
@@ -111,6 +111,8 @@ def test_quickview(before_file, data_dir):
         h5_before["pyfhd_config"]["output_dir"]
     )
     h5_before["pyfhd_config"]["output_dir"].mkdir(exist_ok=True)
+
+    h5_before["pyfhd_config"]["image_plots"] = False
 
     # Astropy needs things to be a str Python type, numpy str type no longer works?
     h5_before["obs"]["astr"]["ctype"] = [
