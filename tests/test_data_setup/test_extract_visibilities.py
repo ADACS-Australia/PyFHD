@@ -10,12 +10,12 @@ from PyFHD.pyfhd_tools.test_utils import get_savs
 
 @pytest.fixture
 def data_dir():
-    return Path(env.get("PYFHD_TEST_PATH"), "uvfits_read/")
+    return Path(env.get("PYFHD_TEST_PATH"), "data_setup", "uvfits_read/")
 
 
 @pytest.fixture
 def uvfits_dir():
-    return Path(env.get("PYFHD_TEST_PATH"), "uvfits/")
+    return Path(env.get("PYFHD_TEST_PATH"), "data_setup", "uvfits/")
 
 
 def test_1061316296(data_dir, uvfits_dir):

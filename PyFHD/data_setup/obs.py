@@ -340,6 +340,7 @@ def read_metafits(
         logger.warning(
             "METAFITS file has not been found, Calculating obs meta settings from the uvfits header instead"
         )
+        hdr = None
         # Simulate the flagging of tiles by taking where tiles don't exist
         tile_A1 = params["antenna1"]
         tile_B1 = params["antenna2"]
@@ -401,18 +402,19 @@ def read_metafits(
         meta["jd0"],
     )
 
-    # Save the raw header and data into the meta dictionary
-    # Save the header as a Python dictionary
-    meta["meta_hdr"] = {}
-    for key in hdr.keys():
-        # Check if they is HISTORY or COMMENT which will be changed to a list for ease of use with hdf5 files
-        if key in ["HISTORY", "COMMENT"]:
-            meta["meta_hdr"][key] = list(hdr[key])
-        else:
-            meta["meta_hdr"][key] = hdr[key]
-    # The astropy FITS_rec class is based off a numpy record array so saving as is should be fine
-    # If so desired a tolist() function to turn the data into list of lists, but you lose the column names
-    meta["meta_data"] = data
+    if hdr is not None:
+        # Save the raw header and data into the meta dictionary
+        # Save the header as a Python dictionary
+        meta["meta_hdr"] = {}
+        for key in hdr.keys():
+            # Check if they is HISTORY or COMMENT which will be changed to a list for ease of use with hdf5 files
+            if key in ["HISTORY", "COMMENT"]:
+                meta["meta_hdr"][key] = list(hdr[key])
+            else:
+                meta["meta_hdr"][key] = hdr[key]
+        # The astropy FITS_rec class is based off a numpy record array so saving as is should be fine
+        # If so desired a tolist() function to turn the data into list of lists, but you lose the column names
+        meta["meta_data"] = data
 
     return meta
 

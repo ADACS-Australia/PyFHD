@@ -28,12 +28,12 @@ def obs_id(request):
 
 @pytest.fixture
 def data_dir():
-    return Path(env.get("PYFHD_TEST_PATH"), "uvfits")
+    return Path(env.get("PYFHD_TEST_PATH"), "data_setup", "uvfits")
 
 
 @pytest.fixture
 def obs_dir():
-    return Path(env.get("PYFHD_TEST_PATH"), "fhd_struct_init_obs")
+    return Path(env.get("PYFHD_TEST_PATH"), "data_setup", "fhd_struct_init_obs")
 
 
 def check_sav_file(path: Path, run: int, pyfhd_config: dict) -> Path:
@@ -63,7 +63,10 @@ def check_sav_file(path: Path, run: int, pyfhd_config: dict) -> Path:
         return h5_file
     sav_file = h5_file.with_suffix(".sav")
     sav_dict = readsav(sav_file, python_dict=True)
-    obs = recarray_to_dict(sav_dict["obs"])
+    if "_" in pyfhd_config["obs_id"]:
+        obs = recarray_to_dict(sav_dict["struct"])
+    else:
+        obs = recarray_to_dict(sav_dict["obs"])
     save(h5_file, obs, "after_file")
 
     return h5_file
@@ -90,15 +93,30 @@ def test_2_pol_obs_creation(obs_id, data_dir, obs_dir):
         "beam_nfreq_avg": 16,
         "dft_threshold": False,
         "healpix_inds": 1,
+        "output_dir": ".",
+        "override_target_phasera": None,
+        "override_target_phasedec": None,
     }
+    # Grab the obs from the after files
+    obs_fhd_result_path = check_sav_file(obs_dir, 1, pyfhd_config)
+    obs_fhd = load(obs_fhd_result_path)
+    # Now set it up for loading the dat from the uvfits directory properly
+    if (
+        obs_id == "point_offzenith_8s_80kHz_analy_autos+gain_errors"
+        or obs_id == "point_zenith_8s_80kHz_analy_autos+gain_errors"
+    ):
+        pyfhd_config["input_path"] = Path(data_dir, "_".join(obs_id.split("_")[:2]))
+        pyfhd_config["obs_id"] = "1088716176"
+    else:
+        pyfhd_config["input_path"] = Path(data_dir, obs_id)
     pyfhd_header, params_data, antenna_header, antenna_data = extract_header(
         pyfhd_config, logger
     )
     params = create_params(pyfhd_header, params_data, logger)
-    layout = create_layout(antenna_header, antenna_data, logger)
+    layout = create_layout(antenna_header, antenna_data, pyfhd_config, logger)
     obs = create_obs(pyfhd_header, params, layout, pyfhd_config, logger)
-    obs_fhd_result_path = check_sav_file(obs_dir, 1, pyfhd_config)
-    obs_fhd = load(obs_fhd_result_path)
+
+    Path(pyfhd_config["output_dir"], "layout.h5").unlink()
 
     # Check the basic obs info
     assert obs["n_pol"] == obs_fhd["n_pol"]
@@ -174,15 +192,30 @@ def test_4_pol_obs_creation(obs_id, data_dir, obs_dir):
         "beam_nfreq_avg": 16,
         "dft_threshold": False,
         "healpix_inds": 1,
+        "output_dir": ".",
+        "override_target_phasera": None,
+        "override_target_phasedec": None,
     }
+    # Grab the obs from the after files
+    obs_fhd_result_path = check_sav_file(obs_dir, 3, pyfhd_config)
+    obs_fhd = load(obs_fhd_result_path)
+    # Now set it up for loading the dat from the uvfits directory properly
+    if (
+        obs_id == "point_offzenith_8s_80kHz_analy_autos+gain_errors"
+        or obs_id == "point_zenith_8s_80kHz_analy_autos+gain_errors"
+    ):
+        pyfhd_config["input_path"] = Path(data_dir, "_".join(obs_id.split("_")[:2]))
+        pyfhd_config["obs_id"] = "1088716176"
+    else:
+        pyfhd_config["input_path"] = Path(data_dir, obs_id)
     pyfhd_header, params_data, antenna_header, antenna_data = extract_header(
         pyfhd_config, logger
     )
     params = create_params(pyfhd_header, params_data, logger)
-    layout = create_layout(antenna_header, antenna_data, logger)
+    layout = create_layout(antenna_header, antenna_data, pyfhd_config, logger)
     obs = create_obs(pyfhd_header, params, layout, pyfhd_config, logger)
-    obs_fhd_result_path = check_sav_file(obs_dir, 3, pyfhd_config)
-    obs_fhd = load(obs_fhd_result_path)
+
+    Path(pyfhd_config["output_dir"], "layout.h5").unlink()
 
     # Check the basic obs info
     assert obs["n_pol"] == obs_fhd["n_pol"]
