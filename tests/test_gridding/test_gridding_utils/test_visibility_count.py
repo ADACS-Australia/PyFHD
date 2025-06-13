@@ -16,7 +16,7 @@ from numpy.testing import assert_allclose
 
 @pytest.fixture
 def data_dir():
-    return Path(env.get("PYFHD_TEST_PATH"), "visibility_count")
+    return Path(env.get("PYFHD_TEST_PATH"), "gridding", "visibility_count")
 
 
 @pytest.fixture(scope="function", params=[1, 2, 3])

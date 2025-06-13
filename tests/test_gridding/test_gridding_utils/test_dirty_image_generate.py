@@ -11,7 +11,7 @@ from logging import Logger
 
 @pytest.fixture
 def data_dir():
-    return Path(env.get("PYFHD_TEST_PATH"), "dirty_image_generate")
+    return Path(env.get("PYFHD_TEST_PATH"), "gridding", "dirty_image_generate")
 
 
 @pytest.fixture(scope="function", params=[1, 2, 3, 4, 5, 6, 7, 8, 9])

@@ -9,7 +9,7 @@ from PyFHD.io.pyfhd_io import save, load
 
 @pytest.fixture
 def data_dir():
-    return Path(env.get("PYFHD_TEST_PATH"), "conjugate_mirror")
+    return Path(env.get("PYFHD_TEST_PATH"), "gridding", "conjugate_mirror")
 
 
 @pytest.fixture(scope="function", params=[1, 2, 3])

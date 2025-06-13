@@ -13,7 +13,7 @@ from scipy.io import readsav
 
 @pytest.fixture
 def data_dir():
-    return Path(env.get("PYFHD_TEST_PATH"), "visibility_grid")
+    return Path(env.get("PYFHD_TEST_PATH"), "gridding", "visibility_grid")
 
 
 @pytest.fixture(scope="function", params=[1, 2, 3, 4, 5, 6, 7])
@@ -143,11 +143,14 @@ def test_visibility_grid(before_gridding: Path, after_gridding: Path):
         new_arr[0] = h5_before["bi_use"]
         h5_before["bi_use"] = new_arr
 
+    obs = recarray_to_dict(h5_before["obs"])
+    psf = recarray_to_dict(h5_before["psf"])
+
     gridding_dict = visibility_grid(
         h5_before["visibility_ptr"],
         h5_before["vis_weight_ptr"],
-        h5_before["obs"],
-        h5_before["psf"],
+        obs,
+        psf,
         h5_before["params"],
         h5_before["polarization"],
         h5_before["pyfhd_config"],

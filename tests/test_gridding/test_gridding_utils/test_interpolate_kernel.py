@@ -9,7 +9,7 @@ from PyFHD.io.pyfhd_io import save, load, recarray_to_dict
 
 @pytest.fixture
 def data_dir():
-    return Path(env.get("PYFHD_TEST_PATH"), "interpolate_kernel")
+    return Path(env.get("PYFHD_TEST_PATH"), "gridding", "interpolate_kernel")
 
 
 @pytest.fixture(scope="function", params=[1, 2, 3])

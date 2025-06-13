@@ -16,7 +16,7 @@ from logging import Logger
 
 @pytest.fixture
 def data_dir():
-    return Path(env.get("PYFHD_TEST_PATH"), "baseline_grid_locations")
+    return Path(env.get("PYFHD_TEST_PATH"), "gridding", "baseline_grid_locations")
 
 
 @pytest.fixture(scope="function", params=[1, 2, 3])

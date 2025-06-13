@@ -9,7 +9,7 @@ from PyFHD.io.pyfhd_io import save, load
 
 @pytest.fixture
 def data_dir():
-    return Path(env.get("PYFHD_TEST_PATH"), "filter_uv_uniform")
+    return Path(env.get("PYFHD_TEST_PATH"), "gridding", "filter_uv_uniform")
 
 
 @pytest.fixture(scope="function", params=[2, 3])
