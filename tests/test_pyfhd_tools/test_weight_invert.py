@@ -8,7 +8,7 @@ from PyFHD.pyfhd_tools.pyfhd_utils import weight_invert
 
 @pytest.fixture
 def data_dir():
-    return Path(env.get("PYFHD_TEST_PATH"), "weight_invert")
+    return Path(env.get("PYFHD_TEST_PATH"), "pyfhd_tools", "weight_invert")
 
 
 def test_weight_invert_one(data_dir):

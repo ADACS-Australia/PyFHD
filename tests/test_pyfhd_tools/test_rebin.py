@@ -9,7 +9,7 @@ from PyFHD.pyfhd_tools.test_utils import get_data
 @pytest.fixture
 def data_dir():
     # This assumes you have used the splitter.py and have done a general format of **/FHD/PyFHD/tests/test_fhd_*/data/<function_name_being_tested>/*.npy
-    return Path(env.get("PYFHD_TEST_PATH"), "rebin/")
+    return Path(env.get("PYFHD_TEST_PATH"), "pyfhd_tools", "rebin/")
 
 
 def test_rebin_oneD_up(data_dir):

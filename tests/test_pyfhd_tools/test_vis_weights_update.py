@@ -13,7 +13,7 @@ import numpy as np
 
 @pytest.fixture
 def data_dir():
-    return Path(env.get("PYFHD_TEST_PATH"), "vis_weights_update")
+    return Path(env.get("PYFHD_TEST_PATH"), "pyfhd_tools", "vis_weights_update")
 
 
 @pytest.fixture(

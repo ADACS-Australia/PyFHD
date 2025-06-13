@@ -9,12 +9,14 @@ from PyFHD.pyfhd_tools.test_utils import get_data, get_data_items
 @pytest.fixture
 def data_dir():
     # This assumes you have used the splitter.py and have done a general format of **/FHD/PyFHD/tests/test_fhd_*/data/<function_name_being_tested>/*.npy
-    return Path(env.get("PYFHD_TEST_PATH"), "histogram")
+    return Path(env.get("PYFHD_TEST_PATH"), "pyfhd_tools", "histogram")
 
 
 @pytest.fixture
 def full_data_dir():
-    return Path(env.get("PYFHD_TEST_PATH"), "full_size_histogram")
+    return Path(
+        env.get("PYFHD_TEST_PATH"), "pyfhd_tools", "histogram", "full_size_histogram"
+    )
 
 
 def test_idl_example(data_dir: Path):

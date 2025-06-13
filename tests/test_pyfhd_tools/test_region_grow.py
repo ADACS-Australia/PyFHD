@@ -10,7 +10,7 @@ from PyFHD.pyfhd_tools.pyfhd_utils import region_grow
 
 @pytest.fixture
 def data_dir():
-    return Path(env.get("PYFHD_TEST_PATH"), "region_grow")
+    return Path(env.get("PYFHD_TEST_PATH"), "pyfhd_tools", "region_grow")
 
 
 @pytest.fixture(

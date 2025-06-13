@@ -9,7 +9,7 @@ import pytest
 @pytest.fixture
 def data_dir():
     # glob the directory we need, this assumes you have a directory named array_match with the data inside
-    return Path(env.get("PYFHD_TEST_PATH"), "array_match")
+    return Path(env.get("PYFHD_TEST_PATH"), "pyfhd_tools", "array_match")
 
 
 def test_array_match_1(data_dir):

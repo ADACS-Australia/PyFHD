@@ -9,7 +9,7 @@ from PyFHD.pyfhd_tools.pyfhd_utils import l_m_n
 
 @pytest.fixture
 def data_dir():
-    return Path(env.get("PYFHD_TEST_PATH"), "l_m_n")
+    return Path(env.get("PYFHD_TEST_PATH"), "pyfhd_tools", "l_m_n")
 
 
 def test_l_m_n_one(data_dir):

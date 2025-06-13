@@ -8,7 +8,7 @@ from PyFHD.pyfhd_tools.pyfhd_utils import deriv_coefficients
 
 @pytest.fixture
 def data_dir():
-    return Path(env.get("PYFHD_TEST_PATH"), "deriv_coefficients")
+    return Path(env.get("PYFHD_TEST_PATH"), "pyfhd_tools", "deriv_coefficients")
 
 
 def test_deriv_coefficients_one(data_dir):

@@ -9,7 +9,7 @@ from PyFHD.pyfhd_tools.pyfhd_utils import meshgrid
 @pytest.fixture
 def data_dir():
     # This assumes you have used the splitter.py and have done a general format of **/FHD/PyFHD/tests/test_fhd_*/data/<function_name_being_tested>/*.npy
-    return Path(env.get("PYFHD_TEST_PATH"), "meshgrid/")
+    return Path(env.get("PYFHD_TEST_PATH"), "pyfhd_tools", "meshgrid/")
 
 
 def test_meshgrid_one(data_dir):
