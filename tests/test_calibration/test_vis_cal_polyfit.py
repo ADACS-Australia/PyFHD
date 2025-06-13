@@ -209,10 +209,6 @@ def test_vis_cal_polyfit(before_file, after_file):
 
     pyfhd_config = h5_before["pyfhd_config"]
     pyfhd_config["instrument"] = "mwa"
-    pyfhd_config["cable_reflection_coefficients"] = Path(
-        pyfhd_config["cable_reflection_coefficients"]
-    )
-    pyfhd_config["cable_lengths"] = Path(pyfhd_config["cable_lengths"])
     logger = Logger(1)
 
     cal_polyfit, _ = vis_cal_polyfit(obs, cal, auto_ratio, pyfhd_config, logger)
