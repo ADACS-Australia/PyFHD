@@ -39,6 +39,8 @@ the new `analytic-beam-yaml` option to configure them.
 * Added handling for `~` in paths in config yamls.
 
 ### Bug Fixes
+* Fixed a bug where the uv weights FITS files had all the polarizations saved
+in all the files rather than just the named polarization in each file.
 * Fixed a bug in `filter_uv_uniform` that caused errors if the optional vis_count
 parameter was not passed.
 * Fixed a bug in degridding where the interpolate_kernel option was ignored.
