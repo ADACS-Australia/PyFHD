@@ -185,17 +185,17 @@ def pyfhd_parser():
         "uvfits replace file_path_vis from FHD",
     )
     parser.add_argument(
-        "--get-sample-data",
-        action="store_true",
-        help="Copy sample data from pyfhd package directory to the current "
-        "working directory. Will copy to an 'input' directory.",
-    )
-    parser.add_argument(
         "-i",
         "--input-path",
         type=Path,
         help="Directory for the uvfits files and other inputs.",
         default=None,
+    )
+    parser.add_argument(
+        "--get-sample-data",
+        action="store_true",
+        help="Copy sample data from pyfhd package directory to the current "
+        "working directory. Will copy to an 'input' directory.",
     )
     parser.add_argument(
         "-r",
