@@ -384,6 +384,7 @@ def main():
             # However, there is resulting cal structure for logging and output
             # purposes to store the resulting gain and any other associated
             # arrays
+            cal = None
             if pyfhd_config["calibrate_visibilities"]:
                 logger.info("Beginning Calibration")
                 cal_start = time.time()
