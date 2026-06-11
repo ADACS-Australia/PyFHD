@@ -86,7 +86,7 @@ def quickview(
     weights_uv: NDArray[np.complex128],
     variance_uv: NDArray[np.float64],
     uniform_filter_uv: NDArray[np.float64],
-    model_uv: NDArray[np.complex128],
+    model_uv: NDArray[np.complex128] | None,
     pyfhd_config: dict,
     logger: Logger,
 ) -> None:
