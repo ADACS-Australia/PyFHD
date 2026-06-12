@@ -166,7 +166,7 @@ def beam_image(
     group_id = (psf["id"][pol_i, 0, :]).astype(int)
     # IDL psf structures often have "beam_gaussian_params" defined but set to zero
     # have to test that it's present *and* nonzero
-    if "beam_gaussian_params" in psf and psf["beam_gaussian_params"] != 0:
+    if "beam_gaussian_params" in psf & psf["beam_gaussian_params"] != 0:
         beam_gaussian_params = psf["beam_gaussian_params"][:]
     else:
         beam_gaussian_params = None
