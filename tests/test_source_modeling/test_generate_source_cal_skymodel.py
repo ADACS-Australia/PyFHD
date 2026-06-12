@@ -5,14 +5,14 @@ from pyradiosky import SkyModel
 from pyfhd.data.datasets import fetch_data
 from pyfhd.io.pyfhd_io import recarray_to_dict
 from pyfhd.pyfhd_tools.test_utils import get_savs, sav_file_rearrange_psf
-from pyfhd.source_modeling.source_utils import create_skymodel
+from pyfhd.source_modeling.source_utils import generate_source_cal_skymodel
 
 
 @pytest.mark.github_actions
 @pytest.mark.filterwarnings("ignore:Some Stokes values are NaNs.")
 @pytest.mark.filterwarnings("ignore:Some Stokes I values are negative.")
 @pytest.mark.parametrize("refraction", [None, "astropy", "idl"])
-def test_create_skymodel(refraction):
+def test_generate_source_cal_skymodel(refraction):
 
     catalog_path = fetch_data("gleam_rlb2019_cut")
 
@@ -54,7 +54,7 @@ def test_create_skymodel(refraction):
     obs["baseline_info"]["freq_use"] = np.ones((n_freq,), dtype=int)
     obs["baseline_info"]["fbin_i"] = np.arange(n_freq, dtype=int)
 
-    sky = create_skymodel(
+    sky = generate_source_cal_skymodel(
         obs=obs, psf=psf, catalog_path=catalog_path, logger=None, refraction=refraction
     )
 

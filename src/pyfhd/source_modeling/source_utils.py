@@ -11,7 +11,7 @@ from ..pyfhd_tools.pyfhd_utils import angle_difference, region_grow, resistant_m
 from ..pyfhd_tools.unit_conv import pixel_to_radec, radec_to_pixel
 
 
-def create_skymodel(
+def generate_source_cal_skymodel(
     *,
     obs: dict,
     psf: dict,
@@ -55,12 +55,13 @@ def create_skymodel(
         catalog to use for the main beam sources.
     beam : NDArray[np.float64], optional
         Average image-space beam per polarization. Created using `beam_image` if
-        not provided.
+        not provided. Default is None meaning beam_image will be called.
     mask : NDArray[np.bool], optional
         Beam mask giving areas to include sources for (True where sources can be
-        included, False where sources will be excluded).
+        included, False where sources will be excluded). Default is None.
     allow_sidelobe_sources : bool
-        Include sidelobe sources. Also affects the defaulting of beam_threshold.
+        Option to include sidelobe sources. Also affects the defaulting of
+        beam_threshold. Default is False.
     beam_threshold : float
         Threshold for beam cut on sources. Sources belowthe beam_threshold will
         be cut from the skymodel to avoid sources in the nulls. Defaults to 0.05
@@ -69,30 +70,30 @@ def create_skymodel(
         Option to restrict sources to near the beam center. Default is False.
         Related to "no_restrict_model_sources" and "no_restrict_cal_sources" but
         with the opposite sense to avoid double negatives.
-    flux_threshold : float
+    flux_threshold : float, optional
         Threshold for flux values to include. These are catalog fluxes, not
         apparent (i.e. beam-weighted) fluxes. Can be negative, indicating an
-        upper bound on fluxes.
+        upper bound on fluxes. Default is None.
     no_extend : bool
         Option to replace extended source components with a single component at
         the flux weighted average location with a flux equal to the total flux of
-        all the components.
-    max_sources : int
+        all the components. Default is False.
+    max_sources : int, optional
         Maximum number of sources to include, chosen from highest to lowest
         apparent (i.e. beam-weighted) flux. If a sidelobe_catalog_path is provided,
         sources are taken first from the main lobe catalog and then from the
         sidelobe catalog (if max_sources is greater than the number of sources
-        in the main lobe catalog after the various cuts).
-    spectral_index : float
+        in the main lobe catalog after the various cuts). Default is None.
+    spectral_index : float, optional
         Spectral index to use for all sources. Overwrites the spectral index
-        from the input catalog.
+        from the input catalog. Default is None.
     preserve_zero_spectral_indices : bool
         Option to keep any spectral indices that are set to zero. Default is False,
         If False, the spectral index is reset to the mean spectral index of the
         catalog for any sources with zero spectral index.
     flatten_spectrum : bool
         Option to flatten the spectrum by the average spectral index (calculated
-        as a flux-weighted average).
+        as a flux-weighted average). Default is False
     refraction : bool
         Option for what refraction algorithm to use to account for refraction in
         earth's atmosphere when computing the pixel locations (and therefore
@@ -170,7 +171,7 @@ def create_skymodel(
         beam_primary_mask.flat[beam_primary_i] = True
         beam_sidelobe_mask = ~beam_primary_mask
 
-        sidelobe_skymodel = create_skymodel(
+        sidelobe_skymodel = generate_source_cal_skymodel(
             obs=obs,
             psf=psf,
             logger=logger,
