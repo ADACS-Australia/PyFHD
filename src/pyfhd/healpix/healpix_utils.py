@@ -577,6 +577,10 @@ def vis_model_freq_split(
         ]
         if np.size(fi_use) == 0:
             continue
+        if vis_model_arr is not None:
+            vis_model = vis_model_arr[polarization]
+        else:
+            vis_model = None
         gridding_dict = visibility_grid(
             vis_arr[polarization],
             vis_weights[polarization],
@@ -586,7 +590,7 @@ def vis_model_freq_split(
             polarization,
             pyfhd_config,
             logger,
-            model=vis_model_arr[polarization],
+            model=vis_model,
             fi_use=fi_use,
             bi_use=bi_use,
             verbose_logging=False,
@@ -608,7 +612,8 @@ def vis_model_freq_split(
             variance_uv_arr[fi] = (
                 gridding_dict["variance"] * rephase_use * gridding_dict["n_vis"]
             )
-            model_uv_arr[fi] = gridding_dict["model_return"] * gridding_dict["n_vis"]
+            if vis_model is not None:
+                model_uv_arr[fi] = gridding_dict["model_return"] * gridding_dict["n_vis"]
 
         if fft:
             # No x_range and y_range hence no check for it here
@@ -630,13 +635,14 @@ def vis_model_freq_split(
                 degpix=obs["degpix"],
             )
             variance_arr[fi] *= gridding_dict["n_vis"]
-            model_arr[fi], _, _ = dirty_image_generate(
-                gridding_dict["model_return"],
-                pyfhd_config,
-                logger,
-                degpix=obs["degpix"],
-            )
-            model_arr[fi] *= gridding_dict["n_vis"]
+            if vis_model is not None:
+                model_arr[fi], _, _ = dirty_image_generate(
+                    gridding_dict["model_return"],
+                    pyfhd_config,
+                    logger,
+                    degpix=obs["degpix"],
+                )
+                model_arr[fi] *= gridding_dict["n_vis"]
         else:
             dirty_arr[fi] = gridding_dict["image_uv"] * gridding_dict["n_vis"]
             weights_arr[fi] = (
@@ -645,7 +651,8 @@ def vis_model_freq_split(
             variance_arr[fi] = (
                 gridding_dict["variance"] * rephase_use * gridding_dict["n_vis"]
             )
-            model_arr[fi] = gridding_dict["model_return"] * gridding_dict["n_vis"]
+            if vis_model is not None:
+                model_arr[fi] = gridding_dict["model_return"] * gridding_dict["n_vis"]
     obs["n_vis"] = n_vis_use
 
     if save_uvf:
@@ -684,15 +691,16 @@ def vis_model_freq_split(
             f"{pyfhd_config['obs_id']}_{uvf_name}_{obs['pol_names'][polarization]}_variance_uv_arr_gridded_uvf.h5",
             logger=logger,
         )
-        save(
-            Path(
-                uvf_dir,
+        if vis_model is not None:
+            save(
+                Path(
+                    uvf_dir,
+                    f"{pyfhd_config['obs_id']}_{uvf_name}_{obs['pol_names'][polarization]}_model_uv_arr_gridded_uvf.h5",
+                ),
+                h5_save_dict,
                 f"{pyfhd_config['obs_id']}_{uvf_name}_{obs['pol_names'][polarization]}_model_uv_arr_gridded_uvf.h5",
-            ),
-            h5_save_dict,
-            f"{pyfhd_config['obs_id']}_{uvf_name}_{obs['pol_names'][polarization]}_model_uv_arr_gridded_uvf.h5",
-            logger=logger,
-        )
+                logger=logger,
+            )
 
     cube_split = {
         "obs": obs,
