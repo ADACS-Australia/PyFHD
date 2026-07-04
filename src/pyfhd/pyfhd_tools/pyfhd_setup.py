@@ -1087,12 +1087,12 @@ def pyfhd_parser():
     )
     model.add_argument(
         "--model-file-path",
-        default="./input",
+        default=None,
         type=Path,
-        help="In the case you chose sav for model-file-type then this will be a "
+        help="In the case you chose 'sav' for model-file-type then this will be a "
         "directory containing all the <obs_id>_params and "
         "<obs_id>_vis_model_<pol_name> sav files.\n"
-        "In the case you chose uvfits, then the path is to a uvfits file, in "
+        "In the case you chose 'uvfits', then the path is to a uvfits file, in "
         "which case make sure the phase centre of model data must match the 'RA' "
         "and 'DEC' values in the metafits file (NOT the 'RAPHASE' and 'DECPHASE').",
     )
@@ -1751,6 +1751,17 @@ def pyfhd_setup(options: argparse.Namespace) -> Tuple[dict, logging.Logger]:
             )
             errors += 1
 
+    if (
+        pyfhd_config["calibrate_visibilities"]
+        and pyfhd_config["calibration_catalog_file_path"] is None
+        and pyfhd_config["model_file_path"] is None
+    ):
+        logger.error(
+            "If calibrating, either  model_file_path or calibration_catalog_file_path "
+            "must be set."
+        )
+        errors += 1
+
     # If cal_amp_degree_fit or cal_phase_degree_fit have ben set but
     # calibration_polyfit isn't warn the user (Warning)
     if (
@@ -1845,63 +1856,70 @@ def pyfhd_setup(options: argparse.Namespace) -> Tuple[dict, logging.Logger]:
 
     # if importing model visiblities from a uvfits file, check that file
     # exists
-    if pyfhd_config["model_file_path"]:
+    if pyfhd_config["model_file_path"] is not None:
         pyfhd_config["model_file_path"] = (
             Path(pyfhd_config["model_file_path"]).expanduser().resolve()
         )
         errors += _check_file_exists(pyfhd_config, "model_file_path")
 
-    if pyfhd_config["model_file_path"] == "sav":
-        # We're expecting to find a params file, then a vis_model_XX and "
-        # "vis_model_YY at the very least
-        if not Path.exists(
-            Path(
-                pyfhd_config["model_file_path"], f"{pyfhd_config['obs_id']}_params.sav"
-            )
-        ):
-            errors += 1
-            logger.error(
-                "You selected the model-file-path and sav, but pyfhd can't find "
-                "the sav file for the model params"
-            )
-        files_in_model_path = glob(f"{pyfhd_config['model_file_path']}/*")
-        pattern = rf".*{re.escape(pyfhd_config['obs_id'])}.*\.sav$"
-        regex = re.compile(pattern)
-        matching_files = [
-            file_path for file_path in files_in_model_path if regex.match(file_path)
-        ]
-        if len(matching_files) <= 2:
-            errors + 1
-            logger.error(
-                "You are missing some required files to read in the model "
-                "visibilities from sav files, here is the list of found sav files: "
-                f"{matching_files}."
-            )
-        elif pyfhd_config["n_pol"] and len(matching_files) < pyfhd_config["n_pol"] + 1:
-            errors += 1
-            logger.error(
-                "You are missing files based on the number of polarizations you "
-                f"have set, you should have a params file then {pyfhd_config['n_pol']} "
-                f"polarization files. Here is the list of found sav files: {matching_files}."
-            )
-        elif pyfhd_config["n_pol"] and len(matching_files) > pyfhd_config["n_pol"] + 1:
-            warnings += 1
-            logger.warning(
-                "You have more files than expected for the number of polarizations "
-                f"you set, you set {pyfhd_config['n_pol']} polarizations but "
-                f"found {len(matching_files) - 1} polarization files. You can most "
-                "likely ignore this warning. Here is the list of found sav files: "
-                f"{matching_files}."
-            )
-        elif not pyfhd_config["n_pol"]:
-            warnings += 1
-            logger.warning(
-                "Since you have told pyfhd before hand you are using 0 polarizations "
-                "and letting the uvfits header set the number of polarizations, "
-                "pyfhd will have no way to validate if the number of "
-                "savs is correct, check the list of found files carefully: "
-                f"{matching_files}. If you're sure this is fine, ignore this warning."
-            )
+        if pyfhd_config["model_file_path"] == "sav":
+            # We're expecting to find a params file, then a vis_model_XX and "
+            # "vis_model_YY at the very least
+            if not Path.exists(
+                Path(
+                    pyfhd_config["model_file_path"],
+                    f"{pyfhd_config['obs_id']}_params.sav",
+                )
+            ):
+                errors += 1
+                logger.error(
+                    "You selected the model-file-path and sav, but pyfhd can't find "
+                    "the sav file for the model params"
+                )
+            files_in_model_path = glob(f"{pyfhd_config['model_file_path']}/*")
+            pattern = rf".*{re.escape(pyfhd_config['obs_id'])}.*\.sav$"
+            regex = re.compile(pattern)
+            matching_files = [
+                file_path for file_path in files_in_model_path if regex.match(file_path)
+            ]
+            if len(matching_files) <= 2:
+                errors + 1
+                logger.error(
+                    "You are missing some required files to read in the model "
+                    "visibilities from sav files, here is the list of found sav files: "
+                    f"{matching_files}."
+                )
+            elif (
+                pyfhd_config["n_pol"]
+                and len(matching_files) < pyfhd_config["n_pol"] + 1
+            ):
+                errors += 1
+                logger.error(
+                    "You are missing files based on the number of polarizations you "
+                    f"have set, you should have a params file then {pyfhd_config['n_pol']} "
+                    f"polarization files. Here is the list of found sav files: {matching_files}."
+                )
+            elif (
+                pyfhd_config["n_pol"]
+                and len(matching_files) > pyfhd_config["n_pol"] + 1
+            ):
+                warnings += 1
+                logger.warning(
+                    "You have more files than expected for the number of polarizations "
+                    f"you set, you set {pyfhd_config['n_pol']} polarizations but "
+                    f"found {len(matching_files) - 1} polarization files. You can most "
+                    "likely ignore this warning. Here is the list of found sav files: "
+                    f"{matching_files}."
+                )
+            elif not pyfhd_config["n_pol"]:
+                warnings += 1
+                logger.warning(
+                    "Since you have told pyfhd before hand you are using 0 polarizations "
+                    "and letting the uvfits header set the number of polarizations, "
+                    "pyfhd will have no way to validate if the number of "
+                    "savs is correct, check the list of found files carefully: "
+                    f"{matching_files}. If you're sure this is fine, ignore this warning."
+                )
 
     # Entirety of Simulation Group depends on run-simulation (Error)
     # if not pyfhd_config["run_simulation"] and (

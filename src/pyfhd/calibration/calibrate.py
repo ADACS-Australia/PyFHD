@@ -1,7 +1,9 @@
-import numpy as np
-from numpy.typing import NDArray
 from copy import deepcopy
 from logging import Logger
+
+import numpy as np
+from numpy.typing import NDArray
+
 from pyfhd.calibration.calibration_utils import (
     vis_extract_autocorr,
     vis_cal_auto_init,
@@ -17,14 +19,19 @@ from pyfhd.calibration.calibration_utils import (
 from pyfhd.calibration.vis_calibrate_subroutine import vis_calibrate_subroutine
 from pyfhd.pyfhd_tools.pyfhd_utils import resistant_mean, reshape_and_average_in_time
 from pyfhd.plotting.calibration import plot_cals
+from pyfhd.source_modeling.source_utils import generate_source_cal_skymodel
+from pyfhd.source_modeling.vis_source_model import vis_source_model
 
 
 def calibrate(
+    *,
     obs: dict,
+    psf: dict,
+    antenna: dict,
     params: dict,
     vis_arr: NDArray[np.complex128],
     vis_weights: NDArray[np.float64],
-    vis_model_arr: NDArray[np.complex128],
+    vis_model_arr: NDArray[np.complex128] | None = None,
     pyfhd_config: dict,
     logger: Logger,
 ) -> tuple[NDArray[np.complex128], dict, dict]:
@@ -37,14 +44,18 @@ def calibrate(
     ----------
     obs : dict
         Observation metadata dictionary
+    psf: dict | h5py.File
+        Beam dictionary
+    antenna: dict
+        The antenna/beam dictionary.
     params : dict
         Visibility metadata dictionary
     vis_arr : NDArray[np.complex128]
         Uncalibrated data visiblities
     vis_weights : NDArray[np.float64]
         Weights (flags) of the visibilities
-    vis_model_arr : NDArray[np.complex128]
-        Simulated model visibilites
+    vis_model_arr : NDArray[np.complex128], optional
+        Simulated model visibilites.
     pyfhd_config : dict
         pyfhd's configuration dictionary containing all the options set for a pyfhd run
     logger : Logger
@@ -68,6 +79,39 @@ def calibrate(
     cal["conv_thresh"] = pyfhd_config["cal_convergence_threshold"]
     cal["ref_antenna"] = 1
     cal["ref_antenna_name"] = obs["baseline_info"]["tile_names"][cal["ref_antenna"]]
+
+    if vis_model_arr is None:
+        # generate model visibilities from a source model via degridding
+        sky = generate_source_cal_skymodel(
+            obs=obs,
+            psf=psf,
+            logger=logger,
+            catalog_path=pyfhd_config["calibration_catalog_file_path"],
+            # TODO: add all these to pyfhd setup
+            # sidelobe_catalog_path=pyfhd_config["sidelobe_catalog_path"],
+            # allow_sidelobe_sources=pyfhd_config["allow_sidelobe_sources"],
+            # beam_threshold=pyfhd_config["beam_cal_threshold"],
+            # restrict_sources=pyfhd_config["cal_restrict_sources"],
+            # flux_threshold=pyfhd_config["calibration_flux_threshold"],
+            # no_extend=pyfhd_config["cal_no_extend"]
+            # max_sources=pyfhd_config["cal_max_sources"],
+            # spectral_index=pyfhd_config["calibration_spectral_index"],
+            # preserve_zero_spectral_indices=pyfhd_config["cal_keep_zero_spectral_index"]
+            # flatten_spectrum=pyfhd_config["cal_flatten_spectrum"],
+            # refraction=pyfhd_config["cal_refraction"],
+        )
+
+        vis_model_arr = vis_source_model(
+            pyfhd_config=pyfhd_config,
+            obs=obs,
+            psf=psf,
+            params=params,
+            antenna=antenna,
+            skymodel=sky,
+            vis_weights=None,
+            logger=logger,
+            fill_model_visibilities=True,
+        )
 
     # Calculate auto-correlation visibilities, optionally use them for initial calibration estimates
     vis_auto, auto_tile_i = vis_extract_autocorr(obs, vis_arr, pyfhd_config)
@@ -189,7 +233,7 @@ def calibrate(
         plot_cals(obs, cal, pyfhd_config)
 
     # Return the calibrated visibility array
-    return vis_cal, cal, obs, pyfhd_config
+    return vis_cal, vis_model_arr, cal, obs, pyfhd_config
 
 
 def calibrate_qu_mixing(

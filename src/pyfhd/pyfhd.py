@@ -292,7 +292,7 @@ def main():
 
         # Read in the beam from a file returning a psf dictionary
         psf_start = time.time()
-        psf = create_psf(obs, pyfhd_config, logger)
+        psf, antenna = create_psf(obs, pyfhd_config, logger)
         psf_end = time.time()
         _print_time_diff(
             psf_start, psf_end, "Beam and PSF dictionary imported.", logger
@@ -338,16 +338,19 @@ def main():
                 logger,
             )
 
-            # Get the vis_model_arr from a UVFITS file or SAV files and flag any issues
-            vis_model_arr_start = time.time()
-            vis_model_arr = vis_model_transfer(pyfhd_config, obs, params, logger)
-            vis_model_arr_end = time.time()
-            _print_time_diff(
-                vis_model_arr_start,
-                vis_model_arr_end,
-                "Model Imported and Flagged From UVFITS",
-                logger,
-            )
+            if pyfhd_config["model_file_path"] is not None:
+                # Get the vis_model_arr from a UVFITS file or SAV files and flag any issues
+                vis_model_arr_start = time.time()
+                vis_model_arr = vis_model_transfer(pyfhd_config, obs, params, logger)
+                vis_model_arr_end = time.time()
+                _print_time_diff(
+                    vis_model_arr_start,
+                    vis_model_arr_end,
+                    "Model Imported and Flagged From UVFITS",
+                    logger,
+                )
+            else:
+                vis_model_arr = None
 
             # Skipped initializing the cal structure as it mostly just copies values from the obs, params, config and the skymodel from FHD
             # However, there is resulting cal structure for logging and output purposes to store the resulting gain and any other associated
@@ -355,14 +358,16 @@ def main():
             if pyfhd_config["calibrate_visibilities"]:
                 logger.info("Beginning Calibration")
                 cal_start = time.time()
-                vis_arr, cal, obs, pyfhd_config = calibrate(
-                    obs,
-                    params,
-                    vis_arr,
-                    vis_weights,
-                    vis_model_arr,
-                    pyfhd_config,
-                    logger,
+                vis_arr, vis_model_arr, cal, obs, pyfhd_config = calibrate(
+                    obs=obs,
+                    psf=psf,
+                    antenna=antenna,
+                    params=params,
+                    vis_arr=vis_arr,
+                    vis_weights=vis_weights,
+                    vis_model_arr=vis_model_arr,
+                    pyfhd_config=pyfhd_config,
+                    logger=logger,
                 )
                 cal_end = time.time()
                 _print_time_diff(
@@ -511,6 +516,8 @@ def main():
                     (obs["n_pol"], obs["elements"], obs["dimension"]),
                     dtype=np.complex128,
                 )
+            else:
+                model_uv = None
             # Since it's done per polarization, we can do multi-processing if it's not fast enough
             for pol_i in range(obs["n_pol"]):
                 logger.info(
@@ -524,6 +531,10 @@ def main():
                     no_conjugate = True
                 else:
                     no_conjugate = False
+                if vis_model_arr is None:
+                    vis_model_arr_use = None
+                else:
+                    vis_model_arr_use = vis_model_arr[pol_i]
                 gridding_dict = visibility_grid(
                     vis_arr[pol_i],
                     vis_weights[pol_i],
@@ -535,7 +546,7 @@ def main():
                     logger,
                     uniform_flag=uniform_flag,
                     no_conjugate=no_conjugate,
-                    model=vis_model_arr[pol_i],
+                    model=vis_model_arr_use,
                 )
                 if len(gridding_dict.keys()) != 0:
                     image_uv[pol_i] = gridding_dict["image_uv"]
@@ -650,9 +661,7 @@ def main():
         )
         pyfhd_successful = False
     finally:
-        if pyfhd_successful:
-            return
-        else:
+        if not pyfhd_successful:
             pyfhd_end = time.time()
             runtime = timedelta(seconds=pyfhd_end - pyfhd_start)
             # Close all open h5 files

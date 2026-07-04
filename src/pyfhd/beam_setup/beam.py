@@ -268,7 +268,7 @@ def create_psf(obs: dict, pyfhd_config: dict, logger: Logger) -> dict | File:
             },
         )
 
-        return psf
+        return psf, antenna
     elif pyfhd_config["saved_beam_file_path"].suffix == ".sav":
         # Read in a sav file containing the psf structure as we expect from FHD
         logger.info(
@@ -300,7 +300,7 @@ def create_psf(obs: dict, pyfhd_config: dict, logger: Logger) -> dict | File:
         )
         save(output_path, psf, "psf", logger=logger, to_chunk=to_chunk)
         # Since the psf is already in memory, return it
-        return psf
+        return psf, None
     elif (
         pyfhd_config["saved_beam_file_path"].suffix == ".h5"
         or pyfhd_config["saved_beam_file_path"].suffix == ".hdf5"
@@ -312,7 +312,7 @@ def create_psf(obs: dict, pyfhd_config: dict, logger: Logger) -> dict | File:
             logger=logger,
             lazy_load=pyfhd_config["lazy_load_beam"],
         )
-        return psf
+        return psf, None
     raise ValueError(
         f"Unknown beam file type {pyfhd_config['saved_beam_file_path'].suffix}. "
         "Please use a .sav, .h5, .hdf5 "
