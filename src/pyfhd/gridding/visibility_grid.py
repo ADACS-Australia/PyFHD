@@ -101,11 +101,11 @@ def visibility_grid(
     # For each unflagged baseline, get the minimum contributing pixel number for gridding
     # and the 2D derivatives for bilinear interpolation
     baselines_dict = baseline_grid_locations(
-        obs,
-        psf,
-        params,
-        vis_weights,
-        logger,
+        obs=obs,
+        psf=psf,
+        params=params,
+        vis_weights=vis_weights,
+        logger=logger,
         bi_use=bi_use,
         fi_use=fi_use,
         mask_mirror_indices=pyfhd_config["mask_mirror_indices"],

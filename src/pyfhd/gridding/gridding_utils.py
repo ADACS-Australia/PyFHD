@@ -81,11 +81,12 @@ def conjugate_mirror(
 
 
 def baseline_grid_locations(
+    *,
     obs: dict,
     psf: dict,
     params: dict,
-    vis_weights: NDArray[np.float64],
     logger: Logger,
+    vis_weights: NDArray[np.float64] | None,
     bi_use: NDArray[np.integer] | None = None,
     fi_use: NDArray[np.integer] | None = None,
     fill_model_visibilities: bool = False,
@@ -106,10 +107,11 @@ def baseline_grid_locations(
         Beam metadata dictionary
     params : dict
         Visibility metadata dictionary
-    vis_weights : NDArray[np.float64]
-        Weights (flags) of the visibilities
     logger : Logger
         pyfhd's logger
+    vis_weights : NDArray[np.float64]
+        Weights (flags) of the visibilities. Can be None if fill_model_visibilities
+        is True.
     bi_use : NDArray[np.integer] | None, optional
         Baseline index array for gridding, i.e even vs odd time stamps, by default None
     fi_use : NDArray[np.integer] | None, optional
@@ -172,10 +174,11 @@ def baseline_grid_locations(
                 array_2=b_info["tile_b"].astype(int),
             )
 
-    # Rather than calculating the flat indexes we want, lets just index the array
-    # by the frequency use and baseline_use indexes
-    rows, cols = np.meshgrid(fi_use, bi_use)
-    vis_weights_use = vis_weights[rows, cols].T
+    if not fill_model_visibilities:
+        # Rather than calculating the flat indexes we want, lets just index the array
+        # by the frequency use and baseline_use indexes
+        rows, cols = np.meshgrid(fi_use, bi_use)
+        vis_weights_use = vis_weights[rows, cols].T
 
     # Units in pixel/Hz
     kx_arr = params["uu"][bi_use] / kbinsize
@@ -247,14 +250,14 @@ def baseline_grid_locations(
             del flag_dist_baseline
 
     # Normally we check vis_weight_switch, but its always true here so... do this
-    flag_i = np.where(vis_weights_use <= 0)
     if fill_model_visibilities:
         n_flag = 0
     else:
+        flag_i = np.where(vis_weights_use <= 0)
         n_flag = np.size(flag_i)
-    if n_flag > 0:
-        xmin[flag_i] = -1
-        ymin[flag_i] = -1
+        if n_flag > 0:
+            xmin[flag_i] = -1
+            ymin[flag_i] = -1
 
     if mask_mirror_indices:
         # Option to exclude v-axis mirrored baselines
@@ -740,11 +743,11 @@ def visibility_count(
         psf_dim = psf_dim[0]
 
     baselines_dict = baseline_grid_locations(
-        obs,
-        psf,
-        params,
-        vis_weights,
-        logger,
+        obs=obs,
+        psf=psf,
+        params=params,
+        vis_weights=vis_weights,
+        logger=logger,
         bi_use=bi_use,
         fi_use=fi_use,
         mask_mirror_indices=mask_mirror_indices,

@@ -22,7 +22,7 @@ from pyfhd.pyfhd_tools.pyfhd_utils import (
 def visibility_degrid(
     *,
     image_uv: NDArray[np.complex128],
-    vis_weights: NDArray[np.float64],
+    vis_weights: NDArray[np.float64] | None,
     obs: dict,
     psf: dict | h5py.File,
     params: dict,
@@ -53,8 +53,9 @@ def visibility_degrid(
     ----------
     image_uv : NDArray[np.complex128]
         A simulated {u,v} plane with no instrumental effects
-    vis_weight : NDArray[np.float64]
-        Weights (flags) of the visibilities
+    vis_weights : NDArray[np.float64]
+        Weights (flags) of the visibilities. Can be None if fill_model_visibilities
+        is True.
     obs : dict
         Observation metadata dictionary
     psf : dict | h5py.File
@@ -82,7 +83,6 @@ def visibility_degrid(
         Updated observation metadata dictionary
     """
 
-    complex_flag = psf["complex_flag"]
     n_spectral = obs["degrid_spectral_terms"]
     interp_flag = psf["interpolate_kernel"]
     if conserve_memory:
@@ -100,11 +100,11 @@ def visibility_degrid(
     # For each unflagged baseline, get the minimum contributing pixel number for gridding
     # and the 2D derivatives for bilinear interpolation
     baselines_dict = baseline_grid_locations(
-        obs,
-        psf,
-        params,
-        vis_weights,
-        logger,
+        obs=obs,
+        psf=psf,
+        params=params,
+        vis_weights=vis_weights,
+        logger=logger,
         fill_model_visibilities=fill_model_visibilities,
         interp_flag=interp_flag,
     )
@@ -131,7 +131,7 @@ def visibility_degrid(
     psf_dim = psf["dim"]
     psf_resolution = psf["resolution"]
     psf_dim3 = int(psf_dim**2)
-    n_baselines = obs["nbaselines"]
+    n_baselines = obs["n_baselines"]
     n_samples = obs["n_time"]
     n_freq_use = frequency_array.size
     n_freq = obs["n_freq"]
@@ -183,11 +183,6 @@ def visibility_degrid(
 
     ind_ref = np.arange(max(bin_n))
 
-    if complex_flag:
-        arr_type = np.cdouble
-    else:
-        arr_type = np.double
-
     if n_spectral:
         prefactor = np.empty(n_spectral, dtype=object)
         for s_i in range(n_spectral):
@@ -228,7 +223,7 @@ def visibility_degrid(
             _, baseline_inds = np.unravel_index(bt_index, (n_samples, n_baselines))
             fbin = freq_bin_i[freq_i]
 
-            box_matrix = np.zeros((vis_n, psf_dim3), dtype=arr_type)
+            box_matrix = np.zeros((vis_n, psf_dim3), dtype=np.complex128)
             box_arr = image_uv[
                 xmin_use : xmin_use + psf_dim, ymin_use : ymin_use + psf_dim
             ].flatten()
@@ -314,10 +309,7 @@ def visibility_degrid(
                     for ii in range(vis_n):
                         # more efficient array subscript notation
                         box_matrix[ii] = beam_arr[
-                            polarization,
-                            fbin[ii],
-                            x_off[ii],
-                            y_off[ii],
+                            polarization, fbin[ii], x_off[ii], y_off[ii]
                         ]
 
             if n_spectral:

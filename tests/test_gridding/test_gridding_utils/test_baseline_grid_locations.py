@@ -92,11 +92,11 @@ def test_baselines(baseline_before: Path, baseline_after: Path):
     expected_baseline = load(baseline_after)
 
     baselines_dict = baseline_grid_locations(
-        h5_before["obs"],
-        h5_before["psf"],
-        h5_before["params"],
-        h5_before["vis_weights"],
-        Logger(1),
+        obs=h5_before["obs"],
+        psf=h5_before["psf"],
+        params=h5_before["params"],
+        vis_weights=h5_before["vis_weights"],
+        logger=Logger(1),
         bi_use=h5_before["bi_use"],
         fi_use=h5_before["fi_use"],
         fill_model_visibilities=h5_before["fill_model_visibilities"],

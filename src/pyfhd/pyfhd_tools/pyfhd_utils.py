@@ -3,6 +3,7 @@ from copy import deepcopy
 from logging import Logger
 from math import factorial, pi
 from sys import exit
+
 import h5py
 import numpy as np
 from astropy import units as u
@@ -10,6 +11,7 @@ from astropy.coordinates import SkyCoord
 from numba import njit
 from numpy.typing import ArrayLike, NDArray
 from scipy.ndimage import label, median_filter
+from scipy import special
 
 
 @njit
@@ -1609,3 +1611,152 @@ def crosspol_split_real_imaginary(
         pol_names[3] = f"{crosspol_name}_imag"
 
     return image, pol_names
+
+
+def spectral_window(
+    n_samples: int,
+    type: str = "Blackman-Harris",
+    periodic: bool = False,
+    fractional_size: float | None = None,
+) -> NDArray[np.floating]:
+    """
+    Generate a 1D spectral window, typically used before a Fourier Transform.
+
+    Set the periodic keyword for cases in which n_samples is even but
+    there is a single maximum (ie k=0 exists) -- this implies an asymmetric window
+    function and is correct for FFTs with even numbers of samples
+
+    Parameters
+    ----------
+    n_samples : int
+        Length of window function.
+    type : str
+        Window function type. One of: Hann, Hamming, Blackman, Nutall, Blackman-Nutall,
+        Blackman-Harris, Blackman-Harris^2, Kaiser3, Tukey.
+    fractional_size : float
+
+    Returns
+    -------
+    window : np.ndarray of float
+        The spectral window. A 1D array of length n_samples with values between
+        0 and 1.
+    """
+
+    type_list = [
+        "Hann",
+        "Hamming",
+        "Blackman",
+        "Nutall",
+        "Blackman-Nutall",
+        "Blackman-Harris",
+        "Blackman-Harris^2",
+        "Kaiser3",
+        "Tukey",
+    ]
+    if type not in type_list:
+        raise ValueError(
+            f"Spectral window type {type} not recognized. Must be one of {type_list}"
+        )
+
+    if n_samples < 2:
+        raise ValueError("n_samples must be greater than 2")
+
+    if n_samples % 2 == 0 and periodic:
+        n_use = n_samples + 1
+    else:
+        n_use = n_samples
+
+    cos_term1 = np.cos(2.0 * np.pi * np.arange(n_use) / (n_use - 1))
+    cos_term2 = np.cos(4.0 * np.pi * np.arange(n_use) / (n_use - 1))
+    cos_term3 = np.cos(6.0 * np.pi * np.arange(n_use) / (n_use - 1))
+    # cos_term4 = np.cos(8.0 * np.pi * np.arange(n_use) / (n_use - 1))
+
+    match type:
+        case "Hann":
+            window = 0.5 * (1 - cos_term1)
+        case "Hamming":
+            window = 0.54 - 0.46 * cos_term1
+        case "Blackman":
+            window = (1 - 0.16) / 2.0 - 0.5 * cos_term1 + (0.16 / 2.0) * cos_term2
+        case "Nutall":
+            window = (
+                0.355768
+                - 0.487396 * cos_term1
+                + 0.144232 * cos_term2
+                - 0.012604 * cos_term3
+            )
+        case "Blackman-Nutall":
+            window = (
+                0.3635819
+                - 0.4891775 * cos_term1
+                + 0.1365995 * cos_term2
+                - 0.0106411 * cos_term3
+            )
+        case "Blackman-Harris":
+            window = (
+                0.35875
+                - 0.48829 * cos_term1
+                + 0.14128 * cos_term2
+                - 0.01168 * cos_term3
+            )
+        case "Blackman-Harris^2":
+            window = (
+                0.35875
+                - 0.48829 * cos_term1
+                + 0.14128 * cos_term2
+                - 0.01168 * cos_term3
+            ) ^ 2.0
+        case "Kaiser3":
+            window = special.iv(
+                0,
+                np.pi
+                * 3
+                * np.sqrt(1 - ((2 * (np.arange(n_use) - n_use / 2) / n_use) ** 2.0)),
+            ) / special.iv(0, np.pi * 3)
+        case "Tukey":
+            if fractional_size is not None:
+                alpha = 1.0 - fractional_size
+            else:
+                alpha = 0.5
+            window = np.ones(n_samples)
+
+            edge_length = int(np.round(alpha * (n_use - 1) / 2.0))
+            if edge_length > 0:
+                n_region_1 = np.arange(edge_length)
+                n_region_3 = n_samples - 1 - np.flip(np.arange(edge_length))
+                center_length = n_samples - 2 * edge_length
+                if center_length > 0:
+                    window[0:edge_length] = (1.0 / 2.0) * (
+                        1
+                        + np.cos(np.pi * ((2 * n_region_1) / (alpha * (n_use - 1)) - 1))
+                    )
+                    window[edge_length : edge_length + center_length] = 1
+                    window[edge_length + center_length :] = (1.0 / 2.0) * (
+                        1
+                        + np.cos(
+                            np.pi
+                            * (
+                                (2 * n_region_3) / (alpha * (n_use - 1))
+                                - (2.0 / alpha)
+                                + 1
+                            )
+                        )
+                    )
+                else:
+                    window[0 : edge_length - 1] = (1.0 / 2.0) * (
+                        1
+                        + np.cos(np.pi * ((2 * n_region_1) / (alpha * (n_use - 1)) - 1))
+                    )
+                    window[edge_length : edge_length * 2 - 1] = (1.0 / 2.0) * (
+                        1
+                        + np.cos(
+                            np.pi
+                            * (
+                                (2 * n_region_3) / (alpha * (n_use - 1))
+                                - (2.0 / alpha)
+                                + 1
+                            )
+                        )
+                    )
+
+    return window[0:n_samples]
