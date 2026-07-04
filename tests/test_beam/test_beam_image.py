@@ -6,7 +6,7 @@ import numpy.testing as npt
 import pytest
 
 from pyfhd.io.pyfhd_io import convert_sav_to_dict, load, recarray_to_dict, save
-from pyfhd.pyfhd_tools.test_utils import get_savs, sav_file_rearrange_psf
+from pyfhd.pyfhd_tools.test_utils import get_savs
 from pyfhd.beam_setup.beam_utils import beam_image
 from pyfhd.data.datasets import fetch_data
 
@@ -122,17 +122,12 @@ def test_beam_image(before_file, after_file, beam_dir):
 @pytest.mark.parametrize(
     ("square", "abs"), [(False, False), (True, False), (True, True)]
 )
-def test_beam_image_psf_cut(square, abs):
-    obs_file = fetch_data("2013_zenith_obs")
-    psf_cut_file = fetch_data("2013_zenith_psf_small")
+def test_beam_image_psf_cut(zenith_obs_2013, zenith_psf_2013_cut, square, abs):
+    psf = zenith_psf_2013_cut
+    obs = zenith_obs_2013
+
     expected_beam_file = fetch_data("2013_zenith_beam_image")
 
-    obs_sav_dict = get_savs(obs_file, "")
-    obs_sav_dict = recarray_to_dict(obs_sav_dict)
-    obs = obs_sav_dict["obs"]
-    psf_sav_dict = get_savs(psf_cut_file, "")
-    # fix the psf to be properly arranged
-    psf = sav_file_rearrange_psf(psf_sav_dict["psf"])
     beam_image_dict = get_savs(expected_beam_file, "")
     beam_image_dict = recarray_to_dict(beam_image_dict)
     expected_beam = beam_image_dict["beam_image_arr"].T

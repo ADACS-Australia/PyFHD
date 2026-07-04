@@ -358,9 +358,9 @@ def beam_image_hyperresolved(
     # If you want to use multiple antennas, please open an issue on the pyfhd GitHub repository or do the translation and/or
     # adjustments yourself.
     # baseline response (power beam) is product of the "two" antenna responses
-    image_power_beam.flat[antenna["pix_use"]] = (
-        antenna["aligned_response"][ant_pol_1, freq_i]
-        * np.conjugate(antenna["aligned_response"][ant_pol_2, freq_i])
+    image_power_beam.flat[antenna["psf_image_pix_use"]] = (
+        antenna["aligned_response_psf_image"][ant_pol_1, freq_i]
+        * np.conjugate(antenna["aligned_response_psf_image"][ant_pol_2, freq_i])
     ).flatten()
 
     # TODO: Work out the interpolation of the zenith power, it uses cubic interpolation
@@ -383,8 +383,8 @@ def beam_image_hyperresolved(
     )[0]
 
     # Normalize the image power beam to the zenith
-    image_power_beam.flat[antenna["pix_use"]] = (
-        image_power_beam.flat[antenna["pix_use"]] / power_zenith
+    image_power_beam.flat[antenna["psf_image_pix_use"]] = (
+        image_power_beam.flat[antenna["psf_image_pix_use"]] / power_zenith
     )
 
     return image_power_beam

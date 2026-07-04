@@ -7,7 +7,12 @@ from pyuvdata.utils.types import BoolArray, FloatArray
 from pyradiosky import SkyModel
 
 from ..beam_setup.beam_utils import beam_image
-from ..pyfhd_tools.pyfhd_utils import angle_difference, region_grow, resistant_mean
+from ..pyfhd_tools.pyfhd_utils import (
+    angle_difference,
+    region_grow,
+    resistant_mean,
+    weight_invert,
+)
 from ..pyfhd_tools.unit_conv import pixel_to_radec, radec_to_pixel
 
 
@@ -528,3 +533,262 @@ def generate_source_cal_skymodel(
     skymodel.at_frequencies(np.atleast_1d(freq_use) * units.Hz)
 
     return skymodel
+
+
+def stokes_cnv(
+    sky: np.typing.NDArray[np.floating | np.complexfloating] | SkyModel,
+    *,
+    antenna: dict,
+    obs: dict,
+    beam_arr: np.typing.NDArray[np.complexfloating] | None = None,
+    inverse: bool = False,
+    square: bool = False,
+) -> np.typing.NDArray[np.floating | np.complexfloating] | SkyModel:
+    """
+    Convert fluxes between Stokes and instrumental pols.
+
+    Accepts either an image array (with a pol axis) or a Skymodel object. Uses
+    the feed_aligned_projection on the antenna object to project between RA/Dec
+    aligned polarizations (for Stokes) and feed aligned polarizations (for
+    instrumental pol). The forward (default) direction goes from instrumental
+    pol to Stokes, set `inverse=True` to go from Stokes to instrumental pol.
+
+    NB: the `no_extend` keyword is not implemented here because given they way
+    extended sources are handled in SkyModel objects, skipping them doesn't save
+    any time (in fact it would slow things down). In FHD, the `no_extend` keyword
+    means that the conversion is only done on the top level sources (so effectively
+    the point source equivalent of the extended source). It seems like that requires
+    that the downstream code also only uses the top level sources (because the
+    lower level ones remain in the structure but are not updated).
+
+    Several apparent debugging options (rotate_pol, no_dipole_projection_rotation,
+    center_rotate, debugging_direction) which are not used anywhere in the codebase
+    were also not implemented here.
+
+    Parameters
+    ----------
+    sky : np.ndarray or SkyModel
+        Either an array containing images (shape: (n_pol, image dimension,
+        image dimension)) or a SkyModel object. If a SkyModel and inverse is
+        False, must have extra columns giving instrumental pol fluxes.
+    antenna : dict
+        Antenna dict containing the feed_aligned_projection matrix.
+    obs : dict
+        Observation dict.
+    beam_arr : np.ndarray, optional
+        Either the image space beam to use to adjust fluxes based on beam sensitivity,
+        usually generated using the `beam_image` function (shape: (n_pol,
+        image dimension, image dimension)) or, if sky is a SkyModel object, an
+        array of pre-calculated beam sensitivities for each component
+        (shape: (n_pol, sky.Ncomponents)). If None, no flux correction is applied.
+        Default is None.
+    inverse : bool
+        Option to go from Stokes to instrumental pol. Default is False.
+    square : bool
+        Option to use the square of the beam_arr for the flux correction.
+        Default is False.
+
+    Returns
+    -------
+    np.ndarray or SkyModel
+        Returns the same type as sky. If a SkyModel and inverse is True, the
+        instrumental polarization fluxes are added in extra columns.
+
+    """
+    n_pol = None
+    if not isinstance(sky, SkyModel):
+        if not isinstance(sky, np.ndarray) or sky.ndim != 3 or sky.shape[0] > 4:
+            raise ValueError(
+                "sky can be a pyradiosky SkyModel object or a 3 dimensional "
+                "array with the zeroth axis as the polarization axis."
+            )
+        n_pol = sky.shape[0]
+
+    if beam_arr is None:
+        n_pol = obs["n_pol"]
+        beam_use = np.ones((n_pol, obs["dimension"], obs["elements"]), dtype=float)
+    else:
+        if isinstance(sky, SkyModel):
+            allowed_beam_ndim = [2, 3]
+        else:
+            allowed_beam_ndim = [3]
+        allowed_ndim_str = " or ".join([str(ndim) for ndim in allowed_beam_ndim])
+        if (
+            not isinstance(beam_arr, np.ndarray)
+            or beam_arr.ndim not in allowed_beam_ndim
+            or beam_arr.shape[0] > 4
+        ):
+            raise ValueError(
+                "beam_arr must be an array with the zeroth axis as the "
+                f"polarization axis and {allowed_ndim_str} dimensions."
+            )
+
+        if n_pol is None:
+            n_pol = beam_arr.shape[0]
+            beam_use = beam_arr
+        elif beam_arr.shape[0] >= n_pol:
+            beam_use = beam_arr[:n_pol]
+        else:
+            raise ValueError("beam_arr has fewer polarizations than input sky.")
+
+        if square:
+            beam_use = beam_use**2
+
+    n_pix = antenna["image_pix_use"].size
+
+    # Use L when going from Stokes to instrument (inverse=True)
+    # use L inverse when going from instrument to Stokes
+    # Note: this is opposite of FHD's use of L and L inverse but I believe that
+    # it is correct and the FHD implementation is wrong.
+    if inverse:
+        p_use = antenna["l_matrix_image_radec"]
+    else:
+        p_use = antenna["l_inv_image_radec"]
+
+    # Define the Stokes conversion:
+    # I = xx* + yy*
+    # Q = xx* - yy*
+    # U = xy* + yx*
+    # V = ixy* - iyx*
+    # where x is in the RA direction and y is in the Dec direction
+    stokes_mat = np.array(
+        [
+            [1.0 + 0.0j, 1.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j],
+            [1.0 + 0.0j, -1.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j],
+            [0.0 + 0.0j, 0.0 + 0.0j, 1.0 + 0.0j, 1.0 + 0.0j],
+            [0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 1.0j, -0.0 - 1.0j],
+        ]
+    )
+
+    stokes_inv = np.linalg.inv(stokes_mat)
+
+    if isinstance(sky, SkyModel):
+        if beam_use.ndim == 3:
+            sx = sky.extra_columns["image_x"]
+            sy = sky.extra_columns["image_y"]
+            # NB: FHD just uses sx, sy as indices, which means they are truncated to ints
+            # we will use round
+            sx = np.round(sx).astype(int)
+            sy = np.round(sy).astype(int)
+
+            # set background to -1 to catch out of range pixels
+            ind_arr = np.zeros((obs["dimension"], obs["elements"]), dtype=int) - 1
+            ind_arr.flat[antenna["image_pix_use"]] = np.arange(n_pix)
+            # NB: FHD just uses sx, sy as indices, which means they are truncated to ints
+            # we will use round
+            p_ind = ind_arr[sx, sy]
+            s_use = np.nonzero(p_ind > 0)[0]
+            if s_use.size == 0:
+                raise ValueError("Error: probably no sources above the horizon")
+            sx = sx[s_use]
+            sy = sy[s_use]
+            p_ind = p_ind[s_use]
+            beam_use = beam_use[:, sx, sy]
+
+        if inverse:
+            # Stokes -> instrumental
+            flux_radec_coherency = np.matmul(stokes_inv, sky.stokes[:, 0, s_use].value)
+
+            # Need a matrix multiply per source. I can't figure out how to do it
+            # with just numpy matrix multiplies right now because everything
+            # I tried ended up with 2 source axes (since both p_use and
+            # fluxes have source axes).
+            # We could iterate over the source axis but that's slow if there are
+            # a lot of sources. Iterate over the radec & pol axes instead.
+            flux_feed_aligned = np.zeros((n_pol, s_use.size), dtype=np.complex128)
+            for rd_i in range(4):
+                for pol_i in range(n_pol):
+                    flux_feed_aligned[pol_i, :] += (
+                        p_use[rd_i, pol_i, p_ind] * flux_radec_coherency[rd_i]
+                    )
+
+            flux_feed_aligned *= beam_use
+            extra_cols = {}
+            for pol_i in range(n_pol):
+                extra_cols[f"flux_pol_{pol_i}"] = flux_feed_aligned[pol_i]
+            sky.add_extra_columns(names=extra_cols.keys(), values=extra_cols.values())
+        else:
+            # instrumental -> Stokes
+            # assume the instrumental fluxes are in extra_columns
+            col_names = [f"flux_pol_{pol_i}" for pol_i in range(n_pol)]
+
+            # Need a matrix multiply per source. I can't figure out how to do it
+            # with just numpy matrix multiplies right now because everything
+            # I tried ended up with 2 source axes (since both p_use and
+            # fluxes have source axes).
+            # We could iterate over the source axis but that's slow if there are
+            # a lot of sources. Iterate over the radec & pol axes instead.
+            flux_radec_coherency = np.zeros((4, s_use.size), dtype=np.complex128)
+            for rd_i in range(4):
+                for pol_i in range(n_pol):
+                    flux_radec_coherency[pol_i, :] += (
+                        p_use[pol_i, rd_i, p_ind]
+                        * weight_invert(beam_use[pol_i])
+                        * sky.extra_columns[col_names[pol_i]]
+                    )
+
+            flux_stokes = np.matmul(stokes_mat, flux_radec_coherency)
+
+            # set polarizations not supported by data to zero
+            if n_pol < 4:
+                flux_stokes[:n_pol] = 0
+
+            sky.stokes[:, 0, :] = flux_stokes * units.Jy
+        return sky
+
+    # sky is an image array
+    # redefine n_pol here, just to make sure it matches the images
+    n_pol = sky.shape[0]
+
+    if inverse:
+        # Stokes -> instrumental
+        image_arr_radec_coherency = np.matmul(stokes_inv, sky)
+
+        # Need a matrix multiply per source. I can't figure out how to do it
+        # with just numpy matrix multiplies right now because everything
+        # I tried ended up with 2 source axes (since both p_use and
+        # fluxes have source axes).
+        # We could iterate over the source axis but that's slow if there are
+        # a lot of sources. Iterate over the radec & pol axes instead.
+        image_arr_feed_aligned = np.zeros(
+            (n_pol, sky.shape[1], sky.shape[2]), dtype=np.complex128
+        )
+        for rd_i in range(4):
+            for pol_i in range(n_pol):
+                image_arr_feed_aligned[pol_i] += (
+                    p_use[rd_i, pol_i] * image_arr_radec_coherency[rd_i]
+                )
+        image_arr_feed_aligned *= beam_use
+    else:
+        # instrumental -> Stokes
+
+        # make this have 4 polarizations no matter how many are actually
+        # present so that matrix multiplies work properly.
+        # zero polarizations not supported by data after the matrix multiplies
+        image_arr_feed_aligned = np.zeros(
+            (4, sky.shape[1], sky.shape[2]), dtype=np.complex128
+        )
+        image_arr_feed_aligned[:n_pol] = weight_invert(beam_use) * sky
+
+        # Need a matrix multiply per source. I can't figure out how to do it
+        # with just numpy matrix multiplies right now because everything
+        # I tried ended up with 2 source axes (since both p_use and
+        # fluxes have source axes).
+        # We could iterate over the source axis but that's slow if there are
+        # a lot of sources. Iterate over the radec & pol axes instead.
+        image_arr_radec_coherency = np.zeros(
+            (4, sky.shape[1], sky.shape[2]), dtype=np.complex128
+        )
+        for rd_i in range(4):
+            for pol_i in range(n_pol):
+                image_arr_radec_coherency[pol_i, :] += (
+                    p_use[pol_i, rd_i, p_ind] * image_arr_feed_aligned[pol_i]
+                )
+
+        image_arr_stokes = np.matmul(stokes_mat, flux_radec_coherency)
+
+        # drop polarizations not supported by data
+        if n_pol < 4:
+            image_arr_stokes = image_arr_stokes[:n_pol]
+
+        return image_arr_stokes
