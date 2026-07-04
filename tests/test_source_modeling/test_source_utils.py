@@ -5,7 +5,11 @@ from astropy.coordinates import Longitude, Latitude
 from pyradiosky import SkyModel
 
 from pyfhd.data.datasets import fetch_data
-from pyfhd.source_modeling.source_utils import generate_source_cal_skymodel, stokes_cnv
+from pyfhd.source_modeling.source_utils import (
+    generate_source_cal_skymodel,
+    stokes_cnv,
+    source_dft,
+)
 from pyfhd.pyfhd_tools.unit_conv import altaz_to_radec, radec_to_pixel
 
 
@@ -166,3 +170,19 @@ def test_stokes_cnv_off_zenith(mwa_aee_beam_zenith_2013):
             atol=0.02,
             rtol=0,
         )
+
+
+@pytest.mark.github_actions
+def test_source_dft_center():
+    # check that a centered source returns all ones in uv plane
+
+    model_uv = source_dft(
+        x_loc=np.atleast_1d([2048.0 / 2]),
+        y_loc=np.atleast_1d([2048.0 / 2]),
+        dimension=2048,
+        elements=2048,
+        flux=np.reshape(np.array([0.5, 0.5, 0, 0]), (4, 1)),
+    )
+
+    np.testing.assert_allclose(model_uv[0:2], 0.5)
+    np.testing.assert_allclose(model_uv[2:], 0)
