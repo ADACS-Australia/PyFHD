@@ -61,10 +61,7 @@ def temperature_from_height(height: float) -> u.Quantity:
 
 
 def co_refract_forward(
-    *,
-    alt_in: float | FloatArray,
-    pressure: u.Quantity,
-    temperature: u.Quantity,
+    *, alt_in: float | FloatArray, pressure: u.Quantity, temperature: u.Quantity
 ) -> float | FloatArray:
     """
     Calculate refraction correction from observed to true altitude.

@@ -668,7 +668,7 @@ def weight_invert(
         for zeros, by default None
     use_abs: bool, optional
         If True, take the absolute value (sometimes useful for complex numbers)
-        By default this is False, so will leave as a complex number and invert, by default False
+        By default this is False, so will leave as a complex number and invert.
 
     Returns
     -------
@@ -984,7 +984,7 @@ def parallactic_angle(latitude: float, hour_angle: float, dec: float) -> float:
     x_term = np.cos(np.radians(dec)) * np.tan(np.radians(latitude)) - np.sin(
         np.radians(dec)
     ) * np.cos(np.radians(hour_angle))
-    return np.degrees(np.arctan(y_term / x_term))
+    return np.degrees(np.arctan2(y_term, x_term))
 
 
 def simple_deproject_w_term(
