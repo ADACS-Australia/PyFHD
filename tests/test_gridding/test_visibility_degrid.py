@@ -97,9 +97,7 @@ def after_degridding(data_dir: Path, number: int, request: pytest.FixtureRequest
     outputs = get_savs(data_dir, f"output_{number}_new.sav")
     outputs = recarray_to_dict(outputs)
 
-    h5_save_dict = {
-        "vis_return": outputs["vis_return"].T,
-    }
+    h5_save_dict = {"vis_return": outputs["vis_return"].T}
 
     save(after_gridding, h5_save_dict, "after_file")
 
