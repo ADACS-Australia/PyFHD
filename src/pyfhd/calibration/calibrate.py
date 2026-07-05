@@ -111,6 +111,9 @@ def calibrate(
             vis_weights=None,
             logger=logger,
             fill_model_visibilities=True,
+            # TODO: add all these to pyfhd setup
+            # conserve_memory=pyfhd_config["cal_dft_conserve_memory"],
+            # mem_thresh=pyfhd_config["cal_dft_mem_thresh"],
         )
 
     # Calculate auto-correlation visibilities, optionally use them for initial calibration estimates
