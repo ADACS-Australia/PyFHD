@@ -1136,7 +1136,7 @@ def pyfhd_parser():
         "--save-healpix-fits",
         default=False,
         action=OrderedBooleanOptionalAction,
-        help="Create Healpix fits files. Healpix fits maps are in units Jy/sr. "
+        help="Create HEALPix fits files. HEALPix fits maps are in units Jy/sr. "
         "Replaces write_healpix_fits",
     )
     export.add_argument(
@@ -1209,7 +1209,9 @@ def pyfhd_parser():
         "<obs_id>_vis_model_<pol_name> sav files. "
         "In the case you chose 'uvfits', then the path is to a uvfits file, in "
         "which case make sure the phase centre of model data must match the 'RA' "
-        "and 'DEC' values in the metafits file (NOT the 'RAPHASE' and 'DECPHASE').",
+        "and 'DEC' values in the metafits file (NOT the 'RAPHASE' and 'DECPHASE')."
+        "If you want to do a run without a model, this must be set to None (~),"
+        "and calibrate-visibilities should be set as False. ",
     )
     model.add_argument(
         "--allow-sidelobe-model-sources",
