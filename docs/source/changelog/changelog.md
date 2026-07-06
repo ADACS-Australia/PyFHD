@@ -36,6 +36,7 @@ in pyuvdata.UVBeam and just called directly.
 * Analytic beams (subclassed from pyuvdata.AnalyticBeam) are now supported. Use
 the new `analytic-beam-yaml` option to configure them.
 * Added handling for `~` in paths in config yamls.
+* Altered the necessary code to allow for a run to be done without a model.
 
 ### Bug Fixes
 * Fixed a bug in gridding where the wrong frequency index (and possibly sometimes
