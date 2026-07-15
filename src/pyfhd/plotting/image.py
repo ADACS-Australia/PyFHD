@@ -56,7 +56,7 @@ def log_color_calc(
     log_cut_val: float | None = None,
     sigma_clip_level: float | None = None,
     min_abs: float | None = None,
-    count_missing: int | None = None,
+    count_missing: int = 0,
     wh_missing: NDArray[np.integer] | None = None,
     missing_color: int | None = None,
     invert_colorbar: bool = False,
@@ -82,7 +82,7 @@ def log_color_calc(
     min_abs : int | float, optional
         The minimum absolute value for the color bar, by default None
     count_missing : int, optional
-        The number of missing values, by default None
+        The number of missing values, by default 0
     wh_missing : NDArray[np.integer], optional
         The location of the missing values, by default None
     missing_color : int, optional
