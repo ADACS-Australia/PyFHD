@@ -8,6 +8,7 @@ import matplotlib.colors as colors
 from matplotlib.figure import Figure
 import numpy as np
 from numpy.typing import NDArray
+from typing import Literal
 
 logger = logging.getLogger(__name__)
 
@@ -51,7 +52,7 @@ def log_color_calc(
     data: NDArray[np.integer | np.floating | np.complexfloating],
     *,
     data_range: NDArray[np.integer | np.floating] | None = None,
-    color_profile: str = "log_cut",
+    color_profile: Literal["log_cut", "sym_log", "abs"] = "log_cut",
     log_cut_val: float | None = None,
     sigma_clip_level: float | None = None,
     min_abs: float | None = None,
@@ -366,7 +367,7 @@ def quick_image(
     yrange: NDArray[np.integer | np.floating] | None = None,
     data_aspect: float | None = None,
     log: bool = False,
-    color_profile: str = "log_cut",
+    color_profile: Literal["log_cut", "sym_log", "abs"] = "log_cut",
     cmap: str | None = None,
     xtitle: str | None = None,
     ytitle: str | None = None,
