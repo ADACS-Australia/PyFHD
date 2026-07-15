@@ -613,7 +613,9 @@ def vis_model_freq_split(
                 gridding_dict["variance"] * rephase_use * gridding_dict["n_vis"]
             )
             if vis_model is not None:
-                model_uv_arr[fi] = gridding_dict["model_return"] * gridding_dict["n_vis"]
+                model_uv_arr[fi] = (
+                    gridding_dict["model_return"] * gridding_dict["n_vis"]
+                )
 
         if fft:
             # No x_range and y_range hence no check for it here
