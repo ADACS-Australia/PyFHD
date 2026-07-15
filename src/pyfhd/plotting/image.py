@@ -482,20 +482,24 @@ def quick_image(
     """
     # Validate the image input
     if image is None or not isinstance(image, np.ndarray):
-        print("Image is undefined or not a valid numpy array.")
-        return
-
+        raise ValueError(
+            "Image is undefined or not a valid numpy array."
+        )
+    
     # Ensure the image is 2D
     if image.ndim != 2:
-        print("Image must be 2-dimensional.")
-        return
+        raise ValueError(
+            "Image must be 2-dimensional."
+        )
 
     if transpose:
         image = image.T
 
     # Handle complex images. Default is to show the real part.
     if np.iscomplexobj(image):
-        print("Image is complex, showing real part.")
+        logger.warning(
+            "Image is complex, showing real part."
+        )
         image = np.real(image)
 
     # Handle missing values by setting them to NaN
@@ -730,7 +734,9 @@ def _save_or_display(fig, savefile, png, pdf, eps):
                 elif extension == ".pdf":
                     pdf = True
                 else:
-                    print("Unrecognized extension, using PNG")
+                    logger.warning(
+                        "Unrecognized extension, using PNG"
+                    )
                     png = True
 
         # Set default savefile if not provided
@@ -744,7 +750,9 @@ def _save_or_display(fig, savefile, png, pdf, eps):
         # Ensure only one output format is set
         formats_set = sum([png, eps, pdf])
         if formats_set > 1:
-            print("Only one of eps, png, pdf can be set. Defaulting to png.")
+            logger.warning(
+                "Only one of eps, png, pdf can be set. Defaulting to png."
+            )
             eps = pdf = False
             png = True
 
