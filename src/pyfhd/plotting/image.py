@@ -53,9 +53,9 @@ def log_color_calc(
     *,
     data_range: NDArray[np.integer | np.floating] | None = None,
     color_profile: Literal["log_cut", "sym_log", "abs"] = "log_cut",
-    log_cut_val: float | None = None,
+    log_cut_val: int | float | None = None,
     sigma_clip_level: float | None = None,
-    min_abs: float | None = None,
+    min_abs: int | float | None = None,
     count_missing: int = 0,
     wh_missing: NDArray[np.integer] | None = None,
     missing_color: int | None = None,
@@ -69,23 +69,23 @@ def log_color_calc(
     data : NDArray[np.integer | np.floating | np.complexfloating]
         A 2D array of data to be displayed as an image.
         The data can be of type int, float, or complex.
-    data_range : NDArray[np.integer | np.floating], optional
+    data_range : NDArray[np.integer | np.floating] | None, optional
         Min/max color bar range, by default [np.nanmin(image), np.nanmax(image)]
     color_profile : Literal["log_cut", "sym_log", "abs"], optional
         Color bar profiles for logarithmic scaling.
         "log_cut", "sym_log", "abs", by default "log_cut"
-    log_cut_val : int | float, optional
+    log_cut_val : int | float | None, optional
         Minimum log value to cut at, by default None
-    sigma_clip_level : float, optional
+    sigma_clip_level : float | None, optional
         Number of standard deviations to use as clipping threshold, only used it
         log is True. Default is None meaning that true min and max are used.
-    min_abs : int | float, optional
+    min_abs : int | float | None, optional
         The minimum absolute value for the color bar, by default None
     count_missing : int, optional
         The number of missing values, by default 0
-    wh_missing : NDArray[np.integer], optional
+    wh_missing : NDArray[np.integer] | None, optional
         The location of the missing values, by default None
-    missing_color : int, optional
+    missing_color : int | None, optional
         The index of the color bar for missing values, by default None
     invert_colorbar : bool, optional
         Invert the color bar, by default False
@@ -381,10 +381,10 @@ def quick_image(
     start_multi_params: dict | None = None,
     alpha: float | None = None,
     missing_value: int | float | complex | None = None,
-    savefile: str | None = None,
+    savefile: str | Path | None = None,
     png: bool = False,
-    eps: bool = False,
     pdf: bool = False,
+    eps: bool = False,
 ) -> None:
     """
     Create an image from a 2D array of data, with optional handling for log scaling,
@@ -416,21 +416,21 @@ def quick_image(
         The data can be of type int, float, or complex.
     xvals : NDArray[np.integer | np.floating], optional
         An array of x-axis values, by default None
-    yvals : NDArray[np.integer | np.floating], optional
+    yvals : NDArray[np.integer | np.floating] | None, optional
         An array of y-axis values, by default None
     transpose : bool
         Option to transpose the array before calling imshow. imshow puts the
         0th axis along the y axis, which is often not what we want. Setting this
         to True results in the 0th axis being plotted along the x axis.
         Defaults to True.
-    data_range : NDArray[np.integer | np.floating], optional
+    data_range : NDArray[np.integer | np.floating] | None, optional
         Min/max color bar range, by default [np.nanmin(image), np.nanmax(image)]
-    data_min_abs : float, optional
+    data_min_abs : float | None, optional
         The minimum absolute value for the color bar, by default None
-    sigma_clip_level : float, optional
+    sigma_clip_level : float | None, optional
         Number of standard deviations to use as clipping threshold, only used it
         log is True. Default is None meaning that true min and max are used.
-    percentile_clip_level : float, optional
+    percentile_clip_level : float | None, optional
         Percentile level to use for clipping. For example, a value of 1 means that
         the display range will be set to the 1st and 99th percentiles of the data.
         Only used if log is False. Default is None meaning that true min and max
@@ -446,30 +446,34 @@ def quick_image(
     color_profile : Literal["log_cut", "sym_log", "abs"], optional
         Color bar profiles for logarithmic scaling.
         "log_cut", "sym_log", "abs", by default "log_cut"
-    cmap : str, optional
+    cmap : str | None, optional
         Matplotlib colormap to use.
-    xtitle : str, optional
+    xtitle : str | None, optional
         The label for the x-axis.
-    ytitle : str, optional
+    ytitle : str | None, optional
         The label for the y-axis.
-    title : str, optional
+    title : str | None, optional
         The title of the image.
-    cb_title : str, optional
+    cb_title : str | None, optional
         The title of the colourbar.
-    note : str, optional
+    note : str | None, optional
         A small note to place on the bottom right of the image, by default None
-    charsize : int, optional
+    charsize : int | None, optional
         The size of the font, by default None
     xlog : bool, optional
         Use logarithmic scale for the x-axis, by default False
     ylog : bool, optional
         Use logarithmic scale for the y-axis, by default False
-    savefile : str | Path, optional
-        The path to save the image file. If None, the image is displayed on screen.
+    multi_pos : list | None, optional
+        List defining the position of the image in a multi-panel layout, by default None
+    start_multi_params : dict | None, optional
+        Dictionary containing parameters for multi-panel layout, by default None
+    alpha : float | None, optional
+        The alpha transparency of the image, by default None
     missing_value : float | int, optional
         The value in the data array that represents missing data. If None, no missing data handling is performed.
-    log : bool, optional
-        Whether to apply logarithmic scaling to the data. Default is True.
+    savefile : str | Path | None, optional
+        The path to save the image file. If None, the image is displayed on screen.
     png : bool, optional
         Whether to save the image as a PNG file. Default is False.
     pdf : bool, optional
@@ -713,7 +717,7 @@ def _save_or_display(
 
     Parameters
     ----------
-    fig : matplotlib.figure.Figure
+    fig : Figure
         The matplotlib figure object containing the rendered image.
     savefile : str | Path | None
         Base path for saving the image file. Defaults to "quick_image" if a
