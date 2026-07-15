@@ -278,8 +278,10 @@ def main():
                     f"loaded from {obs_checkpoint_file}"
                 )
 
-        # Give cal a value to avoid no value error (Default = None, but can be overwritten below)
+        # Give cal and vis_model_arr a value to avoid no value error
+        # (Default = None, but can be overwritten below)
         cal = None
+        vis_model_arr = None
         # If the calibration checkpoint exists, load it now before loading in the beam
         # to get the observation metadata and visibility parameters
         if pyfhd_config["calibrate_checkpoint"]:
@@ -378,8 +380,6 @@ def main():
                     "Model Imported and Flagged From UVFITS",
                     logger,
                 )
-            else:
-                vis_model_arr = None
 
             # Skipped initializing the cal structure as it mostly just copies
             # values from the obs, params, config and the skymodel from FHD
