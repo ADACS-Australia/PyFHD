@@ -21,14 +21,14 @@ def truncate_colormap(cmap, *, minval=0.0, maxval=1.0, nseg=100):
     return new_cmap
 
 
-def color_range(count_missing: int | None = None) -> tuple:
+def color_range(count_missing: int = 0) -> tuple:
     """
     Define the color range for the image data.
 
     Parameters
     ----------
     count_missing : int, optional
-        Count of missing values, by default None
+        Count of missing values, by default 0
 
     Returns
     -------
