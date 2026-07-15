@@ -5,6 +5,7 @@ from pathlib import Path
 from astropy.stats import sigma_clipped_stats
 import matplotlib.pyplot as plt
 import matplotlib.colors as colors
+from matplotlib.figure import Figure
 import numpy as np
 from numpy.typing import NDArray
 
@@ -19,7 +20,7 @@ def truncate_colormap(cmap, *, minval=0.0, maxval=1.0, nseg=100):
     return new_cmap
 
 
-def color_range(count_missing: int = None) -> tuple:
+def color_range(count_missing: int | None = None) -> tuple:
     """
     Define the color range for the image data.
 
@@ -49,14 +50,14 @@ def color_range(count_missing: int = None) -> tuple:
 def log_color_calc(
     data: NDArray[np.integer | np.floating | np.complexfloating],
     *,
-    data_range: NDArray[np.integer | np.floating] = None,
+    data_range: NDArray[np.integer | np.floating] | None = None,
     color_profile: str = "log_cut",
-    log_cut_val: float = None,
+    log_cut_val: float | None = None,
     sigma_clip_level: float | None = None,
-    min_abs: float = None,
-    count_missing: int = None,
-    wh_missing: NDArray[np.integer] = None,
-    missing_color: int = None,
+    min_abs: float | None = None,
+    count_missing: int | None = None,
+    wh_missing: NDArray[np.integer] | None = None,
+    missing_color: int | None = None,
     invert_colorbar: bool = False,
 ) -> tuple:
     """
@@ -353,33 +354,33 @@ def log_color_calc(
 
 def quick_image(
     image: NDArray[np.integer | np.floating | np.complexfloating],
-    xvals: NDArray[np.integer | np.floating] = None,
-    yvals: NDArray[np.integer | np.floating] = None,
+    xvals: NDArray[np.integer | np.floating] | None = None,
+    yvals: NDArray[np.integer | np.floating] | None = None,
     *,
     transpose: bool = True,
-    data_range: NDArray[np.integer | np.floating] = None,
-    data_min_abs: float = None,
+    data_range: NDArray[np.integer | np.floating] | None = None,
+    data_min_abs: float | None = None,
     sigma_clip_level: float | None = None,
     percentile_clip_level: float | None = None,
-    xrange: NDArray[np.integer | np.floating] = None,
-    yrange: NDArray[np.integer | np.floating] = None,
-    data_aspect: float = None,
+    xrange: NDArray[np.integer | np.floating] | None = None,
+    yrange: NDArray[np.integer | np.floating] | None = None,
+    data_aspect: float | None = None,
     log: bool = False,
     color_profile: str = "log_cut",
     cmap: str | None = None,
-    xtitle: str = None,
-    ytitle: str = None,
-    title: str = None,
-    cb_title: str = None,
-    note: str = None,
-    charsize: int = None,
+    xtitle: str | None = None,
+    ytitle: str | None = None,
+    title: str | None = None,
+    cb_title: str | None = None,
+    note: str | None = None,
+    charsize: int | None = None,
     xlog: bool = False,
     ylog: bool = False,
-    multi_pos: list = None,
-    start_multi_params: dict = None,
-    alpha: float = None,
-    missing_value: int | float | complex = None,
-    savefile: str = None,
+    multi_pos: list | None = None,
+    start_multi_params: dict | None = None,
+    alpha: float | None = None,
+    missing_value: int | float | complex | None = None,
+    savefile: str | None = None,
     png: bool = False,
     eps: bool = False,
     pdf: bool = False,
@@ -697,8 +698,14 @@ def quick_image(
     _save_or_display(fig, savefile, png, pdf, eps)
 
 
-def _save_or_display(fig, savefile, png, pdf, eps):
-    """
+def _save_or_display(
+        fig: Figure, 
+        savefile: str | Path | None,
+        png: bool = False,
+        pdf: bool = False,
+        eps: bool = False
+    ) -> None:
+    """ 
     Save the figure to a file if a savefile path is provided or if any of the
     format flags (png, pdf, eps) are True. If no savefile path is provided and
     all format flags are False, display the figure on screen.
