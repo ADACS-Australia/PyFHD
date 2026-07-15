@@ -71,7 +71,7 @@ def log_color_calc(
         The data can be of type int, float, or complex.
     data_range : NDArray[np.integer | np.floating], optional
         Min/max color bar range, by default [np.nanmin(image), np.nanmax(image)]
-    color_profile : str, optional
+    color_profile : Literal["log_cut", "sym_log", "abs"], optional
         Color bar profiles for logarithmic scaling.
         "log_cut", "sym_log", "abs", by default "log_cut"
     log_cut_val : int | float, optional
@@ -443,7 +443,7 @@ def quick_image(
         The aspect ratio of y to x, by default None
     log : bool, optional
         Color bar on logarithmic scale, by default False
-    color_profile : str, optional
+    color_profile : Literal["log_cut", "sym_log", "abs"], optional
         Color bar profiles for logarithmic scaling.
         "log_cut", "sym_log", "abs", by default "log_cut"
     cmap : str, optional
