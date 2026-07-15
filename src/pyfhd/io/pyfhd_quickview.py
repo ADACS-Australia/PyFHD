@@ -79,7 +79,7 @@ def quickview(
     obs: dict,
     psf: dict,
     params: dict,
-    cal: dict,
+    cal: dict | None,
     vis_arr: NDArray[np.complex128],
     vis_weights: NDArray[np.float64],
     image_uv: NDArray[np.complex128],
