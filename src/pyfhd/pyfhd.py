@@ -278,6 +278,8 @@ def main():
                     f"loaded from {obs_checkpoint_file}"
                 )
 
+        # Give cal a value to avoid no value error (Default = None, but can be overwritten below)
+        cal = None
         # If the calibration checkpoint exists, load it now before loading in the beam
         # to get the observation metadata and visibility parameters
         if pyfhd_config["calibrate_checkpoint"]:
@@ -384,7 +386,6 @@ def main():
             # However, there is resulting cal structure for logging and output
             # purposes to store the resulting gain and any other associated
             # arrays
-            cal = None
             if pyfhd_config["calibrate_visibilities"]:
                 logger.info("Beginning Calibration")
                 cal_start = time.time()
