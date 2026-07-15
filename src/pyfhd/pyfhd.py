@@ -656,6 +656,8 @@ def main():
             uniform_filter_uv = grid_checkpoint["uniform_filter_uv"]
             if "model_uv" in grid_checkpoint:
                 model_uv = grid_checkpoint["model_uv"]
+            else:
+                model_uv = None
             del grid_checkpoint
             logger.info(
                 "Checkpoint Loaded: The Gridded UV Planes loaded from "
