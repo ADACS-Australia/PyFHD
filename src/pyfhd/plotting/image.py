@@ -115,14 +115,6 @@ def log_color_calc(
         if data_range[1] < data_range[0]:
             raise ValueError("data_range[0] must be less than data_range[1]")
 
-    # Handle sym_log profile constraints
-    if color_profile == "sym_log" and data_range[0] > 0:
-        logger.warning(
-            "sym_log profile cannot be selected with an entirely positive data "
-            "range. Switching to log_cut"
-        )
-        color_profile = "log_cut"
-
     data_color_range, data_n_colors = color_range(count_missing=count_missing)
 
     # Handle positive values
@@ -188,6 +180,14 @@ def log_color_calc(
             logger.info(f"Percentage of data clipped: {percent_clipped:.2f}%")
         else:
             data_range = true_range
+
+    # Handle sym_log profile constraints
+    if color_profile == "sym_log" and data_range[0] > 0:
+        logger.warning(
+            "sym_log profile cannot be selected with an entirely positive data "
+            "range. Switching to log_cut"
+        )
+        color_profile = "log_cut"
 
     # Handle log_cut color profile
     if color_profile == "log_cut":
@@ -628,7 +628,7 @@ def quick_image(
             extent[2], extent[3] = yrange[0], yrange[1]
     elif xrange is not None and yrange is not None:
         # If xvals and yvals are not provided, use xrange and yrange directly
-        extent = [xrange[0], xrange[1], yrange[0], yrange[1]]
+        extent = np.array([xrange[0], xrange[1], yrange[0], yrange[1]])
         image = image[np.ix_(yrange, xrange)]
 
     im = ax.imshow(
