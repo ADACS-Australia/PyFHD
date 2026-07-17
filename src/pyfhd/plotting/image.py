@@ -57,7 +57,7 @@ def log_color_calc(
     sigma_clip_level: float | None = None,
     min_abs: int | float | None = None,
     count_missing: int = 0,
-    wh_missing: NDArray[np.integer] | None = None,
+    wh_missing: tuple[NDArray[np.intp], ...] | None = None,
     missing_color: int | None = None,
     invert_colorbar: bool = False,
 ) -> tuple:
@@ -83,7 +83,7 @@ def log_color_calc(
         The minimum absolute value for the color bar, by default None
     count_missing : int, optional
         The number of missing values, by default 0
-    wh_missing : NDArray[np.integer] | None, optional
+    wh_missing : tuple[NDArray[np.intp], ...] | None, optional
         The location of the missing values, by default None
     missing_color : int | None, optional
         The index of the color bar for missing values, by default None
