@@ -108,7 +108,7 @@ def log_color_calc(
 
     # Handle data_range
     if data_range is None:
-        true_range = [np.nanmin(data), np.nanmax(data)]
+        true_range = np.array([np.nanmin(data), np.nanmax(data)], dtype=np.float64)
     else:
         if len(data_range) != 2:
             raise ValueError("data_range must be a 2-element vector")
@@ -171,7 +171,7 @@ def log_color_calc(
             lower_bound = mean - sigma_clip_level * std
             upper_bound = mean + sigma_clip_level * std
 
-            data_range = [10**lower_bound, 10**upper_bound]
+            data_range = np.array([10**lower_bound, 10**upper_bound], dtype=np.float64)
 
             # Count how many data points are outside the clipping bounds.
             num_clipped = np.sum(
@@ -554,7 +554,7 @@ def quick_image(
                 lower_bound = np.nanpercentile(image, percentile_clip_level)
                 upper_bound = np.nanpercentile(image, 100 - percentile_clip_level)
 
-                data_range = [lower_bound, upper_bound]
+                data_range = np.array([lower_bound, upper_bound], dtype=np.float64)
 
                 # Count how many data points are outside the clipping bounds.
                 num_clipped = np.sum((image < lower_bound) | (image > upper_bound))
@@ -567,7 +567,7 @@ def quick_image(
                 )
                 logger.info(f"Percentage of data clipped: {percent_clipped:.2f}%")
             else:
-                data_range = [np.nanmin(image), np.nanmax(image)]
+                data_range = np.array([np.nanmin(image), np.nanmax(image)], dtype=np.float64)
 
         data_color_range, data_n_colors = color_range(count_missing=count_missing)
 
