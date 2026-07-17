@@ -40,12 +40,11 @@ def test_generate_source_cal_skymodel(zenith_obs_2013, zenith_psf_2013_cut, refr
     # obs dimension should be an int
     obs["dimension"] = int(obs["dimension"])
 
-    # freqs = np.array([1.6512e08, 1.8048e08])
     # set obs freq_array to match psf
     freqs = psf["freq"]
     n_freq = freqs.size
     obs["n_freq"] = n_freq
-    obs["nf_vis"] = obs["nf_vis"][0:n_freq, :]
+    obs["nf_vis"] = obs["nf_vis"][0:n_freq]
     obs["freq_center"] = np.mean(freqs)
     obs["baseline_info"]["freq"] = freqs
     obs["baseline_info"]["freq_use"] = np.ones((n_freq,), dtype=int)

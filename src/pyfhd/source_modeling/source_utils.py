@@ -944,8 +944,6 @@ def source_dft_multi(
     antenna: dict,
     skymodel: SkyModel,
     logger: logging.Logger,
-    xvals: np.typing.NDArray[np.float] | None = None,
-    yvals: np.typing.NDArray[np.float] | None = None,
     uv_i_use: tuple[np.typing.NDArray[np.integer]] | None = None,
     conserve_memory: bool = True,
     mem_thresh: float = 1e8,
@@ -968,10 +966,6 @@ def source_dft_multi(
         The antenna/beam dictionary.
     skymodel : pyradiosky.SkyModel
         Skymodel object containing the sources to use.
-    xvals : np.ndarray of float
-        u pixel values in uv plane to DFT to.
-    yvals : np.ndarray of float
-        v pixel values in uv plane to DFT to.
     uv_i_use : tuple of np.ndarray of int
         Tuple of index arrays giving the locations in the uv plane to use.
     sigma_threshold : float, optional
@@ -999,11 +993,7 @@ def source_dft_multi(
         raise NotImplementedError("degridding spectral terms is not yet implemented.")
 
     xvals, yvals = _setup_uv_vals(
-        dimension=dimension,
-        elements=elements,
-        xvals=xvals,
-        yvals=yvals,
-        uv_i_use=uv_i_use,
+        dimension=dimension, elements=elements, uv_i_use=uv_i_use
     )
 
     x_vec = skymodel.extra_columns["image_x"]
@@ -1036,7 +1026,7 @@ def source_dft_multi(
         conserve_memory=conserve_memory,
     )
 
-    model_uv_full[:, xvals, yvals] = model_uv_vals
+    model_uv_full[:, uv_i_use[0], uv_i_use[1]] = model_uv_vals
 
     return model_uv_full
 
@@ -1096,7 +1086,7 @@ def source_dft_model(
     if uv_mask is None:
         uv_mask = np.full((dimension, elements), True, dtype=bool)
 
-    xvals, yvals = np.nonzero(uv_mask)
+    uv_i_use = np.nonzero(uv_mask)
 
     if sigma_threshold is not None:
         raise NotImplementedError(
@@ -1109,8 +1099,7 @@ def source_dft_model(
         antenna=antenna,
         skymodel=skymodel,
         logger=logger,
-        xvals=xvals,
-        yvals=yvals,
+        uv_i_use=uv_i_use,
         conserve_memory=conserve_memory,
         mem_thresh=mem_thresh,
     )

@@ -54,7 +54,8 @@ def mwa_aee_beam_zenith_2013(zenith_obs_2013, tmp_path_factory):
     freqs = np.array([1.6512e08, 1.8048e08])
     n_freq = freqs.size
     obs["n_freq"] = n_freq
-    obs["nf_vis"] = obs["nf_vis"][0:n_freq, :]
+    # the input nf_vis has a pol axis, which we don't want.
+    obs["nf_vis"] = obs["nf_vis"][0:n_freq, 0]
     obs["freq_center"] = np.mean(freqs)
     obs["baseline_info"]["freq"] = freqs
     obs["baseline_info"]["freq_use"] = np.ones((n_freq,), dtype=int)
