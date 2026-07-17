@@ -6,6 +6,7 @@ from astropy.stats import sigma_clipped_stats
 import matplotlib.pyplot as plt
 import matplotlib.colors as colors
 from matplotlib.figure import Figure
+from matplotlib.colors import Colormap
 import numpy as np
 from numpy.typing import NDArray
 from typing import Literal
@@ -368,7 +369,7 @@ def quick_image(
     data_aspect: float | None = None,
     log: bool = False,
     color_profile: Literal["log_cut", "sym_log", "abs"] = "log_cut",
-    cmap: str | None = None,
+    cmap: str | Colormap | None = None,
     xtitle: str | None = None,
     ytitle: str | None = None,
     title: str | None = None,
@@ -446,7 +447,7 @@ def quick_image(
     color_profile : Literal["log_cut", "sym_log", "abs"], optional
         Color bar profiles for logarithmic scaling.
         "log_cut", "sym_log", "abs", by default "log_cut"
-    cmap : str | None, optional
+    cmap : str | Colormap | None, optional
         Matplotlib colormap to use.
     xtitle : str | None, optional
         The label for the x-axis.
