@@ -629,12 +629,12 @@ def quick_image(
             extent[2], extent[3] = yrange[0], yrange[1]
     elif xrange is not None and yrange is not None:
         # If xvals and yvals are not provided, use xrange and yrange directly
-        extent = np.array([xrange[0], xrange[1], yrange[0], yrange[1]])
+        extent = [xrange[0], xrange[1], yrange[0], yrange[1]]
         image = image[np.ix_(yrange, xrange)]
 
     im = ax.imshow(
         image,
-        extent=extent,
+        extent=tuple(extent) if extent is not None else None,
         aspect=data_aspect or "auto",
         cmap=cmap,
         vmin=0,
