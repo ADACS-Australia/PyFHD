@@ -242,7 +242,13 @@ def create_psf(obs: dict, pyfhd_config: dict, logger: Logger) -> dict | File:
                 beam2_int *= weight_invert(n_grp_use) / obs["kpix"] ** 2
                 beam_int *= weight_invert(n_grp_use) / obs["kpix"] ** 2
                 fi_use = np.where(obs["baseline_info"]["fbin_i"] == freq_i)
-                primary_beam_area[pol_i, fi_use] = beam_int
+                # TODO: this is the equivalent of what is happening in FHD but
+                # I don't know if it is the right thing to do. The beam is
+                # integrated and weighted summed as a complex number and then
+                # cast to real, effectively throwing away the complex part.
+                # Should the absolute value be integrated instead? Or should the
+                # absolute value be taken here? This is a research question.
+                primary_beam_area[pol_i, fi_use] = beam_int.real
                 primary_beam_sq_area[pol_i, fi_use] = beam2_int
 
         psf["beam_ptr"] = beam_arr
