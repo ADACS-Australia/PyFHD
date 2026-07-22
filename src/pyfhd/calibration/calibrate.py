@@ -87,18 +87,21 @@ def calibrate(
             psf=psf,
             logger=logger,
             catalog_path=pyfhd_config["calibration_catalog_file_path"],
-            # TODO: add all these to pyfhd setup
-            # sidelobe_catalog_path=pyfhd_config["sidelobe_catalog_path"],
-            # allow_sidelobe_sources=pyfhd_config["allow_sidelobe_sources"],
-            # beam_threshold=pyfhd_config["beam_cal_threshold"],
-            # restrict_sources=pyfhd_config["cal_restrict_sources"],
-            # flux_threshold=pyfhd_config["calibration_flux_threshold"],
-            # no_extend=pyfhd_config["cal_no_extend"]
-            # max_sources=pyfhd_config["cal_max_sources"],
-            # spectral_index=pyfhd_config["calibration_spectral_index"],
-            # preserve_zero_spectral_indices=pyfhd_config["cal_keep_zero_spectral_index"]
-            # flatten_spectrum=pyfhd_config["cal_flatten_spectrum"],
-            # refraction=pyfhd_config["cal_refraction"],
+            sidelobe_catalog_path=pyfhd_config[
+                "calibration_sidelobe_catalog_file_path"
+            ],
+            allow_sidelobe_sources=pyfhd_config["calibration_allow_sidelobe_sources"],
+            beam_threshold=pyfhd_config["calibration_beam_threshold"],
+            restrict_sources=pyfhd_config["calibration_restrict_sources"],
+            flux_threshold=pyfhd_config["calibration_catalog_flux_threshold"],
+            refraction=pyfhd_config["calibration_catalog_refraction"],
+            no_extend=pyfhd_config["calibration_collapse_extended_sources"],
+            max_sources=pyfhd_config["calibration_max_sources"],
+            spectral_index=pyfhd_config["calibration_catalog_spectral_index"],
+            preserve_zero_spectral_indices=pyfhd_config[
+                "calibration_catalog_preserve_zero_spectral_index"
+            ],
+            flatten_spectrum=pyfhd_config["calibration_catalog_flatten_spectrum"],
         )
 
         vis_model_arr = vis_source_model(
@@ -111,9 +114,8 @@ def calibrate(
             vis_weights=None,
             logger=logger,
             fill_model_visibilities=True,
-            # TODO: add all these to pyfhd setup
-            # conserve_memory=pyfhd_config["cal_dft_conserve_memory"],
-            # mem_thresh=pyfhd_config["cal_dft_mem_thresh"],
+            conserve_memory=pyfhd_config["conserve_memory"],
+            mem_thresh=pyfhd_config["memory_threshold"],
         )
 
     # Calculate auto-correlation visibilities, optionally use them for initial calibration estimates

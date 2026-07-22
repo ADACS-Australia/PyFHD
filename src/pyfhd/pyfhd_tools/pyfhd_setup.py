@@ -506,6 +506,95 @@ def pyfhd_parser():
         "SkyModel object. ",
     )
     calibration.add_argument(
+        "--calibration-sidelobe-catalog-file-path",
+        default=None,
+        type=Path,
+        help="The path to a calibration catalog file path to use for the primary "
+        "beam sidelobes, must be readable by pyradiosky's SkyModel object. ",
+    )
+    calibration.add_argument(
+        "--calibration-allow_sidelobe-sources",
+        default=False,
+        action=OrderedBooleanOptionalAction,
+        help="Option to allow sidelobe sources when creating calibration model "
+        "visibilities. Also affects the defaulting of cal-beam-threshold.",
+    )
+    calibration.add_argument(
+        "--calibration-beam-threshold",
+        type=float,
+        default=None,
+        help="Threshold for beam cut on sources for calibration model visibilities. "
+        "Sources below the beam threshold will be cut from the skymodel to avoid "
+        "sources in the nulls. Defaults to 0.05 unless allow_sidelobe_sources "
+        "is True, in which case the default is 0.01.",
+    )
+    calibration.add_argument(
+        "--calibration-restrict-sources",
+        default=False,
+        action=OrderedBooleanOptionalAction,
+        help="Option to restrict sources to near the beam center.",
+    )
+    calibration.add_argument(
+        "--calibration-catalog-flux-threshold",
+        type=float,
+        default=None,
+        help="Threshold for flux values to include. These are catalog fluxes, not "
+        "apparent (i.e. beam-weighted) fluxes. Can be negative, indicating an "
+        "upper bound on fluxes. Default is None.",
+    )
+    calibration.add_argument(
+        "--calibration-max-sources",
+        type=int,
+        default=None,
+        help="Maximum number of sources to include, chosen from highest to lowest "
+        "apparent (i.e. beam-weighted) flux. If a sidelobe_catalog_path is provided, "
+        "sources are taken first from the main lobe catalog and then from the "
+        "sidelobe catalog (if max_sources is greater than the number of sources "
+        "in the main lobe catalog after the various cuts). Default is None.",
+    )
+    calibration.add_argument(
+        "--calibration-catalog-refraction",
+        type=str,
+        default=None,
+        help="Option for what refraction algorithm to use to account for refraction in "
+        "earth's atmosphere when computing the pixel locations (and therefore "
+        "when calculating beam values) for calibration sources. Allowed values "
+        "are None (for no refraction correction), 'idl' to use the refraction "
+        "algorithm from the IDL astrolib or 'astropy' to use astropy's refraction "
+        "algorithm with temperatures and pressures estimated using the IDL "
+        "astrolib algorithm. Default is None.",
+    )
+    calibration.add_argument(
+        "--calibration-catalog-spectral-index",
+        type=float,
+        default=None,
+        help="Spectral index to use for all sources. Overwrites the spectral index "
+        "from the calibration catalog. Default is None.",
+    )
+    calibration.add_argument(
+        "--calibration-catalog-preserve-zero-spectral-index",
+        default=False,
+        action=OrderedBooleanOptionalAction,
+        help="Option to keep any spectral indices that are set to zero. Default "
+        "is False, If False, the spectral index is reset to the mean spectral "
+        "index of the catalog for any sources with zero spectral index.",
+    )
+    calibration.add_argument(
+        "--calibration-collapse-extended-sources",
+        default=False,
+        action=OrderedBooleanOptionalAction,
+        help="Option to replace extended source components with a single component "
+        "at the flux weighted average location with a flux equal to the total flux "
+        "of all the components. Default is False.",
+    )
+    calibration.add_argument(
+        "--calibration-catalog-flatten-spectrum",
+        default=False,
+        action=OrderedBooleanOptionalAction,
+        help="Option to flatten the spectrum by the average spectral index (calculated "
+        "as a flux-weighted average). Default is False",
+    )
+    calibration.add_argument(
         "--bandpass-calibrate",
         default=False,
         action=OrderedBooleanOptionalAction,
@@ -1747,6 +1836,19 @@ def pyfhd_setup(options: argparse.Namespace) -> Tuple[dict, logging.Logger]:
         if not Path(pyfhd_config["calibration_catalog_file_path"]).exists():
             logger.error(
                 f"Catalog file {pyfhd_config['calibration_catalog_file_path']} "
+                "does not exist, please check your input path"
+            )
+            errors += 1
+    # If the user has set a calibration catalog file, check it exists (Error)
+    if pyfhd_config["calibration_sidelobe_catalog_file_path"] is not None:
+        pyfhd_config["calibration_sidelobe_catalog_file_path"] = (
+            Path(pyfhd_config["calibration_sidelobe_catalog_file_path"])
+            .expanduser()
+            .resolve()
+        )
+        if not Path(pyfhd_config["calibration_sidelobe_catalog_file_path"]).exists():
+            logger.error(
+                f"Sidelobe catalog file {pyfhd_config['calibration_sidelobe_catalog_file_path']} "
                 "does not exist, please check your input path"
             )
             errors += 1
