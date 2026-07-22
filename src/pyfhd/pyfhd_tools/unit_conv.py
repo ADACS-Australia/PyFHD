@@ -3,7 +3,8 @@ from astropy.wcs import WCS
 from astropy.time import Time
 from astropy import units as u
 import numpy as np
-from pyuvdata.utils.types import FloatArray
+
+from .types import FloatArray
 
 
 def pressure_from_height(height: float) -> u.Quantity:

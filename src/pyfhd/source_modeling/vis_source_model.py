@@ -6,9 +6,8 @@ import numpy as np
 from numpy.typing import NDArray
 from pyradiosky import SkyModel
 
-from .source_utils import source_dft_model
+from .source_utils import source_dft_model, vis_delay_filter
 from ..gridding.visibility_degrid import visibility_degrid
-from ..gridding.filters import vis_delay_filter
 
 
 def vis_source_model(
