@@ -441,16 +441,16 @@ def generate_source_cal_skymodel(
                 influence = (
                     skymodel.extra_columns["flux_I_use"]
                     * beam[
-                        skymodel.extra_columns["x_use"].astype(int),
-                        skymodel.extra_columns["y_use"].astype(int),
+                        skymodel.extra_columns["x_use"].round().astype(int),
+                        skymodel.extra_columns["y_use"].round().astype(int),
                     ]
                 )
 
                 skymodel.add_extra_columns(
                     names=["beam_I"],
                     values=beam[
-                        skymodel.extra_columns["x_use"].astype(int),
-                        skymodel.extra_columns["y_use"].astype(int),
+                        skymodel.extra_columns["x_use"].round().astype(int),
+                        skymodel.extra_columns["y_use"].round().astype(int),
                     ],
                 )
 
@@ -673,8 +673,8 @@ def stokes_cnv(
             sy = sky.extra_columns["image_y"]
             # NB: FHD just uses sx, sy as indices, which means they are truncated to ints
             # we will use round
-            sx = np.round(sx).astype(int)
-            sy = np.round(sy).astype(int)
+            sx = sx.round().astype(int)
+            sy = sy.round().astype(int)
 
             # set background to -1 to catch out of range pixels
             ind_arr = np.zeros((obs["dimension"], obs["elements"]), dtype=int) - 1
@@ -1001,7 +1001,7 @@ def source_dft_multi(
     y_vec = skymodel.extra_columns["image_y"]
 
     sky_use = stokes_cnv(skymodel, antenna=antenna, obs=obs, inverse=True)
-    flux_arr = np.zeros((n_pol, sky_use.Ncomponents), dtype=np.float64)
+    flux_arr = np.zeros((n_pol, sky_use.Ncomponents), dtype=np.complex128)
     for pol_i in range(n_pol):
         flux_arr[pol_i] = sky_use.extra_columns[f"flux_pol_{pol_i}"]
 
