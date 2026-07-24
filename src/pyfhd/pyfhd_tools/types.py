@@ -8,6 +8,3 @@ FloatArray = NDArray[np.floating]
 ComplexArray = NDArray[np.complexfloating]
 StrArray = NDArray[np.str_]
 BoolArray = NDArray[np.bool_]
-
-Int64Array = NDArray[np.int64]
-UInt64Array = NDArray[np.uint64]

@@ -7,12 +7,12 @@ from astropy.constants import c
 from astropy.coordinates import SkyCoord, EarthLocation
 from astropy import units
 from astropy.time import Time
-from numpy.typing import NDArray
 from pyuvdata import BeamInterface, UVBeam
 from scipy.interpolate import interp1d
 
-from pyfhd.pyfhd_tools.unit_conv import pixel_to_radec, radec_to_altaz
-from pyfhd.pyfhd_tools.pyfhd_utils import parallactic_angle
+from ..pyfhd_tools.unit_conv import pixel_to_radec, radec_to_altaz
+from ..pyfhd_tools.pyfhd_utils import parallactic_angle
+from ..pyfhd_tools.types import ComplexArray, FloatArray
 
 
 def _azza_beam_arrays(image_dim, scale, obs, jdate):
@@ -64,9 +64,7 @@ def _azza_beam_arrays(image_dim, scale, obs, jdate):
     return ra_arr, dec_arr, np.deg2rad(90 - alt_arr), np.deg2rad(az_arr), valid_i
 
 
-def jones_to_mueller(
-    jones: np.typing.NDArray[np.floating | np.complexfloating],
-) -> np.typing.NDArray[np.floating | np.complexfloating]:
+def jones_to_mueller(jones: FloatArray | ComplexArray) -> FloatArray | ComplexArray:
     """
     Calculate a Mueller matrix from a Jones matrix.
 
@@ -114,19 +112,19 @@ def jones_to_mueller(
 
 def get_beam_values(
     beam_obj: BeamInterface,
-    za_array: np.ndarray[float] | None = None,
-    alt_array: np.ndarray[float] | None = None,
-    az_array: np.ndarray[float] | None = None,
-    ra_array: np.ndarray[float] | None = None,
-    dec_array: np.ndarray[float] | None = None,
+    za_array: FloatArray | None = None,
+    alt_array: FloatArray | None = None,
+    az_array: FloatArray | None = None,
+    ra_array: FloatArray | None = None,
+    dec_array: FloatArray | None = None,
     az_convention: Literal["east of north", "north of east"] = "east of north",
     frame: str = "fk5",
     time: Time | None = None,
     telescope_location: EarthLocation | None = None,
-    freq_array: np.ndarray[float] | None = None,
+    freq_array: FloatArray | None = None,
     spline_opts: dict | None = None,
     check_azza_domain: bool = True,
-) -> NDArray[np.complexfloating]:
+) -> ComplexArray:
     """
     Get beam values from a pyuvdata beam for a set of directions on the sky.
 
@@ -140,17 +138,17 @@ def get_beam_values(
     ----------
     beam_obj : BeamInterface
         A pyuvdata BeamInterface object.
-    alt_array : np.ndarray[float]
+    alt_array : ndarray of float
         Array of altitudes (also called elevations) in radians. Must be a 1D array.
-    za_array : np.ndarray[float]
+    za_array : ndarray of float
         Array of zenith angles (zenith is zero, horizon is 90 degrees). Must be
         a 1D array.
-    az_array : np.ndarray[float]
+    az_array : ndarray of float
         Array of azimuths in radians. Defined according to the az_convention parameter.
         Must be a 1D array.
-    ra_array : np.ndarray[float]
+    ra_array : ndarray of float
         Array of right ascensions in radians. Must be a 1D array.
-    dec_array : np.ndarray[float]
+    dec_array : ndarray of float
         Array of declinations in radians. Must be a 1D array.
     az_convention : str
         either "east of north" N=0, E=90 degrees or "north of east" E=0, N=90 degrees.
@@ -163,7 +161,7 @@ def get_beam_values(
     telescope_location : astropy.coordinates.EarthLocation
         Astropy EarthLocation object specifying the telescope location. Used
         for converting RA/Dec to AltAz, ignored if alt/az are provided.
-    freq_array : np.ndarray[float]
+    freq_array : ndarray of float
         Frequencies to get the beam response for in Hz. Requried for analytic beams,
         defaults to the frequencies defined on the beam object for UVBeams.
     spline_opts : dict
@@ -180,7 +178,7 @@ def get_beam_values(
 
     Returns
     -------
-    beam_vals : NDArray[np.complexfloating]
+    beam_vals : ndarray of complex
         The beam values at the requested locations.
 
     """

@@ -15,7 +15,7 @@ from ..pyfhd_tools.pyfhd_utils import (
     weight_invert,
 )
 from ..pyfhd_tools.unit_conv import pixel_to_radec, radec_to_pixel
-from ..pyfhd_tools.types import BoolArray, FloatArray, ComplexArray
+from ..pyfhd_tools.types import BoolArray, ComplexArray, FloatArray, IntArray
 
 
 def generate_source_cal_skymodel(
@@ -26,7 +26,7 @@ def generate_source_cal_skymodel(
     skymodel: SkyModel | None = None,
     catalog_path: Path | str | None = None,
     sidelobe_catalog_path: Path | str | None = None,
-    beam: FloatArray | None = None,
+    beam: FloatArray | ComplexArray | None = None,
     mask: BoolArray | None = None,
     allow_sidelobe_sources: bool = False,
     beam_threshold: float | None = None,
@@ -60,10 +60,10 @@ def generate_source_cal_skymodel(
     sidelobe_catalog_path : Path or str, optional
         Path to the catalog to use for the sidelobe sources if different than
         catalog to use for the main beam sources.
-    beam : NDArray[np.float64], optional
+    beam : ndarray of float or complex, optional
         Average image-space beam per polarization. Created using `beam_image` if
         not provided. Default is None meaning beam_image will be called.
-    mask : NDArray[np.bool], optional
+    mask : ndarray of bool, optional
         Beam mask giving areas to include sources for (True where sources can be
         included, False where sources will be excluded). Default is None.
     allow_sidelobe_sources : bool
@@ -541,14 +541,14 @@ def generate_source_cal_skymodel(
 
 
 def stokes_cnv(
-    sky: np.typing.NDArray[np.floating | np.complexfloating] | SkyModel,
+    sky: FloatArray | ComplexArray | SkyModel,
     *,
     antenna: dict,
     obs: dict,
-    beam_arr: np.typing.NDArray[np.complexfloating] | None = None,
+    beam_arr: ComplexArray | None = None,
     inverse: bool = False,
     square: bool = False,
-) -> np.typing.NDArray[np.floating | np.complexfloating] | SkyModel:
+) -> FloatArray | ComplexArray | SkyModel:
     """
     Convert fluxes between Stokes and instrumental pols.
 
@@ -803,9 +803,9 @@ def _setup_uv_vals(
     *,
     dimension: int,
     elements: int,
-    xvals: np.typing.NDArray[np.float] | None = None,
-    yvals: np.typing.NDArray[np.float] | None = None,
-    uv_i_use: tuple[np.typing.NDArray[np.integer]] | None = None,
+    xvals: FloatArray | None = None,
+    yvals: FloatArray | None = None,
+    uv_i_use: tuple[IntArray] | None = None,
 ):
     """Set up uv locations to DFT to."""
     if uv_i_use is not None:
@@ -832,17 +832,17 @@ def _setup_uv_vals(
 
 def source_dft(
     *,
-    x_loc: np.typing.NDArray[np.floating],
-    y_loc: np.typing.NDArray[np.floating],
+    x_loc: FloatArray,
+    y_loc: FloatArray,
     dimension: int,
     elements: int,
-    flux: np.typing.NDArray[np.floating | np.complexfloating],
-    xvals: np.typing.NDArray[np.float] | None = None,
-    yvals: np.typing.NDArray[np.float] | None = None,
-    inds_use: np.typing.NDArray[np.integer] | None = None,
+    flux: FloatArray | ComplexArray,
+    xvals: FloatArray | None = None,
+    yvals: FloatArray | None = None,
+    inds_use: IntArray | None = None,
     conserve_memory: bool = True,
     mem_thresh: float = 1e8,
-) -> np.typing.NDArray[np.complexfloating]:
+) -> ComplexArray:
     """
     DFT sources to a model uv plane.
 
@@ -875,7 +875,7 @@ def source_dft(
 
     Returns
     -------
-    model_uv_arr : NDArray[np.complex128]
+    model_uv_arr : ndarray of complex
         Model uv plane.
 
     """
@@ -945,10 +945,10 @@ def source_dft_multi(
     antenna: dict,
     skymodel: SkyModel,
     logger: logging.Logger,
-    uv_i_use: tuple[np.typing.NDArray[np.integer]] | None = None,
+    uv_i_use: tuple[IntArray] | None = None,
     conserve_memory: bool = True,
     mem_thresh: float = 1e8,
-) -> np.typing.NDArray[np.complexfloating]:
+) -> ComplexArray:
     """
     DFT multiple sources to a model uv plane.
 
@@ -982,7 +982,7 @@ def source_dft_multi(
 
     Returns
     -------
-    model_uv_arr : NDArray[np.complex128]
+    model_uv_arr : ndarray of complex
         Model uv plane.
 
     """
@@ -1038,11 +1038,11 @@ def source_dft_model(
     antenna: dict,
     skymodel: SkyModel,
     logger: logging.Logger,
-    uv_mask: np.typing.NDArray[np.bool_] | None = None,
+    uv_mask: BoolArray | None = None,
     sigma_threshold: float | None = None,
     conserve_memory: bool = True,
     mem_thresh: float = 1e8,
-) -> np.typing.NDArray[np.complexfloating]:
+) -> ComplexArray:
     """
     Coordinate DFTing sources to a model uv plane.
 
@@ -1061,7 +1061,7 @@ def source_dft_model(
         The antenna/beam dictionary.
     skymodel : pyradiosky.SkyModel
         Skymodel object containing the sources to use.
-    uv_mask : np.typing.NDArray[bool], optional
+    uv_mask : ndarray of bool, optional
         Boolean mask of what parts of the uv plane to use. Defaults to using
         the whole plane.
     sigma_threshold : float, optional
@@ -1077,7 +1077,7 @@ def source_dft_model(
 
     Returns
     -------
-    model_uv_arr : NDArray[np.complex128]
+    model_uv_arr : ndarray of complex
         Model uv plane.
 
     """

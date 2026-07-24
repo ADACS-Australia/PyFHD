@@ -3,11 +3,11 @@ import logging
 import time
 
 import numpy as np
-from numpy.typing import NDArray
 from pyradiosky import SkyModel
 
 from .source_utils import source_dft_model, vis_delay_filter
 from ..gridding.visibility_degrid import visibility_degrid
+from ..pyfhd_tools.types import BoolArray, ComplexArray, FloatArray
 
 
 def vis_source_model(
@@ -18,15 +18,15 @@ def vis_source_model(
     params: dict,
     antenna: dict,
     skymodel: SkyModel,
-    vis_weights: NDArray[np.floating] | None,
+    vis_weights: FloatArray | None,
     logger: logging.Logger,
-    uv_mask: NDArray[np.bool_] | None = None,
+    uv_mask: BoolArray | None = None,
     model_delay_filter: bool = True,
     fill_model_visibilities: bool = False,
-    vis_model: NDArray[np.bool_] | None = None,
+    vis_model: BoolArray | None = None,
     conserve_memory: bool = True,
     mem_thresh: float = 1e8,
-) -> tuple[NDArray[np.complex128], dict]:
+) -> ComplexArray:
     """
     Simulate model visibilities via degridding.
 
@@ -45,12 +45,12 @@ def vis_source_model(
         The antenna/beam dictionary.
     skymodel: pyradiosky.SkyModel
         Skymodel object containing the sources to use.
-    vis_weights : NDArray[np.float64]
+    vis_weights : ndarray of float
         Weights (flags) of the visibilities. Can be None if fill_model_visibilities
         is True.
     logger : logging.Logger
         PyFHD's logger
-    uv_mask : np.typing.NDArray[bool], optional
+    uv_mask : ndarray of bool, optional
         Boolean mask of what parts of the uv plane to use. Defaults to using
         half the plane (with a margin for uv beam spillover).
     model_delay_filter : bool
@@ -59,7 +59,7 @@ def vis_source_model(
         reduced back to the input frequency array after filtering.
     fill_model_visibilities : bool, optional
         Create all model visibilities disregarding flags, by default False
-    vis_model : NDArray[np.complex128] | None, optional
+    vis_model : ndarray of complex | None, optional
         Extra model visibilities to add to the degridded products, by default None.
     conserve_memory : bool
         Option to limit memory use by chunking the number of sources to DFT
@@ -70,7 +70,7 @@ def vis_source_model(
 
     Returns
     -------
-    vis_model_arr : NDArray[np.complex128]
+    vis_model_arr : ndarray of complex
         Simulated model for the visibilities
 
     """
