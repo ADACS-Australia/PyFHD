@@ -42,6 +42,13 @@ jobs:
           cd pyfhd
           uv pip install --no-deps ../pyuvdata
 
+      - name: Install pyradiosky
+        run: |
+          cd ../
+          git clone -b fix_fhd_frame https://github.com/RadioAstronomySoftwareGroup/pyradiosky.git
+          cd pyfhd
+          uv pip install --no-deps ../pyradiosky
+
       - name: Environment Info
         run: |
           uv pip list
