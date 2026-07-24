@@ -1,65 +1,43 @@
+import importlib_resources
 import logging
+import shutil
 import sys
 import time
 from datetime import timedelta
+from pathlib import Path
+
 import h5py
 from h5py import File
 import numpy as np
-from pathlib import Path
-from pyfhd.beam_setup.beam import create_psf
-from pyfhd.calibration.calibrate import calibrate, calibrate_qu_mixing
-from pyfhd.data_setup.obs import create_obs
-from pyfhd.data_setup.uvfits import (
+
+from .beam_setup.beam import create_psf
+from .calibration.calibrate import calibrate, calibrate_qu_mixing
+from .data_setup.obs import create_obs
+from .data_setup.uvfits import (
     create_layout,
     create_params,
     extract_header,
     extract_visibilities,
 )
-from pyfhd.flagging.flagging import vis_flag, vis_flag_basic
-from pyfhd.gridding.gridding_utils import crosspol_reformat
-from pyfhd.gridding.visibility_grid import visibility_grid
-from pyfhd.pyfhd_tools.pyfhd_setup import (
+from .flagging.flagging import vis_flag, vis_flag_basic
+from .gridding.gridding_utils import crosspol_reformat
+from .gridding.visibility_grid import visibility_grid
+from .pyfhd_tools.pyfhd_setup import (
     pyfhd_parser,
     pyfhd_setup,
     write_collated_yaml_config,
 )
-from pyfhd.pyfhd_tools.pyfhd_utils import (
+from .pyfhd_tools.pyfhd_utils import (
     simple_deproject_w_term,
     vis_noise_calc,
     vis_weights_update,
+    _print_time_diff,
 )
-from pyfhd.source_modeling.vis_model_transfer import vis_model_transfer
-from pyfhd.io.pyfhd_io import save, load
-from pyfhd.io.pyfhd_quickview import quickview
-from pyfhd.healpix.export import healpix_snapshot_cube_generate
-from pyfhd.plotting.gridding import plot_gridding
-import importlib_resources
-import shutil
-
-
-def _print_time_diff(
-    start: float, end: float, description: str, logger: logging.Logger
-):
-    """
-    Print the time difference in a nice format between start and end time
-
-    Parameters
-    ----------
-    start : float
-        Start time in seconds since epoch
-    end : float
-        End time in seconds since epoch
-    """
-    runtime = end - start
-    if runtime > 60:
-        runtime = timedelta(seconds=end - start)
-        logger.info(f"{description} completed in: {runtime}")
-    elif runtime < 1:
-        logger.info(
-            f"{description} completed in: {round(runtime * 1000, 5)} milliseconds"
-        )
-    else:
-        logger.info(f"{description} completed in: {round(runtime, 5)} seconds")
+from .source_modeling.vis_model_transfer import vis_model_transfer
+from .io.pyfhd_io import save, load
+from .io.pyfhd_quickview import quickview
+from .healpix.export import healpix_snapshot_cube_generate
+from .plotting.gridding import plot_gridding
 
 
 def finish_pyfhd(
@@ -294,9 +272,7 @@ def main():
         psf_start = time.time()
         psf, antenna = create_psf(obs, pyfhd_config, logger)
         psf_end = time.time()
-        _print_time_diff(
-            psf_start, psf_end, "Beam and PSF dictionary imported.", logger
-        )
+        _print_time_diff(psf_start, psf_end, "Beam and PSF setup", logger)
 
         # Check if the calibrate checkpoint has been used, if not run the calibration steps
         if (

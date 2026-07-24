@@ -1,16 +1,18 @@
-from logging import Logger
+import time
 import warnings
+from datetime import timedelta
+from logging import Logger
 
 import h5py
 import numpy as np
 from numpy.typing import NDArray
 
-from pyfhd.gridding.gridding_utils import (
+from .gridding_utils import (
     baseline_grid_locations,
     interpolate_kernel,
     grid_beam_per_baseline,
 )
-from pyfhd.pyfhd_tools.pyfhd_utils import (
+from ..pyfhd_tools.pyfhd_utils import (
     l_m_n,
     rebin,
     weight_invert,
@@ -189,13 +191,19 @@ def visibility_degrid(
             prefactor[s_i] = deriv_coefficients(s_i + 1, divide_factorial=True)
         box_arr_ptr = np.empty(n_spectral, dtype=object)
 
+    t0 = time.time()
+    reporting_frac = 0.2
+    logger.info(
+        "degridding setup complete, begin degridding polarization "
+        f"{obs['pol_names'][polarization]} (in {n_bin_use} steps)"
+    )
     for bi in range(n_bin_use):
         vis_n = bin_n[bin_i[bi]]
         inds = ri[ri[bin_i[bi]] : ri[bin_i[bi] + 1]]
 
         # if constraining memory usage, then est number of loops needed
         if conserve_memory:
-            required_bytes = 8 * vis_n * psf_dim3
+            required_bytes = 16 * vis_n * psf_dim3
             mem_iter = int(np.ceil(required_bytes / memory_threshold))
             if mem_iter > 1:
                 vis_n_full = vis_n
@@ -337,6 +345,23 @@ def visibility_degrid(
                 vis_box = vis_box[ind_remap]
 
             visibility_array.flat[inds] = vis_box
+
+        loop_time = time.time()
+        if (
+            n_bin_use > 1
+            and bi % int(np.round(n_bin_use * reporting_frac)) == 0
+            and (bi + 1) < n_bin_use
+        ):
+            ave_loop_time = (loop_time - t0) / (bi + 1)
+            est_time_left = timedelta(
+                seconds=round((n_bin_use - (bi + 1)) * ave_loop_time, 2)
+            )
+            logger.info(
+                f"{bi + 1}/{n_bin_use} degridding loops completed. Average "
+                f"loop time: {round(ave_loop_time, 3)} seconds. Estimated "
+                f"time remaining: {est_time_left}"
+            )
+    logger.info(f"finished degridding polarization {obs['pol_names'][polarization]}")
 
     if beam_per_baseline:
         # factor of kbinsize^2 is FFT units normalization

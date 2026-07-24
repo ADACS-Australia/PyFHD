@@ -8,6 +8,7 @@ from pyradiosky import SkyModel
 from .source_utils import source_dft_model, vis_delay_filter
 from ..gridding.visibility_degrid import visibility_degrid
 from ..pyfhd_tools.types import BoolArray, ComplexArray, FloatArray
+from ..pyfhd_tools.pyfhd_utils import _print_time_diff
 
 
 def vis_source_model(
@@ -127,6 +128,8 @@ def vis_source_model(
         psf_use = psf
 
     vis_dimension = nbaselines * n_samples
+    logger.info("Begin source DFT")
+    dft_start = time.time()
     model_uv_arr = source_dft_model(
         skymodel=skymodel,
         obs=obs_use,
@@ -137,9 +140,12 @@ def vis_source_model(
         conserve_memory=conserve_memory,
         mem_thresh=mem_thresh,
     )
+    dft_end = time.time()
+    _print_time_diff(dft_start, dft_end, "source DFT", logger)
 
     vis_arr = np.zeros((n_pol, n_freq, vis_dimension), dtype=np.cdouble)
 
+    logger.info("Begin Degridding")
     t_degrid = np.zeros(n_pol)
     for pol_i in range(n_pol):
         t0 = time.time()
@@ -165,7 +171,7 @@ def vis_source_model(
             logger=logger,
         )
         t_degrid[pol_i] = time.time() - t0
-    logger.info(f"Degridding timing: {t_degrid}")
+    _print_time_diff(dft_start, dft_end, "Degridding", logger)
 
     if model_delay_filter:
         logger.info("Applying a horizon delay filter")

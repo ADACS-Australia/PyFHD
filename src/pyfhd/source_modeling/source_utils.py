@@ -1,5 +1,6 @@
 import logging
 import time
+from datetime import timedelta
 from pathlib import Path
 
 from astropy import units
@@ -837,6 +838,7 @@ def source_dft(
     dimension: int,
     elements: int,
     flux: FloatArray | ComplexArray,
+    logger: logging.Logger,
     xvals: FloatArray | None = None,
     yvals: FloatArray | None = None,
     inds_use: IntArray | None = None,
@@ -854,16 +856,18 @@ def source_dft(
         Source x locations (in pixel units).
     y_loc : np.ndarray of float
         Source y locations (in pixel units).
-    xvals : np.ndarray of float
-        u pixel values in uv plane to DFT to.
-    yvals : np.ndarray of float
-        v pixel values in uv plane to DFT to.
     dimension : int
         Size of image (x dimension).
     elements : int
         Size of image (y dimension).
     flux : np.ndarray of float
         Fluxes for sources, shape: (n_pol, n_sources)
+    logger : logging.Logger
+        PyFHD's logger
+    xvals : np.ndarray of float
+        u pixel values in uv plane to DFT to.
+    yvals : np.ndarray of float
+        v pixel values in uv plane to DFT to.
     inds_use : np.ndarray of int, optional
         Indices to use from source arrays.
     conserve_memory : bool
@@ -899,8 +903,11 @@ def source_dft(
     y_use *= 2.0 * np.pi / elements
 
     n_src = x_use.size
+    if n_src == 1:
+        conserve_memory = False
+
     n_calc = xvals.size * n_src
-    mem_factor = 8.0
+    mem_factor = 32.0  # from rough empirical estimations
     if conserve_memory and (n_calc * mem_factor > mem_thresh):
         # DFT with memory management
         # If the max memory is less than the estimated memory needed to DFT all
@@ -908,6 +915,7 @@ def source_dft(
         sources_per_bin = int(
             np.round(n_src / np.ceil(n_calc * mem_factor / mem_thresh))
         )
+        sources_per_bin = max([sources_per_bin, 1])
         memory_bins = int(np.ceil(n_src / sources_per_bin))
 
         binsize = np.full(memory_bins, sources_per_bin, dtype=int)
@@ -923,6 +931,12 @@ def source_dft(
         bin_start = [0]
 
     source_uv_vals = np.zeros((n_pol, xvals.size), dtype=np.complex128)
+    t0 = time.time()
+    reporting_frac = 0.2
+    logger.info(
+        f"DFT setup complete, begin DFT calculation ({n_src} sources in "
+        f"{memory_bins} steps)"
+    )
     for bin_i in range(memory_bins):
         inds = np.arange(binsize[bin_i]) + bin_start[bin_i]
         # Calculate sin and cosine of exponential in DFT (faster than a direct exp)
@@ -933,6 +947,21 @@ def source_dft(
         source_uv_vals += np.matmul(flux_use[:, inds], cos_term) + 1j * np.matmul(
             flux_use[:, inds], sin_term
         )
+        loop_time = time.time()
+        if (
+            memory_bins > 1
+            and bin_i % int(np.round(memory_bins * reporting_frac)) == 0
+            and (bin_i + 1) < memory_bins
+        ):
+            ave_loop_time = (loop_time - t0) / (bin_i + 1)
+            est_time_left = timedelta(
+                seconds=round((memory_bins - (bin_i + 1)) * ave_loop_time, 2)
+            )
+            logger.info(
+                f"{bin_i + 1}/{memory_bins} DFT loops completed. Average loop "
+                f"time: {round(ave_loop_time, 3)} seconds. Estimated time "
+                f"remaining: {est_time_left}"
+            )
 
     del cos_term, sin_term
 
@@ -967,12 +996,12 @@ def source_dft_multi(
         The antenna/beam dictionary.
     skymodel : pyradiosky.SkyModel
         Skymodel object containing the sources to use.
+    logger : logging.Logger
+        PyFHD's logger
     uv_i_use : tuple of np.ndarray of int
         Tuple of index arrays giving the locations in the uv plane to use.
     sigma_threshold : float, optional
         Signal to noise threshold on included sources.
-    logger : logging.Logger
-        PyFHD's logger
     conserve_memory : bool
         Option to limit memory use by chunking the number of sources to DFT
         at a time.
@@ -1012,7 +1041,7 @@ def source_dft_multi(
     ):
         raise ValueError("skymodel is expected to already match central obs frequency")
 
-    logger.info("Gridding source model as single continuum image")
+    logger.info("Creating source model as single continuum uv plane")
 
     model_uv_full = np.zeros((n_pol, dimension, elements), dtype=np.complex128)
     model_uv_vals = source_dft(
@@ -1025,6 +1054,7 @@ def source_dft_multi(
         flux=flux_arr,
         mem_thresh=mem_thresh,
         conserve_memory=conserve_memory,
+        logger=logger,
     )
 
     model_uv_full[:, uv_i_use[0], uv_i_use[1]] = model_uv_vals
@@ -1094,7 +1124,6 @@ def source_dft_model(
             "Signal to Noise thresholding is not yet implemented."
         )
 
-    t0 = time.time()
     model_uv_arr = source_dft_multi(
         obs=obs,
         antenna=antenna,
@@ -1104,8 +1133,6 @@ def source_dft_model(
         conserve_memory=conserve_memory,
         mem_thresh=mem_thresh,
     )
-    dft_timing = time.time() - t0
-    logger.info(f"DFT timing: {dft_timing} ({skymodel.Ncomponents} sources)")
 
     return model_uv_arr
 

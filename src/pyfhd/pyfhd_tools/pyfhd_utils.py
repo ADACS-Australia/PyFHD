@@ -1,5 +1,6 @@
 import subprocess  # nosec B404
 from copy import deepcopy
+from datetime import timedelta
 from logging import Logger
 from math import factorial, pi
 from sys import exit
@@ -12,6 +13,29 @@ from numba import njit
 from numpy.typing import ArrayLike, NDArray
 from scipy.ndimage import label, median_filter
 from scipy import special
+
+
+def _print_time_diff(start: float, end: float, description: str, logger: Logger):
+    """
+    Print the time difference in a nice format between start and end time
+
+    Parameters
+    ----------
+    start : float
+        Start time in seconds since epoch
+    end : float
+        End time in seconds since epoch
+    """
+    runtime = end - start
+    if runtime > 60:
+        runtime = timedelta(seconds=runtime)
+        logger.info(f"{description} completed in: {runtime}")
+    elif runtime < 1:
+        logger.info(
+            f"{description} completed in: {round(runtime * 1000, 5)} milliseconds"
+        )
+    else:
+        logger.info(f"{description} completed in: {round(runtime, 5)} seconds")
 
 
 @njit

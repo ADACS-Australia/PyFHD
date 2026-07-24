@@ -1,5 +1,6 @@
 from copy import deepcopy
 from logging import Logger
+import time
 
 import numpy as np
 from numpy.typing import NDArray
@@ -17,7 +18,11 @@ from pyfhd.calibration.calibration_utils import (
     cal_auto_ratio_remultiply,
 )
 from pyfhd.calibration.vis_calibrate_subroutine import vis_calibrate_subroutine
-from pyfhd.pyfhd_tools.pyfhd_utils import resistant_mean, reshape_and_average_in_time
+from pyfhd.pyfhd_tools.pyfhd_utils import (
+    resistant_mean,
+    reshape_and_average_in_time,
+    _print_time_diff,
+)
 from pyfhd.plotting.calibration import plot_cals
 from pyfhd.source_modeling.source_utils import generate_source_cal_skymodel
 from pyfhd.source_modeling.vis_source_model import vis_source_model
@@ -82,6 +87,8 @@ def calibrate(
 
     if vis_model_arr is None:
         # generate model visibilities from a source model via degridding
+        logger.info("Setting up calibration catalog")
+        catalog_start = time.time()
         sky = generate_source_cal_skymodel(
             obs=obs,
             psf=psf,
@@ -103,7 +110,11 @@ def calibrate(
             ],
             flatten_spectrum=pyfhd_config["calibration_catalog_flatten_spectrum"],
         )
+        catalog_end = time.time()
+        _print_time_diff(catalog_start, catalog_end, "Catalog setup", logger)
 
+        logger.info("Creating calibration model visibilities")
+        degrid_start = time.time()
         vis_model_arr = vis_source_model(
             pyfhd_config=pyfhd_config,
             obs=obs,
@@ -117,6 +128,8 @@ def calibrate(
             conserve_memory=pyfhd_config["conserve_memory"],
             mem_thresh=pyfhd_config["memory_threshold"],
         )
+        degrid_end = time.time()
+        _print_time_diff(degrid_start, degrid_end, "Model visibility creation", logger)
 
     # Calculate auto-correlation visibilities, optionally use them for initial calibration estimates
     vis_auto, auto_tile_i = vis_extract_autocorr(obs, vis_arr, pyfhd_config)
