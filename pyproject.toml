@@ -89,6 +89,11 @@ skip-magic-trailing-comma = true
 select = [
     "E", # pycodestyle
     "W", # pycodestyle warnings
+    "F", # Pyflakes
+    "B", # flake8-bugbear
+]
+ignore = [
+    "B028", # no-explicit-stacklevel for warnings
 ]
 
 [tool.bandit.assert_used]

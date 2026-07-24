@@ -126,7 +126,7 @@ if __name__ == "__main__":
         else:
             directories = args.directories
         # Combine files and directories together
-        files_dirs = zip(args.files, directories)
+        files_dirs = zip(args.files, directories, strict=True)
         # For each pair, call splitter
         for file, dir in files_dirs:
             splitter(file, dir)

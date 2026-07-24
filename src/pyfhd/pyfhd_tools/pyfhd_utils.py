@@ -1096,14 +1096,7 @@ def resistant_mean(
     array: NDArray[np.integer | np.floating | np.complexfloating],
     deviations: int,
     mad_scale: float = 0.67449999999999999,
-    sigma_coeff: NDArray[np.float64] = np.array(
-        [
-            0.020142000000000000,
-            -0.23583999999999999,
-            0.90722999999999998,
-            -0.15404999999999999,
-        ]
-    ),
+    sigma_coeff: NDArray[np.float64] | None = None,
 ) -> int | float | complex | np.number:
     """
     The resistant_mean function translate the IDL Astrolib function resistant_mean
@@ -1143,6 +1136,16 @@ def resistant_mean(
     ----------
     .. IDLAstro, RESISTANT_Mean, https://idlastro.gsfc.nasa.gov/ftp/pro/robust/resistant_mean.pro
     """
+    if sigma_coeff is None:
+        sigma_coeff = np.array(
+            [
+                0.020142000000000000,
+                -0.23583999999999999,
+                0.90722999999999998,
+                -0.15404999999999999,
+            ]
+        )
+
     # Calculate median of the real part of the array
     median = np.median(array.real)
     # Get the absolute deviation (residuals)

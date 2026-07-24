@@ -76,7 +76,7 @@ def before_file(tag, run, data_dir):
     # When keys are unset in IDL, they just don't save to a .sav
     # file. So try accessing with an exception and set to None
     # if they don't exists
-    for fhd_key, config_key in zip(fhd_keys, config_keys):
+    for fhd_key, config_key in zip(fhd_keys, config_keys, strict=True):
         try:
             pyfhd_config[config_key] = sav_dict[fhd_key]
         except KeyError:
@@ -131,7 +131,7 @@ def after_file(tag, run, data_dir):
     # When keys are unset in IDL, they just don't save to a .sav
     # file. So try accessing with an exception and set to None
     # if they don't exists
-    for fhd_key, config_key in zip(fhd_keys, config_keys):
+    for fhd_key, config_key in zip(fhd_keys, config_keys, strict=True):
         try:
             pyfhd_config[config_key] = sav_dict[fhd_key]
         except KeyError:

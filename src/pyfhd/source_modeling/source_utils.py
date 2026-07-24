@@ -352,7 +352,7 @@ def generate_source_cal_skymodel(
                 keep_comp = np.full((skymodel.Ncomponents,), True)
                 # convert extended models into a single component at the flux
                 # weighted average location with the total flux
-                for src, comp_arr in ext_src_lists.items():
+                for comp_arr in ext_src_lists.values():
                     first_comp = comp_arr[0]
                     skymodel.stokes[:, :, first_comp] = skymodel.stokes[
                         :, :, comp_arr
