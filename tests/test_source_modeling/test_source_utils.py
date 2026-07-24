@@ -1,3 +1,5 @@
+import logging
+
 import numpy as np
 import pytest
 from astropy import units
@@ -5,12 +7,29 @@ from astropy.coordinates import Longitude, Latitude
 from pyradiosky import SkyModel
 
 from pyfhd.data.datasets import fetch_data
+from pyfhd.io.pyfhd_io import recarray_to_dict
 from pyfhd.source_modeling.source_utils import (
     generate_source_cal_skymodel,
     stokes_cnv,
     source_dft,
+    vis_delay_filter,
 )
+from pyfhd.source_modeling.vis_source_model import vis_source_model
+from pyfhd.pyfhd_tools.test_utils import get_savs
 from pyfhd.pyfhd_tools.unit_conv import altaz_to_radec, radec_to_pixel
+
+
+@pytest.fixture(scope="session")
+def gleam_cut_2013_sky(mwa_aee_beam_zenith_2013):
+
+    _, psf, obs, _ = mwa_aee_beam_zenith_2013
+    catalog_path = fetch_data("gleam_rlb2019_cut")
+
+    sky = generate_source_cal_skymodel(
+        obs=obs, psf=psf, logger=None, catalog_path=catalog_path
+    )
+
+    yield sky
 
 
 @pytest.mark.github_actions
@@ -23,10 +42,10 @@ def test_generate_source_cal_skymodel(zenith_obs_2013, zenith_psf_2013_cut, refr
 
     catalog_path = fetch_data("gleam_rlb2019_cut")
 
-    idl_cal_sources_file = fetch_data("2013_zenith_gleam_sources")
+    fhd_cal_sources_file = fetch_data("2013_zenith_gleam_sources")
 
     expected_sky = SkyModel.from_file(
-        idl_cal_sources_file, extra_columns={"x": "image_x", "y": "image_y"}
+        fhd_cal_sources_file, extra_columns={"x": "image_x", "y": "image_y"}
     )
 
     # take this out once pyradiosky fix is in:
@@ -54,14 +73,14 @@ def test_generate_source_cal_skymodel(zenith_obs_2013, zenith_psf_2013_cut, refr
         obs=obs, psf=psf, catalog_path=catalog_path, logger=None, refraction=refraction
     )
 
-    if refraction != "idl":
-        # sorting is slightly different because of different beam values with refraction
-        sky._select_along_param_axis(
-            {"Ncomponents": np.flip(np.argsort(sky.stokes[0, 0, :]))}
-        )
-        expected_sky._select_along_param_axis(
-            {"Ncomponents": np.flip(np.argsort(expected_sky.stokes[0, 0, :]))}
-        )
+    # sorting is slightly different because of different beam values
+    # from round vs truncate pixel and refraction (if refraction != "idl")
+    sky._select_along_param_axis(
+        {"Ncomponents": np.flip(np.argsort(sky.stokes[0, 0, :]))}
+    )
+    expected_sky._select_along_param_axis(
+        {"Ncomponents": np.flip(np.argsort(expected_sky.stokes[0, 0, :]))}
+    )
 
     if refraction is None:
         image_xy_atol = 0.09
@@ -181,7 +200,84 @@ def test_source_dft_center():
         dimension=2048,
         elements=2048,
         flux=np.reshape(np.array([0.5, 0.5, 0, 0]), (4, 1)),
+        logger=logging.getLogger(),
     )
 
-    np.testing.assert_allclose(model_uv[0:2], 0.5)
-    np.testing.assert_allclose(model_uv[2:], 0)
+    np.testing.assert_allclose(model_uv[0:2], 0.5, atol=1e-15, rtol=0)
+    np.testing.assert_allclose(model_uv[2:], 0, atol=1e-15, rtol=0)
+
+
+@pytest.mark.github_actions
+@pytest.mark.filterwarnings("ignore:Some Stokes values are NaNs.")
+@pytest.mark.filterwarnings("ignore:Some Stokes I values are negative.")
+def test_source_dft_model(model_uv_zenith_2013):
+    model_uv_full = model_uv_zenith_2013
+
+    fhd_model_uv_file = fetch_data("2013_zenith_gleam_model_uv_small")
+    fhd_model_uv_sav_dict = get_savs(fhd_model_uv_file, "")
+    fhd_model_uv_sav_dict = recarray_to_dict(fhd_model_uv_sav_dict)
+    fhd_model_uv_cut = fhd_model_uv_sav_dict["model_uv_cut"].T
+    xrange = fhd_model_uv_sav_dict["xrange"]
+    yrange = fhd_model_uv_sav_dict["yrange"]
+
+    np.testing.assert_allclose(
+        model_uv_full[xrange[0] : xrange[1] + 1, yrange[0] : yrange[1] + 1],
+        fhd_model_uv_cut,
+        atol=1e-12,
+        rtol=0,
+    )
+
+
+@pytest.mark.github_actions
+def test_vis_delay_filter(zenith_obs_2013, zenith_params_2013):
+    obs = zenith_obs_2013
+    params = zenith_params_2013
+
+    cut_vis_model_file = fetch_data("2013_zenith_gleam_model_vis_75bl")
+    cut_vis_model_dict = get_savs(cut_vis_model_file, "")
+    cut_vis_model_dict = recarray_to_dict(cut_vis_model_dict)
+    cut_vis_model = cut_vis_model_dict["vis_model_ptr"].transpose(0, 2, 1)
+
+    nblt = cut_vis_model.shape[2]
+    # make params lengths match cut down vis length
+    for key in params:
+        params[key] = params[key][:nblt]
+
+    filtered_vis_arr = vis_delay_filter(cut_vis_model, params=params, obs=obs)
+
+    fhd_filtered_vis_model_file = fetch_data(
+        "2013_zenith_gleam_model_vis_75bl_filtered"
+    )
+    fhd_filtered_vis_model_dict = get_savs(fhd_filtered_vis_model_file, "")
+    fhd_filtered_vis_model_dict = recarray_to_dict(fhd_filtered_vis_model_dict)
+    fhd_filtered_vis_model = fhd_filtered_vis_model_dict["vis_model_ptr"].transpose(
+        0, 2, 1
+    )
+
+    np.testing.assert_allclose(
+        filtered_vis_arr, fhd_filtered_vis_model, atol=1e-10, rtol=0
+    )
+
+
+@pytest.mark.github_actions
+@pytest.mark.filterwarnings("ignore:Some Stokes values are NaNs.")
+@pytest.mark.filterwarnings("ignore:Some Stokes I values are negative.")
+def test_vis_source_model_smoke(
+    mwa_aee_beam_zenith_2013, zenith_params_2013, gleam_cut_2013_sky
+):
+    # This just checks that calling vis_source_model doesn't error
+    antenna, psf, obs, pyfhd_config = mwa_aee_beam_zenith_2013
+    sky = gleam_cut_2013_sky
+    params = zenith_params_2013
+
+    vis_source_model(
+        pyfhd_config=pyfhd_config,
+        obs=obs,
+        psf=psf,
+        params=params,
+        antenna=antenna,
+        skymodel=sky,
+        logger=logging.getLogger(),
+        vis_weights=None,
+        fill_model_visibilities=True,
+    )

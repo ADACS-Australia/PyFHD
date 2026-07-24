@@ -1,20 +1,22 @@
+import copy
 import logging
 
 import numpy as np
 import pytest
+from pyradiosky import SkyModel
 from pyuvdata.datasets import fetch_data as uvdata_fetch
 
 from pyfhd.beam_setup.beam import create_psf
 from pyfhd.data.datasets import fetch_data
 from pyfhd.io.pyfhd_io import recarray_to_dict
 from pyfhd.pyfhd_tools.test_utils import get_savs, sav_file_rearrange_psf
+from pyfhd.source_modeling.source_utils import source_dft
 
 
 @pytest.fixture(scope="session")
-def zenith_obs_2013():
+def zenith_obs_2013_main():
 
-    # obs_file = fetch_data("2013_zenith_obs")
-    obs_file = "/Users/bryna/Projects/Physics/pyfhd-datasets/fhd_extracts/MWA/std_1061316296/cut_down_obs.sav"
+    obs_file = fetch_data("2013_zenith_obs_2times")
 
     obs_sav_dict = get_savs(obs_file, "")
     obs_sav_dict = recarray_to_dict(obs_sav_dict)
@@ -25,6 +27,35 @@ def zenith_obs_2013():
     obs["elements"] = int(obs["elements"])
 
     yield obs
+
+
+@pytest.fixture(scope="function")
+def zenith_obs_2013(zenith_obs_2013_main):
+    obs_in = zenith_obs_2013_main
+
+    obs = copy.deepcopy(obs_in)
+
+    yield obs
+
+
+@pytest.fixture(scope="session")
+def zenith_params_2013_main():
+    params_path = fetch_data("2013_zenith_params_2times")
+
+    params_sav_dict = get_savs(params_path, "")
+    params_sav_dict = recarray_to_dict(params_sav_dict)
+    params = params_sav_dict["params"]
+
+    yield params
+
+
+@pytest.fixture(scope="function")
+def zenith_params_2013(zenith_params_2013_main):
+    params_in = zenith_params_2013_main
+
+    params = copy.deepcopy(params_in)
+
+    yield params
 
 
 @pytest.fixture(scope="session")
@@ -39,8 +70,8 @@ def zenith_psf_2013_cut():
 
 
 @pytest.fixture(scope="session")
-def mwa_aee_beam_zenith_2013(zenith_obs_2013, tmp_path_factory):
-    obs = zenith_obs_2013
+def mwa_aee_beam_zenith_2013(zenith_obs_2013_main, tmp_path_factory):
+    obs = copy.deepcopy(zenith_obs_2013_main)
 
     # check to make sure we have the right version of pyuvdata installed
     from pyuvdata import UVBeam
@@ -81,3 +112,62 @@ def mwa_aee_beam_zenith_2013(zenith_obs_2013, tmp_path_factory):
     psf, antenna = create_psf(obs, pyfhd_config, logger=logging.getLogger())
 
     yield antenna, psf, obs, pyfhd_config
+
+
+@pytest.fixture(scope="session")
+def model_uv_zenith_2013():
+    idl_cal_sources_file = fetch_data("2013_zenith_gleam_sources")
+
+    # This particular file doesn't have XX & YY fluxes (they're all zero)
+    # So just use I flux/2 because we're just checking our dft code.
+    sky = SkyModel.from_file(
+        idl_cal_sources_file, extra_columns={"x": "image_x", "y": "image_y"}
+    )
+
+    # take this out once pyradiosky fix is in:
+    if sky.extended_model_group is not None:
+        extended_comps = np.nonzero(sky.extended_model_group != "")[0]
+        if extended_comps.size == 0:
+            sky.extended_model_group = None
+
+    sky.at_frequencies(np.atleast_1d(sky.reference_frequency[0]))
+
+    dim_use = 2048
+
+    x_vec = sky.extra_columns["image_x"].astype(np.float64)
+    y_vec = sky.extra_columns["image_y"].astype(np.float64)
+
+    # use full plane
+    uv_mask = np.full((dim_use, dim_use), True)
+
+    uv_i_inds = np.nonzero(uv_mask)
+
+    xinds, yinds = np.meshgrid(np.arange(dim_use), np.arange(dim_use))
+
+    xinds = xinds[uv_i_inds]
+    yinds = yinds[uv_i_inds]
+    xinds = xinds.flatten()
+    yinds = yinds.flatten()
+
+    xvals = xinds - dim_use / 2.0
+    yvals = yinds - dim_use / 2.0
+
+    flux_arr = np.zeros((1, sky.Ncomponents), dtype=np.float64)
+    flux_arr[0] = sky.stokes[0]
+
+    model_uv_vals = source_dft(
+        x_loc=x_vec,
+        y_loc=y_vec,
+        xvals=xvals,
+        yvals=yvals,
+        dimension=dim_use,
+        elements=dim_use,
+        flux=flux_arr,
+        mem_thresh=1e10,
+        conserve_memory=True,
+        logger=logging.getLogger(),
+    )
+    model_uv_full = np.zeros((dim_use, dim_use), dtype=np.complex128)
+    model_uv_full[xinds, yinds] = model_uv_vals
+
+    yield model_uv_full

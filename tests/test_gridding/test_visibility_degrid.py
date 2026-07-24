@@ -3,8 +3,10 @@ from os import environ as env
 from pathlib import Path
 
 import pytest
+import numpy as np
 import numpy.testing as npt
 
+from pyfhd.data.datasets import fetch_data
 from pyfhd.gridding.visibility_degrid import visibility_degrid
 from pyfhd.io.pyfhd_io import load, recarray_to_dict, save
 from pyfhd.pyfhd_tools.test_utils import get_savs, sav_file_rearrange_psf
@@ -128,3 +130,47 @@ def test_visibility_degrid(
     )
 
     npt.assert_allclose(vis_return, vis_expected, atol=1e-15)
+
+
+@pytest.mark.github_actions
+@pytest.mark.parametrize("pol_i", [0, 1])
+def test_vis_degrid_zenith_2013(
+    mwa_aee_beam_zenith_2013, zenith_params_2013, model_uv_zenith_2013, pol_i
+):
+    model_uv_full = model_uv_zenith_2013
+    _, psf, obs, pyfhd_config = mwa_aee_beam_zenith_2013
+    params = zenith_params_2013
+
+    vis_model = visibility_degrid(
+        image_uv=model_uv_full,
+        vis_weights=None,
+        obs=obs,
+        psf=psf,
+        params=params,
+        pyfhd_config=pyfhd_config,
+        logger=Logger(1),
+        polarization=pol_i,
+        fill_model_visibilities=True,
+        conserve_memory=True,
+        memory_threshold=1e10,
+    )
+
+    fhd_vis_model_file = fetch_data("2013_zenith_gleam_model_vis_2freq")
+    fhd_vis_model_dict = get_savs(fhd_vis_model_file, "")
+    fhd_vis_model = (fhd_vis_model_dict["vis_model"].T)[pol_i]
+
+    # These are not super close because the construction of the kernel is
+    # different (the decomposition is different)
+    # but they aren't wildly different
+    diff = vis_model - fhd_vis_model
+    abs_diff = np.abs(diff)
+
+    mean_abs = np.mean(np.array([np.abs(vis_model), np.abs(fhd_vis_model)]), axis=0)
+    mean_nonzero = np.nonzero(mean_abs > 0)
+    rel_diff = np.zeros_like(abs_diff)
+    rel_diff[mean_nonzero] = abs_diff[mean_nonzero] / mean_abs[mean_nonzero]
+
+    assert np.abs(diff.mean()) < 0.03
+    assert abs_diff.max() < 4.5
+    assert rel_diff[mean_nonzero].mean() < 0.1
+    assert rel_diff.max() < 2
