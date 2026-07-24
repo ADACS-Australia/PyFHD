@@ -27,9 +27,9 @@ def create_obs(
     logger: logging.Logger,
 ) -> dict:
     """
-    create_obs takes all the data that has been read in and creates the obs data structure which holds data
-    and metadata of the observation we're doing a pyfhd run on. Inside this function the metafits file will
-    be read as well.
+    create_obs takes all the data that has been read in and creates the obs
+    data structure which holds data and metadata of the observation we're doing
+    a pyfhd run on. Inside this function the metafits file will be read as well.
 
     Parameters
     ----------
@@ -47,7 +47,8 @@ def create_obs(
     Returns
     -------
     obs : dict
-        The observatiopn data structure for pyfhd containing data from the config and metadata from the observation UVFITS and METAFITS files.
+        The observatiopn data structure for pyfhd containing data from the config
+        and metadata from the observation UVFITS and METAFITS files.
     """
 
     obs = {}
@@ -121,21 +122,18 @@ def create_obs(
             antenna_mod_index /= 2 ** np.floor(np.log(np.min(tile_B_test)) / np.log(2))
         baseline_info["tile_a"] = np.floor(params["baseline_arr"] / antenna_mod_index)
         baseline_info["tile_b"] = np.fix(params["baseline_arr"] / antenna_mod_index)
-        if (
-            max(np.max(baseline_info["tile_a"]), np.max(baseline_info["tile_b"]))
-            != obs["n_tile"]
-        ):
+        max_tile = max(np.max(baseline_info["tile_a"]), np.max(baseline_info["tile_b"]))
+        if max_tile != obs["n_tile"]:
             logger.warning(
-                f"Mis-matched n_tiles Header: {obs['n_tile']}, Data: {max(np.max(baseline_info['tile_a']), np.max(baseline_info['tile_b']))}, adjusting n_tiles to be same as data"
+                f"Mis-matched n_tiles Header: {obs['n_tile']}, Data: "
+                f"{max_tile}, adjusting n_tiles to be same as data"
             )
-            obs["n_tile"] = max(
-                np.max(baseline_info["tile_a"]), np.max(baseline_info["tile_b"])
-            )
+            obs["n_tile"] = max_tile
         params["antenna1"] = baseline_info["tile_a"]
         params["antenna2"] = baseline_info["tile_b"]
 
-    # check that all elements in the antenna1 and antenna2 array exist in the antenna numbers
-    # from the uvfits antenna table
+    # check that all elements in the antenna1 and antenna2 array exist in the
+    # antenna numbers from the uvfits antenna table
     all_ants = np.hstack([params["antenna1"], params["antenna2"]])
     all_ants = np.unique(all_ants)
     if not (np.all(np.isin(all_ants, layout["antenna_numbers"]))):
@@ -144,9 +142,10 @@ def create_obs(
     # fhd expects antenna1 and antenna2 arrays containing indices that are one-indexed.
     # Some uvfits files contain actual antenna numbers in these fields, while others
     # (particularly, those written by cotter or birli) contain indices.
-    # To account for this, all antenna numbers from the uvfits header are mapped to indices
-    # using the antenna numbers from the uvfits antenna table.
-    # If the antenna numbers were written into the file as indices, they will be mapped to themselves.
+    # To account for this, all antenna numbers from the uvfits header are mapped
+    # to indices using the antenna numbers from the uvfits antenna table.
+    # If the antenna numbers were written into the file as indices, they will be
+    # mapped to themselves.
     for tile_i in range(obs["n_tile"]):
         tile_a_antennas = np.where(
             layout["antenna_numbers"][tile_i] == params["antenna1"]
@@ -166,7 +165,8 @@ def create_obs(
 
     baseline_info["freq_use"] = np.ones(obs["n_freq"], dtype=np.int64)
 
-    # Calculate kx and ky for each baseline at high precision to get most accurate observation information
+    # Calculate kx and ky for each baseline at high precision to get most
+    # accurate observation information
     kx_arr = np.outer(baseline_info["freq"], params["uu"])
     ky_arr = np.outer(baseline_info["freq"], params["vv"])
     kr_arr = np.sqrt(kx_arr**2 + ky_arr**2)
@@ -180,7 +180,8 @@ def create_obs(
     else:
         obs["kpix"] = pyfhd_config["kbinsize"]
 
-    # Determine observation resolution/extent parameters given number of pixels in x direction (dimension)
+    # Determine observation resolution/extent parameters given number of pixels
+    # in x direction (dimension)
     if pyfhd_config["dimension"] is None and pyfhd_config["elements"] is None:
         obs["dimension"] = 2 ** int(
             (log10((2 * max_baseline) / pyfhd_config["kpix"]) / log10(2))
@@ -216,8 +217,10 @@ def create_obs(
     meta = read_metafits(obs, pyfhd_header, params, pyfhd_config, layout, logger)
 
     baseline_info["time_use"] = np.ones(obs["n_time"], dtype=np.int8)
-    # time cut is specified in seconds to cut (rounded up to next time integration point).
-    # Specify negative time_cut to cut time off the end. Specify a vector to cut at both the start and end
+    # time cut is specified in seconds to cut (rounded up to next time integration
+    # point).
+    # Specify negative time_cut to cut time off the end. Specify a vector to cut
+    # at both the start and end
     if pyfhd_config["time_cut"] is not None:
         time_cut = pyfhd_config["time_cut"]
         for ti in time_cut:
@@ -287,8 +290,8 @@ def read_metafits(
 ) -> dict:
     """
     Reads the metafits file provided inside the same input directory as the UVFITS file.
-    It will process the data found in the METAFITS file and then returns a meta dictionary.
-    Which will eventually end up inside the obs dictionary.
+    It will process the data found in the METAFITS file and then returns a meta
+    dictionary. Which will eventually end up inside the obs dictionary.
 
     Parameters
     ----------
@@ -326,8 +329,10 @@ def read_metafits(
         metadata = fits.open(meta_path)
         hdr = metadata[0].header
         data = metadata[1].data
-        # Sort the data by antenna using a stable sort, astropy Table is required to access Antenna column for sorting
-        # Standard Astropy does not do stable sorting, hence use of argsort to do stable sorting
+        # Sort the data by antenna using a stable sort, astropy Table is required
+        # to access Antenna column for sorting
+        # Standard Astropy does not do stable sorting, hence use of argsort to
+        # do stable sorting
         data = data[np.array(Table(data).argsort("Antenna", kind="stable"))]
         single_i = np.where(data["pol"] == data["pol"][0])
         meta["tile_names"] = data["tile"][single_i]
@@ -352,7 +357,8 @@ def read_metafits(
         )
     else:
         logger.warning(
-            "METAFITS file has not been found, Calculating obs meta settings from the uvfits header instead"
+            "METAFITS file has not been found, Calculating obs meta settings "
+            "from the uvfits header instead"
         )
         hdr = None
         # Simulate the flagging of tiles by taking where tiles don't exist
@@ -437,13 +443,15 @@ def read_metafits(
         # Save the header as a Python dictionary
         meta["meta_hdr"] = {}
         for key in hdr.keys():
-            # Check if they is HISTORY or COMMENT which will be changed to a list for ease of use with hdf5 files
+            # Check if they is HISTORY or COMMENT which will be changed to a
+            # list for ease of use with hdf5 files
             if key in ["HISTORY", "COMMENT"]:
                 meta["meta_hdr"][key] = list(hdr[key])
             else:
                 meta["meta_hdr"][key] = hdr[key]
-        # The astropy FITS_rec class is based off a numpy record array so saving as is should be fine
-        # If so desired a tolist() function to turn the data into list of lists, but you lose the column names
+        # The astropy FITS_rec class is based off a numpy record array so saving
+        # as is should be fine. If so desired a tolist() function to turn the
+        # data into list of lists, but you lose the column names
         meta["meta_data"] = data
 
     return meta
@@ -454,8 +462,8 @@ def project_slant_orthographic(
 ) -> dict:
     """
     Create an astrometry data structure holding key astrometry information.
-    It's essentially a WCS data structure, done as a Python dictionary allowing greater compatibility
-    with other packages.
+    It's essentially a WCS data structure, done as a Python dictionary allowing
+    greater compatibility with other packages.
 
     Parameters
     ----------
@@ -495,8 +503,9 @@ def project_slant_orthographic(
     eta = np.tan(np.radians(zenith_ang)) * np.cos(np.radians(parallactic_ang))
 
     # Replicate MAKE_ASTR return dictionary structure from astrolib
-    # We don't have to do it perfectly as it's only used for this function with the above as inputs
-    # This is essentially a WCS in a dictionary for use with other libraries other than Astropy
+    # We don't have to do it perfectly as it's only used for this function with
+    # the above as inputs. This is essentially a WCS in a dictionary for use
+    # with other libraries other than Astropy
     astr = {}
     astr["naxis"] = np.array([obs["dimension"], obs["elements"]])
     astr["cd"] = np.identity(2)
@@ -508,10 +517,12 @@ def project_slant_orthographic(
     astr["longpole"] = 180
     astr["latpole"] = 0
     astr["pv2"] = np.array([xi, eta])
-    # The PV1 array in Astrolib ASTR contains 5 projection parameters associated with longitude axis
+    # The PV1 array in Astrolib ASTR contains 5 projection parameters associated
+    # with longitude axis
     # [xyoff, phi0, theta0, longpole, latpole]
     # xyoff and phi0 are 0 as default
-    # The third number [i = 2] is determined by the fact we are using SIN zenithal projections
+    # The third number [i = 2] is determined by the fact we are using SIN
+    # zenithal projections
     # The last are the longpole and latpole we set earlier
     astr["pv1"] = np.array([0, 0, 90, 180, 0], dtype=np.float64)
     astr["axes"] = np.array([1, 2])
@@ -541,9 +552,9 @@ def update_obs(
 ) -> dict:
     """
     Inside the quickview function for exporting files we need to update the obs
-    dictionary based on the new dimension and kbinsize given. This differs slightly from
-    FHD as we only adjust the exact things required for this as we only use this function
-    once in quickview.
+    dictionary based on the new dimension and kbinsize given. This differs
+    slightly from FHD as we only adjust the exact things required for this as we
+    only use this function once in quickview.
 
     Parameters
     ----------

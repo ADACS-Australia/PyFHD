@@ -18,7 +18,8 @@ def test_deriv_coefficients_one(data_dir):
         data_dir, "input_n_1.npy", "input_divide_factorial_1.npy", "output_coeff_1.npy"
     )
     result = deriv_coefficients(n, divide_factorial=divide_fact)
-    # Precision Errors strike back, maximum difference was 2.2e-5, some were less difference than what single precision can do.
+    # Precision Errors strike back, maximum difference was 2.2e-5, some were
+    # less difference than what single precision can do.
     assert np.max(result - expected) < 1e-5
 
 

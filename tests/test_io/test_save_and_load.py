@@ -9,7 +9,8 @@ import pytest
 def test_save_and_load():
     """
     Test the save and load functionality of pyfhd.
-    This function checks if the data can be saved to a file and then loaded back correctly.
+    This function checks if the data can be saved to a file and then loaded back
+    correctly.
     """
     # Create a sample dictionary to save
     sample_data = {

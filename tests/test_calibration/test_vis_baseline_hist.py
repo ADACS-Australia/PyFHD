@@ -84,13 +84,15 @@ def after_file(tag, run, data_dir):
 
 def test_vis_baseline_hist(before_file: Path, after_file: Path):
     """
-    Runs the test on `vis_baseline_hist` - reads in the data in before_file and after_file,
-    and then calls `vis_baseline_hist`, checking the outputs match expectations
+    Runs the test on `vis_baseline_hist` - reads in the data in before_file and
+    after_file, and then calls `vis_baseline_hist`, checking the outputs match
+    expectations
     """
 
     if before_file is None or after_file is None:
         pytest.skip(
-            f"This test has been skipped because the test was listed in the skipped tests due to FHD not outpoutting them: {skip_tests}"
+            "This test has been skipped because the test was listed in the "
+            f"skipped tests due to FHD not outpoutting them: {skip_tests}"
         )
 
     h5_before = load(before_file)
@@ -123,7 +125,8 @@ def test_vis_baseline_hist(before_file: Path, after_file: Path):
 
     npt.assert_allclose(result_vis_baseline_hist["baseline_length"], num_bins)
 
-    # Plots have already been made and saved, if you want to regenerate them, uncomment the code
+    # Plots have already been made and saved, if you want to regenerate them,
+    # uncomment the code
 
     # fig, axs = plt.subplots(1, 2, figsize=(10, 5))
 
@@ -137,8 +140,12 @@ def test_vis_baseline_hist(before_file: Path, after_file: Path):
     # vis_res_ratio_mean_plt = np.zeros([num_bins, 2])
     # vis_res_ratio_mean_plt[:,1] = expec_vis_res_ratio_mean[1]
 
-    # im = axs[1].imshow(result_vis_baseline_hist['vis_res_ratio_mean'].transpose(), aspect='auto',
-    #                    extent=extent, origin='lower')
+    # im = axs[1].imshow(
+    #   result_vis_baseline_hist['vis_res_ratio_mean'].transpose(),
+    #   aspect='auto',
+    #   extent=extent,
+    #   origin='lower'
+    # )
     # plt.colorbar(im)
     # axs[1].set_xticks([0, 1])
 
@@ -159,5 +166,9 @@ def test_vis_baseline_hist(before_file: Path, after_file: Path):
     # else:
     #     tag = f"{name_split[0]}"
     #     run = f"{name_split[1]}"
-    # fig.savefig(f"test_vis_baseline_hist_{tag}_{run}_after_fix.png", bbox_inches='tight', dpi=300)
+    # fig.savefig(
+    #   f"test_vis_baseline_hist_{tag}_{run}_after_fix.png",
+    #   bbox_inches='tight',
+    #   dpi=300
+    # )
     # plt.close()

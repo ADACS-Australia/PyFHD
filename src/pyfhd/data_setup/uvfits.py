@@ -16,7 +16,8 @@ def extract_header(
     pyfhd_config: dict, logger: logging.Logger, model_uvfits=False
 ) -> tuple[dict, np.recarray, FITS_rec, Header]:
     """
-    Extract data from the uvfits header, the data extracted will contain metadata about the observation, antennas, visibilities
+    Extract data from the uvfits header, the data extracted will contain
+    metadata about the observation, antennas, visibilities
 
     Parameters
     ----------
@@ -27,18 +28,22 @@ def extract_header(
     logger : logging.Logger
         The pyfhd logger
     model_uvfits : bool
-        If True, load in the model uvfits. If False, load in a data uvfits file, by default False
+        If True, load in the model uvfits. If False, load in a data uvfits file,
+        by default False
 
     Returns
     -------
     pyfhd_header : dict
-        The result from the extraction of the header of the UVFITS file, containing observation metadata mostly
+        The result from the extraction of the header of the UVFITS file,
+        containing observation metadata mostly
     params_data: np.recarray
         The data from the UVFITS file, containing the visibility metadata
     antenna_data : FITS_rec
-        The layout data which will be used in the create_layout function, mostly antenna metadata
+        The layout data which will be used in the create_layout function, mostly
+        antenna metadata
     antenna_header : Header
-        The layout header which will be used in the create_layout function, mostly antenna metadatas
+        The layout header which will be used in the create_layout function,
+        mostly antenna metadatas
 
     Raises
     ------
@@ -140,7 +145,9 @@ def extract_header(
         pyfhd_header["alt"] = location.height.value
 
     logger.info(
-        f"Setting {pyfhd_config['instrument']} instrument location to: lon {pyfhd_header['lon']:.2f}, lat {pyfhd_header['lat']:.2f}, alt {pyfhd_header['alt']:.2f}"
+        f"Setting {pyfhd_config['instrument']} instrument location to: lon "
+        f"{pyfhd_header['lon']:.2f}, lat {pyfhd_header['lat']:.2f}, alt "
+        f"{pyfhd_header['alt']:.2f}"
     )
 
     # Setup params list and names
@@ -183,7 +190,8 @@ def extract_header(
         pyfhd_header["baseline_i"] = param_list.index("BASELINE")
         if not pyfhd_header["baseline_i"]:
             logger.error(
-                "Group parameter BASELINE (or ANTENNA1 and ANTENNA2) not found within uvfits params_header PTYPE keywords"
+                "Group parameter BASELINE (or ANTENNA1 and ANTENNA2) not found "
+                "within uvfits params_header PTYPE keywords"
             )
             params_valid = False
 
@@ -197,12 +205,14 @@ def extract_header(
     # Stop pyfhd if its not valid
     if not params_valid:
         raise KeyError(
-            "One of these keys is missing from the UVFITS file: UU, VV, WW, BASELINE, DATE, check the log to see which one"
+            "One of these keys is missing from the UVFITS file: "
+            "UU, VV, WW, BASELINE, DATE, check the log to see which one"
         )
 
     # Get the Julian Date
     if param_list.count("DATE") > 1:
-        # This needs testing as Astropy scales automatically, which affects the DATE data read in, this should be the same though
+        # This needs testing as Astropy scales automatically, which affects the
+        # DATE data read in, this should be the same though
         pyfhd_header["jd0"] = (
             params_header["PZERO{}".format(pyfhd_header["date_i"] + 1)]
             + params_data["DATE"][0]
@@ -232,8 +242,8 @@ def create_params(
     pyfhd_header: dict, params_data: np.recarray, logger: logging.Logger
 ) -> dict:
     """
-    Given the extracted header, params data from the uvfits file, create the params dictionary to store
-    the relevant visibility metadata
+    Given the extracted header, params data from the uvfits file, create the
+    params dictionary to store the relevant visibility metadata
 
     Parameters
     ----------
@@ -247,17 +257,21 @@ def create_params(
     Returns
     -------
     params : dict
-        The visibility metadata stored as a dictionary (instead of recarray as a dict is faster)
+        The visibility metadata stored as a dictionary (instead of recarray as a
+        dict is faster)
 
     Raises
     ======
     KeyError
-        If the UVFITS data returned doesn't contain the variables then a KeyError will get thrown.
+        If the UVFITS data returned doesn't contain the variables then a KeyError
+        will get thrown.
 
     See Also
     ========
-    astropy.io.fits.getdata : https://docs.astropy.org/en/stable/io/fits/api/files.html#getdata
-    extract_header : Extracts the header from the UVFITS file and returns the header and data
+    astropy.io.fits.getdata :
+        https://docs.astropy.org/en/stable/io/fits/api/files.html#getdata
+    extract_header : Extracts the header from the UVFITS file and returns the
+        header and data
     """
     params = {}
     # Retrieve params values
@@ -325,8 +339,10 @@ def extract_visibilities(
 
     See Also
     ========
-    astropy.io.fits.getdata : https://docs.astropy.org/en/stable/io/fits/api/files.html#getdata
-    extract_header : Extracts the header from the UVFITS file and returns the header and data
+    astropy.io.fits.getdata :
+        https://docs.astropy.org/en/stable/io/fits/api/files.html#getdata
+    extract_header : Extracts the header from the UVFITS file and returns the
+        header and data
     """
 
     data_array = np.squeeze(params_data["DATA"])
@@ -357,9 +373,10 @@ def _check_layout_valid(
     layout: dict, key: str, logger: logging.Logger, check_min_max=False
 ):
     """
-    Check if the key given is a valid part of the layout, if not give an error in the log.
-    The errors do not stop the run as it might only affect compatibility with other packages and
-    could be solved by editing or fixing the UVFITS file.
+    Check if the key given is a valid part of the layout, if not give an error
+    in the log. The errors do not stop the run as it might only affect
+    compatibility with other packages and could be solved by editing or fixing
+    the UVFITS file.
 
     Parameters
     ----------
@@ -420,7 +437,8 @@ def create_layout(
 
     See Also
     ---------
-    extract_header : Opens the UVFITS file and extracts the header and data, including the antenna_header and antenna_data.
+    extract_header : Opens the UVFITS file and extracts the header and data,
+    including the antenna_header and antenna_data.
     """
 
     layout = {}
@@ -434,9 +452,11 @@ def create_layout(
             antenna_header["arrayz"],
         ]
     except KeyError:
-        # if no center given, assume MWA center (Tingay et al. 2013, converted from lat/lon using pyuvdata)
+        # if no center given, assume MWA center (Tingay et al. 2013, converted
+        # from lat/lon using pyuvdata)
         logger.info(
-            "No center was given in the UVFITS file, assuming MWA is the array and using a default center for MWA"
+            "No center was given in the UVFITS file, assuming MWA is the array"
+            "and using a default center for MWA"
         )
         layout["array_center"] = [
             -2559454.07880307,
@@ -465,7 +485,8 @@ def create_layout(
         layout["earth_degpd"] = antenna_header["degpdy"]
     except KeyError:
         logger.info(
-            "degpdy is missing from the UVFITS file, using 360.985 for Earth's rotation in degrees"
+            "degpdy is missing from the UVFITS file, using 360.985 for Earth's "
+            "rotation in degrees"
         )
         layout["earth_degpd"] = 360.985
 
@@ -508,12 +529,14 @@ def create_layout(
     except KeyError:
         if layout["time_system"] == "IAT":
             logger.info(
-                "Time System is IAT and leap seconds is missing, using value from diff_utc(layout)/datutc(uvfits)"
+                "Time System is IAT and leap seconds is missing, using value "
+                "from diff_utc(layout)/datutc(uvfits)"
             )
             layout["nleap_sec"] = layout["diff_utc"]
         else:
             logger.warning(
-                "Number of Leap Seconds is missing and the time system isn't IAT so we can't know the leap seconds, setting as -1"
+                "Number of Leap Seconds is missing and the time system isn't "
+                "IAT so we can't know the leap seconds, setting as -1"
             )
 
     # Polarization Type
@@ -521,7 +544,8 @@ def create_layout(
         layout["pol_type"] = antenna_header["poltype"]
     except KeyError:
         logger.info(
-            "Polarization Type not in UVFITS file, Linear approximation for linear feeds is being used"
+            "Polarization Type not in UVFITS file, Linear approximation for "
+            "linear feeds is being used"
         )
         layout["pol_type"] = "X-Y LIN"
 
@@ -530,7 +554,8 @@ def create_layout(
         layout["n_pol_cal_params"] = antenna_header["nopcal"]
     except KeyError:
         logger.info(
-            "Polarization Characteristics of the feed not given in UVFITS file, Set n_pol_cal_params to 0"
+            "Polarization Characteristics of the feed not given in UVFITS file, "
+            "Set n_pol_cal_params to 0"
         )
         layout["n_pol_cal_params"] = 0
 
@@ -554,7 +579,8 @@ def create_layout(
         layout["antenna_numbers"] = antenna_data["nosta"]
     except KeyError:
         layout.warning(
-            "Antenna Numbers missing replacing with an array of numbers of range 1: n_antenna"
+            "Antenna Numbers missing replacing with an array of numbers of "
+            "range 1: n_antenna"
         )
         layout["antenna_numbers"] = np.arange(1, layout["n_antenna"])
 
@@ -563,7 +589,8 @@ def create_layout(
         layout["antenna_coords"] = antenna_data["stabxyz"]
     except KeyError:
         logger.warning(
-            "Antenna Coordinates missing, replacing with a zero array of shape n_antenna, 3"
+            "Antenna Coordinates missing, replacing with a zero array of "
+            "shape n_antenna, 3"
         )
         layout["antenna_coords"] = np.zeros((layout["n_antenna"], 3))
 
@@ -600,7 +627,8 @@ def create_layout(
         layout["pola_cal_params"] = antenna_data["polcala"]
     except KeyError:
         logger.warning(
-            "PolA params is missing from the UVFITS, set to array of zeros of length n_pol_cal_params or 0"
+            "PolA params is missing from the UVFITS, set to array of zeros of "
+            "length n_pol_cal_params or 0"
         )
         if layout["n_pol_cal_params"] > 1:
             layout["pola_cal_params"] = np.zeros(layout["n_pol_cal_params"])
@@ -626,7 +654,8 @@ def create_layout(
         layout["polb_cal_params"] = antenna_data["polcalb"]
     except KeyError:
         logger.warning(
-            "PolB params is missing from the UVFITS, set to array of zeros of length n_pol_cal_params or 0"
+            "PolB params is missing from the UVFITS, set to array of zeros of "
+            "length n_pol_cal_params or 0"
         )
         if layout["n_pol_cal_params"] > 1:
             layout["polb_cal_params"] = np.zeros(layout["n_pol_cal_params"])

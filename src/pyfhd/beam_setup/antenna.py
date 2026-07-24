@@ -249,13 +249,14 @@ def get_beam_values(
 
 def init_beam(obs: dict, pyfhd_config: dict, logger: Logger) -> dict:
     """
-    Build an antenna-specific metadata dictionary and a full station/tile power beam model
-    and dictionary. Currently, the jones matrix of the antenna is acquired through pyuvdata.
+    Build an antenna-specific metadata dictionary and a full station/tile power
+    beam model and dictionary. Currently, the jones matrix of the antenna is
+    acquired through pyuvdata.
 
-    The antenna dictionary contains antenna parameters as well as response and jones matrices
-    that can be used to build a beam power response. The psf dictionary contains parameters
-    and options required to build a uv-response from that beam power with reduced aliasing
-    contamination.
+    The antenna dictionary contains antenna parameters as well as response and
+    jones matrices that can be used to build a beam power response. The psf
+    dictionary contains parameters and options required to build a uv-response
+    from that beam power with reduced aliasing contamination.
 
     Parameters
     ----------
@@ -285,7 +286,8 @@ def init_beam(obs: dict, pyfhd_config: dict, logger: Logger) -> dict:
     """
 
     # Setup the constants and variables
-    # Almost all instruments have two instrumental polarizations (either linear or circular)
+    # Almost all instruments have two instrumental polarizations (either linear
+    # or circular)
     n_ant_pol = 2
     frequency_array = obs["baseline_info"]["freq"]
     freq_bin_i = obs["baseline_info"]["fbin_i"]
@@ -352,7 +354,8 @@ def init_beam(obs: dict, pyfhd_config: dict, logger: Logger) -> dict:
         "l_matrix_image_radec": None,
         # Also need L inverse
         "l_inv_image_radec": None,
-        # pyfhd supports one instrument at a time, so we setup the group so they're all in the same group.
+        # pyfhd supports one instrument at a time, so we setup the group so
+        # they're all in the same group.
         "group_id": np.zeros([n_ant_pol, obs["n_tile"]], dtype=np.int8),
         "pix_window": None,
     }
@@ -373,7 +376,9 @@ def init_beam(obs: dict, pyfhd_config: dict, logger: Logger) -> dict:
     psf = {
         "dim": psf_dim,
         "resolution": pyfhd_config["psf_resolution"],
-        # This is more of a placeholder, if we want pyfhd to support processing more than one instrument at a time we'll need to edit this to be calculated rather than hardcoded.
+        # This is more of a placeholder, if we want pyfhd to support processing
+        # more than one instrument at a time we'll need to edit this to be
+        # calculated rather than hardcoded.
         "id": np.zeros(
             [obs["n_pol"], obs["n_freq"], obs["n_baselines"]], dtype=np.int64
         ),
@@ -428,8 +433,9 @@ def init_beam(obs: dict, pyfhd_config: dict, logger: Logger) -> dict:
                 # Download the MWA beam file if it does not exist
                 raise FileNotFoundError(
                     f"MWA beam file {mwa_beam_file} does not exist. "
-                    "Please download it from http://ws.mwatelescope.org/static/mwa_full_embedded_element_pattern.h5 into the."
-                    f"directory {mwa_beam_file.parent}"
+                    "Please download it from "
+                    "http://ws.mwatelescope.org/static/mwa_full_embedded_element_pattern.h5"
+                    f" into the directory {mwa_beam_file.parent}"
                 )
             beam = UVBeam.from_file(mwa_beam_file, **uvbeam_kwargs)
 
@@ -476,12 +482,14 @@ def init_beam(obs: dict, pyfhd_config: dict, logger: Logger) -> dict:
     # projection (K) on the obs["dimension"] size for converting between instrumental
     # pol and Stokes (in stokes_cnv).
 
-    # Set up coordinates for the gridding kernel to generate the high uv resolution model.
+    # Set up coordinates for the gridding kernel to generate the high uv
+    # resolution model.
     # Remember that field of view = uv resolution, image pixel scale = uv span.
-    # So, the cropped uv span (psf_dim) means we do not need to calculate at full image resolution,
-    # while the increased uv resolution can correspond to super-horizon scales. We construct the beam model in
-    # image space, and while we don't need the full image resolution we need to avoid quantization errors that
-    # come in if we make too small an image and then take the FFT
+    # So, the cropped uv span (psf_dim) means we do not need to calculate at
+    # full image resolution, while the increased uv resolution can correspond to
+    # super-horizon scales. We construct the beam model in image space, and while
+    # we don't need the full image resolution we need to avoid quantization
+    # errors that come in if we make too small an image and then take the FFT
     psf["intermediate_res"] = np.min(
         [np.ceil(np.sqrt(psf["resolution"]) / 2) * 2, psf["resolution"]]
     ).astype(int)

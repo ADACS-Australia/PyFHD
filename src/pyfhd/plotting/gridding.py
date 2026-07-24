@@ -90,7 +90,8 @@ def plot_gridding(
     pol_names = obs["pol_names"]
 
     for pol_i in range(obs["n_pol"]):
-        # Plot the apparent image, variance, and the optional model for each polarization
+        # Plot the apparent image, variance, and the optional model for each
+        # polarization
 
         # Add a suffix to each path
         save_path_pol = [

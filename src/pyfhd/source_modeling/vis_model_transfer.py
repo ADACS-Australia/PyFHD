@@ -20,7 +20,8 @@ def vis_model_transfer(
     pyfhd_config: dict, obs: dict, params: dict, logger: logging.Logger
 ) -> tuple[NDArray[np.complex128], dict]:
     """
-    Transfer in a simulated model of the visibilities from either a sav file or uvfits file.
+    Transfer in a simulated model of the visibilities from either a sav file or
+    uvfits file.
 
     Parameters
     ----------
@@ -40,8 +41,10 @@ def vis_model_transfer(
 
     See Also
     --------
-    pyfhd.source_modeling.vis_model_transfer.import_vis_model_from_sav : Import model from a sav file
-    pyfhd.source_modeling.vis_model_transfer.import_vis_model_from_uvfits : Import model from a uvfits file
+    pyfhd.source_modeling.vis_model_transfer.import_vis_model_from_sav :
+        Import model from a sav file
+    pyfhd.source_modeling.vis_model_transfer.import_vis_model_from_uvfits :
+        Import model from a uvfits file
     """
     if pyfhd_config["model_file_type"] == "sav":
         vis_model, params_model, obs_model = import_vis_model_from_sav(
@@ -60,7 +63,8 @@ def vis_model_transfer(
     else:
         logger.error("You chose a file type pyfhd can't import, exiting")
         raise ValueError(
-            f"File type {pyfhd_config['model_file_type']} not supported. Please use 'sav' or 'uvfits'."
+            f"File type {pyfhd_config['model_file_type']} not supported. Please "
+            "use 'sav' or 'uvfits'."
         )
 
     if pyfhd_config["flag_model"]:
@@ -75,8 +79,11 @@ def vis_model_transfer(
         )
     else:
         logger.warning(
-            "You have chosen not to flag the model visibilities, so pyfhd will not account for difference in time steps between the data and the model "
-            "or any flagged tiles. This may lead to incorrect calibration results if the model visibilities are not compatible with the data visibilities."
+            "You have chosen not to flag the model visibilities, so pyfhd will "
+            "not account for difference in time steps between the data and the "
+            "model or any flagged tiles. This may lead to incorrect calibration "
+            "results if the model visibilities are not compatible with the data "
+            "visibilities."
         )
 
     if pyfhd_config["save_model"]:
@@ -93,12 +100,12 @@ def import_vis_model_from_sav(
     pyfhd_config: dict, obs: dict, logger: logging.Logger
 ) -> tuple[NDArray[np.complex128], dict]:
     """
-    Read a model visibility array and metadata from multiple IDL sav files in a directory
-    given by pyfhd_config['model_file_path'], or in a FHD-style directory structure given
-    by pyfhd_config['model_file_path']. The data is assumed to be in the format of
-    <obs_id>_params.sav, <obs_id>_obs.sav, and <obs_id>_vis_model_<pol_name>.sav. The
-    pol_name follows the pol_names in the obs dictionary, ['XX','YY','XY','YX','I','Q',
-    'U','V'].
+    Read a model visibility array and metadata in from multiple IDL sav files
+    which are in a directory given by pyfhd_config['model-file-path']. The data
+    is assumed to be in the format of <obs_id>_params.sav, <obs_id>_obs.sav, and
+    <obs_id>_vis_model_<pol_name>.sav.
+    The pol_name follows the pol_names in the obs dictionary which are
+    ['XX','YY','XY','YX','I','Q','U','V'].
 
     Parameters
     ----------
@@ -189,7 +196,8 @@ def import_vis_model_from_sav(
             vis_model_arr[pol_i] = curr_vis_model.transpose().astype(np.complex128)
     except FileNotFoundError:
         logger.error(
-            f"pyfhd failed to load in the model visibilities and metadata from filepath: {path}"
+            "pyfhd failed to load in the model visibilities and metadata from "
+            f"filepath: {path}"
         )
         exit()
     return vis_model_arr, params_model, obs_model
@@ -307,7 +315,8 @@ def flag_model_visibilities(
 ) -> NDArray[np.complex128]:
     """
     Match the times and the tile flags between the data and the input model, and
-    check that the uvfits are compatible. Needs to check if auto-correlations are present
+    check that the uvfits are compatible. Needs to check if auto-correlations
+    are present
 
     Parameters
     ----------
@@ -476,7 +485,8 @@ def flag_model_visibilities(
             )
         )
     else:
-        # If no auto-correlations, just use the cross-correlations, Keep the autos as zeroes
+        # If no auto-correlations, just use the cross-correlations, Keep the
+        # autos as zeroes
         data_include_per_time = flaginfo_data.cross_locs_per_time
         if flaginfo_data.num_autos > 0:
             logger.warning(
@@ -539,7 +549,8 @@ def convert_vis_model_arr_to_sav(
     pol_names = ["XX", "YY", "XY", "YX"]
 
     logger.info(
-        f"vis_model_transfer: saving {model_vis_dir}/{pyfhd_config['obs_id']}_vis_model.h5"
+        f"vis_model_transfer: saving {model_vis_dir}/{pyfhd_config['obs_id']}"
+        "_vis_model.h5"
     )
 
     with h5py.File(f"{model_vis_dir}/{pyfhd_config['obs_id']}_vis_model.h5", "w") as hf:
@@ -563,9 +574,13 @@ def convert_vis_model_arr_to_sav(
 
     # Run the IDL code
     logger.info(
-        f"vis_model_transfer: converting {model_vis_dir}/{pyfhd_config['obs_id']}_vis_model.h5 to .sav format"
+        f"vis_model_transfer: converting {model_vis_dir}/{pyfhd_config['obs_id']}"
+        "_vis_model.h5 to .sav format"
     )
 
-    idl_command = f"idl -IDL_DEVICE ps -e convert_model_arr_to_sav -args {model_vis_dir} {pyfhd_config['obs_id']} {n_pol}"
+    idl_command = (
+        "idl -IDL_DEVICE ps -e convert_model_arr_to_sav -args "
+        f"{model_vis_dir} {pyfhd_config['obs_id']} {n_pol}"
+    )
 
     run_command(idl_command, False)

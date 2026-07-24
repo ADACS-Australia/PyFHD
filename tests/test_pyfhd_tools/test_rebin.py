@@ -16,7 +16,8 @@ def small_data_dir():
 
 @pytest.fixture
 def large_data_dir():
-    # This assumes you have used the splitter.py and have done a general format of **/FHD/PyFHD/tests/test_fhd_*/data/<function_name_being_tested>/*.npy
+    # This assumes you have used the splitter.py and have done a general format
+    # of **/FHD/PyFHD/tests/test_fhd_*/data/<function_name_being_tested>/*.npy
     return Path(env.get("PYFHD_TEST_PATH"), "pyfhd_tools", "rebin/")
 
 
@@ -152,13 +153,15 @@ def test_rebin_twoD_up_2_by_2(large_data_dir):
 
 
 def test_rebin_twoD_up_3_by_2(large_data_dir):
-    """Testing a 2D array increasing rows and columns by factors of 3 and 2 respectively"""
+    """Testing a 2D array increasing rows and columns by factors of 3 and 2
+    respectively"""
     input, expected = get_data(large_data_dir, "data.npy", "data_12r_10c.npy")
     assert np.array_equal(rebin(input, (12, 10)), expected)
 
 
 def test_rebin_twoD_up_2_by_3(large_data_dir):
-    """Testing a 2D array increasing rows and columns by factors of 2 and 3 respectively"""
+    """Testing a 2D array increasing rows and columns by factors of 2 and 3
+    respectively"""
     input, expected = get_data(large_data_dir, "data.npy", "data_8r_15c.npy")
     assert np.array_equal(rebin(input, (8, 15)), expected)
 
@@ -264,9 +267,11 @@ In Python we have:
 np.floor(1.999999999999999) == 1.0
 np.floor(1.9999999999999999) == 2.0
 
-If this were to happen twice in the same row or column, then both would add up to errors of upto 2.0
+If this were to happen twice in the same row or column, then both would add up
+to errors of up to 2.0
 As such integer arrays need to meet a threshold of 2 to pass.
-While floats I will use 1e-5, to account for rounding issues associated with precision as well.
+While floats I will use 1e-5, to account for rounding issues associated with
+precision as well.
 """
 # EXPANDING
 
@@ -350,15 +355,18 @@ it will probably never pass. The most likely theory as to why this is the case
 is all to do with precision.
 
 With the other expanding tests, precision errors did occur hence the thresholds.
-These thresholds had to be applied as multiple precision errors compounded, leading to errors
-that we have no way to solve, as IDL is actually less accurate than Python in these cases.
-Taking that into account, as we expand to 1 billion elements, those precision errors get
-compunded even more. Its also possible that in the case of integer array given as input, IDL's rebin
-does every calculation in integers, while I do all my calculations in floats no matter the type
+These thresholds had to be applied as multiple precision errors compounded,
+leading to errors that we have no way to solve, as IDL is actually less accurate
+than Python in these cases. Taking that into account, as we expand to 1 billion
+elements, those precision errors get compunded even more. Its also possible that
+in the case of integer array given as input_array, IDL's rebin does every
+calculation in integers, while I do all my calculations in floats no matter the type
 of the array, and then floor to integers only at the end.
 
-These two potential scenarios above, do unfortunately discount this test from ever working (probably).
-The only one way to know for sure is if we had access to the IDL source code, which is licensed
+These two potential scenarios above, do unfortunately discount this test from
+ever working (probably).
+The only one way to know for sure is if we had access to the IDL source code,
+which is licensed
 and proprietary, and therefore probably unobtainable.
 
 def test_rebin_hundred_billion(large_data_dir):

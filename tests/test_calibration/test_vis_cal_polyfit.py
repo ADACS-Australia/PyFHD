@@ -150,7 +150,8 @@ def after_file(tag, run, data_dir):
     # However because digital_gain_jump_polyfit was used each pointer contains a (2,2)
     # This means the shape should be (2, 128, 2, 2) or
     # (n_pol, n_tile, cal_amp_degree_fit, cal_amp_degree_fit)
-    # cal_return also keeps the phase_params as (128, 2) object array, each one containing two 1 element float arrays
+    # cal_return also keeps the phase_params as (128, 2) object array, each one
+    # containing two 1 element float arrays
     # This should be (n_pol, n_tile, cal_phase_degree_fit + 1) or (2, 128, 2) so
     # We'll grab each one by tile and polarization, and stack and flatten.
     expected_amp_params = np.empty(
@@ -167,7 +168,8 @@ def after_file(tag, run, data_dir):
     expected_mode_params = np.empty((cal_return["n_pol"], obs["n_tile"], 3))
     # Recarray didn't know what to do with it, so turn it back into object array
     cal_return["mode_params"] = np.array(cal_return["mode_params"])
-    # Convert the amp, phase and mode params to not object arrays, or put them in the right size
+    # Convert the amp, phase and mode params to not object arrays, or put them
+    # in the right size
     for pol_i in range(cal_return["n_pol"]):
         for tile_i in range(obs["n_tile"]):
             expected_amp_params[pol_i, tile_i] = np.transpose(
@@ -195,11 +197,13 @@ def after_file(tag, run, data_dir):
 
 @pytest.mark.github_actions
 def test_vis_cal_polyfit(before_file, after_file):
-    """Runs the test on `vis_cal_polyfit` - reads in the data in before_file and after_file,
-    and then calls `vis_cal_polyfit`, checking the outputs match expectations"""
+    """Runs the test on `vis_cal_polyfit` - reads in the data in before_file and
+    after_file, and then calls `vis_cal_polyfit`, checking the outputs match
+    expectations"""
     if before_file is None or after_file is None:
         pytest.skip(
-            f"This test has been skipped because the test was listed in the skipped tests due to FHD not outputting them: {skip_tests}"
+            "This test has been skipped because the test was listed in the "
+            f"skipped tests due to FHD not outputting them: {skip_tests}"
         )
 
     h5_before = load(before_file)
@@ -221,10 +225,13 @@ def test_vis_cal_polyfit(before_file, after_file):
     npt.assert_allclose(
         cal_polyfit["phase_params"], expected_cal_return["phase_params"], atol=2e-6
     )
-    # atol due to differences in precision differences in multiple places with multiplication and polyfits
-    # of single precision
+    # atol due to differences in precision differences in multiple places with
+    # multiplication and polyfits of single precision
     npt.assert_allclose(cal_polyfit["gain"], expected_cal_return["gain"], atol=2e-5)
     # Test the mode params ignoring the nans from FHD
     # non_nans = ~np.isnan(expected_cal_return['mode_params'])
     # Slight differences in mode indexes make this not possible to test properly
-    # npt.assert_allclose(cal_polyfit['mode_params'][non_nans], expected_cal_return['mode_params'][non_nans], atol=1e-8)
+    # npt.assert_allclose(
+    #   cal_polyfit['mode_params'][non_nans],
+    #   expected_cal_return['mode_params'][non_nans], atol=1e-8
+    # )

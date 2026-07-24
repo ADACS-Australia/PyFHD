@@ -418,7 +418,8 @@ def generate_source_cal_skymodel(
             n_finite = inds_finite.size
             if n_finite == 0:
                 logger.warning(
-                    "All sources in model catalog after image and flux cuts are nan/inf."
+                    "All sources in model catalog after image and flux cuts are "
+                    "nan/inf."
                 )
                 skymodel = None
             else:
@@ -429,7 +430,8 @@ def generate_source_cal_skymodel(
                     skymodel.select(component_inds=inds_finite)
                     n_src_use = n_finite
 
-                # if no extended sources survive the cuts, set extended_model_group to None
+                # if no extended sources survive the cuts, set
+                # extended_model_group to None
                 if skymodel.extended_model_group is not None:
                     extended_comps = np.nonzero(skymodel.extended_model_group != "")[0]
                     if extended_comps.size == 0:
@@ -479,7 +481,8 @@ def generate_source_cal_skymodel(
             skymodel.concat(sidelobe_skymodel)
         else:
             logger.warning(
-                "No remaining sources in model catalog after cuts, only using sidelobe catalog."
+                "No remaining sources in model catalog after cuts, only using "
+                "sidelobe catalog."
             )
             skymodel = sidelobe_skymodel
 
@@ -662,16 +665,16 @@ def stokes_cnv(
         if beam_use.ndim == 3:
             sx = sky.extra_columns["image_x"]
             sy = sky.extra_columns["image_y"]
-            # NB: FHD just uses sx, sy as indices, which means they are truncated to ints
-            # we will use round
+            # NB: FHD just uses sx, sy as indices, which means they are truncated
+            # to ints. We will use round
             sx = sx.round().astype(int)
             sy = sy.round().astype(int)
 
             # set background to -1 to catch out of range pixels
             ind_arr = np.zeros((obs["dimension"], obs["elements"]), dtype=int) - 1
             ind_arr.flat[antenna["image_pix_use"]] = np.arange(n_pix)
-            # NB: FHD just uses sx, sy as indices, which means they are truncated to ints
-            # we will use round
+            # NB: FHD just uses sx, sy as indices, which means they are truncated
+            # to ints. We will use round
             p_ind = ind_arr[sx, sy]
             s_use = np.nonzero(p_ind > 0)[0]
             if s_use.size == 0:

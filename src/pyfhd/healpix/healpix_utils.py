@@ -25,12 +25,15 @@ def healpix_cnv_apply(
     image: NDArray[np.integer | np.floating | np.complexfloating], hpx_cnv: dict
 ) -> NDArray[np.float64]:
     """
-    healpix_cnv_apply creates a map based off the array/image and healpix convention dictionary given.
-    In FHD the healpix_cnv_apply was mainly used as a wrapper for sprsax2, as such I will put the code
-    for sprsax2 in here as pyfhd will only use sprsax2 here as we don't have the holographic mapping
+    healpix_cnv_apply creates a map based off the array/image and healpix
+    convention dictionary given.
+    In FHD the healpix_cnv_apply was mainly used as a wrapper for sprsax2, as
+    such I will put the code for sprsax2 in here as pyfhd will only use sprsax2
+    here as we don't have the holographic mapping
     function at this time.
 
-    Vectors 'sa' (interpolation) and 'ija' (index) follow the row-index sparse storage mode as described
+    Vectors 'sa' (interpolation) and 'ija' (index) follow the row-index sparse
+    storage mode as described
     in section 2.7 of Numerical Recipes in C, 2nd edition.
 
     Parameters
@@ -105,10 +108,12 @@ def healpix_cnv_generate(
     # we will assume that a value for hpx_radius is supplied, if you want to add it
     # yourself you can do that here
     hpx_inds = None
-    # Fill hpx_inds and nside with values from a file if restrict_healpix_inds has been activated
+    # Fill hpx_inds and nside with values from a file if restrict_healpix_inds
+    # has been activated
     if pyfhd_config["restrict_healpix_inds"]:
         if pyfhd_config["healpix_inds"] is None:
-            # Get the healpix indexes based off the observation, comes from observation_healpix_inds_select
+            # Get the healpix indexes based off the observation, comes from
+            # observation_healpix_inds_select
             files = np.array(
                 [
                     {
@@ -194,7 +199,8 @@ def healpix_cnv_generate(
         pix_coords = np.vstack(pix2vec(nside, hpx_inds)).T
         pix_ra, pix_dec = vec2ang(pix_coords, lonlat=True)
         xv_hpx, yv_hpx = radec_to_pixel(pix_ra, pix_dec, obs["astr"])
-        # slightly more restrictive boundary here ('LT' and 'GT' instead of 'LE' and 'GE')
+        # slightly more restrictive boundary here
+        # ('LT' and 'GT' instead of 'LE' and 'GE')
         pix_i_use = np.where(
             (xv_hpx > 0)
             & (xv_hpx < obs["dimension"] - 1)
@@ -221,7 +227,8 @@ def healpix_cnv_generate(
             pix_ra = pix_ra[pix_i_use2]
             pix_dec = pix_dec[pix_i_use2]
 
-    # Test for pixels past the horizon. We don't need to be precise with this, so turn off precession, etc..
+    # Test for pixels past the horizon. We don't need to be precise with this,
+    # so turn off precession, etc..
     # Get the location from obs structure
     telescope_location = EarthLocation.from_geodetic(
         lon=obs["lon"], lat=obs["lat"], height=obs["alt"]
@@ -241,18 +248,20 @@ def healpix_cnv_generate(
         xv_hpx = xv_hpx[h_use]
         yv_hpx = yv_hpx[h_use]
         hpx_inds = hpx_inds[h_use]
-    # The differences in precision through the use of vec2ang, radec_to_pixel are exposed
-    # directly causing differences in the results. We can probably assume these numbers are                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      the results. We can probably assume these numbers are
-    # "better" compared to IDL
+    # The differences in precision through the use of vec2ang, radec_to_pixel
+    # are exposed directly causing differences in the results. We can probably
+    # assume these numbers are the results. We can probably assume these numbers
+    # are "better" compared to IDL
     x_frac = 1 - (xv_hpx - np.floor(xv_hpx))
     y_frac = 1 - (yv_hpx - np.floor(yv_hpx))
 
     v_floor = np.floor(xv_hpx) + obs["dimension"] * np.floor(yv_hpx)
     v_ceil = np.ceil(xv_hpx) + obs["dimension"] * np.ceil(yv_hpx)
-    # Differences in precision occur here compared to IDL, unsolvable ones as we're using
-    # built in HEALPIX and astropy functions to get these arrays. We can probably assume these
-    # numbers are "better" compared to IDL, as a result the v_floor and v_ceil arrays are one off
-    # compared to IDL, making min_bin off by one
+    # Differences in precision occur here compared to IDL, unsolvable ones as
+    # we're using built in HEALPIX and astropy functions to get these arrays.
+    # We can probably assume these numbers are "better" compared to IDL, as a
+    # result the v_floor and v_ceil arrays are one off compared to IDL, making
+    # min_bin off by one
     min_bin = max(np.nanmin(v_floor), 0)
     max_bin = min(np.nanmax(v_ceil), obs["dimension"] * obs["elements"] - 1)
     h00, _, ri00 = histogram(v_floor, min=min_bin, max=max_bin)
@@ -446,7 +455,8 @@ def phase_shift_uv_image(obs: dict) -> NDArray[np.complex128]:
 
     x, y = radec_to_pixel(ra_use, dec_use, obs["astr"])
 
-    # uv_mask is not applied in FHD examples or docs decided not to translate it, if you want it put it here
+    # uv_mask is not applied in FHD examples or docs decided not to translate it,
+    # if you want it put it here
 
     dx = (x - (obs["dimension"] / 2)) * (2 * np.pi / obs["dimension"])
     dy = (y - (obs["elements"] / 2)) * (2 * np.pi / obs["dimension"])
@@ -583,7 +593,8 @@ def vis_model_freq_split(
         )
         if not gridding_dict:
             logger.warning(
-                f"No visibilities gridded for frequency channel {fi_use} and polarization {obs['pol_names'][polarization]} ({polarization})"
+                f"No visibilities gridded for frequency channel {fi_use} and "
+                f"polarization {obs['pol_names'][polarization]} ({polarization})"
             )
             continue
         n_vis_use += gridding_dict["n_vis"]

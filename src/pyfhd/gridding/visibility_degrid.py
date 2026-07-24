@@ -40,17 +40,21 @@ def visibility_degrid(
     memory_threshold: float | int = 1e8,
 ):
     """
-    Generate visibilities from a 2D hyperresolved {u,v} plane using the Fourier transform of the beam sensitivity as the
-    kernel (or integration function). The input {u,v} plane is the slant-orthographic projection of the sky when Fourier
-    transformed with no instrumental effects. The integration kernel adds the instrumental effects to the visiblities.
+    Generate visibilities from a 2D hyperresolved {u,v} plane using the Fourier
+    transform of the beam sensitivity as the kernel (or integration function).
+    The input {u,v} plane is the slant-orthographic projection of the sky when
+    Fourier transformed with no instrumental effects. The integration kernel adds
+    the instrumental effects to the visiblities.
 
-    Degridding is performed only on simulated model {u,v} planes. Simulated sources towards the edge of the sky image will be
-    distorted (smeared) due to the projection of the 2D {u,v} plane.
+    Degridding is performed only on simulated model {u,v} planes. Simulated
+    sources towards the edge of the sky image will be distorted (smeared) due to
+    the projection of the 2D {u,v} plane.
 
-    The kernel is a extremely hyperresolved look-up table, which is (optionally) interpolated even further.
-    Since the {u,v} pixels are discrete and the baseline locations are not, the kernel will integrate the pixels
-    in a unique way for each individual baseline. This code is optimized to provide the best estimate for each
-    baseline whilst maintaining speed.
+    The kernel is a extremely hyperresolved look-up table, which is (optionally)
+    interpolated even further. Since the {u,v} pixels are discrete and the baseline
+    locations are not, the kernel will integrate the pixels in a unique way for
+    each individual baseline. This code is optimized to provide the best estimate
+    for each baseline whilst maintaining speed.
 
     Parameters
     ----------
@@ -72,16 +76,19 @@ def visibility_degrid(
     vis_input : NDArray[np.complex128] | None, optional
         Extra model visibilities to add to the degridded products, by default None
     spectral_model_uv_arr : NDArray[np.float64] | None, optional
-        Additional {u,v} planes to degrid for complicated source spectral dependencies, by default None
+        Additional {u,v} planes to degrid for complicated source spectral
+        dependencies, by default None
     beam_per_baseline : bool, optional
-        Generate beams with corrective phases given the baseline location, by default False
+        Generate beams with corrective phases given the baseline location, by
+        default False
     conserve_memory : bool, optional
         Reduce memory load by running loops, by default False
 
     Returns
     -------
     visibility_array : NDArray[np.complex128]
-        A simulated visibility array from degridding the input {u,v} plane with the instrumental kernel
+        A simulated visibility array from degridding the input {u,v} plane with
+        the instrumental kernel
     obs : dict
         Updated observation metadata dictionary
     """
@@ -96,12 +103,13 @@ def visibility_degrid(
     # If both beam and interp_flag leave a warning, prioritise beam_per_baseline
     if beam_per_baseline and interp_flag:
         warnings.warn(
-            "Cannot have beam per baseline and interpolation at the same time, turning off interpolation"
+            "Cannot have beam per baseline and interpolation at the same time, "
+            "turning off interpolation"
         )
         interp_flag = False
 
-    # For each unflagged baseline, get the minimum contributing pixel number for gridding
-    # and the 2D derivatives for bilinear interpolation
+    # For each unflagged baseline, get the minimum contributing pixel number for
+    # griddingmand the 2D derivatives for bilinear interpolation
     baselines_dict = baseline_grid_locations(
         obs=obs,
         psf=psf,
@@ -215,7 +223,8 @@ def visibility_degrid(
         # loop over chunks of visibilities to grid to conserve memory
         for mem_i in range(mem_iter):
             if mem_iter > 1:
-                # calculate the indices of this visibility chunk if split into multiple chunks
+                # calculate the indices of this visibility chunk if split into
+                # multiple chunks
                 if vis_n_per_iter * (mem_i + 1) > vis_n_full:
                     max_ind = vis_n_full
                 else:
@@ -268,7 +277,8 @@ def visibility_degrid(
                 _, xyf_ui = np.unique(xyf_i, return_index=True)
                 n_xyf_bin = xyf_ui.size
 
-                # There might be a better selection criteria to determine which is more efficient
+                # There might be a better selection criteria to determine which
+                # is more efficient
                 if vis_n > np.ceil(1.1 * n_xyf_bin) and not beam_per_baseline:
                     ind_remap_flag = True
                     inds = inds[xyf_si]
@@ -327,7 +337,8 @@ def visibility_degrid(
                     np.transpose(freq_delta[freq_i]), (vis_n, psf_dim3), sample=True
                 )
                 for s_i in range(n_spectral):
-                    # s_i loop is over terms of the Taylor expansion, starting from the lowest-order term
+                    # s_i loop is over terms of the Taylor expansion, starting
+                    # from the lowest-order term
                     prefactor_use = prefactor[s_i]
                     box_matrix *= freq_term_arr
                     box_arr_ptr[s_i] = spectral_model_uv_arr[s_i][

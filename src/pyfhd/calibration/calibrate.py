@@ -43,9 +43,10 @@ def calibrate(
     logger: Logger,
 ) -> tuple[NDArray[np.complex128], dict, dict]:
     """
-    Solve for the amplitude and phase of the electronic response of each tile or station, and apply these
-    calibration solutions to the raw, data visiblities. Various options for initial estimates, time/tile averaging,
-    and polynomial/cable reflections fitting are available.
+    Solve for the amplitude and phase of the electronic response of each tile or
+    station, and apply these calibration solutions to the raw, data visiblities.
+    Various options for initial estimates, time/tile averaging, and
+    polynomial/cable reflections fitting are available.
 
     Parameters
     ----------
@@ -77,7 +78,8 @@ def calibrate(
     obs : dict
         Updated observation metadata dictionary
     pyfhd_config : dict
-        Updated pyfhd configuration dictionary (possibly - check for any warnings in the log)
+        Updated pyfhd configuration dictionary (possibly - check for any
+        warnings in the log)
     """
     # Initialize cal dict
     cal = {}
@@ -142,7 +144,8 @@ def calibrate(
         degrid_end = time.time()
         _print_time_diff(degrid_start, degrid_end, "Model visibility creation", logger)
 
-        # Option to save unflagged model visibilities as part of a calibration-only loop.
+        # Option to save unflagged model visibilities as part of a
+        # calibration-only loop.
         if pyfhd_config["cal_stop"]:
             model_vis_arr_path = Path(
                 pyfhd_config["output_dir"],
@@ -151,7 +154,8 @@ def calibrate(
             )
             logger.info(f"Saving the models visibilities to {model_vis_arr_path}")
             save(model_vis_arr_path, vis_model_arr, "visibilities", logger=logger)
-    # Calculate auto-correlation visibilities, optionally use them for initial calibration estimates
+    # Calculate auto-correlation visibilities, optionally use them for initial
+    # calibration estimates
     vis_auto, auto_tile_i = vis_extract_autocorr(obs, vis_arr, pyfhd_config)
     # Calculate auto-correlation visibilities
     vis_auto_model, auto_tile_i = vis_extract_autocorr(obs, vis_model_arr, pyfhd_config)
@@ -175,14 +179,16 @@ def calibrate(
     logger.info("Function vis_calibrate_subroutine has completed.")
     if pyfhd_config["flag_calibration"]:
         logger.info(
-            "Flagging Calibration has been activated and calibration will now be flagged"
+            "Flagging Calibration has been activated and calibration will now be "
+            "flagged"
         )
         obs = vis_calibration_flag(obs, cal, pyfhd_config, logger)
 
     # Copy the cal structure with per-frequency gain solutions for future comparisons
     cal_base = deepcopy(cal)
 
-    # Perform bandpass (amp + phase per fine freq) and polynomial fitting (low order amp + phase fit plus cable reflection fit)
+    # Perform bandpass (amp + phase per fine freq) and polynomial fitting (low
+    # order amp + phase fit plus cable reflection fit)
     if pyfhd_config["bandpass_calibrate"]:
         logger.info("You have chosen to perform a bandpass calculation and calibration")
         if pyfhd_config["auto_ratio_calibration"]:
@@ -198,7 +204,8 @@ def calibrate(
             cal_polyfit, pyfhd_config = vis_cal_polyfit(
                 obs, cal_remainder, auto_ratio, pyfhd_config, logger
             )
-            # Replace vis_cal_combine with this line as the gain is the same size for polyfit and bandpass
+            # Replace vis_cal_combine with this line as the gain is the same size
+            # for polyfit and bandpass
             cal["gain"] = cal_polyfit["gain"] * cal_bandpass["gain"]
             for key in cal_polyfit:
                 if key not in cal:
@@ -213,7 +220,8 @@ def calibrate(
 
     # Get the gain residuals
     if pyfhd_config["calibration_auto_fit"]:
-        # Get amp from auto-correlation visibilities for plotting (or optionally for the calibration solution itself)
+        # Get amp from auto-correlation visibilities for plotting (or optionally
+        # for the calibration solution itself)
         cal_auto = vis_cal_auto_fit(obs, cal, vis_auto, vis_auto_model, auto_tile_i)
         # These subtractions replace vis_cal_subtract
         cal_res_gain = cal_base["gain"] - cal_auto["gain"]
@@ -221,7 +229,8 @@ def calibrate(
         # These subtractions replace vis_cal_subtract
         cal_res_gain = cal_base["gain"] - cal["gain"]
 
-    # If calibration_auto_fit was set then replace cal with cal_auto, usually for diagnostic purposes
+    # If calibration_auto_fit was set then replace cal with cal_auto, usually
+    # for diagnostic purposes
     if pyfhd_config["calibration_auto_fit"]:
         cal = cal_auto
     # Apply Calibration
@@ -266,7 +275,8 @@ def calibrate(
 
     if pyfhd_config["calibration_plots"]:
         logger.info(
-            f"Plotting the calibration solutions into {pyfhd_config['output_dir'] / 'plots' / 'calibration'}"
+            "Plotting the calibration solutions into "
+            f"{pyfhd_config['output_dir'] / 'plots' / 'calibration'}"
         )
         plot_cals(obs, cal, pyfhd_config)
 
@@ -281,9 +291,10 @@ def calibrate_qu_mixing(
     obs: dict,
 ) -> float:
     """
-    Solve for the degenerate phase between pseudo Q (YY - XX) and pseudo U (YX + XY) for the calibrated data and
-    the simulated model separately, and return their difference. This difference represents the excess mixing
-    angle between Q and U due to the instrumental beam not captured in a typical polarization-independent
+    Solve for the degenerate phase between pseudo Q (YY - XX) and pseudo U (YX + XY)
+    for the calibrated data and the simulated model separately, and return their
+    difference. This difference represents the excess mixing angle between Q and
+    U due to the instrumental beam not captured in a typical polarization-independent
     calibration.
 
     Parameters
@@ -309,7 +320,8 @@ def calibrate_qu_mixing(
     # This should be number of baselines for one time step
     n_baselines = obs["n_baselines"]
 
-    # reshape from (n_freq, n_baselines*n_times) to (n_freq, n_times, n_baselines). Turns out due to the row major vs col major difference
+    # reshape from (n_freq, n_baselines*n_times) to (n_freq, n_times, n_baselines).
+    # Turns out due to the row major vs col major difference
     # between IDL and python, this shape also changes
     new_shape = (n_freq, n_time, n_baselines)
 
@@ -355,9 +367,11 @@ def calibrate_qu_mixing(
     pseudo_q_model = np.squeeze(pseudo_q_model[i_use]).flatten()
     pseudo_u_model = np.squeeze(pseudo_u_model[i_use]).flatten()
 
-    # LA_LEAST_SQUARES does not use double precision by default as such you will see differences.
-    # Also LA_LEAST_SQUARES uses different method to numpy, generally LA_LEAST_SQUARES assumes the first matrix
-    # has full rank, while numpy does not assume this.
+    # LA_LEAST_SQUARES does not use double precision by default as such you will
+    # see differences.
+    # Also LA_LEAST_SQUARES uses different method to numpy, generally
+    # LA_LEAST_SQUARES assumes the first matrix has full rank, while numpy does
+    # not assume this.
 
     x = np.vstack([pseudo_u, np.ones(pseudo_u.size)]).T
     u_q_mix = np.linalg.lstsq(x, pseudo_q, rcond=None)[0]

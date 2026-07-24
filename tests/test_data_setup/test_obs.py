@@ -20,8 +20,8 @@ from scipy.io import readsav
     ],
 )
 def obs_id(request):
-    # Ensure you have created the symbolic links for the point_offzenith and point_zenith
-    # metafits files from 1088716176.metafits
+    # Ensure you have created the symbolic links for the point_offzenith and
+    # point_zenith metafits files from 1088716176.metafits
     return request.param
 
 
@@ -73,9 +73,10 @@ def check_sav_file(path: Path, run: int, pyfhd_config: dict) -> Path:
 
 def test_2_pol_obs_creation(obs_id, data_dir, obs_dir):
     # The obs creation test is more of an integration test, since we will be
-    # using the extract_header, create_params, and create_layout to create the obs dictionary.
-    # If this test pass then it essentially means that the dictionaries are almost identical
-    # to that of the IDL structures in the ways that matter for a pyfhd run.
+    # using the extract_header, create_params, and create_layout to create the
+    # obs dictionary.
+    # If this test pass then it essentially means that the dictionaries are almost
+    # identicalto that of the IDL structures in the ways that matter for a pyfhd run.
     # In this case we're only going to test the obs structure from run1 of each test.
     logger = Logger(1)
     pyfhd_config = {
@@ -141,8 +142,11 @@ def test_2_pol_obs_creation(obs_id, data_dir, obs_dir):
     )
     # tile_flag is a little weird given it wants pointers from tile_flag
     # The indexes provided to tile_flag also go beyond the index range of the metadata
-    # when producing the tile flags for the 3rd and 4th polarization is this a bug in FHD?
-    # npt.assert_array_equal(obs['baseline_info']['tile_flag'], obs_fhd['baseline_info']['tile_flag'])
+    # when producing the tile flags for the 3rd and 4th polarization is this a
+    # bug in FHD?
+    # npt.assert_array_equal(
+    #    obs['baseline_info']['tile_flag'], obs_fhd['baseline_info']['tile_flag']
+    # )
     assert obs["n_tile_flag"] == obs_fhd["n_tile_flag"]
     npt.assert_array_equal(
         obs["baseline_info"]["freq_use"], obs_fhd["baseline_info"]["freq_use"]
@@ -170,9 +174,11 @@ def test_2_pol_obs_creation(obs_id, data_dir, obs_dir):
 
 def test_4_pol_obs_creation(obs_id, data_dir, obs_dir):
     # The obs creation test is more of an integration test, since we will be
-    # using the extract_header, create_params, and create_layout to create the obs dictionary.
-    # If this test pass then it essentially means that the dictionaries are almost identical
-    # to that of the IDL structures in the ways that matter for a pyfhd run.
+    # using the extract_header, create_params, and create_layout to create the
+    # obs dictionary.
+    # If this test pass then it essentially means that the dictionaries are
+    # almost identical to that of the IDL structures in the ways that matter for
+    # a pyfhd run.
     # In this case we're only going to test the obs structure from run1 of each test.
     if obs_id == "1088716296":
         pytest.skip("1088716296 hasn't been prepared to do 4 polarizations")
@@ -235,13 +241,20 @@ def test_4_pol_obs_creation(obs_id, data_dir, obs_dir):
     )
     assert obs["n_time_flag"] == obs_fhd["n_time_flag"]
     # tile_flag is a little weird given it wants pointers from tile_flag
-    # The indexes provided to tile_flag also go beyond the index range of the metadata
-    # is this a bug in FHD? Thankfully it's not used elsewhere, and I can get the same behavior
-    # with two polarizations, but I suspect there could be a difference with 4 polarizations
+    # The indexes provided to tile_flag also go beyond the index range of the
+    # metadata
+    # is this a bug in FHD? Thankfully it's not used elsewhere, and I can get
+    # the same behavior
+    # with two polarizations, but I suspect there could be a difference with 4
+    # polarizations
     # in the tile_use?
     # YES it breaks with 4 polarizations!
-    # npt.assert_array_equal(obs['baseline_info']['tile_use'], obs_fhd['baseline_info']['tile_use'])
-    # npt.assert_array_equal(obs['baseline_info']['tile_flag'], obs_fhd['baseline_info']['tile_flag'])
+    # npt.assert_array_equal(
+    #     obs['baseline_info']['tile_use'], obs_fhd['baseline_info']['tile_use']
+    # )
+    # npt.assert_array_equal(
+    #     obs['baseline_info']['tile_flag'], obs_fhd['baseline_info']['tile_flag']
+    # )
     # assert(obs['n_tile_flag'] == obs_fhd['n_tile_flag'])
     npt.assert_array_equal(
         obs["baseline_info"]["freq_use"], obs_fhd["baseline_info"]["freq_use"]

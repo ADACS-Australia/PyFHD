@@ -31,7 +31,8 @@ def run(request):
 # Had to ["1088716296", "run1"], something really weird with the test, corrupt data?
 skip_tests = [["1088716296", "run3"], ["1088716296", "run1"]]
 
-# For each combination of tag and run, check if the hdf5 file exists, if not, create it and either way return the path
+# For each combination of tag and run, check if the hdf5 file exists, if not,
+# create it and either way return the path
 # Tests will fail if the fixture fails, not too worried about exceptions here.
 
 
@@ -96,12 +97,14 @@ def after_file(tag, run, data_dir):
 @pytest.mark.github_actions
 def test_cal_auto_ratio_divide(before_file, after_file):
     """
-    Runs all the given tests on `cal_auto_ratio_divide` reads in the data in before_file and after_file,
-    and then calls `cal_auto_ratio_divide`, checking the outputs match expectations
+    Runs all the given tests on `cal_auto_ratio_divide` reads in the data in
+    before_file and after_file, and then calls `cal_auto_ratio_divide`, checking
+    the outputs match expectations
     """
     if before_file is None or after_file is None:
         pytest.skip(
-            f"This test has been skipped because the test was listed in the skipped tests due to FHD not outputting them: {skip_tests}"
+            "This test has been skipped because the test was listed in the "
+            f"skipped tests due to FHD not outputting them: {skip_tests}"
         )
 
     h5_before = load(before_file)

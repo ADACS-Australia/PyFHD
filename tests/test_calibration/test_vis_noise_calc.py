@@ -86,7 +86,8 @@ def test_points_zenith_and_offzenith(before_file, after_file):
 
     result_noise_arr = vis_noise_calc(obs, vis_arr, vis_weights)
 
-    # IDL Stddev returns NaN for some values on single precision, but not on double precision, compare only non NaN.
+    # IDL Stddev returns NaN for some values on single precision, but not on
+    # double precision, compare only non NaN.
     if np.any(np.isnan(expected_noise_arr)):
         not_nan_idxs = np.where(~np.isnan(expected_noise_arr))
         npt.assert_allclose(

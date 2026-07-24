@@ -103,8 +103,9 @@ def healpix_snapshot_cube_generate(
     obs_out = update_obs(
         obs, dimension_use, kbinsize, beam_nfreq_avg=ps_nfreq_avg, fov=fov_use
     )
-    # To have a psf that has reacted to the new beam_nfreq_avg you have set that isn't
-    # the default, tell pyfhd to re-create the psf here once beam_setup has been translated
+    # To have a psf that has reacted to the new beam_nfreq_avg you have set that
+    # isn't the default, tell pyfhd to re-create the psf here once beam_setup
+    # has been translated
 
     beam_arr, beam_mask = beam_image_cube(
         obs_out,
@@ -152,9 +153,9 @@ def healpix_snapshot_cube_generate(
     healpix_dir = Path(pyfhd_config["output_dir"], "healpix")
     healpix_dir.mkdir(exist_ok=True)
     for iter in range(n_iter):
-        # To save on memory, pyfhd moved to saving the healpix cubes in a polarization loop
-        # rather than trying to store the entirety of the everything in memory consuming over
-        # 100GB of memory
+        # To save on memory, pyfhd moved to saving the healpix cubes in a
+        # polarization loop rather than trying to store the entirety of the
+        # everything in memory consuming over 100GB of memory
         for pol_i in range(obs["n_pol"]):
             split = vis_model_freq_split(
                 obs_out,
@@ -220,8 +221,8 @@ def healpix_snapshot_cube_generate(
             elif dirty_flag:
                 healpix_pol_dict["dirty_cube"] = dirty_or_res_cube
             save(
-                healpix_dir
-                / f"{pyfhd_config['obs_id']}_{cube_name[iter]}_{obs['pol_names'][pol_i]}.h5",
+                healpix_dir / f"{pyfhd_config['obs_id']}_{cube_name[iter]}_"
+                f"{obs['pol_names'][pol_i]}.h5",
                 healpix_pol_dict,
                 f"{pyfhd_config['obs_id']}_{cube_name[iter]}_{obs['pol_names'][pol_i]}",
                 logger=logger,

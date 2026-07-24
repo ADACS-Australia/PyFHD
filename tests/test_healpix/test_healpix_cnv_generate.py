@@ -109,7 +109,8 @@ def after_file(tag, run, data_dir, request):
 def test_healpix_cnv_generate(before_file, after_file, request):
     if before_file is None or after_file is None:
         pytest.skip(
-            f"This test has been skipped because the test was listed in the skipped tests due to FHD not outputting them: {skip_tests}"
+            "This test has been skipped because the test was listed in the "
+            f"skipped tests due to FHD not outputting them: {skip_tests}"
         )
 
     # This was done here to make it work in GitHub Actions
@@ -140,12 +141,14 @@ def test_healpix_cnv_generate(before_file, after_file, request):
     # restrict_healpix_inds is always True for the tests so ind_list is false
     assert obs["healpix"]["ind_list"] is None
     npt.assert_equal(obs["healpix"]["n_pix"], np.size(hpx_cnv["inds"]))
-    # Unfortunately there is some differences in the FHD and AstroPy when dealing with
-    # sky to pixel coordinates. The differences are small, in fact exactly one cdelt off in both
-    # x and y (so off by one pixel in each axis). What I can probably do, is to ensure the indexes from
-    # the expected array are in the output array, and then check the values of those found indexes. I can
-    # do this because the minimum and maximum bins are beyond what FHD finds, but in theory the indexes should
-    # still be in there, it's just that pyfhd finds more.
+    # Unfortunately there is some differences in the FHD and AstroPy when dealing
+    # with sky to pixel coordinates. The differences are small, in fact exactly
+    # one cdelt off in both x and y (so off by one pixel in each axis). What I
+    # can probably do, is to ensure the indexes from the expected array are in
+    # the output array, and then check the values of those found indexes. I can
+    # do this because the minimum and maximum bins are beyond what FHD finds,
+    # but in theory the indexes should still be in there, it's just that pyfhd
+    # finds more.
     assert hpx_cnv["nside"] == expected_hpx_cnv["nside"]
     # The indices come from a file, they should be the same
     npt.assert_array_equal(hpx_cnv["inds"], expected_hpx_cnv["inds"])

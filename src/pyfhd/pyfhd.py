@@ -53,7 +53,8 @@ def finish_pyfhd(
         write_collated_yaml_config(
             pyfhd_config, Path(pyfhd_config["output_dir"], "config"), "-final"
         )
-        # Save the config in a HDF5 file for ease of reading in previous parameters from previous runs
+        # Save the config in a HDF5 file for ease of reading in previous
+        # parameters from previous runs
         save(
             Path(pyfhd_config["output_dir"], "config", "pyfhd_config.h5"),
             pyfhd_config,
@@ -61,7 +62,8 @@ def finish_pyfhd(
             logger=logger,
         )
     logger.info(
-        f"pyfhd Run Completed for {pyfhd_config['obs_id']}\nTotal Runtime (Days:Hours:Minutes:Seconds.Millseconds): {runtime}"
+        f"pyfhd Run Completed for {pyfhd_config['obs_id']}\nTotal Runtime "
+        f"(Days:Hours:Minutes:Seconds.Millseconds): {runtime}"
     )
     # Close the handlers in the log
     for handler in logger.handlers:
@@ -93,14 +95,16 @@ def main():
                 dest_file = pyfhd_config["output_path"] / file.name
                 if file.suffix == ".yaml":
                     config = file.read_text()
-                    # Replace the input directory in the config with the current working directory
+                    # Replace the input directory in the config with the current
+                    # working directory
                     config = config.replace(
                         "./src/pyfhd/resources/1088285600_example",
                         str(pyfhd_config["output_path"]),
                     )
                     dest_file.write_text(config)
                     logger.info(
-                        f"Wrote the sample config file to {dest_file} with updated paths to your machine"
+                        f"Wrote the sample config file to {dest_file} with "
+                        "updated paths to your machine"
                     )
                 else:
                     shutil.copyfile(file, dest_file)
@@ -129,7 +133,8 @@ def main():
             )
             if pyfhd_config["obs_checkpoint"] and not obs_checkpoint_file.exists():
                 logger.warning(
-                    "obs_checkpoint is set but obs checkpoint file does not exist. Recalculating obs."
+                    "obs_checkpoint is set but obs checkpoint file does not exist. "
+                    "Recalculating obs."
                 )
                 pyfhd_config["obs_checkpoint"] = False
 
@@ -138,7 +143,8 @@ def main():
             )
             if pyfhd_config["beam_checkpoint"] and not beam_checkpoint_file.exists():
                 logger.warning(
-                    "beam_checkpoint is set but beam checkpoint file does not exist. Recalculating beam."
+                    "beam_checkpoint is set but beam checkpoint file does not "
+                    "exist. Recalculating beam."
                 )
                 pyfhd_config["beam_checkpoint"] = False
 
@@ -151,7 +157,8 @@ def main():
                 and not cal_checkpoint_file.exists()
             ):
                 logger.warning(
-                    "calibrate_checkpoint is set but cal checkpoint file does not exist. Recalculating cal."
+                    "calibrate_checkpoint is set but cal checkpoint file does "
+                    "not exist. Recalculating cal."
                 )
                 pyfhd_config["calibrate_checkpoint"] = False
 
@@ -164,7 +171,8 @@ def main():
                 and not grid_checkpoint_file.exists()
             ):
                 logger.warning(
-                    "gridding_checkpoint is set but grid checkpoint file does not exist. Recalculating grid."
+                    "gridding_checkpoint is set but grid checkpoint file does "
+                    "not exist. Recalculating grid."
                 )
                 pyfhd_config["gridding_checkpoint"] = False
         else:
@@ -220,8 +228,10 @@ def main():
                 )
                 save(weights_path, vis_weights, "weights", logger=logger)
 
-            # If you wish to reorder your visibilities, insert your function to do that here.
-            # If you wish to average your fits data by time or frequency, insert your functions to do that here
+            # If you wish to reorder your visibilities, insert your function to
+            # do that here.
+            # If you wish to average your fits data by time or frequency, insert
+            # your functions to do that here
 
             layout_start = time.time()
             layout = create_layout(antenna_header, antenna_data, pyfhd_config, logger)
@@ -236,8 +246,8 @@ def main():
             obs_end = time.time()
             _print_time_diff(obs_start, obs_end, "Obs Dictionary Created", logger)
 
-            # If you decide to use the pyfhd checkpoint system, save the uncalibrated visibility &
-            # observation data and metadata now
+            # If you decide to use the pyfhd checkpoint system, save the
+            # uncalibrated visibility observation data and metadata now
             if pyfhd_config["save_checkpoints"]:
                 checkpoint = {
                     "obs": obs,
@@ -313,7 +323,8 @@ def main():
                 f"{beam_checkpoint_file}"
             )
 
-        # Check if the calibrate checkpoint has been used, if not run the calibration steps
+        # Check if the calibrate checkpoint has been used, if not run the
+        # calibration steps
         if (
             not pyfhd_config["calibrate_checkpoint"]
             and not pyfhd_config["gridding_checkpoint"]
@@ -354,7 +365,8 @@ def main():
             )
 
             if pyfhd_config["model_file_path"] is not None:
-                # Get the vis_model_arr from a UVFITS file or SAV files and flag any issues
+                # Get the vis_model_arr from a UVFITS file or SAV files and flag
+                # any issues
                 vis_model_arr_start = time.time()
                 vis_model_arr = vis_model_transfer(pyfhd_config, obs, params, logger)
                 vis_model_arr_end = time.time()
@@ -367,8 +379,10 @@ def main():
             else:
                 vis_model_arr = None
 
-            # Skipped initializing the cal structure as it mostly just copies values from the obs, params, config and the skymodel from FHD
-            # However, there is resulting cal structure for logging and output purposes to store the resulting gain and any other associated
+            # Skipped initializing the cal structure as it mostly just copies
+            # values from the obs, params, config and the skymodel from FHD
+            # However, there is resulting cal structure for logging and output
+            # purposes to store the resulting gain and any other associated
             # arrays
             if pyfhd_config["calibrate_visibilities"]:
                 logger.info("Beginning Calibration")
@@ -401,7 +415,8 @@ def main():
                     _print_time_diff(
                         qu_mixing_start,
                         qu_mixing_end,
-                        'Calibrate QU-Mixing has finished, result in cal["stokes_mix_phase"]',
+                        'Calibrate QU-Mixing has finished, result in "'
+                        '"cal["stokes_mix_phase"]',
                         logger,
                     )
 
@@ -424,7 +439,8 @@ def main():
                     )
                     if np.max(vis_weights) == 0:
                         raise ValueError(
-                            "All visibilities were flagged during the flagging step, exiting pyfhd."
+                            "All visibilities were flagged during the flagging "
+                            "step, exiting pyfhd."
                         )
 
                 noise_start = time.time()
@@ -459,7 +475,8 @@ def main():
 
         if pyfhd_config["cal_stop"]:
             logger.info(
-                "The cal_stop option was used, calibration was finished, saving calibration files then exiting pyfhd"
+                "The cal_stop option was used, calibration was finished, saving "
+                "calibration files then exiting pyfhd"
             )
             pyfhd_config["metadata_dir"] = Path(pyfhd_config["output_dir"], "metadata")
             pyfhd_config["visibilities_path"] = Path(
@@ -536,7 +553,8 @@ def main():
                 )
             else:
                 model_uv = None
-            # Since it's done per polarization, we can do multi-processing if it's not fast enough
+            # Since it's done per polarization, we can do multi-processing if
+            # it's not fast enough
             for pol_i in range(obs["n_pol"]):
                 logger.info(
                     f"Gridding has begun for polarization {obs['pol_names'][pol_i]}"
@@ -576,7 +594,8 @@ def main():
                     if vis_model_arr is not None:
                         model_uv[pol_i] = gridding_dict["model_return"]
                     logger.info(
-                        f"Gridding has finished for polarization {obs['pol_names'][pol_i]}"
+                        "Gridding has finished for polarization "
+                        f"{obs['pol_names'][pol_i]}"
                     )
                 else:
                     logger.error("All data was flagged during gridding, exiting")
@@ -591,7 +610,8 @@ def main():
                 # TODO: move this after the checkpointing so an error in plotting
                 # doesn't require rerunning gridding.
                 logger.info(
-                    f"Plotting the continuum gridding outputs into {pyfhd_config['output_dir'] / 'plots' / 'gridding'}"
+                    "Plotting the continuum gridding outputs into "
+                    f"{pyfhd_config['output_dir'] / 'plots' / 'gridding'}"
                 )
                 plot_gridding(
                     obs,
@@ -622,7 +642,8 @@ def main():
                 )
                 del checkpoint
                 logger.info(
-                    f"Checkpoint Saved: The Gridded UV Planes saved into {grid_checkpoint_file}"
+                    "Checkpoint Saved: The Gridded UV Planes saved into "
+                    f"{grid_checkpoint_file}"
                 )
             grid_end = time.time()
             _print_time_diff(grid_start, grid_end, "Visibilities gridded", logger)
@@ -636,11 +657,13 @@ def main():
                 model_uv = grid_checkpoint["model_uv"]
             del grid_checkpoint
             logger.info(
-                f"Checkpoint Loaded: The Gridded UV Planes loaded from {grid_checkpoint_file}"
+                "Checkpoint Loaded: The Gridded UV Planes loaded from "
+                f"{grid_checkpoint_file}"
             )
 
-        # Call quickview to save the all the variables if set in the config. Also create dirty images and save
-        # FITS files with the dirty images on a per polarization basis
+        # Call quickview to save the all the variables if set in the config.
+        # Also create dirty images and save FITS files with the dirty images on
+        # a per polarization basis
         if pyfhd_config["export_images"]:
             quickview(
                 obs,
@@ -686,7 +709,8 @@ def main():
             if "psf" in locals() and isinstance(psf, h5py.File):
                 psf.close()
             logger.info(
-                f"pyfhd Run Unsuccessful for {pyfhd_config['obs_id']}\nTotal Runtime (Days:Hours:Minutes:Seconds.Millseconds): {runtime}"
+                f"pyfhd Run Unsuccessful for {pyfhd_config['obs_id']}\nTotal "
+                f"Runtime (Days:Hours:Minutes:Seconds.Millseconds): {runtime}"
             )
             # Close the handlers in the log
             for handler in logger.handlers:

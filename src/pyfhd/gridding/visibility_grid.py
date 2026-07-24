@@ -28,20 +28,23 @@ def visibility_grid(
     verbose_logging=True,
 ) -> dict:
     """
-    Put visibilities on a discrete, hyperresolved 2D plane in {u,v}-space with the Fourier-transform of the
-    beam sensitivity as the kernel (or spreading function). This can done per frequency to create 3D {u,v,f}
-    cubes that can generate power spectrum statistics, or this can be done once for all frequencies to create
-    a single 2D {u,v} plane for continuum images. These {u,v} planes are the slant-orthographic projection of
-    the sky when Fourier transformed.
+    Put visibilities on a discrete, hyperresolved 2D plane in {u,v}-space with
+    the Fourier-transform of the beam sensitivity as the kernel (or spreading
+    function). This can done per frequency to create 3D {u,v,f} cubes that can
+    generate power spectrum statistics, or this can be done once for all frequencies
+    to create a single 2D {u,v} plane for continuum images. These {u,v} planes
+    are the slant-orthographic projection of the sky when Fourier transformed.
 
-    Gridding is done for calibrated data visibilities, (optionally) simulated model visibilities, weights, and
-    variances. Weights and variances are crucial for propogating uncertainty estimates in the power spectrum
+    Gridding is done for calibrated data visibilities, (optionally) simulated
+    model visibilities, weights, and variances. Weights and variances are crucial
+    for propogating uncertainty estimates in the power spectrum
     space and for properly weighted images. The model is crucial for subtraction.
 
-    The kernel is a extremely hyperresolved look-up table, which is (optionally) interpolated even further.
-    Since the {u,v} pixels are discrete and the baseline locations are not, the kernel will populate the pixels
-    in a unique way for each individual baseline. This code is optimized to provide the best estimate for each
-    baseline whilst maintaining speed.
+    The kernel is a extremely hyperresolved look-up table, which is (optionally)
+    interpolated even further. Since the {u,v} pixels are discrete and the baseline
+    locations are not, the kernel will populate the pixels in a unique way for
+    each individual baseline. This code is optimized to provide the best estimate
+    for each baseline whilst maintaining speed.
 
     Parameters
     ----------
@@ -64,27 +67,31 @@ def visibility_grid(
     uniform_flag : bool, optional
         Grid a number count for contributing baselines per pixel, by default False
     no_conjugate : bool, optional
-        Do not perform the conjugate mirror to fill half of the {u,v} plane, by default False
+        Do not perform the conjugate mirror to fill half of the {u,v} plane, by
+        default False
     model : NDArray[np.complex128] | None, optional
         Simulated model visibilites, by default None
     fi_use : NDArray[np.integer] | None, optional
-        Frequency index array for gridding, i.e. gridding all frequencies for continuum images, by default None
+        Frequency index array for gridding, i.e. gridding all frequencies for
+        continuum images, by default None
     bi_use : NDArray[np.integer] | None, optional
         Baseline index array for gridding, i.e even vs odd time stamps, by default None
     verbose_logging : bool, optional
         If True, will log the gridding process, by default True
-        Set to False if you're doing gridding per frequency (such as when creating HEALPIX files).
+        Set to False if you're doing gridding per frequency (such as when creating
+        HEALPIX files).
 
     Returns
     -------
     gridding_dict : dict
-        A dictionary with all the gridded {u,v} planes, updated observation metadata dic, and the number of
-        visibilties that where gridded.
+        A dictionary with all the gridded {u,v} planes, updated observation
+        metadata dic, and the number of visibilties that where gridded.
 
     Raises
     ------
     ValueError
-        Raised in the case the model provided was not a NumPy Array when a model is not None
+        Raised in the case the model provided was not a NumPy Array when a model
+        is not None
     """
 
     # Get information from the data structures
@@ -98,8 +105,8 @@ def visibility_grid(
     freq_bin_i = obs["baseline_info"]["fbin_i"]
     freq_bin_i = freq_bin_i[fi_use]
 
-    # For each unflagged baseline, get the minimum contributing pixel number for gridding
-    # and the 2D derivatives for bilinear interpolation
+    # For each unflagged baseline, get the minimum contributing pixel number for
+    # gridding and the 2D derivatives for bilinear interpolation
     baselines_dict = baseline_grid_locations(
         obs=obs,
         psf=psf,
@@ -128,12 +135,14 @@ def visibility_grid(
         dx1dy0_arr = baselines_dict["dx1dy0_arr"]
         dx1dy1_arr = baselines_dict["dx1dy1_arr"]
 
-    # Instead of checking the visibilitity pointer we just take the vis_inds_use from visibility
+    # Instead of checking the visibilitity pointer we just take the vis_inds_use
+    # from visibility
     rows, cols = np.meshgrid(fi_use, bi_use)
     vis_arr_use = visibility[rows, cols].T
-    # Model_flag has been removed in favor of just the model taking advantage that the model default is None
-    # If it has been specified at all with anything other than None or False, then it should be a numpy array
-    # if it isn't exit
+    # Model_flag has been removed in favor of just the model taking advantage
+    # that the model default is None. If it has been specified at all with
+    # anything other than None or False, then it should be a numpy array if it
+    # isn't exit
     if model is not None:
         if isinstance(model, np.ndarray):
             model_use = model[rows, cols].T
@@ -176,8 +185,8 @@ def visibility_grid(
     # Instead of reading the flags and then setting them.
 
     if pyfhd_config["beam_per_baseline"]:
-        # Initialization for gridding operation via a low-res beam kernel, calculated per
-        # baseline using offsets from image-space delays
+        # Initialization for gridding operation via a low-res beam kernel,
+        # calculated per baseline using offsets from image-space delays
         uu = params["uu"][bi_use]
         vv = params["vv"][bi_use]
         ww = params["ww"][bi_use]
@@ -205,7 +214,8 @@ def visibility_grid(
     variance = np.zeros((elements, dimension))
     uniform_filter = np.zeros((elements, dimension))
 
-    # If the uniform gridding has been activated we need to activate the uniform filter and switch off mapping if it has been activated
+    # If the uniform gridding has been activated we need to activate the uniform
+    # filter and switch off mapping if it has been activated
     if pyfhd_config["grid_uniform"]:
         uniform_flag = True
 
@@ -243,18 +253,22 @@ def visibility_grid(
     frequency_cache: dict[int, np.ndarray] = {}
 
     for bi in range(n_bin_use):
-        # Cycle through sets of visibilities which contribute to the same data/model uv-plane pixels, and perform
-        # the gridding operation per set using each visibilities' hyperresolved kernel
+        # Cycle through sets of visibilities which contribute to the same data/model
+        # uv-plane pixels, and perform the gridding operation per set using each
+        # visibilities' hyperresolved kernel
 
-        # Select the indices of the visibilities which contribute to the same data/model uv-plane pixels
+        # Select the indices of the visibilities which contribute to the same
+        # data/model uv-plane pixels
         inds = ri[ri[bin_i[bi]] : ri[bin_i[bi] + 1]]
         ind0 = inds[0]
 
-        # Select the pixel offsets of the hyperresolution uv-kernel of the selected visibilities
+        # Select the pixel offsets of the hyperresolution uv-kernel of the
+        # selected visibilities
         x_off = x_offset.flat[inds]
         y_off = y_offset.flat[inds]
 
-        # Since all selected visibilities have the same minimum x,y pixel they contribute to,
+        # Since all selected visibilities have the same minimum x,y pixel they
+        # contribute to,
         # reduce the array
         xmin_use = xmin.flat[ind0]
         ymin_use = ymin.flat[ind0]
@@ -268,8 +282,9 @@ def visibility_grid(
         baseline_inds = bi_use_reduced[((inds / n_f_use) % n_baselines).astype(int)]
 
         if interp_flag:
-            # Calculate the interpolated kernel on the uv-grid given the derivatives to baseline locations
-            # and the hyperresolved pre-calculated beam kernel
+            # Calculate the interpolated kernel on the uv-grid given the
+            # derivatives to baseline locations and the hyperresolved
+            # pre-calculated beam kernel
 
             # Select the 2D derivatives to baseline locations
             dx1dy1 = dx1dy1_arr.flat[inds]
@@ -277,7 +292,8 @@ def visibility_grid(
             dx0dy1 = dx0dy1_arr.flat[inds]
             dx0dy0 = dx0dy0_arr.flat[inds]
 
-            # Select the model/data visibility values of the set, each with a weight of 1
+            # Select the model/data visibility values of the set, each with a
+            # weight of 1
             if model is not None:
                 model_box = model_use.flat[inds]
             vis_box = vis_arr_use.flat[inds]
@@ -290,8 +306,9 @@ def visibility_grid(
                     frequency_cache[fbin[ii]] = to_interp
                 else:
                     to_interp = frequency_cache[fbin[ii]]
-                # For each visibility, calculate the kernel values on the static uv-grid given the
-                # hyperresolved kernel and an interpolation involving the derivatives
+                # For each visibility, calculate the kernel values on the static
+                # uv-grid given the hyperresolved kernel and an interpolation
+                # involving the derivatives
                 box_matrix[ii] = interpolate_kernel(
                     to_interp,
                     x_off[ii],
@@ -302,11 +319,11 @@ def visibility_grid(
                     dx1dy1[ii],
                 )
         else:
-            # Calculate the beam kernel at each baseline location given the hyperresolved pre-calculated
-            # beam kernel
+            # Calculate the beam kernel at each baseline location given the
+            # hyperresolved pre-calculated beam kernel
 
-            # Calculate a unique index for each kernel location and kernel type in order to reduce
-            # operations if there are repeats
+            # Calculate a unique index for each kernel location and kernel type
+            # in order to reduce operations if there are repeats
             group_id = group_arr.flat[inds]
             group_max = np.max(group_id) + 1
             xyf_i = (
@@ -319,11 +336,13 @@ def visibility_grid(
             xyf_ui = idl_argunique(xyf_i)
             n_xyf_bin = xyf_ui.size
 
-            # There might be a better selection criteria to determine which is most efficient
+            # There might be a better selection criteria to determine which is
+            # most efficient
             if vis_n > 1.1 * n_xyf_bin and not pyfhd_config["beam_per_baseline"]:
-                # If there are any baselines which use the same beam kernel and the same discretized location
-                # given the hyperresolution, then reduce the number of gridding operations to only
-                # non-repeated baselines
+                # If there are any baselines which use the same beam kernel and
+                # the same discretized location given the hyperresolution, then
+                # reduce the number of gridding operations to only non-repeated
+                # baselines
                 inds = inds[xyf_si]
                 inds_use = xyf_si[xyf_ui]
                 freq_i = freq_i[inds_use]
@@ -363,20 +382,24 @@ def visibility_grid(
                         )
                 vis_n = n_xyf_bin
             else:
-                # If there are not enough baselines which use the same beam kernel and discretized
-                # location to warrent reduction, then perform the gridding operation per baseline
+                # If there are not enough baselines which use the same beam kernel
+                # and discretized location to warrant reduction, then perform
+                # the gridding operation per baseline
                 if model is not None:
                     model_box = model_use.flat[inds]
                 vis_box = vis_arr_use.flat[inds]
                 psf_weight = np.ones(vis_n)
-                # IDL had integer / integer i.e. 2015 / 336 == 5, used flooring divider instead in python
-                # ALso do take note that each were very close always within 0.01 of their next number.
+                # IDL had integer / integer i.e. 2015 / 336 == 5, used flooring
+                # divider instead in python
+                # Also do take note that each were very close always within 0.01
+                # of their next number.
                 # e.g. 2015 / 336 = 5.99, should ceiling be be used instead?
                 bt_index = inds // n_freq_use
 
             box_matrix = np.zeros((vis_n, psf_dim3), dtype=arr_type)
             if pyfhd_config["beam_per_baseline"]:
-                # Make the beams on the fly with corrective phases given the baseline location for each visibility
+                # Make the beams on the fly with corrective phases given the
+                # baseline location for each visibility
                 # to the static uv-grid
                 box_matrix = grid_beam_per_baseline(
                     psf=psf,
@@ -409,11 +432,13 @@ def visibility_grid(
                         frequency_cache[fbin[ii]] = box_mat
                     else:
                         box_mat = frequency_cache[fbin[ii]]
-                    # For each visibility, calculate the kernel values on the static uv-grid given the
+                    # For each visibility, calculate the kernel values on the
+                    # static uv-grid given the
                     # hyperresolved kernel
                     box_matrix[ii, :] = box_mat[x_off[ii], y_off[ii]]
 
-        #  Calculate the conjugate transpose (dagger) of the uv-pixels that the current beam kernel contributes to
+        #  Calculate the conjugate transpose (dagger) of the uv-pixels that the
+        # current beam kernel contributes to
         box_matrix_dag = np.conj(box_matrix)
 
         if pyfhd_config["grid_spectral"]:
@@ -446,10 +471,13 @@ def visibility_grid(
                 ] += term_Am_box
 
         if model is not None:
-            # If model visibilities are being gridded, calculate the product of the model vis and the beam kernel
-            # for all vis which contribute to the same static uv-pixels, and add to the static uv-plane
+            # If model visibilities are being gridded, calculate the product of
+            # the model vis and the beam kernel
+            # for all vis which contribute to the same static uv-pixels, and add
+            # to the static uv-plane
 
-            # Ensure model_box is flat, sometimes odd shapes can come in from metadata
+            # Ensure model_box is flat, sometimes odd shapes can come in from
+            # metadata
             model_box = model_box.flatten()
             box_arr = np.dot(
                 np.transpose(box_matrix_dag), np.transpose(model_box / n_vis)
@@ -459,7 +487,8 @@ def visibility_grid(
             ].flat += box_arr
 
         # Calculate the product of the data vis and the beam kernel
-        # for all vis which contribute to the same static uv-pixels, and add to the static uv-plane
+        # for all vis which contribute to the same static uv-pixels, and add to
+        # the static uv-plane
 
         # Ensure vis_box is flat, sometimes odd shapes can come in from metadata
         vis_box = vis_box.flatten()
@@ -470,8 +499,9 @@ def visibility_grid(
         del box_arr
 
         if pyfhd_config["grid_weights"]:
-            # If weight visibilities are being gridded, calculate the product the weight (1 per vis) and the beam kernel
-            # for all vis which contribute to the same static uv-pixels, and add to the static uv-plane
+            # If weight visibilities are being gridded, calculate the product
+            # the weight (1 per vis) and the beam kernel for all vis which
+            # contribute to the same static uv-pixels, and add to the static uv-plane
             wts_box = np.dot(
                 np.transpose(box_matrix_dag), np.transpose(psf_weight / n_vis)
             )
@@ -480,8 +510,10 @@ def visibility_grid(
             ].flat += wts_box
 
         if pyfhd_config["grid_variance"]:
-            # If variance visibilities are being gridded, calculate the product the weight (1 per vis) and the square
-            # of the beam kernel for all vis which contribute to the same static uv-pixels, and add to the static uv-plane
+            # If variance visibilities are being gridded, calculate the product
+            # the weight (1 per vis) and the square of the beam kernel for all
+            # vis which contribute to the same static uv-pixels, and add to the
+            # static uv-plane
             var_box = np.dot(
                 np.transpose(np.abs(box_matrix_dag) ** 2),
                 np.transpose(psf_weight / n_vis),
@@ -500,7 +532,8 @@ def visibility_grid(
             or (bi in np.arange(n_bin_use // 10, n_bin_use, n_bin_use // 10))
         ):
             logger.info(
-                f"Gridding visibilities for baseline {bi} of {n_bin_use} for polarization {obs['pol_names'][polarization]}"
+                f"Gridding visibilities for baseline {bi} of {n_bin_use} for "
+                f"polarization {obs['pol_names'][polarization]}"
             )
 
     # Free Up Memory
@@ -553,8 +586,8 @@ def visibility_grid(
             model_return *= weight_invert(filter_use)
 
     if not no_conjugate:
-        # The uv-plane is its own conjugate mirror about the x-axis, so fill in the rest of the uv-plane
-        # using simple maths instead of extra gridding
+        # The uv-plane is its own conjugate mirror about the x-axis, so fill in
+        # the rest of the uv-plane using simple maths instead of extra gridding
         image_uv = (image_uv + conjugate_mirror(image_uv)) / 2
         if pyfhd_config["grid_weights"]:
             weights = (weights + conjugate_mirror(weights)) / 2

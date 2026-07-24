@@ -86,7 +86,8 @@ def before_file(tag, run, data_dir):
 def test_quickview(before_file, data_dir):
     if before_file is None:
         pytest.skip(
-            f"This test has been skipped because the test was listed in the skipped tests due to FHD not outputting them: {skip_tests}"
+            "This test has been skipped because the test was listed in the "
+            "skipped tests due to FHD not outputting them: {skip_tests}"
         )
 
     h5_before = load(before_file)
@@ -116,8 +117,8 @@ def test_quickview(before_file, data_dir):
     h5_before["obs"]["obsy"] = int(h5_before["obs"]["obsy"])
 
     # Since we're not saving anything other than the fits we can ignore everything
-    # else but the things required to make the FITS files. In this case we're lazy loading
-    # beam file to save on memory.
+    # else but the things required to make the FITS files. In this case we're
+    # lazy loading beam file to save on memory.
     quickview(
         h5_before["obs"],
         psf,

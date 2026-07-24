@@ -34,13 +34,14 @@ def create_psf(obs: dict, pyfhd_config: dict, logger: Logger) -> dict | File:
     Raises
     ------
     ValueError
-        If the beam file type is not recognized or if the beam file path is not set correctly.
+        If the beam file type is not recognized or if the beam file path is not
+        set correctly.
 
     Returns
     -------
     dict | h5py.File
-        Return the psf dictionary containing the hyperresolved uv-beam and other metadata,
-        or a h5py File object if lazy loading is enabled.
+        Return the psf dictionary containing the hyperresolved uv-beam and other
+        metadata, or a h5py File object if lazy loading is enabled.
     """
 
     if (
@@ -89,7 +90,8 @@ def create_psf(obs: dict, pyfhd_config: dict, logger: Logger) -> dict | File:
 
         zen_int_x = (obs["zenx"] - obs["obsx"]) / psf["scale"] + psf["image_dim"] / 2
         zen_int_y = (obs["zeny"] - obs["obsy"]) / psf["scale"] + psf["image_dim"] / 2
-        # Calculate the hyperresolved uv-vals of the beam kernel at highest precision prior to cast to
+        # Calculate the hyperresolved uv-vals of the beam kernel at highest
+        # precision prior to cast to
         # be accurate yet small
         res_super = 1 / (psf["resolution"] / psf["intermediate_res"])
 
@@ -133,11 +135,13 @@ def create_psf(obs: dict, pyfhd_config: dict, logger: Logger) -> dict | File:
             ant_pol_1 = pol_arr[0, pol_i]
             ant_pol_2 = pol_arr[1, pol_i]
 
-            # Group IDs label unique beams across the array (should be all 0s as theres only one group)
+            # Group IDs label unique beams across the array (should be all 0s as
+            # theres only one group)
             group1 = antenna["group_id"][ant_pol_1]
             group2 = antenna["group_id"][ant_pol_2]
 
-            # Histogram group IDs, get reverse indicies, and calculate number of unique beams (again that should be 1)
+            # Histogram group IDs, get reverse indicies, and calculate number of
+            # unique beams (again that should be 1)
             hgroup1, _, gri1 = histogram(group1, min=0)
             hgroup2, _, gri2 = histogram(group2, min=0)
             # Histogram matrix between all separate groups of different beams
@@ -149,7 +153,8 @@ def create_psf(obs: dict, pyfhd_config: dict, logger: Logger) -> dict | File:
                 beam2_int = 0
                 n_grp_use = 0
                 baseline_group_n = group_matrix[0, 0]
-                # Get antenna indices which use this group's unique beam (probably all of them...)
+                # Get antenna indices which use this group's unique beam (probably
+                # all of them...)
                 ant_1_arr = gri1[gri1[0] : gri1[1]]
                 ant_2_arr = gri2[gri2[0] : gri2[1]]
                 # Get the number of baselines in each group
@@ -206,7 +211,8 @@ def create_psf(obs: dict, pyfhd_config: dict, logger: Logger) -> dict | File:
                         psf_single[
                             psf["resolution"] - i - 1, psf["resolution"] - j - 1
                         ] = psf_base_superres[xvals_i + i, yvals_i + j]
-                # TODO: check the rolling (shifting) and potential reshaping done here (should already be in)
+                # TODO: check the rolling (shifting) and potential reshaping done
+                # here (should already be in)
                 for i in range(psf["resolution"]):
                     psf_single[psf["resolution"] - i - 1, psf["resolution"]] = np.roll(
                         psf_base_superres[
@@ -278,21 +284,31 @@ def create_psf(obs: dict, pyfhd_config: dict, logger: Logger) -> dict | File:
     elif pyfhd_config["saved_beam_file_path"].suffix == ".sav":
         # Read in a sav file containing the psf structure as we expect from FHD
         logger.info(
-            "Reading in a beam sav file probably will take a long time. You will require double the storage size of the sav file in RAM at least. Do some other work or maybe watch your favourite long movie, for example the extended edition of LOTR: Return of the King is 4 hours 10 minutes. Check back when the Battle of the Pelennor Fields has finished or roughly 3 hours in."
+            "Reading in a beam sav file probably will take a long time. You will "
+            "require double the storage size of the sav file in RAM at least. Do "
+            "some other work or maybe watch your favourite long movie, for example "
+            "the extended edition of LOTR: Return of the King is 4 hours 10 minutes. "
+            "Check back when the Battle of the Pelennor Fields has finished or "
+            "roughly 3 hours in."
         )
         beam = readsav(pyfhd_config["saved_beam_file_path"], python_dict=True)
         psf = beam["psf"]
-        # Delete the read in sav file, now that we got the psf, at this point we will have the psf size twice!
+        # Delete the read in sav file, now that we got the psf, at this point we
+        # will have the psf size twice!
         del beam
         psf["beam_ptr"][0] = psf["beam_ptr"][0].T
-        # Take only the first baseline (as it assumes every baseline points to the first i.e. the FFT is done per frequency)
-        # Has a bonus of reducing memory use, unless NumPy is really good at using representations, maybe use double memory
+        # Take only the first baseline (as it assumes every baseline points to
+        # the first i.e. the FFT is done per frequency)
+        # Has a bonus of reducing memory use, unless NumPy is really good at using
+        # representations, maybe use double memory
         psf["beam_ptr"][0] = psf["beam_ptr"][0][:, :, 0]
         # Transpose the group array
         psf["id"][0] = psf["id"][0].T
-        # Recarray to dict completely unpack object arrays into the dict, although will require the beam_ptr in memory twice potentially temporarily
+        # Recarray to dict completely unpack object arrays into the dict,
+        # although will require the beam_ptr in memory twice potentially temporarily
         psf = recarray_to_dict(psf)
-        # The to_chunk is a dictionary of dictionaries which contain the information necessary to chunk the beam_ptr
+        # The to_chunk is a dictionary of dictionaries which contain the information
+        # necessary to chunk the beam_ptr
         to_chunk = {
             "beam_ptr": {
                 "shape": psf["beam_ptr"].shape,
@@ -322,5 +338,6 @@ def create_psf(obs: dict, pyfhd_config: dict, logger: Logger) -> dict | File:
     raise ValueError(
         f"Unknown beam file type {pyfhd_config['saved_beam_file_path'].suffix}. "
         "Please use a .sav, .h5, .hdf5 "
-        "If you meant for pyfhd to do the beam forming, please set the saved_beam_file_path to None (~ in YAML)."
+        "If you meant for pyfhd to do the beam forming, please set the "
+        "saved_beam_file_path to None (~ in YAML)."
     )

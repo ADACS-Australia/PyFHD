@@ -288,14 +288,16 @@ def quickview(
     renorm_factor = get_image_renormalization(
         obs_out, weights_uv, beam_base_out, filter_arr, pyfhd_config, logger
     )
-    # Reshape renorm factor to multiply per polarization without loop to [obs["n_pol"], 1, 1]
+    # Reshape renorm factor to multiply per polarization without loop to
+    # [obs["n_pol"], 1, 1]
     renorm_factor = np.expand_dims(renorm_factor.reshape([obs_out["n_pol"], 1]), -1)
     instr_dirty_arr *= renorm_factor
     instr_model_arr *= renorm_factor
     instr_residual_arr = instr_dirty_arr - instr_model_arr
     # Get the pol_names
     pol_names = obs["pol_names"]
-    # The cross-polarization XY and YX images are both complex, but are conjugate mirrors of each other
+    # The cross-polarization XY and YX images are both complex, but are conjugate
+    # mirrors of each other
     # To make images of these, we simply take the real and imaginary parts separately
     if obs_out["n_pol"] >= 4:
         logger.info("Peforming Cross Polarization splits for real and imaginary")
@@ -304,7 +306,8 @@ def quickview(
         )
         instr_model_arr, _ = crosspol_split_real_imaginary(instr_model_arr)
         instr_residual_arr, _ = crosspol_split_real_imaginary(instr_residual_arr)
-        # The weights should have been saved at this point and we only need them like this from here
+        # The weights should have been saved at this point and we only need them
+        # like this from here
         weights_uv, _ = crosspol_split_real_imaginary(weights_uv)
 
     # Build a fits header
@@ -350,7 +353,8 @@ def quickview(
     fits_file.header.set("radesysa", obs_out["astr"]["radecsys"], "Reference Frame")
     fits_file.header.set(
         "history",
-        f"World Coordinate System parameters written by pyfhd: {datetime.now().strftime('%b %d %Y %H:%M:%S')}",
+        "World Coordinate System parameters written by pyfhd: "
+        f"{datetime.now().strftime('%b %d %Y %H:%M:%S')}",
     )
     # Create the fits header to store the dirty images
     fits_file_apparent = fits_file.copy()
@@ -377,7 +381,8 @@ def quickview(
         "DATE-OBS", obs_out["astr"]["dateobs"], "Date of observation"
     )
 
-    # If you need the beam_contour arrays add them here, lines 369-378 in fhd_quickview.pro
+    # If you need the beam_contour arrays add them here, lines 369-378 in
+    # fhd_quickview.pro
 
     filter_name = pyfhd_config["image_filter"].split("_")[-1]
     fits_output: Path = pyfhd_config["output_dir"] / "fits"
@@ -423,7 +428,8 @@ def quickview(
 
         if pyfhd_config["image_plots"]:
             logger.info(
-                f"Plotting the continuum images for polarization {pol_names[pol_i]} into {pyfhd_config['output_dir'] / 'plots' / 'images'}"
+                f"Plotting the continuum images for polarization {pol_names[pol_i]} "
+                f"into {pyfhd_config['output_dir'] / 'plots' / 'images'}"
             )
             plot_fits_image(
                 Path(fits_output, f"{instr_dirty_name}.fits"),

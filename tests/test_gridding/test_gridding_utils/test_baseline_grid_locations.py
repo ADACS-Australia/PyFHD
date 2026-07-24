@@ -160,8 +160,10 @@ def test_baselines(baseline_before: Path, baseline_after: Path):
     # Check the number of indices from the histogram
     if "n_bin_use" in expected_baseline:
         assert expected_baseline["n_bin_use"] == baselines_dict["n_bin_use"]
-    # Rounding Precision errors with xcen and ycen can cause differences in the second derivatives by 1
-    # Hopefully in theory, the Python is a better result, even though its different from the IDL output
+    # Rounding Precision errors with xcen and ycen can cause differences in the
+    # second derivatives by 1
+    # Hopefully in theory, the Python is a better result, even though its
+    # different from the IDL output
     if "dx0dy0_arr" in expected_baseline:
         npt.assert_allclose(
             baselines_dict["dx0dy0_arr"], expected_baseline["dx0dy0_arr"].T, atol=1

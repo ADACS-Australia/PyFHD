@@ -195,10 +195,12 @@ def beam_image(
         if isinstance(psf, h5py.File):
             pix_horizon = pix_horizon[0]
         # 1.3 is the padding factor for the gaussian fitting procedure
-        # (2.*obs.kpix) is the ratio of full sky (2 in l,m) to the analysis range (1/obs.kpix)
-        # (2.*obs.kpix*dimension/psf.pix_horizon) is the scale factor between the psf pixels-to-horizon and the
-        # analysis pixels-to-horizon
-        # (0.5/obs.kpix) is the resolution scaling of what the beam model was made at and the current res
+        # (2.*obs.kpix) is the ratio of full sky (2 in l,m) to the analysis
+        # range (1/obs.kpix)
+        # (2.*obs.kpix*dimension/psf.pix_horizon) is the scale factor between
+        # the psf pixels-to-horizon and the analysis pixels-to-horizon
+        # (0.5/obs.kpix) is the resolution scaling of what the beam model was
+        # made at and the current res
         model_npix = pix_horizon * 1.3
         model_res = (2 * obs["kpix"] * dimension) / pix_horizon * (0.5 / obs["kpix"])
 
@@ -211,7 +213,8 @@ def beam_image(
         freq_i_use = np.atleast_1d(freq_i_use)
 
     if square:
-        # Do note freq_i_use could be an integer or an array if freq_i is supplied or not
+        # Do note freq_i_use could be an integer or an array if freq_i is
+        # supplied or not
         beam_base = np.zeros([dimension, elements])
         freq_bin_use = freq_bin_i[freq_i_use]
         fbin_use = np.sort(np.unique(freq_bin_use))
@@ -353,10 +356,12 @@ def beam_image_hyperresolved(
         [psf["image_dim"], psf["image_dim"]], dtype=np.complex128
     )
 
-    # FHD was designed to account for multiple antennas but in most cases only one was ever used
-    # So we will just use the first antenna twice as I pyfhd does not support multiple antennas at this time,
-    # If you want to use multiple antennas, please open an issue on the pyfhd GitHub repository or do the translation and/or
-    # adjustments yourself.
+    # FHD was designed to account for multiple antennas but in most cases only
+    # one was ever used.
+    # So we will just use the first antenna twice as pyfhd does not support
+    # multiple antennas at this time,
+    # If you want to use multiple antennas, please open an issue on the pyfhd
+    # GitHub repository or do the translation and/or adjustments yourself.
     # baseline response (power beam) is product of the "two" antenna responses
     image_power_beam.flat[antenna["psf_image_pix_use"]] = (
         antenna["aligned_response_psf_image"][ant_pol_1, freq_i]
@@ -364,20 +369,21 @@ def beam_image_hyperresolved(
     ).flatten()
 
     # TODO: Work out the interpolation of the zenith power, it uses cubic interpolation
-    # But the IDL Interpolate function in IDL uses an interpolation paramter of -0.5, where
-    # scipy, numpy with their B-Splines seem to use a parameter of 0 by default with no way
-    # to change it.
+    # But the IDL Interpolate function in IDL uses an interpolation paramter of
+    # -0.5, where scipy, numpy with their B-Splines seem to use a parameter of 0
+    # by default with no way to change it.
     # The interp is a placeholder for now, but it should be replaced with a proper
     # interpolation function that matches the IDL Interpolate function.
     # TODO: Replace with UVBeam interface object as_power_beam, then
     # compute_response at za 0 az 0
     # Initial trying out of using pyuvdata, not close at all. This is interpolating
-    # the zenith power using the x and y pixel coordinates, to use pyuvdata likely need to do
-    # pixel to ra/dec then to za/az
+    # the zenith power using the x and y pixel coordinates, to use pyuvdata
+    # likely need to do pixel to ra/dec then to za/az
 
     # Use order=1 for bilinear interpolation (matches IDL parameter -0.5)
     # mode='nearest' handles out-of-bounds by using nearest edge values
-    # Interpolate the abs to get the abs power at zenith, which I think is what we want here.
+    # Interpolate the abs to get the abs power at zenith, which I think is what
+    # we want here.
     power_zenith = map_coordinates(
         np.abs(image_power_beam), [[zen_int_x], [zen_int_y]], order=1, mode="nearest"
     )[0]
@@ -404,10 +410,10 @@ def beam_power(
     pyfhd_config: dict,
 ) -> NDArray[np.complexfloating]:
     """
-    Generate the hyperresolved image-space beam power to reduce aliasing artifacts, and
-    fourier transform it to a specific grid in complex uv-space. Reduce artifacts further
-    by applying an extremely low-level contiguous mask to the uv-space beam power and
-    renomalizing the beam power to a volume of 1.
+    Generate the hyperresolved image-space beam power to reduce aliasing artifacts,
+    and Fourier transform it to a specific grid in complex uv-space. Reduce
+    artifacts further by applying an extremely low-level contiguous mask to the
+    uv-space beam power and renomalizing the beam power to a volume of 1.
 
     Parameters
     ----------
@@ -426,9 +432,11 @@ def beam_power(
     zen_int_y : np.ndarray
         y pixel index of the zenith for the beam power image
     xvals_uv_superres : np.ndarray
-        A grid of the hyperresolved indices in the u direction for the uv-space beam power image
+        A grid of the hyperresolved indices in the u direction for the uv-space
+        beam power image
     yvals_uv_superres : np.ndarray
-        A grid of the hyperresolved indices in the v direction for the uv-space beam power image
+        A grid of the hyperresolved indices in the v direction for the uv-space
+        beam power image
     pyfhd_config : dict
         The pyfhd configuration dictionary
 
@@ -477,9 +485,9 @@ def beam_power(
     psf_base_superres *= psf["intermediate_res"] ** 2
 
     """
-    total of the gaussian decomposition can be calculated analytically, but is an over-estimate
-    of the numerical representation and results in a beam norm of greater than one,
-    thus the discrete total is used
+    total of the gaussian decomposition can be calculated analytically, but is an
+    over-estimate of the numerical representation and results in a beam norm of
+    greater than one, thus the discrete total is used
     """
     psf_val_ref = np.sum(psf_base_superres)
 

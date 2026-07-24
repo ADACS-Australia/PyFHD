@@ -85,5 +85,11 @@ markers = [
 [tool.ruff.format]
 skip-magic-trailing-comma = true
 
+[tool.ruff.lint]
+select = [
+    "E", # pycodestyle
+    "W", # pycodestyle warnings
+]
+
 [tool.bandit.assert_used]
 skips = ["*/*_test.py", "*/test_*.py", "*/conftest.py"]

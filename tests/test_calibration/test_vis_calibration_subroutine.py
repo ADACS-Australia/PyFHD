@@ -119,7 +119,8 @@ def after_file(tag, run, data_dir, request: pytest.FixtureRequest):
 def test_points(before_file, after_file):
     if before_file is None or after_file is None:
         pytest.skip(
-            f"This test has been skipped because the test was listed in the skipped tests due to FHD not outputting them: {skip_tests}"
+            "This test has been skipped because the test was listed in the "
+            f"skipped tests due to FHD not outputting them: {skip_tests}"
         )
     if "point_zenith_run1" in str(before_file):
         cal = load(before_file)
@@ -169,7 +170,8 @@ def test_points(before_file, after_file):
     )
 
     assert expected_cal["n_vis_cal"] == cal_return["n_vis_cal"]
-    # Code was added that flagged the gain based on tiles, making them NaN, FHD doesn't do this
+    # Code was added that flagged the gain based on tiles, making them NaN,
+    # FHD doesn't do this
     # So to compare we need to remove the NaN values
     assert_allclose(
         cal_return["gain"][:, :, ~cal_return["tile_flag"]],

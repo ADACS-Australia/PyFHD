@@ -91,11 +91,13 @@ def after_file(tag, run, data_dir):
 
 
 def test_vis_cal_auto_init(before_file, after_file):
-    """Runs the test on `vis_cal_auto_init` - reads in the data in before_file & after_file,
-    and then calls `vis_cal_auto_init`, checking the outputs match expectations"""
+    """Runs the test on `vis_cal_auto_init` - reads in the data in before_file &
+    after_file and then calls `vis_cal_auto_init`, checking the outputs match
+    expectations"""
     if before_file is None or after_file is None:
         pytest.skip(
-            f"This test has been skipped because the test was listed in the skipped tests due to FHD not outputting them: {skip_tests}"
+            "This test has been skipped because the test was listed in the "
+            f"skipped tests due to FHD not outputting them: {skip_tests}"
         )
 
     h5_before = load(before_file)
@@ -119,9 +121,10 @@ def test_vis_cal_auto_init(before_file, after_file):
     # 1e-2 in some basic cases.
     atol = 4e-4
     if before_file.name.split("_")[0] == "1088716296":
-        # This is one of those cases as the vis_auto_model array is just an array of ones
-        # until a multiplication of auto_scale which it's values are different at the 2nd
-        # decimal point again due to resistant_mean doing single precision by default unless
-        # the double keyword is used, which in this case it was not.
+        # This is one of those cases as the vis_auto_model array is just an
+        # array of ones until a multiplication of auto_scale which it's values
+        # are different at the 2nd decimal point again due to resistant_mean
+        # doing single precision by default unless the double keyword is used,
+        # which in this case it was not.
         atol = 0.03
     npt.assert_allclose(result_auto_gain, expected_auto_gain, atol=atol)

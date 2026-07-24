@@ -82,9 +82,12 @@ def test_zenith_offzenith(before_file, after_file):
 
     if "point_zenith" in before_file.name:
         pytest.skip(
-            "Skipping point_zenith as differences in precision with regards to calculations of std deviations of small numbers"
-            "have caused differences in the flagging of tiles, which is not a problem with the code itself."
-            "More investigastion is needed to see if this is a problem or if it is just a precision issue that can be safely ignored."
+            "Skipping point_zenith as differences in precision with regards to "
+            "calculations of std deviations of small numbers have caused "
+            "differences in the flagging of tiles, which is not a problem with "
+            "the code itself."
+            "More investigastion is needed to see if this is a problem or if it "
+            "is just a precision issue that can be safely ignored."
         )
 
     h5_before = load(before_file)
@@ -103,7 +106,8 @@ def test_zenith_offzenith(before_file, after_file):
     result_vis_weights, result_obs = vis_flag(
         vis_arr, vis_weight_ptr, obs, params, logger
     )
-    # There's differences in the tile flags due to precision differences in point_zenith data
+    # There's differences in the tile flags due to precision differences in
+    # point_zenith data
     # from calculating std deviations of small numbers, makes checking this tricky
     npt.assert_array_equal(
         result_obs["baseline_info"]["tile_use"],

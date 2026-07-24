@@ -108,7 +108,8 @@ def pyfhd_parser():
         ),
         is_config_file=True,
         help="Configuration File Path for pyfhd (By default will find pyfhd in "
-        "the Python Path and use the default config file pyfhd/resources/config/pyfhd.yaml).",
+        "the Python Path and use the default config file "
+        "pyfhd/resources/config/pyfhd.yaml).",
     )
     # Add All the Groups
     checkpoints = parser.add_argument_group(
@@ -126,7 +127,9 @@ def pyfhd_parser():
     flag = parser.add_argument_group("Flagging", "Adjust Parameters for Flagging")
     gridding = parser.add_argument_group("Gridding", "Tune the Gridding in pyfhd")
     # Ready for deconvolution translation
-    # deconv = parser.add_argument_group("Deconvolution", "Tune the Degridding in pyfhd")
+    # deconv = parser.add_argument_group(
+    #   "Deconvolution", "Tune the Degridding in pyfhd"
+    # )
     export = parser.add_argument_group(
         "Export", "Adjust the outputs of the pyfhd pipeline"
     )
@@ -226,7 +229,8 @@ def pyfhd_parser():
         "--conserve-memory",
         default=False,
         action=OrderedBooleanOptionalAction,
-        help="Optionally split many loops into chunks in the case of high memory usage.",
+        help="Optionally split many loops into chunks in the case of high memory "
+        "usage.",
     )
     parser.add_argument(
         "--memory-threshold",
@@ -248,10 +252,10 @@ def pyfhd_parser():
         type=float,
         default=None,
         help="A proxy for the field of view in degrees. FoV is actually used to "
-        "determine kbinsize, which will be set to !RaDeg/FoV.\n"
+        "determine kbinsize, which will be set to !RaDeg/FoV. "
         "This means that the pixel size at phase center times dimension is "
         "approximately equal to FoV, which is not equal to the actual field of "
-        "view because pixels further from the phase center are larger.\n"
+        "view because pixels further from the phase center are larger. "
         "If set to 0, then kbinsize determines the UV resolution.",
     )
     parser.add_argument(
@@ -295,7 +299,8 @@ def pyfhd_parser():
         "--save-checkpoints",
         default=False,
         action=OrderedBooleanOptionalAction,
-        help="Activates pyfhd's checkpointing system and saves them into the output directory",
+        help="Activates pyfhd's checkpointing system and saves them into the "
+        "output directory",
     )
     checkpoints.add_argument(
         "--obs-checkpoint",
@@ -459,9 +464,9 @@ def pyfhd_parser():
         type=int,
         default=16,
         help="The number of fine frequency channels to calculate a beam for, "
-        "using the average of the frequencies.\n"
+        "using the average of the frequencies."
         "The beam is a function of frequency, and a calculation on the finest "
-        "level is most correct (beam_nfreq_avg=1).\n"
+        "level is most correct (beam_nfreq_avg=1)."
         "However, this is computationally difficult for most machines.",
     )
     beam.add_argument(
@@ -490,7 +495,8 @@ def pyfhd_parser():
         "--beam-clip-floor",
         default=False,
         action=OrderedBooleanOptionalAction,
-        help="Set to subtract the minimum non-zero value of the beam model from all pixels.",
+        help="Set to subtract the minimum non-zero value of the beam model from "
+        "all pixels.",
     )
 
     # Calibration Group
@@ -613,12 +619,11 @@ def pyfhd_parser():
         "--bandpass-calibrate",
         default=False,
         action=OrderedBooleanOptionalAction,
-        help="Calculates a bandpass.\n"
-        "This is an average of tiles by frequency by polarization (default), "
-        "beamformer-to-LNA cable types by frequency by polarization (see cable_bandpass_fit),\n"
-        "or over the whole season by pointing by by cable type by frequency by "
-        "polarization via a read-in file (see saved_run_bp).\n"
-        "If unset, no by-frequency bandpass is used",
+        help="Calculates a bandpass. This is an average of tiles by frequency by "
+        "polarization (default), beamformer-to-LNA cable types by frequency by "
+        "polarization (see cable_bandpass_fit), or over the whole season by "
+        "pointing by by cable type by frequency by polarization via a read-in "
+        "file (see saved_run_bp). If unset, no by-frequency bandpass is used",
     )
     calibration.add_argument(
         "--cal-bp-transfer",
@@ -632,16 +637,16 @@ def pyfhd_parser():
         default=False,
         action=OrderedBooleanOptionalAction,
         help="Calculates a polynomial fit across the frequency band for the gain, "
-        "and allows a cable reflection to be fit.\n"
-        "The orders of the polynomial fit are determined by cal_phase_degree_fit "
-        "and cal_amp_degree_fit.\n"
+        "and allows a cable reflection to be fit. The orders of the polynomial "
+        "fit are determined by cal_phase_degree_fit and cal_amp_degree_fit. "
         "If unset, no polynomial fit or cable reflection fit are used.",
     )
     calibration.add_argument(
         "--auto-ratio-calibration",
         default=False,
         action=OrderedBooleanOptionalAction,
-        help="Calculates the auto ratios for cable reflections and enables global bandpass",
+        help="Calculates the auto ratios for cable reflections and enables "
+        "global bandpass",
     )
     calibration.add_argument(
         "--cable-bandpass-fit",
@@ -657,7 +662,8 @@ def pyfhd_parser():
         type=int,
         help="The nth order of the polynomial fit over the whole band to create "
         "calibration solutions for the amplitude of the gain.\n"
-        "Setting it to 0 gives a 0th order polynomial fit (one number for the whole band),\n"
+        "Setting it to 0 gives a 0th order polynomial fit (one number for the "
+        "whole band),\n"
         "1 gives a 1st order polynomial fit (linear fit),\n"
         "2 gives a 2nd order polynomial fit (quadratic),\n"
         "n gives nth order polynomial fit.\n"
@@ -669,7 +675,8 @@ def pyfhd_parser():
         type=int,
         help="The nth order of the polynomial fit over the whole band to create "
         "calibration solutions for the phase of the gain.\n"
-        "Setting it to 0 gives a 0th order polynomial fit (one number for the whole band),\n"
+        "Setting it to 0 gives a 0th order polynomial fit (one number for the "
+        "whole band),"
         "1 gives a 1st order polynomial fit (linear fit),\n"
         "2 gives a 2nd order polynomial fit (quadratic),\n"
         "n gives nth order polynomial fit.\n"
@@ -680,11 +687,11 @@ def pyfhd_parser():
         default=150,
         type=float,
         help="Calculate theoretical cable reflection modes given the velocity "
-        "and length data stored in a config file named <instrument>_cable_length.txt.\n"
-        "File must have a header line and at least five columns (tile index, tile name, "
-        "cable length, cable velocity factor, logic on whether to fit (1) or not (0)).\n"
-        "Can set it to positive/negative cable lengths (see cal_mode_fit) to "
-        "include/exclude certain cable types.",
+        "and length data stored in a config file named <instrument>_cable_length.txt. "
+        "File must have a header line and at least five columns (tile index, "
+        "tile name, cable length, cable velocity factor, logic on whether to "
+        "fit (1) or not (0)). Can set it to positive/negative cable lengths "
+        "(see cal_mode_fit) to include/exclude certain cable types.",
     )
     calibration.add_argument(
         "--cal-reflection-mode-delay",
@@ -699,8 +706,8 @@ def pyfhd_parser():
         default=False,
         action=OrderedBooleanOptionalAction,
         help="Hyperresolve and fit residual gains using nominal reflection modes "
-        "(calculated from cal_reflection_mode_delay or cal_reflection_mode_theory),\n"
-        "producing a fine tuned mode fit, amplitude, and phase.\n"
+        "(calculated from cal_reflection_mode_delay or cal_reflection_mode_theory), "
+        "producing a fine tuned mode fit, amplitude, and phase. "
         "Will be ignored if cal_reflection_mode_file is set because it is assumed "
         "that a file read-in contains mode, amp, and phase to use.",
     )
@@ -710,7 +717,8 @@ def pyfhd_parser():
         action=OrderedBooleanOptionalAction,
         help="Use predetermined cable reflection parameters (mode, amplitude, "
         "and phase) in the calibration solutions from a file.\n"
-        "The specified format of the text file must have one header line and eleven columns:\n"
+        "The specified format of the text file must have one header line and "
+        "eleven columns:\n"
         "tile index,\n"
         "tile name,\n"
         "cable length,\n"
@@ -775,7 +783,8 @@ def pyfhd_parser():
         default=False,
         action=OrderedBooleanOptionalAction,
         help="Using autocorrelations, initialize gain values for calibration. "
-        "If not set, gains will initialize to 1 or the value supplied by cal_gain_init.",
+        "If not set, gains will initialize to 1 or the value supplied by "
+        "cal_gain_init.",
     )
     calibration.add_argument(
         "--cal-gain-init",
@@ -855,7 +864,8 @@ def pyfhd_parser():
         default=None,
         help="Seconds to cut (rounded up to next time integration step) from the "
         "beginning of the observation. Can also specify a negative time to cut off "
-        "the end of the observation. Specify a vector to cut at both the start and end.",
+        "the end of the observation. Specify a vector to cut at both the start "
+        "and end.",
     )
     flag.add_argument(
         "-fb",
@@ -863,12 +873,11 @@ def pyfhd_parser():
         default=False,
         action=OrderedBooleanOptionalAction,
         help="Flags Frequencies and Tiles based on your configuration, params, "
-        "and visibility weights.\n"
-        "The freq_use and tile_use arrays of obs will be adjusted, and the "
-        "vis_weights_arr will be put in line with the freq_use and tile_use arrays.\n"
-        "This should always be True; the only time you should consider turning "
-        "off basic flagging is when you're dealing with simulated visibilities "
-        "and weights in pyfhd.",
+        "and visibility weights. The freq_use and tile_use arrays of obs will be "
+        "adjusted, and the vis_weights_arr will be put in line with the freq_use "
+        "and tile_use arrays. This should almost always be True; the only time "
+        "you should consider turning off basic flagging is when you're dealing "
+        "with simulated visibilities and weights in pyfhd.",
     )
     flag.add_argument(
         "--flag-freq-start",
@@ -945,7 +954,8 @@ def pyfhd_parser():
         "--mask-mirror-indices",
         default=False,
         action=OrderedBooleanOptionalAction,
-        help="Inside baseline_grid_location, optionally exclude v-axis mirrored baselines",
+        help="Inside baseline_grid_location, optionally exclude v-axis mirrored "
+        "baselines",
     )
     gridding.add_argument(
         "--image-filter",
@@ -969,7 +979,8 @@ def pyfhd_parser():
         "--grid-spectral",
         default=False,
         action=OrderedBooleanOptionalAction,
-        help="Optionally use the spectral index information to scale the uv-plane in gridding",
+        help="Optionally use the spectral index information to scale the "
+        "uv-plane in gridding",
     )
     gridding.add_argument(
         "--grid-weights",
@@ -1009,7 +1020,8 @@ def pyfhd_parser():
     #     "--filter-background",
     #     default=False,
     #     action=OrderedBooleanOptionalAction,
-    #     help="Filters out large-scale background fluctuations before deconvolving point sources.",
+    #     help="Filters out large-scale background fluctuations before "
+    #     "deconvolving point sources.",
     # )
     # deconv.add_argument(
     #     "--smooth-width",
@@ -1023,7 +1035,7 @@ def pyfhd_parser():
         default=False,
         action=OrderedBooleanOptionalAction,
         help="Set to True to use the DFT approximation. When set equal to 0 the "
-        "true DFT is calculated for each source.\n"
+        "true DFT is calculated for each source. "
         "It can also be explicitly set to a value that determines the accuracy "
         "of the approximation.",
     )
@@ -1063,7 +1075,7 @@ def pyfhd_parser():
         type=str,
         default=None,
         help="A more detailed description of the current task is applied "
-        "to the output directory and logs where the output will be stored.\n"
+        "to the output directory and logs where the output will be stored. "
         "By default, the date and time is used.",
     )
     export.add_argument(
@@ -1078,8 +1090,8 @@ def pyfhd_parser():
         type=float,
         default=10,
         help="Sets the multiplier for the size of the rings around sources in "
-        "the restored images.\n"
-        "Ring Radius will equal pad-uv-image * ring-radius-multi.\n"
+        "the restored images. "
+        "Ring Radius will equal pad-uv-image * ring-radius-multi. "
         "To generate restored images without rings, set ring_radius = 0.",
     )
     export.add_argument(
@@ -1105,7 +1117,8 @@ def pyfhd_parser():
         "--save-model",
         default=False,
         action=OrderedBooleanOptionalAction,
-        help="Save the model visibilities created/transferred in during pyfhd's run as HDF5.",
+        help="Save the model visibilities created/transferred in during pyfhd's "
+        "run as HDF5.",
     )
     export.add_argument(
         "--save-obs",
@@ -1137,7 +1150,8 @@ def pyfhd_parser():
         default=False,
         action=OrderedBooleanOptionalAction,
         help="Save model, dirty, residual, weights, and variance cubes as healpix "
-        "arrays, which are split into even and odd time samples, in preparation for epsilon.",
+        "arrays, which are split into even and odd time samples, in preparation "
+        "for eppsilon.",
     )
 
     # Plotting Group
@@ -1169,13 +1183,16 @@ def pyfhd_parser():
         "--sigma_clipping",
         type=int,
         default=3,
-        help="The sigma level to use for sigma clipping when calculating the standard deviation of the image for image.py when using the log option.",
+        help="The sigma level to use for sigma clipping when calculating the "
+        "standard deviation of the image for image.py when using the log option.",
     )
     plotting.add_argument(
         "--percentile_clipping",
         type=int,
         default=1,
-        help="The percentile level to use for percentile clipping when calculating the standard deviation of the image for image.py when using the linear option.",
+        help="The percentile level to use for percentile clipping when "
+        "calculating the standard deviation of the image for image.py when using "
+        "the linear option.",
     )
 
     # Model Group
@@ -1185,8 +1202,8 @@ def pyfhd_parser():
         default="sav",
         choices=["sav", "uvfits"],
         help="Set the file type of the model, by default it looks for sav files "
-        "of format <obs_id>_params.sav and <obs_id>_vis_model_<pol_name>.sav.\n"
-        "If you set uvfits you must put set path using --import-model-uvfits.\n"
+        "of format <obs_id>_params.sav and <obs_id>_vis_model_<pol_name>.sav. "
+        "If you set uvfits you must put set path using --import-model-uvfits. "
         "This argument is required as pyfhd currently cannot produce a model.",
     )
     model.add_argument(
@@ -1195,7 +1212,7 @@ def pyfhd_parser():
         type=Path,
         help="In the case you chose 'sav' for model-file-type then this will be a "
         "directory containing all the <obs_id>_params and "
-        "<obs_id>_vis_model_<pol_name> sav files.\n"
+        "<obs_id>_vis_model_<pol_name> sav files. "
         "In the case you chose 'uvfits', then the path is to a uvfits file, in "
         "which case make sure the phase centre of model data must match the 'RA' "
         "and 'DEC' values in the metafits file (NOT the 'RAPHASE' and 'DECPHASE').",
@@ -1204,7 +1221,7 @@ def pyfhd_parser():
         "--allow-sidelobe-model-sources",
         default=False,
         action=OrderedBooleanOptionalAction,
-        help="Allows pyfhd to model sources in the sidelobes for subtraction.\n"
+        help="Allows pyfhd to model sources in the sidelobes for subtraction. "
         "In order to capture the sidelobe sources during the generation "
         "of a model calibration source catalog, 1 %% of the beam must be used, "
         "which is done by setting the beam_threshold to 0.01.",
@@ -1218,7 +1235,7 @@ def pyfhd_parser():
     #     action=OrderedBooleanOptionalAction,
     #     help="Run an in situ simulation, where model visibilities are made and "
     #     "input as the dirty visibilities (see Barry et. al. 2016 for more "
-    #     "information on use-cases).\n"
+    #     "information on use-cases). "
     #     "In the case where in-situ-sim-input is not provided visibilities will "
     #     "be made within the current pyfhd run.",
     # )
@@ -1270,7 +1287,8 @@ def pyfhd_parser():
     #     "--extra-vis-filepath",
     #     type=Path,
     #     default=None,
-    #     help="Optionally add general visibilities to the simulation, must be a uvfits file.",
+    #     help="Optionally add general visibilities to the simulation, must be "
+    #     "a uvfits file.",
     # )
 
     # HEALPIX Group
@@ -1288,7 +1306,7 @@ def pyfhd_parser():
         default=False,
         action=OrderedBooleanOptionalAction,
         help="Only allow gridding of the output HEALPix cubes to include the "
-        "HEALPix pixels specified in a file.\n"
+        "HEALPix pixels specified in a file. "
         "This is useful for restricting many observations, resulting in consistent "
         "HEALPix pixels during integration. It also saves memory and walltime.",
     )
@@ -1296,8 +1314,8 @@ def pyfhd_parser():
         "--split-ps-export",
         default=False,
         action=OrderedBooleanOptionalAction,
-        help="Split up the HEALPix outputs into even and odd time samples.\n"
-        "This is essential to propagating errors in εppsilon.\n"
+        help="Split up the HEALPix outputs into even and odd time samples. "
+        "This is essential to propagating errors in εppsilon. "
         "Requires more than one time sample.",
     )
     healpix.add_argument(
@@ -1318,8 +1336,8 @@ def pyfhd_parser():
         "--ps-kspan",
         type=int,
         default=0,
-        help="UV plane dimension in wavelengths for HEALPix cube generation.\n"
-        "Overrides ps_dimension and ps_degpix if set.\n"
+        help="UV plane dimension in wavelengths for HEALPix cube generation. "
+        "Overrides ps_dimension and ps_degpix if set. "
         "If ps_kspan, ps_dimension, or ps_degpix are not set, the UV plane dimension "
         "is calculated from the FoV and the degpix from the obs structure.",
     )
@@ -1406,7 +1424,8 @@ def _check_file_exists(config: dict, key: str) -> int:
         # If it doesn't exist, add error message
         if not Path(config[key]).expanduser().resolve().exists():
             logging.error(
-                f"{key} has been enabled with a path that doesn't exist, check the path."
+                f"{key} has been enabled with a path that doesn't exist, check "
+                "the path."
             )
             return 1
         # If it does exist, replace with the absolute path
@@ -1626,7 +1645,8 @@ def pyfhd_logger(pyfhd_config: dict) -> Tuple[logging.Logger, Path]:
         log_file.setFormatter(logging.Formatter("%(message)s"))
         logger.addHandler(log_file)
 
-    # Show that start message in the terminal and/or log file, unless both are turned off.
+    # Show that start message in the terminal and/or log file, unless both are
+    # turned off.
     logger.info(log_string)
     if not pyfhd_config["silent"]:
         log_terminal.setFormatter(
@@ -1786,7 +1806,8 @@ def pyfhd_setup(options: argparse.Namespace) -> Tuple[dict, logging.Logger]:
     if pyfhd_config["uvbeam_file_path"] is not None:
         if pyfhd_config["analytic_beam_yaml"] is not None:
             logger.warning(
-                "Both uvbeam_file_path and analytic_beam_yaml are set. Using uvbeam_file_path."
+                "Both uvbeam_file_path and analytic_beam_yaml are set. Using "
+                "uvbeam_file_path."
             )
             pyfhd_config["analytic_beam_yaml"] = None
         pyfhd_config["uvbeam_file_path"] = (
@@ -1863,7 +1884,8 @@ def pyfhd_setup(options: argparse.Namespace) -> Tuple[dict, logging.Logger]:
         )
         if not Path(pyfhd_config["calibration_sidelobe_catalog_file_path"]).exists():
             logger.error(
-                f"Sidelobe catalog file {pyfhd_config['calibration_sidelobe_catalog_file_path']} "
+                "Sidelobe catalog file "
+                f"{pyfhd_config['calibration_sidelobe_catalog_file_path']} "
                 "does not exist, please check your input path"
             )
             errors += 1
@@ -1936,14 +1958,19 @@ def pyfhd_setup(options: argparse.Namespace) -> Tuple[dict, logging.Logger]:
         use_adaptive_calibration_gain isn't active then base gain is 1.0
         However because they did this:
 
-            IF N_Elements(use_adaptive_calibration_gain) EQ 0 THEN use_adaptive_calibration_gain=0
+            IF N_Elements(use_adaptive_calibration_gain) EQ 0 THEN BEGIN
+                use_adaptive_calibration_gain=0
+            ENDIF
             IF N_Elements(calibration_base_gain) EQ 0 THEN BEGIN
-                IF N_Elements(use_adaptive_calibration_gain) EQ 0 THEN calibration_base_gain=1. ELSE calibration_base_gain=0.75
+                IF N_Elements(use_adaptive_calibration_gain) EQ 0 THEN BEGIN
+                    calibration_base_gain=1. ELSE calibration_base_gain=0.75
+            ENDIF
 
         Since use_adaptive_calibration_gain is set before the line then
         N_ELEMENTS(use_adaptive_calibration_gain) == 1 meaning base_gain is set to 0.75
-        This confusingly means it isn't checking if use_adaptive_calibraton_gain is actually active
-        but whether it has been set at all, small but significant difference.
+        This confusingly means it isn't checking if use_adaptive_calibraton_gain
+        is actually active but whether it has been set at all, small but
+        significant difference.
         """
         pyfhd_config["cal_base_gain"] = 0.75
 
@@ -2002,8 +2029,9 @@ def pyfhd_setup(options: argparse.Namespace) -> Tuple[dict, logging.Logger]:
                 errors += 1
                 logger.error(
                     "You are missing files based on the number of polarizations you "
-                    f"have set, you should have a params file then {pyfhd_config['n_pol']} "
-                    f"polarization files. Here is the list of found sav files: {matching_files}."
+                    "have set, you should have a params file then "
+                    f"{pyfhd_config['n_pol']} polarization files. Here is the "
+                    f"list of found sav files: {matching_files}."
                 )
             elif (
                 pyfhd_config["n_pol"]
@@ -2020,11 +2048,12 @@ def pyfhd_setup(options: argparse.Namespace) -> Tuple[dict, logging.Logger]:
             elif not pyfhd_config["n_pol"]:
                 warnings += 1
                 logger.warning(
-                    "Since you have told pyfhd before hand you are using 0 polarizations "
-                    "and letting the uvfits header set the number of polarizations, "
-                    "pyfhd will have no way to validate if the number of "
-                    "savs is correct, check the list of found files carefully: "
-                    f"{matching_files}. If you're sure this is fine, ignore this warning."
+                    "Since you have told pyfhd before hand you are using 0 "
+                    "polarizations and letting the uvfits header set the number "
+                    "of polarizations, pyfhd will have no way to validate if the "
+                    "number of savs is correct, check the list of found files "
+                    f"carefully: {matching_files}. If you're sure this is fine, "
+                    "ignore this warning."
                 )
 
     # Entirety of Simulation Group depends on run-simulation (Error)
@@ -2035,7 +2064,8 @@ def pyfhd_setup(options: argparse.Namespace) -> Tuple[dict, logging.Logger]:
     # ):
     #     logger.error(
     #         "run_simulation should be True if you're planning on running any "
-    #         "type of simulation and therefore using in_situ_sim_input, eor_vis_filepath "
+    #         "type of simulation and therefore using in_situ_sim_input, "
+    #         "eor_vis_filepath "
     #         "or sim_noise shouldn't be used when run_simulation is False"
     #     )
     #     errors += 1
@@ -2050,7 +2080,8 @@ def pyfhd_setup(options: argparse.Namespace) -> Tuple[dict, logging.Logger]:
     # if pyfhd_config["enhance_eor"] > 1 and pyfhd_config["eor_vis_filepath"]:
     #     logger.error(
     #         "enhance_eor is only used when importing general visibilities for "
-    #         "a simulation, it should stay as 1 when eor_vis_filepath is not being used"
+    #         "a simulation, it should stay as 1 when eor_vis_filepath is not "
+    #         "being used"
     #     )
     #     errors += 1
 
@@ -2074,7 +2105,8 @@ def pyfhd_setup(options: argparse.Namespace) -> Tuple[dict, logging.Logger]:
     # If there are any errors exit the program.
     if errors:
         logger.error(
-            f"{errors} errors detected, check the log above to see the errors, stopping pyfhd now"
+            f"{errors} errors detected, check the log above to see the errors, "
+            "stopping pyfhd now"
         )
         # Close the handlers in the log
         for handler in logger.handlers:
@@ -2083,9 +2115,8 @@ def pyfhd_setup(options: argparse.Namespace) -> Tuple[dict, logging.Logger]:
 
     if warnings:
         logger.warning(
-            "{} warnings detected, check the log above, these may cause some weird behavior".format(
-                warnings
-            )
+            f"{warnings} warnings detected, check the log above, these may "
+            "cause some weird behavior"
         )
     logger.info("Input validated, starting pyfhd run now")
 

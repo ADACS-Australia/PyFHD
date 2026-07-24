@@ -11,8 +11,8 @@ def vis_flag_tiles(
     logger: Logger,
 ) -> np.ndarray:
     """
-    Flag tiles in the visibility weights array with a given array or list of tiles to flag
-    containing the names of the tiles, NOT the indexes.
+    Flag tiles in the visibility weights array with a given array or list of
+    tiles to flag containing the names of the tiles, NOT the indexes.
 
     Parameters
     ----------
@@ -40,7 +40,8 @@ def vis_flag_tiles(
             tile_flag_list_use.append(flag_idx + 1)
         else:
             logger.warning(
-                f"{tile} wasn't found in obs['baseline_info']['tile_names'], skipping it"
+                f"{tile} wasn't found in obs['baseline_info']['tile_names'], "
+                "skipping it"
             )
     hist_a, _, ra = histogram(obs["baseline_info"]["tile_a"], min=1)
     hist_b, _, rb = histogram(obs["baseline_info"]["tile_b"], min=1)
@@ -69,11 +70,12 @@ def vis_flag_basic(
     logger: Logger,
 ) -> tuple[np.ndarray, dict]:
     """
-    Do some basic flagging on frequencies and tiles based on the confgiruation given by pyfhd_config
-    such as `flag_freq_start`, `flag_freq_end`, `instrument` and `flag_tile_names`. To flag the frequencies and
-    tiles, the arrays in `obs['baseline_info']`, *`freq_use`* and *`tile_use`* will be adjusted to 0's where
-    the tile or frequency is flagged. The `vis_weight_arr` will be turned to 0's in the associated frequencies
-    and tiles that have been flagged.
+    Do some basic flagging on frequencies and tiles based on the confgiruation
+    given by pyfhd_config such as `flag_freq_start`, `flag_freq_end`, `instrument`
+    and `flag_tile_names`. To flag the frequencies and tiles, the arrays in
+    `obs['baseline_info']`, *`freq_use`* and *`tile_use`* will be adjusted to 0's
+    where the tile or frequency is flagged. The `vis_weight_arr` will be turned
+    to 0's in the associated frequencies and tiles that have been flagged.
 
     Parameters
     ----------
@@ -99,8 +101,9 @@ def vis_flag_basic(
     """
     freq_arr = obs["baseline_info"]["freq"].copy()
 
-    # If you wish to adjust things based on the configuration option mask_mirror_indices do that here
-    # and add the config the pyfhd_setup. There was no description for it in FHD.
+    # If you wish to adjust things based on the configuration option
+    # mask_mirror_indices do that here and add the config the pyfhd_setup.
+    # There was no description for it in FHD.
 
     if pyfhd_config["flag_freq_start"]:
         logger.info(
@@ -159,8 +162,8 @@ def vis_flag_basic(
             tile_use_temp[tile_b_i[bi_use]] = 1
         tile_use *= tile_use_temp
 
-    # In the case we choose to not flag any frequencies
-    # if pre-processing has flagged frequencies, need to unflag them if the data are nonzero
+    # In the case we choose to not flag any frequencies if pre-processing has
+    # flagged frequencies, need to unflag them if the data are nonzero
     # (but DON'T unflag tiles that should be flagged)
     if not pyfhd_config["flag_frequencies"]:
         freq_cut_i = np.where(freq_use == 0)
@@ -289,13 +292,15 @@ def vis_flag(
     tile_nonzero = np.nonzero(tile_fom)
     tile_mean = idl_median(tile_fom[tile_nonzero])
     tile_dev = np.std(tile_fom[tile_nonzero])
-    # IDL Median with WIDTH set is doing a median_filter with the size indicating the kernel size
+    # IDL Median with WIDTH set is doing a median_filter with the size indicating
+    # the kernel size
     freq_mean1 = idl_median(freq_fom[freq_nonzero], width=obs["n_freq"] // 20)
     freq_mean = np.zeros(obs["n_freq"])
     freq_mean[freq_nonzero] = freq_mean1
     freq_dev = np.std(freq_fom[freq_nonzero] - freq_mean[freq_nonzero])
 
-    # We actually want the complements of the where from IDL translation, adjusted conditions accordingly
+    # We actually want the complements of the where from IDL translation,
+    # adjusted conditions accordingly
     tile_cut0 = np.where(
         (np.abs(tile_mean - tile_fom) <= 2 * flag_nsigma * tile_dev) | (tile_fom != 0)
     )[0]

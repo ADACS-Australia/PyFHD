@@ -30,7 +30,8 @@ def run(request):
 
 skip_tests = [["1088716296", "run3"]]
 
-# For each combination of tag and run, check if the hdf5 file exists, if not, create it and either way return the path
+# For each combination of tag and run, check if the hdf5 file exists, if not,
+# create it and either way return the path
 # Tests will fail if the fixture fails, not too worried about exceptions here.
 
 
@@ -91,8 +92,9 @@ def after_file(tag, run, data_dir):
 @pytest.mark.github_actions
 def test_cal_auto_ratio_remultiply(before_file, after_file):
     """
-    Runs the test on `cal_auto_ratio_remultiply` reads in the data in before_file and after_file,
-    and then calls `cal_auto_ratio_remultiply`, checking the outputs match expectations
+    Runs the test on `cal_auto_ratio_remultiply` reads in the data in before_file
+    and after_file, and then calls `cal_auto_ratio_remultiply`, checking the
+    outputs match expectations
     """
     if before_file is None or after_file is None:
         pytest.skip(f"""This test has been skipped because the test was listed in the

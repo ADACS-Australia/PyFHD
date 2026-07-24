@@ -266,8 +266,10 @@ def test_visibility_grid(
     npt.assert_allclose(gridding_dict["image_uv"], h5_after["image_uv"], atol=1.5e-7)
     npt.assert_allclose(gridding_dict["weights"], h5_after["weights"], atol=1e-8)
     npt.assert_allclose(gridding_dict["variance"], h5_after["variance"], atol=1e-8)
-    # Differences in baseline grids locations from precision errors in the offsets caused differences in the histogram bin_n
-    # The minor difference in bin_n affected the uniform filter. The precision difference could cause errors upto 1
+    # Differences in baseline grids locations from precision errors in the
+    # offsets caused differences in the histogram bin_n
+    # The minor difference in bin_n affected the uniform filter. The precision
+    # difference could cause errors upto 1
     # This doesn't occur for every test.
     npt.assert_allclose(gridding_dict["obs"]["nf_vis"], h5_after["nf_vis"], atol=1e-8)
     npt.assert_allclose(
@@ -447,7 +449,9 @@ def test_full_visibility_grid(full_before_gridding: Path, full_after_gridding: P
     npt.assert_allclose(gridding_dict["weights"], h5_after["weights"], atol=1e-8)
     npt.assert_allclose(gridding_dict["variance"], h5_after["variance"], atol=1e-8)
     npt.assert_allclose(gridding_dict["obs"]["nf_vis"], h5_after["nf_vis"], atol=1e-8)
-    # npt.assert_allclose(gridding_dict['uniform_filter'], h5_after['uniform_filter'], atol = 1e-8)
+    # npt.assert_allclose(
+    #   gridding_dict['uniform_filter'], h5_after['uniform_filter'], atol = 1e-8
+    # )
 
     if "model_return" in gridding_dict:
         npt.assert_allclose(
@@ -651,7 +655,8 @@ def test_visibility_grid_in_vis_model_freq_split(
 ):
     if before_vis_model_freq_gridding is None or after_vis_model_freq_gridding is None:
         pytest.skip(
-            f"This test has been skipped because the test was listed in the skipped tests due to FHD not outputting them: {vis_model_skip_tests}"
+            "This test has been skipped because the test was listed in the "
+            f"skipped tests due to FHD not outputting them: {vis_model_skip_tests}"
         )
     h5_before = load(before_vis_model_freq_gridding)
     h5_after = load(after_vis_model_freq_gridding)
@@ -697,7 +702,9 @@ def test_visibility_grid_in_vis_model_freq_split(
     npt.assert_allclose(
         gridding_dict["model_return"], h5_after["model_return"], atol=1e-8
     )
-    # Differences in baseline grids locations from precision errors in the offsets caused differences in the histogram bin_n
-    # The minor difference in bin_n affected the uniform filter. The precision difference could cause errors upto 1
+    # Differences in baseline grids locations from precision errors in the
+    # offsets caused differences in the histogram bin_n
+    # The minor difference in bin_n affected the uniform filter. The precision
+    # difference could cause errors upto 1
     # This doesn't occur for every test.
     npt.assert_allclose(gridding_dict["n_vis"], h5_after["n_vis"], atol=1e-8)

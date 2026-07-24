@@ -9,8 +9,8 @@ matplotlib.use("pdf")
 
 def plot_cals(obs: dict, cal: dict, pyfhd_config: dict):
     """
-    Plot the calibration solutions, the calibration residuals, and the raw calibration solutions
-    in a grid of 128 per page.
+    Plot the calibration solutions, the calibration residuals, and the
+    raw calibration solutions in a grid of 128 per page.
 
     Parameters
     ----------
@@ -29,7 +29,8 @@ def plot_cals(obs: dict, cal: dict, pyfhd_config: dict):
     # Plotting only unflagged tiles
     tile_i_use = np.where(obs["baseline_info"]["tile_use"])[0]
 
-    # Plotting amplitude and phase for the gain, gain_residual, and their sum (raw solutions)
+    # Plotting amplitude and phase for the gain, gain_residual, and their sum
+    # (raw solutions)
     obs_id = pyfhd_config["obs_id"]
     cal_plot_dir = Path(pyfhd_config["output_dir"], "plots", "calibration")
     cal_plot_dir.mkdir(parents=True, exist_ok=True)
@@ -43,7 +44,8 @@ def plot_cals(obs: dict, cal: dict, pyfhd_config: dict):
         Path(cal_plot_dir, f"{obs_id}_cal_raw_phase"),
     ]
 
-    # Calibration solutions are referenced mutliple times, put them in variables for speed
+    # Calibration solutions are referenced mutliple times, put them in variables
+    # for speed
     cal_sol_amp = np.abs(cal["gain"][:, freq_i_use, :])
     cal_sol_phase = np.arctan2(
         (cal["gain"][:, freq_i_use, :]).imag, (cal["gain"][:, freq_i_use, :]).real
@@ -56,8 +58,8 @@ def plot_cals(obs: dict, cal: dict, pyfhd_config: dict):
         (cal["gain"][:, freq_i_use, :] + cal["gain_residual"][:, freq_i_use, :]).real,
     )
 
-    # NOTE: The residuals that are plotted are the differences in raw amp/phase and solution amp/phase,
-    # *not* the amp/phase of the raw and solution difference
+    # NOTE: The residuals that are plotted are the differences in raw amp/phase
+    # and solution amp/phase, *not* the amp/phase of the raw and solution difference
     cal_res_amp = cal_raw_amp - cal_sol_amp
     cal_res_phase = np.unwrap(cal_raw_phase, axis=1) - np.unwrap(cal_sol_phase, axis=1)
 
@@ -98,7 +100,8 @@ def plot_cals(obs: dict, cal: dict, pyfhd_config: dict):
         "hspace": 0.35,
     }
 
-    # Create calibration solution plots for each page of 128 maximum stations for the specified types
+    # Create calibration solution plots for each page of 128 maximum stations
+    # for the specified types
     for type_i in range(n_types):
         for page_i in range(n_pages):
             # Calculate number of stations for this page
@@ -167,7 +170,8 @@ def plot_cals(obs: dict, cal: dict, pyfhd_config: dict):
                         amp = cal_sol_amp[pol_i, :, tile_i].squeeze()
                         phase = cal_sol_phase[pol_i, :, tile_i].squeeze()
                     if type_i == 1:
-                        # Gain and phase residuals (per-frequency solutions minus fit solutions)
+                        # Gain and phase residuals (per-frequency solutions minus
+                        # fit solutions)
                         amp = cal_res_amp[pol_i, :, tile_i].squeeze()
                         phase = cal_res_phase[pol_i, :, tile_i].squeeze()
                     if type_i == 2:

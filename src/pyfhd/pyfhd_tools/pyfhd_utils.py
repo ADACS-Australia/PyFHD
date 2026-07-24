@@ -62,8 +62,8 @@ def get_bins(
     Returns
     -------
     bins: NDArray[np.float64 | np.int64]
-        A NumPy array of all the bins ranging from min (bin[0]) to the max (bin[-1]). The step
-        is bin_size.
+        A NumPy array of all the bins ranging from min (bin[0]) to the max (bin[-1]).
+        The step is bin_size.
 
     See Also
     --------
@@ -150,18 +150,20 @@ def get_ri(
     by this function can be hard to understand at first, I will explain it here
     and also link JD Smith's famous article on IDL's HISTOGRAM.
 
-    The reverse indices array is two vectors concatenated together. The first vector contains
-    indexes for the second vector, this vector should be the size of bins + 1.
-    The second vector contains indexes from the data itself, and should be the size of data.
-    The justification for having such an array is to quickly make adjustments to certain bins
-    without having to search the array multiple times, thus avoiding multiple O(data.size) loops.
+    The reverse indices array is two vectors concatenated together. The first
+    vector contains indexes for the second vector, this vector should be the
+    size of bins + 1. The second vector contains indexes from the data itself,
+    and should be the size of data. The justification for having such an array
+    is to quickly make adjustments to certain bins without having to search the
+    array multiple times, thus avoiding multiple O(data.size) loops.
 
-    The first vector indexes contain the starting positions of each bin in the second vector. For example,
-    between the indexes given by first_vector[0] and first_vector[1] of the second vector should be all the
-    indexes of bins[0] from inside the data. So if I wanted to make adjustments to the entire first bin,
-    and only the first bin I can use the reverse indices array, ri to do this. Let's say I wanted to flag
-    all values of bins[0] with -1 for some reason to make them invalid in other calculations with the data,
-    then I could do this:
+    The first vector indexes contain the starting positions of each bin in the
+    second vector. For example, between the indexes given by first_vector[0] and
+    first_vector[1] of the second vector should be all the indexes of bins[0]
+    from inside the data. So if I wanted to make adjustments to the entire first
+    bin, and only the first bin I can use the reverse indices array, ri to do this.
+    Let's say I wanted to flag all values of bins[0] with -1 for some reason to
+    make them invalid in other calculations with the data, then I could do this:
 
     `data[ri[ri[0] : ri[1]]] = -1`
 
@@ -171,14 +173,17 @@ def get_ri(
 
     Where i is 0 <= i <= bins.size.
 
-    If you wish to gain a better understanding of how this get_ri function works, and the associated
-    histogram function I have created here, please use the link given in the Notes section. This
-    link will take you JD Smith's article on IDL's HISTOGRAM, it is an article which explains the
-    IDL HISTOGRAM function better than IDL's own documentation. If you must gain a deeper understanding,
-    read it once, gasp and get your shocks and many cries of why out of your system, then read it again.
-    And keep reading it till you understand, as per the editor's note on the article:
+    If you wish to gain a better understanding of how this get_ri function works,
+    and the associated histogram function I have created here, please use the
+    link given in the Notes section. This link will take you JD Smith's article
+    on IDL's HISTOGRAM, it is an article which explains the IDL HISTOGRAM function
+    better than IDL's own documentation. If you must gain a deeper understanding,
+    read it once, gasp and get your shocks and many cries of why out of your
+    system, then read it again. And keep reading it till you understand, as per
+    the editor's note on the article:
 
-    "...If you read it enough, the secrets of the command will be revealed to you. Stranger things have happened"
+    "...If you read it enough, the secrets of the command will be revealed to you.
+    Stranger things have happened"
 
     Parameters
     ----------
@@ -196,8 +201,9 @@ def get_ri(
     Returns
     -------
     ri : NDArray[np.int64]
-        An array containing the reverse indices, which is two vectors, the first vector containing indexes for the second vector.
-        The second vector contains indexes for the data.
+        An array containing the reverse indices, which is two vectors, the first
+        vector containing indexes for the second vector. The second vector
+        contains indexes for the data.
 
     See Also
     ---------
@@ -207,7 +213,8 @@ def get_ri(
 
     Notes
     ------
-    'HISTOGRAM: The Breathless Horror and Disgust' : http://www.idlcoyote.com/tips/histogram_tutorial.html
+    'HISTOGRAM: The Breathless Horror and Disgust' :
+    http://www.idlcoyote.com/tips/histogram_tutorial.html
     """
 
     bin_l = bins.size
@@ -293,7 +300,8 @@ def histogram(
     if min is None:
         min = np.min(data)
     # If the maximum has not been set, set it
-    # Check if the max argument was used, set to True, if we set max here by data turn it off.
+    # Check if the max argument was used, set to True, if we set max here by
+    # data turn it off.
     if max is None:
         max = np.max(data)
     # If the number of bins has been set use that
@@ -306,7 +314,8 @@ def histogram(
         min = max
     # IDL uses the bin_size as equal throughout min to max
     bins = get_bins(min, max, bin_size)
-    # However, if we set a max, we must adjust the last bin to max according to IDL specifications
+    # However, if we set a max, we must adjust the last bin to max according to
+    # IDL specifications
     # And we only do this in the case max was by an argument
     if (bins[-1] > max) or num_bins is not None:
         bins = bins[:-1]
@@ -413,8 +422,9 @@ def rebin_columns(
     col_sizer: int,
 ) -> NDArray[np.integer | np.floating | np.complexfloating]:
     """
-    Performs expansion on the columns of a 1D or 2D array using interpolation to fill in the values that are created
-    by expanding in the space between existing values. This function assumes the rows have already been expanded
+    Performs expansion on the columns of a 1D or 2D array using interpolation to
+    fill in the values that are created by expanding in the space between
+    existing values. This function assumes the rows have already been expanded
     to the required number.
 
     Parameters
@@ -435,8 +445,10 @@ def rebin_columns(
 
     See Also
     --------
-    pyfhd.pyfhd_tools.pyfhd_utils.rebin_rows : Expand the number of rows through interpolation
-    pyfhd.pyfhd_tools.pyfhd_utils.rebin : Expand or Contract an array based on a given shape
+    pyfhd.pyfhd_tools.pyfhd_utils.rebin_rows : Expand the number of rows through
+    interpolation
+    pyfhd.pyfhd_tools.pyfhd_utils.rebin : Expand or Contract an array based on a
+    given shape
     """
     # tile the range of col_sizer
     tiles = np.tile(np.arange(col_sizer), (shape[0], shape[1] // col_sizer - 1))
@@ -444,11 +456,13 @@ def rebin_columns(
     differences = np.diff(a, axis=ax) / col_sizer
     # Multiply this by the tiles
     inferences_non_pad = np.repeat(differences, col_sizer, axis=ax) * tiles
-    # Pad the zeros for the last two rows, and remove the extra zeros to make inferences same shape as desired shape
+    # Pad the zeros for the last two rows, and remove the extra zeros to make
+    # inferences same shape as desired shape
     inferences = np.pad(inferences_non_pad, (0, col_sizer))[:-col_sizer]
     if np.issubdtype(a.dtype, np.integer):
         inferences = np.floor(inferences).astype("int")
-    # Now get our final array by adding the repeat of our rows rebinned to the inferences
+    # Now get our final array by adding the repeat of our rows rebinned to the
+    # inferences
     rebinned = inferences + np.repeat(a, col_sizer, axis=ax)
     return rebinned
 
@@ -461,8 +475,9 @@ def rebin_rows(
     row_sizer: int,
 ) -> NDArray[np.integer | np.floating | np.complexfloating]:
     """
-    Performs expansion on the rows of array `a` to the number of rows in shape[0] using interpolation to fill between any
-    new values added when adding new rows between existing values.
+    Performs expansion on the rows of array `a` to the number of rows in shape[0]
+    using interpolation to fill between any new values added when adding new
+    rows between existing values.
 
     Parameters
     ----------
@@ -484,8 +499,10 @@ def rebin_rows(
 
     See Also
     --------
-    pyfhd.pyfhd_tools.pyfhd_utils.rebin_columns : Expand the number of columns through interpolation
-    pyfhd.pyfhd_tools.pyfhd_utils.rebin : Expand or Contract an array based on a given shape
+    pyfhd.pyfhd_tools.pyfhd_utils.rebin_columns : Expand the number of columns
+    through interpolation
+    pyfhd.pyfhd_tools.pyfhd_utils.rebin : Expand or Contract an array based on a
+    given shape
     """
     # Tile the range of row_sizer
     tiles = np.tile(
@@ -500,7 +517,8 @@ def rebin_rows(
     inferences = np.pad(inferences_non_pad, (0, row_sizer))[:, :-row_sizer]
     if np.issubdtype(a.dtype, np.integer):
         inferences = np.floor(inferences).astype("int")
-    # Add this to the original array that has been repeated to match the size of inference
+    # Add this to the original array that has been repeated to match the size of
+    # inference
     row_rebinned = inferences + np.repeat(a, row_sizer, axis=ax)
     return row_rebinned
 
@@ -511,9 +529,11 @@ def rebin(
     sample: bool = False,
 ) -> NDArray[np.integer | np.floating | np.complexfloating]:
     """
-    Resizes a 2D array by averaging or repeating elements, new dimensions must be integral factors of original dimensions.
+    Resizes a 2D array by averaging or repeating elements, new dimensions must
+    be integral factors of original dimensions.
 
-    In the case of expanding an existing array, rebin will interpolate between the original values with a linear function.
+    In the case of expanding an existing array, rebin will interpolate between
+    the original values with a linear function.
     In the case of compressing an existing array, rebin will average
 
     Parameters
@@ -524,7 +544,8 @@ def rebin(
         Shape of the output array in (rows, columns)
         Must be a factor or multiple of a.shape
     sample: bool, optional
-        Use this to get samples using rebin, rather than interpolation, by default False.
+        Use this to get samples using rebin, rather than interpolation, by
+        default False.
 
     Returns
     -------
@@ -573,8 +594,10 @@ def rebin(
 
     See Also
     --------
-    pyfhd.pyfhd_tools.pyfhd_utils.rebin_rows : Expand the number of rows through interpolation
-    pyfhd.pyfhd_tools.pyfhd_utils.rebin_columns : Expand the number of columns through interpolation
+    pyfhd.pyfhd_tools.pyfhd_utils.rebin_rows : Expand the number of rows through
+    interpolation
+    pyfhd.pyfhd_tools.pyfhd_utils.rebin_columns : Expand the number of columns
+    through interpolation
     """
     old_shape = a.shape
     # Prevent more processing than needed if we want the same shape
@@ -606,7 +629,8 @@ def rebin(
             else:
                 # Compress columns
                 rebinned = rebinned[:, :: old_shape[1] // shape[1]]
-        # Return the rebinned without adjusting dtype as none of the functions above change it
+        # Return the rebinned without adjusting dtype as none of the functions
+        # above change it
         return rebinned
 
     # If we are downsizing
@@ -615,14 +639,16 @@ def rebin(
             max(old_shape[1], shape[1]) % min(old_shape[1], shape[1]) != 0
         ):
             raise ValueError("Your new shape should be a factor of the original shape")
-        # If we are increasing the rows or columns and reducing the other, increase them now and change the old shape
+        # If we are increasing the rows or columns and reducing the other,
+        # increase them now and change the old shape
         if shape[0] > old_shape[0]:
             a = np.tile(a, (shape[0], 1))
             old_shape = a.shape
         elif shape[1] > old_shape[1]:
             a = np.tile(a, (1, shape[1]))
             old_shape = a.shape
-        # Create the shape we need (rows, rows that can fit in old_shape, cols, cols that can fit into old_shape)
+        # Create the shape we need (rows, rows that can fit in old_shape, cols,
+        # cols that can fit into old_shape)
         sh = shape[0], old_shape[0] // shape[0], shape[1], old_shape[1] // shape[1]
         # Create the 4D array
         rebinned = np.reshape(a, sh)
@@ -684,7 +710,8 @@ def weight_invert(
 
     Parameters
     ----------
-    weights: NDArray[np.integer | np.floating | np.complexfloating] | int | float | np.number
+    weights: NDArray[np.integer | np.floating | np.complexfloating] | int |
+        float | np.number
         An array of values of some dtype
     threshold: float | None, optional
         A real number set as the threshold for the array.
@@ -695,12 +722,15 @@ def weight_invert(
 
     Returns
     -------
-    result: NDArray[np.integer | np.floating | np.complexfloating] | int | float | np.number
+    result: NDArray[np.integer | np.floating | np.complexfloating] | int | float
+        | np.number
         The weights array that has had NaNs and Infinities removed, and zeros OR
         values that don't meet the threshold.
     """
-    # IDL is able to treat one number as an array (because every number is aprrently an array of size 1?)
-    # As such we need to check if it's a number less than or equal to 0 and make a zeros array of size 1
+    # IDL is able to treat one number as an array (because every number is
+    # apparently an array of size 1?)
+    # As such we need to check if it's a number less than or equal to 0 and make
+    # a zeros array of size 1
     scalar = False
     if np.isscalar(weights):
         scalar = True
@@ -730,8 +760,10 @@ def weight_invert(
         np.nonzero(test ge 2) == [1, 2]
         np.nonzero(test ge COMPLEX(0,2)) == [1, 2]
 
-        IDL on the otherhand, uses the ABS function on COMPLEX numbers before using WHERE.
-        Hence the behaviour we're seeing above. This is why we also check for a complexobj
+        IDL on the otherhand, uses the ABS function on COMPLEX numbers before
+        using WHERE.
+        Hence the behaviour we're seeing above. This is why we also check for a
+        complexobj
         in the if statement
         """
         weights_use = np.abs(weights)
@@ -791,7 +823,8 @@ def array_match(
 
     if value_match is None:
         raise ValueError("Value Match Should be a value not None")
-    # If array_2 has been supplied, compare which mins and maxes to use based on two arrays
+    # If array_2 has been supplied, compare which mins and maxes to use based on
+    # two arrays
     if array_2 is not None and np.size(array_2) > 0:
         min_use = np.min([np.min(array_1), np.min(array_2)])
         max_use = np.max([np.max(array_1), np.max(array_2)])
@@ -905,7 +938,8 @@ def deriv_coefficients(n: int, divide_factorial: bool = False) -> NDArray[np.flo
     coeff[0] = 1
     # For every coefficient
     for m in range(1, n):
-        # Had to do m + 1 for the range as IDL coeff[1:1] == coeff[1], but Python coeff[1:1] == array([])
+        # Had to do m + 1 for the range as IDL coeff[1:1] == coeff[1], but
+        # Python coeff[1:1] == array([])
         coeff[1 : m + 1] += -m * coeff[0:m]
     # If we are to divide by the factorial do that to each coefficient
     if divide_factorial:
@@ -992,7 +1026,8 @@ def angle_difference(
 
 def parallactic_angle(latitude: float, hour_angle: float, dec: float) -> float:
     """
-    Calculates the parallactic angle given latitude (usually a declination), hour_angle and another declination
+    Calculates the parallactic angle given latitude (usually a declination),
+    hour_angle and another declination
 
     Parameters
     ----------
@@ -1006,7 +1041,8 @@ def parallactic_angle(latitude: float, hour_angle: float, dec: float) -> float:
     Returns
     -------
     parallactic_angle : float
-        The angle between the great circle through a celestial object and the zenith, and the hour circle of the object
+        The angle between the great circle through a celestial object and the
+        zenith, and the hour circle of the object
     """
 
     y_term = np.sin(np.radians(hour_angle))
@@ -1070,25 +1106,33 @@ def resistant_mean(
     ),
 ) -> int | float | complex | np.number:
     """
-    The resistant_mean function translate the IDLAstro function resistant_mean from IDL to Python using NumPy.
-    The values mad_scale and sigma_coeff are also retrieved from the same IDLAstro function when running in Double
-    Precision Mode.
+    The resistant_mean function translate the IDL Astrolib function resistant_mean
+    from IDL to Python using NumPy. The values mad_scale and sigma_coeff are
+    also retrieved from the same IDL Astrolib function when running in double
+    precision mode.
 
-    The resistant_mean gets the mean of an array which has had a median absolute deviation threshold applied to the
-    absolute deviations of the array to exclude outliers.
+    The resistant_mean gets the mean of an array which has had a median absolute
+    deviation threshold applied to the absolute deviations of the array to
+    exclude outliers.
 
     If resistant_mean needs to be optimized, it can be vectorized easily enough
 
     Parameters
     ----------
     array : NDArray[np.integer | np.floating | np.complexfloating]
-        A 1 dimensional array of values, multidimensional arrays should be flattened before use
+        A 1 dimensional array of values, multidimensional arrays should be
+        flattened before use
     deviations : int
-        The number of median absolute deviations from the median we want use to exclude outliers
+        The number of median absolute deviations from the median we want use to
+        exclude outliers
     mad_scale : float, optional
-        The scale factor for the median absolute deviation, by default 0.67449999999999999
+        The scale factor for the median absolute deviation, by default
+        0.67449999999999999
     sigma_coeff : NDArray[np.float64], optional
-        The coefficients applied to the polynomial equation to the standard deviation of the points excluded by the outliers for additional exclusion, by default np.array([0.020142000000000000, -0.23583999999999999 , 0.90722999999999998 , -0.15404999999999999])
+        The coefficients applied to the polynomial equation to the standard
+        deviation of the points excluded by the outliers for additional exclusion,
+        by default np.array([0.020142000000000000, -0.23583999999999999 ,
+        0.90722999999999998 , -0.15404999999999999])
 
     Returns
     -------
@@ -1104,13 +1148,15 @@ def resistant_mean(
     # Get the absolute deviation (residuals)
     abs_dev = np.abs(array - median)
     # Calculate Median Absolute Deviation
-    # I could have used scipy's median_abs_deviation to get this, but by doing this manually I can guarantee the same behaviour as IDL
+    # I could have used scipy's median_abs_deviation to get this, but by doing
+    # this manually I can guarantee the same behaviour as IDL
     mad = np.median(abs_dev) / mad_scale
     #  Use MAD and the number of deviations
     mad_threshold = deviations * mad
     # Subset the array by the deviations and residuals
     no_outliers = array[np.where(abs_dev <= mad_threshold)]
-    # If the deviations is less than 4.5, change the sigma (standard deviation of the subarray) by using a polyval with set sigma coefficient
+    # If the deviations is less than 4.5, change the sigma (standard deviation
+    # of the subarray) by using a polyval with set sigma coefficient
     # This compensates Sigma for truncation
     # Calculate the standard deviation of the rela and imag separately
     sigma = np.std(no_outliers.real) + np.std(no_outliers.imag) * 1j
@@ -1120,7 +1166,8 @@ def resistant_mean(
         sigma = sigma / np.polyval(sigma_coeff, deviationsX)
     sigma_threshold = sigma * deviations
     # Use the sigma threshold to again remove outliers from the array
-    # Also take the absolute value of sigma_threshold to get the same behaviour as LE in IDL
+    # Also take the absolute value of sigma_threshold to get the same behaviour
+    # as LE in IDL
     subarray = array[np.where(abs_dev <= np.abs(sigma_threshold))]
     # Get the mean of the subset array which contains no outliers
     return np.mean(subarray)
@@ -1128,20 +1175,24 @@ def resistant_mean(
 
 def run_command(cmd: str, dry_run=False):
     """
-    Runs the command string `cmd` using `subprocess.run`. Returns any text output to stdout
+    Runs the command string `cmd` using `subprocess.run`. Returns any text output
+    to stdout
 
     Parameters
     ----------
     cmd : str
-         The command to run on the command line
+        The command to run on the command line
     dry_run : bool
-         If True, don't actually run the command. Defaults to False (so defaults to running the command)
+        If True, don't actually run the command. Defaults to False (so defaults
+        to running the command)
     """
 
     if dry_run:
         stdout = "This was a dry run, not launching IDL code\n"
     else:
-        stdout = subprocess.run(cmd.split(), stdout=subprocess.PIPE, text=True).stdout  # nosec B603
+        stdout = subprocess.run(  # nosec B603
+            cmd.split(), stdout=subprocess.PIPE, text=True
+        ).stdout  # nosec B603
 
     return stdout
 
@@ -1211,7 +1262,8 @@ def vis_weights_update(
         xmin[flag_dist_i] = -1
         ymin[flag_dist_i] = -1
 
-    # If flag_frequencies is false, freq_use should be all 1's anyway, so this shouldn't affect anything
+    # If flag_frequencies is false, freq_use should be all 1's anyway, so this
+    # shouldn't affect anything
     freq_cut_i = np.where(obs["baseline_info"]["freq_use"] == 0)
     if freq_cut_i[0].size > 0:
         vis_weights[0 : obs["n_pol"], freq_cut_i[0], :] = 0
@@ -1401,11 +1453,13 @@ def idl_median(
     even: bool = False,
 ) -> float:
     """
-    The IDL Median function doesn't always work as you'd expect, as generally you need to use the
-    EVEN keyword to get the median of an even number of elements, otherwise it returns the
-    maximum element of the two numbers in the middle of an even sorted array.
-    This function replicates the IDL median function, in case you need that functionality.
-    Typically though, we recommend using `numpy.median` or `scipy.ndimage.median_filter`.
+    The IDL Median function doesn't always work as you'd expect, as generally
+    you need to use the EVEN keyword to get the median of an even number of
+    elements, otherwise it returns the maximum element of the two numbers in the
+    middle of an even sorted array. This function replicates the IDL median
+    function, in case you need that functionality.
+    Typically though, we recommend using `numpy.median` or
+    `scipy.ndimage.median_filter`.
 
     Parameters
     ----------
@@ -1418,7 +1472,8 @@ def idl_median(
 
 
     When `width` is set. unfortunately the edge conditions when using cannot be
-    replicated soley with `scipy.ndimage.median_filter` so use `median_filter`    and set the edge cases manually
+    replicated soley with `scipy.ndimage.median_filter` so use `median_filter`
+    and set the edge cases manually
 
     Returns
     -------
@@ -1486,7 +1541,8 @@ def reshape_and_average_in_time(
 
     if vis_weights.shape != new_shape:
         exit(
-            f"Attempting to use weights with shape {vis_weights.shape} in `reshape_and_average_in_time`, this is not allowed"
+            f"Attempting to use weights with shape {vis_weights.shape} in "
+            "`reshape_and_average_in_time`, this is not allowed"
         )
 
     reshape_array = np.reshape(vis_array, new_shape)
@@ -1502,13 +1558,16 @@ def region_grow(
     high: int | float | None = None,
 ) -> NDArray[np.integer | np.floating | np.complexfloating] | None:
     """
-    Replicates IDL's Region Grow, where a region of interest will grow based upon a given threshold
-    within a 2D array. It finds all the pixels within the array that are connected neighbors via the
-    threshold and blob detection using SciPy's `label` function. In this case, the standard deviation
-    form of this function hasn't been implemented as pyfhd will only use this function once with a threshold.
+    Replicates IDL's Region Grow, where a region of interest will grow based
+    upon a given threshold within a 2D array. It finds all the pixels within the
+    array that are connected neighbors via the threshold and blob detection using
+    SciPy's `label` function. In this case, the standard deviation form of this
+    function hasn't been implemented as pyfhd will only use this function once
+    with a threshold.
 
-    If you want to use standard deviation region growing adjusting the function can be done by potentially
-    implementing skimage's blob detection algorithms for the labelling and keeping the rest the same.
+    If you want to use standard deviation region growing adjusting the function
+    can be done by potentially implementing skimage's blob detection algorithms
+    for the labelling and keeping the rest the same.
 
     Parameters
     ----------
@@ -1518,15 +1577,18 @@ def region_grow(
         The region of interest given as FLAT indexes i.e. array.flat
     low : int | float | None, optional
         The low threshold, any number below this is considered background,
-        If left as None, this will be the lowest value of the region of interest, by default None
+        If left as None, this will be the lowest value of the region of interest,
+        by default None
     high : int | float | None, optional
         The high threshold, any number higher than this is considered background,
-        If left as None, this will be the highest value of the region of interest, by default None
+        If left as None, this will be the highest value of the region of interest,
+        by default None
 
     Returns
     -------
     growROIPixels: NDArray[np.integer | np.floating | np.complexfloating] | None
-        The grown region of interest that has connected neighbours by using the threshold
+        The grown region of interest that has connected neighbours by using the
+        threshold
 
     See Also
     --------
@@ -1534,7 +1596,8 @@ def region_grow(
 
     Notes
     -----
-    'scikit-image Blob Detection' : https://scikit-image.org/docs/stable/auto_examples/features_detection/plot_blob.html
+    'scikit-image Blob Detection' :
+    https://scikit-image.org/docs/stable/auto_examples/features_detection/plot_blob.html
     """
     # Get the roi and set the low and high thresholds if they haven't been so already.
     roi = image.flat[roiPixels]
@@ -1561,7 +1624,8 @@ def region_grow(
     else:
         labelArray[0] = 0
         labelArray[-1] = 0
-    # Get the histogram of the labels to ascertain the neighbours we will be interested in
+    # Get the histogram of the labels to ascertain the neighbours we will be
+    # interested in
     if np.size(roiPixels) > 1:
         labels, _, _ = histogram(labelArray.flat[roiPixels], min=0)
         labels = np.nonzero(labels != 0)[0]

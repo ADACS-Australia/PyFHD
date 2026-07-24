@@ -19,8 +19,9 @@ def vis_calibrate_subroutine(
     no_ref_tile=False,
 ):
     """
-    Perform a linear least-squares regression between the data visilbities and the simulated model
-    visiblities to solve for an amplitude and phase for each tile for each frequency channel.
+    Perform a linear least-squares regression between the data visilbities and
+    the simulated model visiblities to solve for an amplitude and phase for each
+    tile for each frequency channel.
 
     Parameters
     ----------
@@ -37,8 +38,8 @@ def vis_calibrate_subroutine(
     pyfhd_config : dict
         pyfhd's configuration dictionary containing all the options set for a pyfhd run
     calibration_weights : bool, optional
-        Weight the visibilities at the minimum and maximum baseline by a soft taper for
-        calibration purposes only, by default False
+        Weight the visibilities at the minimum and maximum baseline by a soft
+        taper for calibration purposes only, by default False
     no_ref_tile : bool, optional
         Do not reference calibration phases at this stage, by default False
 
@@ -50,12 +51,14 @@ def vis_calibrate_subroutine(
     Raises
     ------
     ValueError
-        Should almost never happen, only gets raised for max_cal_iter has been set to less than 5, however
-        since it's currently hardcoded in here it's more of an exception for any developers of pyfhd
+        Should almost never happen, only gets raised for max_cal_iter has been
+        set to less than 5, however since it's currently hardcoded in here it's
+        more of an exception for any developers of pyfhd
     """
     # Retrieve values from data structures
-    # There is a few hardcoded values in here that were previously hardcoded in fhd_struct_init_cal
-    # If you wish to change them, add them to the pyfhd_config through pyfhd_setup and the config in pyfhd.yaml
+    # There is a few hardcoded values in here that were previously hardcoded in
+    # fhd_struct_init_cal. If you wish to change them, add them to the
+    # pyfhd_config through pyfhd_setup and the config in pyfhd.yaml
     reference_tile = 1
     min_baseline = obs["min_baseline"]
     max_baseline = obs["max_baseline"]
@@ -71,7 +74,8 @@ def vis_calibrate_subroutine(
         if pyfhd_config["max_cal_baseline"]
         else obs["max_baseline"]
     )
-    # minimum number of calibration equations needed to solve for the gain of one baseline
+    # minimum number of calibration equations needed to solve for the gain of
+    # one baseline
     min_cal_solutions = 5
     # For record keeping
     cal["min_cal_solutions"] = min_cal_solutions
@@ -82,13 +86,13 @@ def vis_calibrate_subroutine(
     # Leave a warning if its less than 5 iterations, or an Error if its less than 1
     if max_cal_iter < 5:
         warnings.warn(
-            "At Least 5 calibrations iterations is recommended.\nYou're currently using {} iterations".format(
-                int(max_cal_iter)
-            )
+            "At Least 5 calibrations iterations is recommended. "
+            f"You're currently using {max_cal_iter} iterations"
         )
     elif max_cal_iter < 1:
         raise ValueError(
-            "max_cal_iter should be 1 or more. A max_cal_iter of 5 or more is recommended"
+            "max_cal_iter should be 1 or more. A max_cal_iter of 5 or more is "
+            "recommended"
         )
     conv_thresh = pyfhd_config["cal_convergence_threshold"]
     use_adaptive_gain = pyfhd_config["cal_adaptive_calibration_gain"]
@@ -114,7 +118,8 @@ def vis_calibrate_subroutine(
     if pyfhd_config["cal_phase_fit_iter"]:
         phase_fit_iter = pyfhd_config["cal_phase_fit_iter"]
     else:
-        # This gets set multiple times in FHD, by default it's 4, and is set in fhd_struct_init_cal
+        # This gets set multiple times in FHD, by default it's 4, and is set in
+        # fhd_struct_init_cal
         phase_fit_iter = np.min([np.floor(max_cal_iter / 4), 4])
     kbinsize = obs["kpix"]
 
@@ -124,14 +129,16 @@ def vis_calibrate_subroutine(
     cal["tile_flag"] = np.zeros([n_tile], dtype=np.bool)
     for pol_i in range(n_pol):
         logger.info(
-            f"Beginning Calibration for polarization {pol_i} ({obs['pol_names'][pol_i]})"
+            f"Beginning Calibration for polarization {pol_i} "
+            f"({obs['pol_names'][pol_i]})"
         )
         convergence = np.zeros((n_freq, n_tile))
         conv_iter_arr = np.zeros((n_freq, n_tile))
         # Want to ensure we're not affecting the current array till we overwrite it
         gain_arr = cal["gain"][pol_i].copy()
 
-        # Average the visibilities over the time steps before solving for the gains solutions
+        # Average the visibilities over the time steps before solving for the
+        # gains solutions
         # This is not recommended, as longer baselines will be downweighted artifically.
         if time_average:
             # The visibilities have dimension nfreq x (n_baselines x n_time),
@@ -143,10 +150,12 @@ def vis_calibrate_subroutine(
             # Although, to get the same results in the shape we want we need to do a few
             # transposes
             shape = np.array([n_time, n_baselines, n_freq])
-            # Transpose here so it's in the same shape as IDL when reshaping, then transpose
-            # back to get the shape we need to suit the shape of the rest of the arrays
-            # I suspect this is because the reshape has no guarantee of the memory layout
-            # at the end, which means we swap indexes of values that is not consistent with IDL
+            # Transpose here so it's in the same shape as IDL when reshaping,
+            # then transpose back to get the shape we need to suit the shape of
+            # the rest of the arrays.
+            # I suspect this is because the reshape has no guarantee of the
+            # memory layout at the end, which means we swap indexes of values
+            # that is not consistent with IDL
             vis_weight_use_reshaped = np.reshape(vis_weight_ptr_use[pol_i].T, shape).T
             vis_weight_use = np.maximum(vis_weight_use_reshaped, 0)
             vis_weight_use = np.minimum(vis_weight_use, 1)
@@ -159,7 +168,8 @@ def vis_calibrate_subroutine(
             kx_arr = params["uu"][0:n_baselines] / kbinsize
             ky_arr = params["vv"][0:n_baselines] / kbinsize
         else:
-            # In the case of not using a time_average do the following setup instead for weight and vis_avg
+            # In the case of not using a time_average do the following setup
+            # instead for weight and vis_avg
             vis_weight_use = np.maximum(0, vis_weight_ptr_use[pol_i])
             vis_weight_use = np.minimum(vis_weight_use, 1)
             vis_model = vis_model_ptr[pol_i] * vis_weight_use
@@ -168,7 +178,8 @@ def vis_calibrate_subroutine(
 
             kx_arr = params["uu"] / kbinsize
             ky_arr = params["vv"] / kbinsize
-        # Now use the common code from the two possibilities in vis_calibrate_subroutine.pro
+        # Now use the common code from the two possibilities in
+        # vis_calibrate_subroutine.pro
         kr_arr = np.sqrt(kx_arr**2 + ky_arr**2)
         # When IDL does a matrix multiply on two 1D vectors it does the outer product.
         dist_arr = np.outer(kr_arr, freq_arr).T * kbinsize
@@ -200,7 +211,8 @@ def vis_calibrate_subroutine(
                 | (xcen > (elements / 2))
                 | (ycen > (dimension / 2))
             )
-        # Remove kx_arr, ky_arr and dist_arr from the namespace, allow garbage collector to do its work
+        # Remove kx_arr, ky_arr and dist_arr from the namespace, allow garbage
+        # collector to do its work
         del (kx_arr, ky_arr, dist_arr)
 
         if np.size(flag_dist_cut) > 0:
@@ -286,13 +298,16 @@ def vis_calibrate_subroutine(
                     A_ind_arr.append(np.reshape(inds, (inds.size, 1)))
                 else:
                     A_ind_arr.append(-1)
-                # NEED SOMETHING MORE IN CASE INDIVIDUAL TILES ARE FLAGGED FOR ONLY A FEW FREQUENCIES!!
+                # NEED SOMETHING MORE IN CASE INDIVIDUAL TILES ARE FLAGGED FOR
+                # ONLY A FEW FREQUENCIES!!
                 n_arr[tile_i] = inds.size
-            # I suspect a list of lists maybe faster than the object array, check during optimization
+            # I suspect a list of lists maybe faster than the object array,
+            # check during optimization
             # Although I doubt it will make a huge difference.
             A_ind_arr = np.array(A_ind_arr, dtype=object)
-            # For tiles which don't satisfy the minimum number of solutions, pre-emptively set them to 0
-            # in order to prevent certain failure in meeting strict convergence threshold
+            # For tiles which don't satisfy the minimum number of solutions,
+            # pre-emptively set them to 0 in order to prevent certain failure in
+            # meeting strict convergence threshold
             inds_min_cal = np.where(n_arr < min_cal_solutions)[0]
             if inds_min_cal.size > 0:
                 gain_curr[inds_min_cal] = 0
@@ -310,9 +325,10 @@ def vis_calibrate_subroutine(
                     if n_arr[tile_i] >= min_cal_solutions:
                         if calibration_weights:
                             xmat = vis_model_matrix[(A_ind_arr[tile_i]).astype(int)]
-                            # For some reason IDL multiplcation just allows two arrays of
-                            # very dissimilar sizes to be multiplied by just ignoring everything
-                            # after the index of the smallest one!?! Could be worth checking this is
+                            # For some reason IDL multiplcation just allows two
+                            # arrays of very dissimilar sizes to be multiplied
+                            # by just ignoring everything after the index of the
+                            # smallest one!?! Could be worth checking this is
                             # what this line was meant to do.
                             xmat = xmat.flatten()
                             xmat_dag = np.conj(xmat) * baseline_wts2[0 : xmat.size]
@@ -388,38 +404,51 @@ def vis_calibrate_subroutine(
                         ):
                             n_converged += 1
                             if convergence_loose <= conv_thresh:
-                                # If the previous solution met the threshold, but the current one did not, then
+                                # If the previous solution met the threshold,
+                                # but the current one did not, then
                                 # back up one iteration and use the previous solution
                                 gain_curr = gain_old.copy()
                                 convergence[fi, tile_use] = conv_test[fii, i - 1]
                                 conv_iter_arr[fi, tile_use] = i - 1
                             break
                         else:
-                            # Halt if the strict convergence is worse than most of the recent iterations
-                            # Needed to use IDL_MEDIAN here as the numpy median was producing values different
-                            # from IDL as the even keyword was not used. This need to may change over time as
+                            # Halt if the strict convergence is worse than most
+                            # of the recent iterations.
+                            # Needed to use IDL_MEDIAN here as the numpy median
+                            # was producing values different
+                            # from IDL as the even keyword was not used. This
+                            # need to may change over time as
                             # the calibration gets adjusted for double precision
                             divergence_test_1 = convergence_strict >= idl_median(
                                 conv_test[fii, i - divergence_history - 1 : i]
                             )
-                            # Also halt if the convergence gets significantly worse in one iteration
+                            # Also halt if the convergence gets significantly
+                            # worse in one iteration
                             divergence_test_2 = (
                                 convergence_strict
                                 >= np.min(conv_test[fii, 0:i]) * divergence_factor
                             )
-                            # possible bug fix; should we really test for divergence when only
-                            # fitting the phase? Fix below doesn't use the phase-only portion
-                            # of fitting when checking for divergence
-                            # divergence_test_2 = convergence_strict >= np.min(conv_test[int(phase_fit_iter): i, fii]) * divergence_factor
+                            # possible bug fix; should we really test for
+                            # divergence when only fitting the phase? Fix below
+                            # doesn't use the phase-only portion of fitting when
+                            # checking for divergence
+                            # divergence_test_2 = convergence_strict >= np.min(
+                            #   conv_test[int(phase_fit_iter): i, fii]
+                            # ) * divergence_factor
                             if divergence_test_1 or divergence_test_2:
-                                # If both measures of convergence are getting worse, we need to stop.
+                                # If both measures of convergence are getting
+                                # worse, we need to stop.
                                 logger.info(
-                                    f"Calibration diverged at iteration: {i}, for pol_i: {pol_i}, freq_i: {fi}. Convergence was: {conv_test[fii, i - 1]} and the threshold was: {conv_thresh}"
+                                    f"Calibration diverged at iteration: {i}, "
+                                    f"for pol_i: {pol_i}, freq_i: {fi}. Convergence "
+                                    f"was: {conv_test[fii, i - 1]} and the "
+                                    f"threshold was: {conv_thresh}"
                                 )
                                 divergence_flag = True
                                 break
             if divergence_flag:
-                # If the solution diverged, back up one iteration and use the previous solution
+                # If the solution diverged, back up one iteration and use the
+                # previous solution
                 gain_curr = gain_old.copy()
                 convergence[fi, tile_use] = conv_test[fii, i - 1]
                 conv_iter_arr[fi, tile_use] = i - 1
@@ -430,11 +459,15 @@ def vis_calibrate_subroutine(
                 conv_iter_arr[fi, tile_use] = i
             if i == max_cal_iter:
                 logger.info(
-                    f"Calibration reach max iterations before converging for pol_i: {pol_i} and freq_i: {fi}. Convergence was: {conv_test[fii, i - 1]} and the threshold was: {conv_thresh}"
+                    f"Calibration reach max iterations before converging for "
+                    f"pol_i: {pol_i} and freq_i: {fi}. Convergence was: "
+                    f"{conv_test[fii, i - 1]} and the threshold was: {conv_thresh}"
                 )
             del A_ind_arr
             logger.info(
-                f"Convergence was reached for polarization: {obs['pol_names'][pol_i]} ({pol_i}) and frequency: {fi}, with a convergence of: {conv_test[fii, i]} and the threshold was: {conv_thresh}"
+                f"Convergence was reached for polarization: {obs['pol_names'][pol_i]} "
+                f"({pol_i}) and frequency: {fi}, with a convergence of: "
+                f"{conv_test[fii, i]} and the threshold was: {conv_thresh}"
             )
             gain_arr[fi, tile_use] = gain_curr
         nan_i = np.where(np.isnan(gain_curr))[0]

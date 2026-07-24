@@ -25,20 +25,13 @@ def run(request):
     return request.param
 
 
+# Last 3 are due to resistant_mean calculating in single precision in IDL unless
+# double keyword is used
 skip_tests = [
     ["1088716296", "run3"],
-    [
-        "1088716296",
-        "run2",
-    ],  # Due to resistant_mean calculating in single precision in IDL unless double keyword is used
-    [
-        "point_zenith",
-        "run2",
-    ],  # Due to resistant_mean calculating in single precision in IDL unless double keyword is used
-    [
-        "point_zenith",
-        "run3",
-    ],  # Due to resistant_mean calculating in single precision in IDL unless double keyword is used
+    ["1088716296", "run2"],
+    ["point_zenith", "run2"],
+    ["point_zenith", "run3"],
 ]
 
 
@@ -87,15 +80,17 @@ def after_file(tag, run, data_dir):
 
 
 def test_points_zenith_offzenith_and_1088716296(before_file, after_file):
-    """Runs the test on `resistant_mean` - reads in the data in before_file and after_file,
-    and then calls `resistant_mean`, checking the outputs match expectations"""
+    """
+    Runs the test on `resistant_mean` - reads in the data in before_file and
+    after_file, and then calls `resistant_mean`, checking the outputs match expectations
+    """
     if before_file is None or after_file is None:
         pytest.skip(
-            f"""
-                    This test has been skipped because the test was listed in the skipped tests
-                    due to FHD not outputting them: {skip_tests}. In this case precision played a
-                    major factor, resistant_mean when using the double keyword in IDL will get the same
-                    result as Python, but the tests taken here were single_precision."""
+            "This test has been skipped because the test was listed in the "
+            f"skipped tests due to FHD not outputting them: {skip_tests}. In "
+            "this case precision played a major factor, resistant_mean when using "
+            "the double keyword in IDL will get the sameresult as Python, but "
+            "the tests taken here were single_precision."
         )
 
     h5_before = load(before_file)

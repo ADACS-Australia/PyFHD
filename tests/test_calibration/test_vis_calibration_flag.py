@@ -94,17 +94,20 @@ def after_file(tag, run, data_dir):
 
 @pytest.mark.github_actions
 def test_vis_calibration_flag(before_file, after_file):
-    """Runs the test on `vis_calibration_flag` - reads in the data in before_file and after_file,
-    and then calls `vis_calibration_flag`, checking the outputs match expectations"""
+    """Runs the test on `vis_calibration_flag` - reads in the data in before_file
+    and after_file, and then calls `vis_calibration_flag`, checking the outputs
+    match expectations"""
     if before_file is None or after_file is None:
-        pytest.skip(f"""This test has been skipped because the test was listed in the
-                    skipped tests due to FHD not outputting them: {skip_tests}. The reason
-                    for skipping point_offzenith_run3 is due to the difference of NumPy median
-                    and median in IDL. IDL doesn't take the average of the two middle numbers
-                    when dealing with an an array of even values. It wasn't a problem in the other
-                    cases, but not this one, and because we're dealing with a continuous set of data,
-                    it doesn't feel appropriate to use the IDL median.
-                    """)
+        pytest.skip(
+            "This test has been skipped because the test was listed in the "
+            f"skipped tests due to FHD not outputting them: {skip_tests}. The "
+            "reason for skipping point_offzenith_run3 is due to the difference "
+            "of NumPy median and median in IDL. IDL doesn't take the average of "
+            "the two middle numbers when dealing with an an array of even values. "
+            "It wasn't a problem in the other cases, but not this one, and "
+            "because we're dealing with a continuous set of data, it doesn't feel "
+            "appropriate to use the IDL median."
+        )
 
     h5_before = load(before_file)
     expected_obs = load(after_file)

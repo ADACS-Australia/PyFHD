@@ -38,7 +38,8 @@ def filter_uv_uniform(
     weights : NDArray[np.float64] | None, optional
         The weights array (aka vis_weights), by default None
     fi_use : NDArray[np.integer] | None, optional
-        Frequency index array for gridding, i.e. gridding all frequencies for continuum images, by default None
+        Frequency index array for gridding, i.e. gridding all frequencies for
+        continuum images, by default None
     bi_use : NDArray[np.integer] | None, optional
         Baseline index array for gridding, i.e even vs odd time stamps, by default None
     mask_mirror_indices : bool, optional
@@ -59,8 +60,9 @@ def filter_uv_uniform(
 
     # If you need the name, grab it from pyfhd_config where needed
 
-    # This does not make use of fine-grained flagging, but relies on coarse flags from the obs structure
-    # (i.e. a list of tiles completely flagged, and of frequencies completely flagged)
+    # This does not make use of fine-grained flagging, but relies on coarse
+    # flags from the obs structure (i.e. a list of tiles completely flagged, and
+    # of frequencies completely flagged)
     if vis_count is None:
         if obs is not None or params is not None:
             vis_count = gridding_utils.visibility_count(

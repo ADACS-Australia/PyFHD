@@ -59,8 +59,8 @@ def vis_extract_autocorr(
             auto_corr = np.zeros((obs["n_pol"], obs["n_freq"], auto_tile_i_single.size))
 
         for pol_i in range(obs["n_pol"]):
-            # Auto-correlations by definition are enirely real, so take the real part here
-            # index this way in case people have vis_arr as one dimensional
+            # Auto-correlations by definition are enirely real, so take the real
+            # part here index this way in case people have vis_arr as one dimensional
             # array, containing two further 2D arrays, rather than a proper 3D
             # array. Turns out this indexing is consistent across both cases
             auto_vals = np.real(vis_arr[pol_i][:, autocorr_i])
@@ -106,16 +106,17 @@ def vis_cal_auto_init(
     auto_tile_i: NDArray[np.integer],
 ) -> NDArray[np.complex128]:
     """
-    Initialize the calibration solutions using the autocorrelations prior to the linear least squares fit
-    for faster convergence. The auto-correlations and cross-correlations have separate formulisms for the
-    initialization.
+    Initialize the calibration solutions using the autocorrelations prior to the
+    linear least squares fit for faster convergence. The auto-correlations and
+    cross-correlations have separate formulisms for the initialization.
 
-    Autos -- Square root of "Ratio of data autos to model autos" x "overall mean for both crosses and
-    autos of ratio of data to model" / "overall mean of ratio of data autos to model autos, with 1's
-    for crosses", results in a per-frequency, per-baseline gain scaling.
-    Crosses -- Square root of "overall mean for both crosses and autos of ratio of data to model" /
-    "overall mean of ratio of data autos to model autos, with 1's for crosses", results in a single
-    number gain scaling.
+    Autos -- Square root of "Ratio of data autos to model autos" x "overall mean
+    for both crosses and autos of ratio of data to model" / "overall mean of
+    ratio of data autos to model autos, with 1's for crosses", results in a
+    per-frequency, per-baseline gain scaling. Crosses -- Square root of "overall
+    mean for both crosses and autos of ratio of data to model" /
+    "overall mean of ratio of data autos to model autos, with 1's for crosses",
+    results in a single number gain scaling.
 
     Parameters
     ----------
@@ -169,11 +170,13 @@ def vis_calibration_flag(
     obs: dict, cal: dict, pyfhd_config: dict, logger: Logger
 ) -> dict:
     """
-    Flag tile and frequency outliers based on the calibration solutions. First, iteratively flag a maximum of three
-    times on amplitude with three tests: 1) flag frequencies above 5 sigma, 2) flag tiles above 5 sigma, and 3) flag
-    tiles either 2x lower or 2x higher than average. Second, iteratively flag a maximum of three times on phase with
-    two tests: 1) flag tiles with slopes above 5 sigma, and 2) flag tiles with per-frequency deviations from their slope
-    above 5 sigma.
+    Flag tile and frequency outliers based on the calibration solutions. First,
+    iteratively flag a maximum of three times on amplitude with three tests:
+    1) flag frequencies above 5 sigma, 2) flag tiles above 5 sigma, and 3) flag
+    tiles either 2x lower or 2x higher than average. Second, iteratively flag a
+    maximum of three times on phase with two tests: 1) flag tiles with slopes
+    above 5 sigma, and 2) flag tiles with per-frequency deviations from their
+    slope above 5 sigma.
 
     Parameters
     ----------
@@ -208,9 +211,11 @@ def vis_calibration_flag(
         # use np.where on gain, which will be multidimensional as well
         amp_sub = amp[:, tile_use_i][freq_use_i, :]
         gain_freq_fom = np.std(amp_sub, axis=1)
-        # Calculate the y values from a polynomial fit and keep the standard deviation of the error in gain_tile_fom
+        # Calculate the y values from a polynomial fit and keep the standard
+        # deviation of the error in gain_tile_fom
         amp_sub_fit = np.zeros_like(amp_sub)
-        # Polynomial polyval can only take 1d arrays and doesn't vectorize across a 2d array.
+        # Polynomial polyval can only take 1d arrays and doesn't vectorize
+        # across a 2d array.
         for tile_i in range(tile_use_i.size):
             amp_sub_fit[:, tile_i] = np.polynomial.polynomial.polyval(
                 freq_use_i,
@@ -238,7 +243,8 @@ def vis_calibration_flag(
             obs["baseline_info"]["tile_use"][tile_use_i][tile_cut_i] = 0
         if freq_uncut_i.size == 0 or tile_uncut_i.size == 0:
             logger.error(
-                "The frequency and tile flagging inside calibration found some values not detected in previous flagging or calibration"
+                "The frequency and tile flagging inside calibration found some "
+                "values not detected in previous flagging or calibration"
             )
 
         n_addl_cut = max(freq_cut_i.size + tile_cut_i.size, 1)
@@ -292,7 +298,8 @@ def vis_calibration_flag(
             phase_params = phase_params.convert().coef
             phase_fit = np.polynomial.polynomial.polyval(freq_use_i, phase_params)
             phase_sigma2 = np.std(phase_use - phase_fit)
-            # In an unusual scenario sometimes you'll get an all 0 array to fit on, which gives only a zero back for the fit
+            # In an unusual scenario sometimes you'll get an all 0 array to fit
+            # on, which gives only a zero back for the fit
             phase_slope_arr[tile_i] = phase_params[1] if phase_params.size > 1 else 0
             phase_sigma_arr[tile_i] = phase_sigma2
         iter = 0
@@ -323,8 +330,9 @@ def transfer_bandpass(
     obs: dict, cal: dict, pyfhd_config: dict, logger: Logger
 ) -> tuple[dict, dict]:
     """
-    Apply a previously saved bandpass via a calfits file (github:pyuvdata). Check adherance to standards,
-    and match the polarizations, frequencies, timing, pointings, and tiles.
+    Apply a previously saved bandpass via a calfits file (github:pyuvdata).
+    Check adherance to standards, and match the polarizations, frequencies,
+    timing, pointings, and tiles.
 
     Parameters
     ----------
@@ -356,7 +364,8 @@ def transfer_bandpass(
         n_jones = calfits[0].header["njones"]
         if "delay" in calfits[0].header["caltype"]:
             raise RuntimeWarning(
-                "Input Delay calibration not supported at this time, skipping calibration bandpass transfer."
+                "Input Delay calibration not supported at this time, skipping "
+                "calibration bandpass transfer."
             )
         time_integration = calfits[0].header["inttime"]
         freq_channel_width = calfits[0].header["chwidth"]
@@ -377,7 +386,8 @@ def transfer_bandpass(
         freq_index = np.nonzero("freqs" == data_types)[0][0]
         time_index = np.nonzero("time" == data_types)[0][0]
         jones_index = np.nonzero("jones" == data_types)[0][0]
-        # Deal with spec_wind_index separately as default highband file doesn't have this in
+        # Deal with spec_wind_index separately as default highband file doesn't
+        # have this in
         # May cause issues with other fits files, adjust the code then.
         spec_wind_index = np.nonzero("if" == data_types)[0]
         if spec_wind_index.size == 0:
@@ -402,13 +412,15 @@ def transfer_bandpass(
                 logger.info("Calfits adheres to the Fall 2018 pyuvdata convention")
                 if calfits[0].header["naxis5"] != 1:
                     raise RuntimeWarning(
-                        "Calfits file includes more than one spectral window. Note that this feature is not yet supported in pyfhd."
+                        "Calfits file includes more than one spectral window. "
+                        "Note that this feature is not yet supported in pyfhd."
                     )
                 # Remove spectral window dimension for compatibility
                 data_array = np.mean(data_array, axis=0)
             else:
                 raise RuntimeWarning(
-                    "Calfits file does not appear to adhere to standard. Please see github:pyuvdata/docs/references"
+                    "Calfits file does not appear to adhere to standard. Please "
+                    "see github:pyuvdata/docs/references"
                 )
 
         freq_start = calfits[0].header[f"crval{freq_index + 1}"]
@@ -421,13 +433,15 @@ def transfer_bandpass(
         n_freq = data_array.shape[1]
         n_time = data_array.shape[2]
 
-        # Check whether the number of polarizations specified matches the observation analysis run
+        # Check whether the number of polarizations specified matches the
+        # observation analysis run
         jones_type_matrix = np.zeros(data_dims[1])
         for jones_i in range(1, data_dims[1]):
             jones_type_matrix[jones_i - 1] = jones_start + (jones_delt * jones_i)
         if data_dims[1] > obs["n_pol"]:
             logger.warning(
-                "More polarizations in calibration fits file than in observation analysis. Reducing calibration to match obs."
+                "More polarizations in calibration fits file than in observation "
+                "analysis. Reducing calibration to match obs."
             )
             data_dims[1] = obs["n_pol"]
             jones_type_matrix = jones_type_matrix[0 : obs["n_pol"]]
@@ -458,7 +472,8 @@ def transfer_bandpass(
                 logic_test = 1 / freq_factor - np.floor(1 / freq_factor)
             if logic_test != 0:
                 raise RuntimeWarning(
-                    f"Calfits input freq channel width is not easily castable to the observation, different by a factor of {freq_factor}"
+                    "Calfits input freq channel width is not easily castable "
+                    f"to the observation, different by a factor of {freq_factor}"
                 )
             if freq_start != obs["baseline_info"]["freq"][0]:
                 raise RuntimeWarning(
@@ -467,7 +482,8 @@ def transfer_bandpass(
             # Downselect the data array
             if freq_factor > 1:
                 logger.warning(
-                    f"Calfits input freq channel width is different by a factor of {freq_factor}. Avergaing Down."
+                    f"Calfits input freq channel width is different by a factor "
+                    f"of {freq_factor}. Avergaing Down."
                 )
                 # Set flagged indices to NAN to remove them from mean calculation
                 flag_inds = np.where(np.abs(np.squeeze(data_array[:, :, :, :, 2])) == 1)
@@ -488,9 +504,11 @@ def transfer_bandpass(
                 data_array = data_array[:, 0 : obs["n_freq"], :, :, :]
             elif freq_factor < 1:
                 logger.warning(
-                    f"Calfits input freq channel width is different by a factor of {freq_factor}. Using linear interpolation"
+                    f"Calfits input freq channel width is different by a factor "
+                    f"of {freq_factor}. Using linear interpolation"
                 )
-                # The IDL code has 5 nested loops, and I can't think of the vectorization right now in a reasonable ampount of time
+                # The IDL code has 5 nested loops, and I can't think of the
+                # vectorization right now in a reasonable ampount of time
                 # Someone please vectorize laster if you can
                 data_array_temp = np.zeros(
                     (data_dims[4], obs["n_freq"], n_time, n_jones, 2)
@@ -524,7 +542,8 @@ def transfer_bandpass(
                 ]
                 data_array = np.copy(data_array_temp)
 
-        # Check to see what time range this needs to be applied to, and if pointings are necessary
+        # Check to see what time range this needs to be applied to, and if
+        # pointings are necessary
         if n_time != 1:
             sec_upperlimit = 2000
             sec_lowerlimit = 1600
@@ -567,7 +586,8 @@ def transfer_bandpass(
                 days_since_ref = np.floor(obs_julian_date) - np.floor(time_start)
                 # pointing start shift amount depending on how many days since ref
                 obs_pointing_shift_since_ref = ((24 - 23.9344699) / 24) * days_since_ref
-                # pointing start time for HH:MM:SS on Aug23 (in JD) plus comparible pointing start time for reference, using calculated shift
+                # pointing start time for HH:MM:SS on Aug23 (in JD) plus
+                # comparable pointing start time for reference, using calculated shift
                 pointing_jdhms_ref = (
                     np.array(
                         [
@@ -610,7 +630,9 @@ def transfer_bandpass(
                     )
                 ):
                     raise RuntimeWarning(
-                        "Calfits does not start between five pointings before zenith and four pointings after zenith. Not suitable for pointing cal at this time."
+                        "Calfits does not start between five pointings before "
+                        "zenith and four pointings after zenith. Not suitable "
+                        "for pointing cal at this time."
                     )
                 # find which pointing is the start of the calfits data
                 pointing_calfits_start = pointing_num_ref[pointing_calfits_index]
@@ -625,7 +647,8 @@ def transfer_bandpass(
             elif np.floor(time_delt) == np.floor(obs["time_res"]):
                 # Calibration fits are per-timeres
                 logger.info(
-                    "Averaging calfits to observation length, an FHD requirement at this time."
+                    "Averaging calfits to observation length, an FHD requirement "
+                    "at this time."
                 )
                 data_array_temp = np.zeros(
                     [data_dims[4], obs.n_freq, 1, data_dims[1], data_dims[0]]
@@ -635,7 +658,9 @@ def transfer_bandpass(
             else:
                 # Calibration fits are for a random set of times
                 logger.info(
-                    "Finding closest match in time between calfits and obs. Obs metadata assumed to report start time, calfits metadata assumed to report center time."
+                    "Finding closest match in time between calfits and obs. Obs "
+                    "metadata assumed to report start time, calfits metadata "
+                    "assumed to report center time."
                 )
                 time_delta = time_integration / (60 * 60 * 24)
                 time_array = np.full(n_time, time_start + time_delta)
@@ -648,7 +673,8 @@ def transfer_bandpass(
                     obs_julian_date > time_array[-1] + 2 * time_delta
                 ):
                     raise RuntimeWarning(
-                        "Observation does not seem to fit within the time frame of the calfits"
+                        "Observation does not seem to fit within the time frame "
+                        "of the calfits"
                     )
                 # find the closest index between calfits and observation
                 time_index = np.argmin(np.abs(obs_julian_date - time_array))
@@ -657,7 +683,8 @@ def transfer_bandpass(
         # Check number of tiles
         if n_ant_data != obs["n_tile"]:
             raise RuntimeWarning(
-                "Number of antennas in calfits file does match observation antenna number"
+                "Number of antennas in calfits file does match observation "
+                "antenna number"
             )
 
         # Now that the checks are done, return the cal structure
@@ -673,7 +700,8 @@ def transfer_bandpass(
         logger.info("Calfits File has been read and cal_bandpass has been created")
     except FileNotFoundError:
         logger.error(
-            f"{pyfhd_config['cal_bp_transfer']} file wasn't found, skipping calibration bandpass transfer"
+            f"{pyfhd_config['cal_bp_transfer']} file wasn't found, skipping "
+            "calibration bandpass transfer"
         )
         return {}, {}
     except RuntimeWarning as e:
@@ -691,9 +719,10 @@ def vis_cal_bandpass(
     obs: dict, cal: dict, pyfhd_config: dict, logger: Logger
 ) -> tuple[dict, dict]:
     """
-    Reduce the degrees of freedom on the per-frequency calibration amplitudes by averaging solutions
-    together. Options include averaging over tiles which use a particular beamformer-to-receiver cable
-    lengths/types, or averaging over all tiles for a global bandpass.
+    Reduce the degrees of freedom on the per-frequency calibration amplitudes
+    by averaging solutions together. Options include averaging over tiles which
+    use a particular beamformer-to-receiver cable lengths/types, or averaging
+    over all tiles for a global bandpass.
 
     Parameters
     ----------
@@ -718,12 +747,14 @@ def vis_cal_bandpass(
     # Set a flag for global bandpass, will turn true if too many tiles are flagged
     global_bandpass = False
 
-    # Initialize cal_bandpass and cal_remainder and transfer them in, if a file has been set (fits only supported right now)
+    # Initialize cal_bandpass and cal_remainder and transfer them in, if a file
+    # has been set (fits only supported right now)
     if pyfhd_config["cal_bp_transfer"] is not None:
         cal_bandpass, cal_remainder = transfer_bandpass(obs, cal, pyfhd_config, logger)
         if len(cal_bandpass.keys()) != 0 and len(cal_remainder.keys()) != 0:
             logger.info(
-                f"Calibration Bandpass FITS file {pyfhd_config['cal_bp_transfer']} transferred in for cal_bandpass and cal_remainder"
+                f"Calibration Bandpass FITS file {pyfhd_config['cal_bp_transfer']} "
+                "transferred in for cal_bandpass and cal_remainder"
             )
             return cal_bandpass, cal_remainder
     cal_bandpass = deepcopy(cal)
@@ -733,14 +764,19 @@ def vis_cal_bandpass(
     cal_remainder_gain = np.empty(cal["gain"].shape, dtype=np.complex128)
 
     if pyfhd_config["cable_bandpass_fit"]:
-        # Using preexisting file to extract information about which tiles have which cable length
-        # cable_len = np.loadtxt(Path(pyfhd_config["input"], pyfhd_config["cable-reflection-coefficients"]), skiprows=1)[:, 2].flatten()
+        # Using preexisting file to extract information about which tiles have
+        # which cable length
+        # cable_len = np.loadtxt(
+        #   Path(pyfhd_config["input"],
+        #   pyfhd_config["cable-reflection-coefficients"]
+        # ), skiprows=1)[:, 2].flatten()
         cable_len_filepath = importlib_resources.files(
             "pyfhd.resources.instrument_config"
         ).joinpath(f"{pyfhd_config['instrument']}_cable_reflection_coefficients.txt")
         cable_len = np.loadtxt(cable_len_filepath, skiprows=1)[:, 2].flatten()
 
-        # Taking tile information and cross-matching it with the nonflagged tiles array, resulting in nonflagged tile arrays grouped by cable length
+        # Taking tile information and cross-matching it with the nonflagged
+        # tiles array, resulting in nonflagged tile arrays grouped by cable length
         cable_length_ref = np.unique(cable_len)
         tile_use_arr = [0] * cable_length_ref.size
         for cable_i in range(cable_length_ref.size):
@@ -750,10 +786,13 @@ def vis_cal_bandpass(
             )[0]
             if tile_use_arr[cable_i].size == 0:
                 logger.warning(
-                    "Too Many flagged tiles to implement bandpass cable averaging, using global bandpass."
+                    "Too Many flagged tiles to implement bandpass cable averaging, "
+                    "using global bandpass."
                 )
                 global_bandpass = True
-        # n_freq x 13 array. columns are frequency, 90m xx, 90m yy, 150m xx, 150m yy, 230m xx, 230m yy, 320m xx, 320m yy, 400m xx, 400m yy, 524m xx, 524m yy
+        # n_freq x 13 array. columns are frequency, 90m xx, 90m yy, 150m xx,
+        #   150m yy, 230m xx, 230m yy, 320m xx, 320m yy, 400m xx, 400m yy,
+        #   524m xx, 524m yy
         bandpass_arr = np.zeros(
             (obs["n_freq"], cal["n_pol"] * cable_length_ref.size + 1)
         )
@@ -763,8 +802,10 @@ def vis_cal_bandpass(
             logger.info("auto_ratio_calibration is set, using global bandpass")
             global_bandpass = True
         for cable_i in range(cable_length_ref.size):
-            # This is an option to calibrate over all tiles to find the 'global' bandpass. It will be looped over by the number
-            # of cable lengths, and will redo the same calculation everytime. It is inefficient, but effective.
+            # This is an option to calibrate over all tiles to find the 'global'
+            # bandpass. It will be looped over by the number of cable lengths,
+            # and will redo the same calculation everytime. It is inefficient,
+            # but effective.
             if global_bandpass:
                 tile_use_cable = tile_use
             else:
@@ -772,31 +813,39 @@ def vis_cal_bandpass(
 
             for pol_i in range(cal["n_pol"]):
                 gain = cal["gain"][pol_i]
-                # gain2 is a temporary variable used in place of the gain array for an added layer of safety
+                # gain2 is a temporary variable used in place of the gain array
+                # for an added layer of safety
                 if cable_i == 0 and pol_i == 0:
                     gain2 = np.zeros(cal["gain"].shape, dtype=np.complex128)
-                # Only use gains from unflagged tiles and frequencies, and calculate the amplitude and phase
+                # Only use gains from unflagged tiles and frequencies, and
+                # calculate the amplitude and phase
                 gain_use = gain[freq_use, :][:, tile_use_cable]
                 amp = np.abs(gain_use)
-                # amp2 is a temporary variable used in place of the amp array for an added layer of safety
+                # amp2 is a temporary variable used in place of the amp array
+                # for an added layer of safety
                 amp2 = np.zeros((freq_use.size, tile_use_cable.size))
-                # This is the normalization loop for each tile. If the mean of gain amplitudes over all frequencies is nonzero, then divide
-                # the gain amplitudes by that number, otherwise make the gain amplitudes zero.
+                # This is the normalization loop for each tile. If the mean of
+                # gain amplitudes over all frequencies is nonzero, then divide
+                # the gain amplitudes by that number, otherwise make the gain
+                # amplitudes zero.
                 for tile_i in range(tile_use_cable.size):
                     res_mean = resistant_mean(amp[:, tile_i], 2)
                     if res_mean != 0:
                         amp2[:, tile_i] = amp[:, tile_i] / res_mean
                     else:
                         amp2[:, tile_i] = 0
-                # This finds the normalized gain amplitude mean per frequency over all tiles, which is the final bandpass per cable group.
+                # This finds the normalized gain amplitude mean per frequency
+                # over all tiles, which is the final bandpass per cable group.
                 bandpass_single = np.empty(freq_use.size)
                 # If this is slow, resistant_mean can be vectorized
                 for f_i in range(freq_use.size):
                     bandpass_single[f_i] = resistant_mean(amp2[f_i, :], 2)
-                # Want iterative to start at 1 (to not overwrite freq) and store final bandpass per cable group.
+                # Want iterative to start at 1 (to not overwrite freq) and store
+                # final bandpass per cable group.
                 bandpass_arr[freq_use, bandpass_col_count] = bandpass_single
                 bandpass_col_count += 1
-                # Fill temporary variable gain2, set equal to final bandpass per cable group for each tile that will use that bandpass.
+                # Fill temporary variable gain2, set equal to final bandpass per
+                # cable group for each tile that will use that bandpass.
 
                 # Vectorize later if possible
                 for tile_i in range(tile_use_cable.size):
@@ -806,10 +855,12 @@ def vis_cal_bandpass(
                 if cable_i == cable_length_ref.size - 1:
                     # Set gain3 to the input gains
                     gain3 = cal["gain"][pol_i].copy()
-                    # Set what will be passed back as the output gain as the final bandpass per cable type.
+                    # Set what will be passed back as the output gain as the
+                    # final bandpass per cable type.
                     gain2_input = gain2[pol_i, :, :]
                     cal_bandpass_gain[pol_i] = gain2_input
-                    # Set what will be passed back as the residual as the input gain divided by the final bandpass per cable type.
+                    # Set what will be passed back as the residual as the input
+                    # gain divided by the final bandpass per cable type.
                     gain3[freq_use, :] /= gain2_input[freq_use, :]
                     cal_remainder_gain[pol_i] = gain3
         # Add Levine Memo bandpass to the gain solutions here if you wish
@@ -858,17 +909,18 @@ def vis_cal_polyfit(
     logger: Logger,
 ) -> dict:
     """
-    Reduce the degrees of freedom on the per-frequency calibration amplitudes and phases by fitting
-    the full frequency band with polynomials of a specified degree, with options for split polynomials
-    over certain regions.
+    Reduce the degrees of freedom on the per-frequency calibration amplitudes
+    and phases by fitting the full frequency band with polynomials of a specified
+    degree, with options for split polynomials over certain regions.
 
-    In addition, fit cable reflections with a text file of fits, theoretical fits given cable length/type,
-    or the finding the maximum in delay space. Any of these can then be used as an initial estimate in a
-    hyperresolved FFT of the residual calibration solutions to fit the final mode, phase, and amplitude.
-    Residual calibration solutions can optionally be made by using an incoherent mean, or a mean over
-    all tiles which *do not* have the same cable length/type, to reduce bias in the residual, and
-    the cable reflections can also be fit using just the phases to reduce dependency on the polyphase
-    filter bank shape.
+    In addition, fit cable reflections with a text file of fits, theoretical
+    fits given cable length/type, or the finding the maximum in delay space. Any
+    of these can then be used as an initial estimate in a hyperresolved FFT of
+    the residual calibration solutions to fit the final mode, phase, and amplitude.
+    Residual calibration solutions can optionally be made by using an incoherent
+    mean, or a mean over all tiles which *do not* have the same cable length/type,
+    to reduce bias in the residual, and the cable reflections can also be fit
+    using just the phases to reduce dependency on the polyphase filter bank shape.
 
     Parameters
     ----------
@@ -877,7 +929,8 @@ def vis_cal_polyfit(
     cal : dict
         Calibration dictionary
     auto_ratio: NDArray[np.float64] | None
-        The estimation of the antenna-dependent bias through the square root of the autocorrelation
+        The estimation of the antenna-dependent bias through the square root of
+        the autocorrelation
         visibilities normalized via a reference tile
     pyfhd_config : dict
         pyfhd's configuration dictionary containing all the options set for a pyfhd run
@@ -915,7 +968,8 @@ def vis_cal_polyfit(
     pre_dig_inds = np.where(obs["baseline_info"]["freq"][freq_use] < 187.515e6)
     if pre_dig_inds[0].size == 0:
         logger.warning(
-            "No frequencies below 187.515MHz, using full band polyfit, digital gain jump polyfit disabled."
+            "No frequencies below 187.515MHz, using full band polyfit, digital "
+            "gain jump polyfit disabled."
         )
         pyfhd_config["digital_gain_jump_polyfit"] = False
     else:
@@ -924,15 +978,18 @@ def vis_cal_polyfit(
 
     if ((f_d + 1) == f_end) and pyfhd_config["digital_gain_jump_polyfit"]:
         logger.warning(
-            "No frequency found above 187.515MHz, using full band polyfit, digital gain jump polyfit disabled."
+            "No frequency found above 187.515MHz, using full band polyfit, "
+            "digital gain jump polyfit disabled."
         )
         pyfhd_config["digital_gain_jump_polyfit"] = False
 
-    # If the observation date is beyond the date where digital gain jump polyfit is required, disable it
+    # If the observation date is beyond the date where digital gain jump polyfit
+    # is required, disable it
     # Date is 2014-07-23 (23rd July 2014) or Julian Day 2456861.5000000
     if obs["jd0"] > 2456861.5000000 and pyfhd_config["digital_gain_jump_polyfit"]:
         logger.warning(
-            "Observation date is beyond the date where digital gain jump polyfit is required, using full band polyfit, digital gain jump polyfit disabled."
+            "Observation date is beyond the date where digital gain jump polyfit "
+            "is required, using full band polyfit, digital gain jump polyfit disabled."
         )
         pyfhd_config["digital_gain_jump_polyfit"] = False
 
@@ -942,8 +999,10 @@ def vis_cal_polyfit(
     if not pyfhd_config["cal_phase_degree_fit"]:
         pyfhd_config["cal_phase_degree_fit"] = 1
 
-    # If you wish to find any steps that are outliers beyond 5sigma, and remove them add that code here.
-    # The cal_step_fit option isn't in the eor_defaults_wrapper or defined in the FHD dictionary.
+    # If you wish to find any steps that are outliers beyond 5sigma, and remove
+    # them add that code here.
+    # The cal_step_fit option isn't in the eor_defaults_wrapper or defined in the
+    # FHD dictionary.
 
     # Polynomial fitting over the frequency band
     gain_residual = np.empty((cal["n_pol"], obs["n_freq"], obs["n_tile"]))
@@ -996,8 +1055,8 @@ def vis_cal_polyfit(
                     for di in range(pyfhd_config["cal_amp_degree_fit"]):
                         gain_fit[freq_use[0] : freq_use[f_d] + 1] += fit_params1[di] * (
                             # Had to use the size as use freq_use[f_d] could cause
-                            # off by one indexing errors (due to freq_use[0] potentially being
-                            # 1 or 0 which throws off the np.arange indexing)
+                            # off by one indexing errors (due to freq_use[0] potentially
+                            # being 1 or 0 which throws off the np.arange indexing)
                             np.arange(gain_fit[freq_use[0] : freq_use[f_d] + 1].size)
                             ** di
                         )
@@ -1009,13 +1068,16 @@ def vis_cal_polyfit(
                             )
                             ** di
                         )
-                    # Do notice this is saving the coefficients on a per row basis, so fit_params1 a,b will be [pol_i, tile_i, 0, :]
-                    # While fit_params2 a, b coefficients will be in [pol_i, tile_i, 1, :]
+                    # Do notice this is saving the coefficients on a per row
+                    # basis, so fit_params1 a,b will be [pol_i, tile_i, 0, :]
+                    # While fit_params2 a, b coefficients will be in
+                    # [pol_i, tile_i, 1, :]
                     fit_params = np.vstack([fit_params1, fit_params2])
                     cal["amp_params"][pol_i, tile_i] = fit_params
                 else:
                     logger.warning(
-                        "digital_gain_jump_polyfit only works with highband mwa data. Full band polyfit applied instead."
+                        "digital_gain_jump_polyfit only works with highband mwa "
+                        "data. Full band polyfit applied instead."
                     )
             # Fit for amplitude
             else:
@@ -1051,7 +1113,8 @@ def vis_cal_polyfit(
     if cal_mode_fit:
         if pyfhd_config["cal_reflection_mode_file"]:
             logger.info(
-                "Using mwa calibration reflections fits from instrument_config/mwa_cable_reflection_coefficients.txt."
+                "Using mwa calibration reflections fits from "
+                "instrument_config/mwa_cable_reflection_coefficients.txt."
             )
             cable_len_filepath = importlib_resources.files(
                 "pyfhd.resources.instrument_config"
@@ -1108,7 +1171,8 @@ def vis_cal_polyfit(
 
         elif pyfhd_config["cal_reflection_mode_delay"]:
             logger.info(
-                "Using calibration delay spectrum to calculate nominal reflection modes."
+                "Using calibration delay spectrum to calculate nominal "
+                "reflection modes."
             )
             spec_mask = np.zeros(obs["n_freq"])
             spec_mask[freq_use] = 1
@@ -1137,8 +1201,9 @@ def vis_cal_polyfit(
         # Fit only certain cable lengths
         # Positive length indicates fit mode, negative length indicates exclude mode
         # This is currently assuming cal_mode_fit is an integer or number, not an array!
-        # If you need an array to fit or exclude cable lengths, then create another option for it
-        # in the config and adjust the code accordingly. Ensure every config option only has one purpose.
+        # If you need an array to fit or exclude cable lengths, then create
+        # another option for it in the config and adjust the code accordingly.
+        # Ensure every config option only has one purpose.
         if auto_ratio is None and cal_mode_fit != 1:
             tile_ref_logic = np.zeros(obs["n_tile"])
             if cal_mode_fit > 0:
@@ -1165,11 +1230,13 @@ def vis_cal_polyfit(
                 if mode_i == 0:
                     continue
                 else:
-                    # Options to hyperresolve or fit the reflection modes/amp/phase given the nominal calculations
+                    # Options to hyperresolve or fit the reflection modes/amp/phase
+                    # given the nominal calculations
                     if pyfhd_config["cal_reflection_hyperresolve"]:
                         # start with nominal cable length
                         mode0 = mode_i
-                        # overresolve the FT used for the fit (normal resolution would be dmode=1)
+                        # overresolve the FT used for the fit (normal resolution
+                        # would be dmode=1)
                         dmode = 0.05
                         # range around the central mode to test
                         nmodes = 101
@@ -1179,7 +1246,8 @@ def vis_cal_polyfit(
                         modes = rebin(modes, (freq_use.size, nmodes)).T
 
                         if auto_ratio is not None:
-                            # Find tiles which will *not* be accidently coherent in their cable reflection in order to reduce bias
+                            # Find tiles which will *not* be accidently coherent
+                            # in their cable reflection in order to reduce bias
                             inds = np.where(
                                 (obs["baseline_info"]["tile_use"])
                                 & (mode_i_arr[pol_i, :] > 0)
@@ -1190,9 +1258,11 @@ def vis_cal_polyfit(
                             norm_autos = auto_ratio[pol_i] / rebin(
                                 freq_mean, (obs["n_freq"], obs["n_tile"])
                             )
-                            # mean over all tiles which *are not* accidently coherent as a func of freq
+                            # mean over all tiles which *are not* accidently
+                            # coherent as a func of freq
                             incoherent_mean = np.nanmean(norm_autos[:, inds[0]], axis=1)
-                            # Residual and normalized (using incoherent mean) auto-correlation
+                            # Residual and normalized (using incoherent mean)
+                            # auto-correlation
                             resautos = (
                                 norm_autos[:, tile_i] / incoherent_mean
                             ) - np.nanmean(norm_autos[:, tile_i] / incoherent_mean)
@@ -1201,7 +1271,8 @@ def vis_cal_polyfit(
                             )
                         else:
                             # dimension manipulation, add dim for mode fitting
-                            # Subtract the mean so aliasing is reduced in the dft cable fitting
+                            # Subtract the mean so aliasing is reduced in the dft
+                            # cable fitting
                             gain_temp = rebin(
                                 gain_arr[freq_use, tile_i]
                                 - np.mean(gain_arr[freq_use, tile_i]),
@@ -1215,7 +1286,8 @@ def vis_cal_polyfit(
                             * gain_temp,
                             axis=1,
                         )
-                        # Pick out highest amplitude fit (mode_ind gives the index of the mode)
+                        # Pick out highest amplitude fit (mode_ind gives the
+                        # index of the mode)
                         amp_use = np.max(np.abs(test_fits)) / freq_use.size
                         mode_ind = np.argmax(np.abs(test_fits))
                         # Phase of said fit
@@ -1224,9 +1296,11 @@ def vis_cal_polyfit(
                         )
                         mode_i = modes[mode_ind, 0]
 
-                        # Using the mode selected from the gains, optionally use the phase to find the amp and phase
+                        # Using the mode selected from the gains, optionally use
+                        # the phase to find the amp and phase
                         if auto_ratio is not None:
-                            # Find tiles which will not be accidently coherent in their cable reflection in order to reduce bias
+                            # Find tiles which will not be accidently coherent
+                            # in their cable reflection in order to reduce bias
                             inds = np.where(
                                 (obs["baseline_info"]["tile_use"])
                                 & (mode_i_arr[pol_i, :] > 0)
@@ -1255,7 +1329,8 @@ def vis_cal_polyfit(
                         amp_use = amp_arr[pol_i, tile_i]
                         phase_use = phase_arr[pol_i, tile_i]
                     else:
-                        # Use nominal delay mode, but fit amplitude and phase of reflections
+                        # Use nominal delay mode, but fit amplitude and phase of
+                        # reflections
                         mode_fit = np.sum(
                             np.exp(1j * 2 * np.pi / obs["n_freq"] * mode_i * freq_use)
                             * gain_arr[freq_use, tile_i]
@@ -1289,11 +1364,12 @@ def vis_cal_auto_fit(
     auto_tile_i: NDArray[np.integer],
 ) -> dict:
     """
-    Solve for each tile's calibration amplitude via the square root of the ratio of the data autocorrelation
-    to the model autocorrelation using the definition of a gain. Then, remove dependence on the correlated
-    noise term in the autocorrelations by scaling this amplitude down to the crosscorrelations gain via a
-    simple, linear fit. Build a full, scaled autocorrelation gain solution by adding in the phase term via
-    the crosscorrelation gains.
+    Solve for each tile's calibration amplitude via the square root of the ratio
+    of the data autocorrelation to the model autocorrelation using the definition
+    of a gain. Then, remove dependence on the correlated noise term in the
+    autocorrelations by scaling this amplitude down to the crosscorrelations gain
+    via a simple, linear fit. Build a full, scaled autocorrelation gain solution
+    by adding in the phase term via the crosscorrelation gains.
 
     Parameters
     ----------
@@ -1315,7 +1391,8 @@ def vis_cal_auto_fit(
     """
     freq_i_use = np.nonzero(obs["baseline_info"]["freq_use"])
     freq_i_flag = np.where(obs["baseline_info"]["freq_use"] == 0)[0]
-    # If the number of frequencies not being used is above 0, then ignore the frequencies surrounding them.
+    # If the number of frequencies not being used is above 0, then ignore the
+    # frequencies surrounding them.
     if freq_i_flag.size > 0:
         freq_flag = np.zeros(obs["n_freq"])
         freq_flag[freq_i_use] = 1
@@ -1358,12 +1435,13 @@ def vis_cal_auto_fit(
             gain_auto_single_fit = gain_auto_single[freq_i_use][notnan]
             gain_cross_single_fit = gain_cross_single[freq_i_use][notnan]
 
-            # linfit from IDL uses chi-square error calculations to do the linear fit, instead of least squares.
+            # linfit from IDL uses chi-square error calculations to do the linear
+            # fit, instead of least squares.
             # The polynomial fit uses least square method
             x = np.vstack([gain_auto_single_fit, np.ones(gain_auto_single_fit.size)]).T
             fit_single = np.linalg.lstsq(x, gain_cross_single_fit, rcond=None)[0]
-            # IDL gives the solution in terms of [A, B] while Python does [B, A] assuming we're
-            # solving the equation y = A + Bx
+            # IDL gives the solution in terms of [A, B] while Python does [B, A]
+            # assuming we're solving the equation y = A + Bx
             cal["gain"][pol_i, :, tile_idx] = (
                 gain_auto_single * fit_single[0] + fit_single[1]
             ) * np.exp(1j * phase_cross_single)
@@ -1385,15 +1463,18 @@ def vis_calibration_apply(
     logger: Logger,
 ) -> tuple[NDArray[np.complex128], dict]:
     """
-    Apply the calibration solutions to the input, data visibilities to create calibrated, data visibilities using
-    the definition of the gains.
+    Apply the calibration solutions to the input, data visibilities to create
+    calibrated, data visibilities using the definition of the gains.
 
     Definition of the gain:
-    (visibility for baseline of tile i and tile j) = (gain of tile i) (gain of tile j) (model visibility for baseline of tile i and tile j)
+    (visibility for baseline of tile i and tile j) = (gain of tile i)
+        (gain of tile j) (model visibility for baseline of tile i and tile j)
 
-    If only two othogonal polarizations were used to calibrate, calculate the phase offset between the two orthogonal dipoles to
-    solve for a degeneracy in the cross polarizations. The formula can be derived by multiplying the gains by an equal and opposite
-    phase in the linear least square solver and solving for the phase when the partial derivative w.r.t the offset is 0.
+    If only two othogonal polarizations were used to calibrate, calculate the
+    phase offset between the two orthogonal dipoles to solve for a degeneracy in
+    the cross polarizations. The formula can be derived by multiplying the gains
+    by an equal and opposite phase in the linear least square solver and solving
+    for the phase when the partial derivative w.r.t the offset is 0.
 
     Parameters
     ----------
@@ -1460,8 +1541,9 @@ def vis_calibration_apply(
 
             # this is num baselines per time step
             n_baselines = int(len(tile_a_i) / obs["n_times"])
-            # reshape from (n_freq, n_baselines*n_times) to (n_freq, n_times, n_baselines). Turns out due to the row major vs col major difference
-            # between IDL and python, this shape also changes
+            # reshape from (n_freq, n_baselines*n_times) to
+            # (n_freq, n_times, n_baselines). Turns out due to the row major
+            # vs col major difference between IDL and python, this shape also changes
             new_shape = (obs["n_freq"], obs["n_times"], n_baselines)
             weights_use = np.reshape(vis_weights[0, :, :], new_shape)
             # carried over from FHD code
@@ -1512,8 +1594,9 @@ def vis_baseline_hist(
     vis_model_arr: NDArray[np.complex128],
 ) -> dict:
     """
-    Create diagnostic histograms of both the mean and sigma for the percent difference between calibrated
-    data and simulated model visibilities as a function of baseline length.
+    Create diagnostic histograms of both the mean and sigma for the percent
+    difference between calibrated data and simulated model visibilities as a
+    function of baseline length.
 
     Parameters
     ----------
@@ -1529,8 +1612,9 @@ def vis_baseline_hist(
     Returns
     -------
     vis_baseline_hist : dict
-        Dictionary of the mean and sigma histograms for the percent difference between calibrated data
-        and simulated model visibilities as a function of baseline length.
+        Dictionary of the mean and sigma histograms for the percent difference
+        between calibrated data and simulated model visibilities as a function
+        of baseline length.
     """
     kx_arr = params["uu"] / obs["kpix"]
     ky_arr = params["vv"] / obs["kpix"]
@@ -1587,10 +1671,11 @@ def cal_auto_ratio_divide(
     auto_tile_i: NDArray[np.integer],
 ) -> tuple[dict, NDArray[np.float64]]:
     """
-    Remove antenna-dependent parameters (i.e. cable reflections) from the calculated gains
-    to reduce the bias on individual tile variation before the creation of averaged quantities
-    like the global bandpass. Antenna-dependent parameters are estimated from the square root of the
-    autocorrelation visibilities normalized via a reference tile.
+    Remove antenna-dependent parameters (i.e. cable reflections) from the
+    calculated gains to reduce the bias on individual tile variation before the
+    creation of averaged quantities like the global bandpass. Antenna-dependent
+    parameters are estimated from the square root of the autocorrelation
+    visibilities normalized via a reference tile.
 
     Parameters
     ----------
@@ -1608,14 +1693,15 @@ def cal_auto_ratio_divide(
     cal : dict
         Calibration dictionary with gains that have reduced antenna-dependent bias
     auto_ratio : NDArray[np.float64]
-        The estimation of the antenna-dependent bias through the square root of the autocorrelation
-        visibilities normalized via a reference tile.
+        The estimation of the antenna-dependent bias through the square root of
+        the autocorrelation visibilities normalized via a reference tile.
     """
 
     auto_ratio = np.empty([cal["n_pol"], obs["n_freq"], obs["n_tile"]])
     # This should be possible to Vectorize if it's slow
     for pol_i in range(cal["n_pol"]):
-        # fhd_struct_init_cal puts the ref_antenna as 1 if it's not set, which is never appears to be
+        # fhd_struct_init_cal puts the ref_antenna as 1 if it's not set, which
+        # is never appears to be
         v0 = vis_auto[pol_i, :, auto_tile_i[cal["ref_antenna"]]]
         auto_ratio[pol_i, :, auto_tile_i] = np.sqrt(
             vis_auto[pol_i, :, np.arange(auto_tile_i.size)] * weight_invert(v0)
@@ -1628,9 +1714,10 @@ def cal_auto_ratio_remultiply(
     cal: dict, auto_ratio: NDArray[np.float64], auto_tile_i: NDArray[np.integer]
 ) -> dict:
     """
-    Return antenna-dependent parameters to the calculated gains after averaged quantities
-    have been calculated. The antenna-dependent parameters are captured via the square root of
-    the referenced autocorrelation visiblities calculated in cal_auto_ratio_divide.
+    Return antenna-dependent parameters to the calculated gains after averaged
+    quantities have been calculated. The antenna-dependent parameters are captured
+    via the square root of the referenced autocorrelation visiblities calculated
+    in cal_auto_ratio_divide.
 
     Parameters
     ----------
@@ -1663,38 +1750,45 @@ def calculate_adaptive_gain(
     final_convergence_estimate: float | None = None,
 ):
     """
-    Perform a Kalman filter to calculate the best weighting to use in the next iteration of the
-    linear least squares fitting between the data and simulated model, which reduces the number
-    of total iterations till convergence.
+    Perform a Kalman filter to calculate the best weighting to use in the next
+    iteration of the linear least squares fitting between the data and simulated
+    model, which reduces the number of total iterations till convergence.
 
-    The Kalman filter takes previous convergence values, or the percent change in calibration solution from
-    the previous iteration, to calculate the relative weight to give to the next calculated iteration versus
-    the previous iteration. For example, a gain (relative weight in this context) of 1 would give the old
-    solution and the new solution the same weighting, and thus the next guess in the linear least square solver
-    is the average of the new and old solution. A gain (relative weight) of 2 would give the new solution twice
-    as much weight at the old solution, and thus the next guess in the linear least square solver is the sum of
-    the old solution and twice the new solution, all divided by three.
+    The Kalman filter takes previous convergence values, or the percent change
+    in calibration solution from the previous iteration, to calculate the relative
+    weight to give to the next calculated iteration versus the previous iteration.
+    For example, a gain (relative weight in this context) of 1 would give the old
+    solution and the new solution the same weighting, and thus the next guess in
+    the linear least square solver is the average of the new and old solution.
+    A gain (relative weight) of 2 would give the new solution twice as much weight
+    at the old solution, and thus the next guess in the linear least square solver
+    is the sum of the old solution and twice the new solution, all divided by three.
 
     Parameters
     ----------
     gain_list : NDArray[np.float64]
-        Relative weighting between the previous iteration and new iteration in the linear least squares
+        Relative weighting between the previous iteration and new iteration in
+        the linear least squares
         solver for calibration solutions
     convergence_list : NDArray[np.float64]
-        An array of the percent change in the calibration solutions between one iteration and the next
-    iter : int
+        An array of the percent change in the calibration solutions between one
+        iteration and the next
+    iter_i : int
         The current iteration in the linear least squares solver
     base_gain : int|float
-        The initial relative weighting between the previous iteration and new iteration in the linear
+        The initial relative weighting between the previous iteration and new
+        iteration in the linear
         least squares solver for calibration solutions
     final_convergence_estimate : float, optional
-        The prediction of the percent change of the previous iteration and the forward model estimate from
+        The prediction of the percent change of the previous iteration and the
+        forward model estimate from
         the Kalman filter, by default None
 
     Returns
     -------
     gain : float
-        Relative weighting between the previous iteration and the new iteration in the calibration
+        Relative weighting between the previous iteration and the new iteration
+        in the calibration
         linear least squares solver
     """
     if iter > 2:
@@ -1714,25 +1808,26 @@ def calculate_adaptive_gain(
                 final_convergence_test = (
                     (1 + gain_list[i]) * convergence_list[i + 1] - convergence_list[i]
                 ) / gain_list[i]
-                # The convergence metric is strictly positive, so if the estimated final convergence is
-                # less than zero, force it to zero.
+                # The convergence metric is strictly positive, so if the estimated
+                # final convergence is less than zero, force it to zero.
                 est_final_conv[i] = np.max((0, final_convergence_test))
-            # Because the estimate may slowly change over time, only use the most recent measurements.
+            # Because the estimate may slowly change over time, only use the most
+            # recent measurements.
             final_convergence_estimate = np.median(est_final_conv[max(iter - 5, 0) :])
         last_gain = gain_list[iter - 1]
         last_conv = convergence_list[iter - 2]
         new_conv = convergence_list[iter - 1]
-        # The predicted convergence is the value we would get if the new model calculated
-        # in the previous iteration was perfect. Recall that the updated model that is
-        # actually used is the gain-weighted average of the new and old model,
-        # so the convergence would be similarly weighted.
+        # The predicted convergence is the value we would get if the new model
+        # calculated in the previous iteration was perfect. Recall that the
+        # updated model that is actually used is the gain-weighted average of
+        # the new and old model, so the convergence would be similarly weighted.
         predicted_conv = (final_convergence_estimate * last_gain + last_conv) / (
             base_gain + last_gain
         )
         # If the measured and predicted convergence are very close, that indicates
         # that our forward model is accurate and we can use a more aggressive gain
-        # If the measured convergence is significantly worse (or better!) than predicted,
-        # that indicates that the model is not converging as expected and
+        # If the measured convergence is significantly worse (or better!) than
+        # predicted, that indicates that the model is not converging as expected and
         # we should use a more conservative gain.
         delta = (predicted_conv - new_conv) / (
             (last_conv - final_convergence_estimate) / (base_gain + last_gain)
@@ -1740,7 +1835,8 @@ def calculate_adaptive_gain(
         new_gain = 1 - abs(delta)
         # Average the gains to prevent oscillating solutions.
         new_gain = (new_gain + last_gain) / 2
-        # For some reason base_gain can be a numpy float in testing so putting in a tuple solves this.
+        # For some reason base_gain can be a numpy float in testing so putting
+        # in a tuple solves this.
         gain = np.max((base_gain / 2, new_gain))
 
     else:

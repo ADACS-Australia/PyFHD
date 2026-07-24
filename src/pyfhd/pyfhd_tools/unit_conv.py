@@ -185,7 +185,8 @@ def altaz_to_radec(
 ) -> tuple[float, float]:
     """
     Turn Alt/Az coordinates into the equatorial/celestial coordinates RA and DEC.
-    The exact location and time must given in order for the coordinates to be calculated.
+    The exact location and time must given in order for the coordinates to be
+    calculated.
 
     Parameters
     ----------
@@ -335,8 +336,9 @@ def radec_to_pixel(
     temperature: u.Quantity | None = None,
 ) -> tuple[float, float]:
     """
-    Turn Celestial Coordinates into Pixel coordinates (X & Y). The astr dictionary should contain
-    cdelt, ctype, crpix and crval as per the WCS standard when naxis is 2.
+    Turn Celestial Coordinates into Pixel coordinates (X & Y). The astr dictionary
+    should contain cdelt, ctype, crpix and crval as per the WCS standard when
+    naxis is 2.
 
     Parameters
     ----------
@@ -386,7 +388,8 @@ def radec_to_pixel(
     # Create WCS object with astr
     wcs_astr = WCS(naxis=2)
     wcs_astr.wcs.cdelt = astr["cdelt"]
-    # AstroPy ctype requires a list of python string objects, NumPy string objects will not work
+    # AstroPy ctype requires a list of python string objects, NumPy string
+    # objects will not work
     wcs_astr.wcs.ctype = [str(projection) for projection in astr["ctype"]]
     wcs_astr.wcs.crpix = astr["crpix"]
     wcs_astr.wcs.crval = astr["crval"]
@@ -531,7 +534,8 @@ def pixel_to_radec(
 
     wcs_astr = WCS(naxis=2)
     wcs_astr.wcs.cdelt = astr["cdelt"]
-    # AstroPy ctype requires a list of python string objects, NumPy string objects will not work
+    # AstroPy ctype requires a list of python string objects, NumPy string
+    # objects will not work
     wcs_astr.wcs.ctype = [str(projection) for projection in astr["ctype"]]
     wcs_astr.wcs.crpix = astr["crpix"]
     wcs_astr.wcs.crval = astr["crval"]

@@ -21,8 +21,10 @@ def splitter(sav_file, save_path):
     sav_file : Path
         The path to the save file i.e. /path/to/the/sav/file
     save_path : Path
-        The path to the directory where we save all the .npy files i.e. /path/to/the/directory/where/we/want/save
-        In the case the directory doesn't exist it will recursively make the directories to ensure it does.
+        The path to the directory where we save all the .npy files i.e.
+        /path/to/the/directory/where/we/want/save
+        In the case the directory doesn't exist it will recursively make the
+        directories to ensure it does.
 
     Raises
     ------
@@ -43,7 +45,8 @@ def splitter(sav_file, save_path):
             Path.mkdir(save_path, parents=True)
         # If save_path is a directory, then save the files, else raise an error
         if save_path.is_dir():
-            # For every key, value pair, save a numpy file with key as the file name in the save_path directory
+            # For every key, value pair, save a numpy file with key as the file
+            # name in the save_path directory
             for key in dict_to_iter.keys():
                 np.save(
                     str(save_path) + "/" + str(key) + ".npy",
@@ -90,8 +93,9 @@ if __name__ == "__main__":
         "-d",
         "--directories",
         nargs="+",
-        help="In the case you want to specifiy different directories for each file, use this argument.\n\
-        Directories are taken in the same order as the files",
+        help="In the case you want to specifiy different directories for each "
+        "file, use this argument.\nDirectories are taken in the same order as "
+        "the files",
     )
     args = parser.parse_args()
     print(args)
@@ -108,14 +112,16 @@ if __name__ == "__main__":
     elif args.files is not None:
         # Check the directories argument
         if args.directories is None:
-            # In the case its none ue save_path many times as the size of files, if save_path isn't provided, raise an error
+            # In the case its none ue save_path many times as the size of files,
+            # if save_path isn't provided, raise an error
             if args.save_path is None:
                 parser.error("You must provide a path to save the files")
             else:
                 directories = list(args.save_path) * len(args.files)
         if len(args.directories) != len(args.files):
             parser.error(
-                "When using directories and files optional arguments, they must have the same number of options passed"
+                "When using directories and files optional arguments, they must "
+                "have the same number of options passed"
             )
         else:
             directories = args.directories

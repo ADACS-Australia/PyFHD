@@ -48,7 +48,8 @@ def before_file(tag, run, subfunc, data_dir):
         return None
     before_file = Path(
         data_dir,
-        f"{tag}_{run}{f'_{subfunc}' if subfunc != '' else ''}_before_{data_dir.name}.h5",
+        f"{tag}_{run}{f'_{subfunc}' if subfunc != '' else ''}_before_"
+        f"{data_dir.name}.h5",
     )
     # If the h5 file already exists and has been created, return the path to it
     if before_file.exists():
@@ -149,7 +150,8 @@ def test_simple_2D_region_grow():
 def test_FHD_region_grow(before_file, after_file):
     if before_file is None or after_file is None:
         pytest.skip(
-            f"This test has been skipped because the test was listed in the skipped tests due to FHD not outputting them: {skip_tests}"
+            "This test has been skipped because the test was listed in the "
+            f"skipped tests due to FHD not outputting them: {skip_tests}"
         )
     before = load(before_file)
     expected_beam_i = load(after_file)

@@ -109,7 +109,8 @@ def test_vis_model_freq_split(before_file, after_file, beam_file):
     pytest.skip("Skipped due to the system needing more memory than it had available.")
     if before_file is None or after_file is None:
         pytest.skip(
-            f"This test has been skipped because the test was listed in the skipped tests due to FHD not outputting them: {skip_tests}"
+            "This test has been skipped because the test was listed in the "
+            f"skipped tests due to FHD not outputting them: {skip_tests}"
         )
 
     h5_before = load(before_file)
@@ -138,8 +139,9 @@ def test_vis_model_freq_split(before_file, after_file, beam_file):
     )
 
     assert expected_model_split["obs_out"]["n_vis"] == model_split["obs"]["n_vis"]
-    # Only checking the first polarization due to the size of the arrays taking up too
-    # much memory, now doing the split on a per polarization basis due to memory constraints
+    # Only checking the first polarization due to the size of the arrays taking
+    # up too much memory, now doing the split on a per polarization basis due to
+    # memory constraints
     npt.assert_allclose(
         model_split["residual_arr"], expected_model_split["dirty_arr"], atol=1e-8
     )

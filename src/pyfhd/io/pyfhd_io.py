@@ -234,7 +234,8 @@ def save_dataset(
                 value = format_array(value)
                 value_dtype = dtype_picker(value.dtype)
             else:
-                # Since we're dealing with variable length arrays, we need to use a special dtype
+                # Since we're dealing with variable length arrays, we need to
+                # use a special dtype
                 # and process each array individually
                 for i, arr in enumerate(value):
                     value[i] = format_array(arr)
@@ -274,7 +275,11 @@ def save_dataset(
                 except ValueError as e:
                     if "inhomogeneous" in str(e):
                         logger.warning(
-                            f"Failed to save {key} as an array as the list couldn't turn into a NumPy array, trying to save as a variable length array. Please add {key} to the variable_lengths dictionary in the save function in future."
+                            f"Failed to save {key} as an array as the list "
+                            "couldn't turn into a NumPy array, trying to save as "
+                            f"a variable length array. Please add {key} to the "
+                            "variable_lengths dictionary in the save function in "
+                            "future."
                         )
                         value = np.array(value, dtype=object)
                         for i, arr in enumerate(value):
@@ -282,7 +287,8 @@ def save_dataset(
                         data_dtype = h5py.vlen_dtype(dtype_picker(value[0].dtype))
                     else:
                         logger.info(
-                            f"You received an error not related to the array being inhomogeneous, Here's the error: {e}"
+                            "You received an error not related to the array "
+                            f"being inhomogeneous, Here's the error: {e}"
                         )
             h5py_obj.create_dataset(
                 key, data=value, dtype=data_dtype, compression="gzip"
@@ -303,7 +309,8 @@ def save_dataset(
                 h5py_obj.create_dataset(key, data=np.bytes_(yaml_str))
             else:
                 try:
-                    # Store the value in a single size dataset, used for ints, floats, strings etc
+                    # Store the value in a single size dataset, used for ints,
+                    # floats, strings etc
                     h5py_obj.create_dataset(key, data=value)
                 except ValueError:
                     if logger is not None:
@@ -321,9 +328,9 @@ def dict_to_group(
     logger: Logger | None,
 ) -> None:
     """
-    Converts a dictionary to a HDF5 group. This is called in the event a dictionary is found inside
-    a dictionary that is being saved in a HDF5 file. Creates a subgroup for the hdf5 file with everything
-    turning into individual datasets.
+    Converts a dictionary to a HDF5 group. This is called in the event a dictionary
+    is found inside a dictionary that is being saved in a HDF5 file. Creates a
+    subgroup for the hdf5 file with everything turning into individual datasets.
 
     Parameters
     ----------
@@ -357,13 +364,17 @@ def save(
     variable_lengths: dict[str, DTypeLike] = {},
 ) -> None:
     """
-    Saves a numpy array or dictionary into a hdf5 file using h5py, with compression applied to all arrays/datasets.
-    An array will be saved as a single dataset, while a dictionary will be saved where each key will be a dataset
-    unless the key points a dictionary in which case a group will be created and `dict_to_group` called to turn each
-    key in that sub dict into a dataset (or another group if it's another sub dictionary). This function should be
-    kept as general as possible, if something needs formatting for saving, format it before calling this function.
-    If you are converting a sav file to hdf5 with this function, use `recarray_to_dict` which converts the sav output
-    from readsav into a proper python dictionary (rather than recarrays or weird array shapes, objects arrays etc.)
+    Saves a numpy array or dictionary into a hdf5 file using h5py, with
+    compression applied to all arrays/datasets. An array will be saved as a
+    single dataset, while a dictionary will be saved where each key will be a
+    dataset unless the key points a dictionary in which case a group will be
+    created and `dict_to_group` called to turn each key in that sub dict into a
+    dataset (or another group if it's another sub dictionary). This function
+    should be kept as general as possible, if something needs formatting for
+    saving, format it before calling this function. If you are converting a sav
+    file to hdf5 with this function, use `recarray_to_dict` which converts the
+    sav output from readsav into a proper python dictionary (rather than recarrays
+    or weird array shapes, objects arrays etc.)
 
     Parameters
     ----------
@@ -375,28 +386,38 @@ def save(
         Used in the case that the to_save variable is an array, this name will
         be used as the key for the dataset in the hdf5 file.
     logger : Logger, optional
-        pyfhd's Logger, by default None (in case you don't want to use the logger for testing)
+        pyfhd's Logger, by default None (in case you don't want to use the logger
+        for testing)
     to_chunk : dict[str, dict], optional
-        A dictionary where each key-value pair represents a key in the to_save dictionary, and the value is a dictionary
-        which should contain two key-value pairs, `shape` which should be the `shape` of the array and `chunk` which tells
-        hdf5 how to chunk the dataset when it's being read/written. If you're not sure how to `chunk` the dataset, set `chunk`
-        to True which enables h5py to guess the chunk size for you. By default {}
+        A dictionary where each key-value pair represents a key in the to_save
+        dictionary, and the value is a dictionary which should contain two
+        key-value pairs, `shape` which should be the `shape` of the array and
+        `chunk` which tells hdf5 how to chunk the dataset when it's being
+        read/written. If you're not sure how to `chunk` the dataset, set `chunk`
+        to True which enables h5py to guess the chunk size for you. By default
+        an empty dict.
     variable_lengths : dict[str, DTypeLike], optional
-        A dictionary where each key-value pair represents a key in the to_save dictionary, and the value is a dtype. This is
-        for special cases where you must save an array of variable length arrays. H5Py does support variable length arrays, but
-        you must use a special type, using the `h5py.vlen_dtype()` you can create a dtype which accepts object arrays of variable
-        lengths. For example if you wish to have variable integer array called `ija`, you would use `h5py.vlen_dtype(np.int64)`,
-        and save use it in the variable_lengths dictionary like so, `{'ija': h5py.vlen_dtype(np.int64)}`, which will set the dtype appropriately
-        during a `create_dataset` call. By default {}
-
+        A dictionary where each key-value pair represents a key in the to_save
+        dictionary, and the value is a dtype. This is for special cases where
+        you must save an array of variable length arrays. H5Py does support variable
+        length arrays, but you must use a special type, using the `h5py.vlen_dtype()`
+        you can create a dtype which accepts object arrays of variable lengths.
+        For example if you wish to have variable integer array called `ija`,
+        you would use `h5py.vlen_dtype(np.int64)`, and save use it in the
+        variable_lengths dictionary like so, `{'ija': h5py.vlen_dtype(np.int64)}`,
+        which will set the dtype appropriately during a `create_dataset` call.
+        By default an empty dict.
 
     See Also
     --------
     pyfhd.io.pyfhd_io.load : Load a HDF5 file
     pyfhd.io.pyfhd_io.dict_to_group : Converts a dictionary to a h5py Group Object
-    pyfhd.io.pyfhd_io.recarray_to_dict : Turns any record arrays into dicts, also formats object arrays into the correct dtype array
-    pyfhd.io.pyfhd_io.save_dataset : Saves a single dataset based off a dictionary key-value pair
-    pyfhd.io.pyfhd_io.format_array : Finds any None is an array and replaces them appropriately
+    pyfhd.io.pyfhd_io.recarray_to_dict : Turns any record arrays into dicts,
+        also formats object arrays into the correct dtype array
+    pyfhd.io.pyfhd_io.save_dataset : Saves a single dataset based off a dictionary
+        key-value pair
+    pyfhd.io.pyfhd_io.format_array : Finds any None is an array and replaces
+        them appropriately
     """
     # Create a custom vectorized function to check for complex numbers
     # is_complex_vectorized = np.vectorize(is_complex)
@@ -411,7 +432,9 @@ def save(
             case dict():
                 if logger:
                     logger.info(
-                        f"Writing the {dataset_name} dict to {file_name}, each key will be a dataset, if the key contains a dict then it will be a group."
+                        f"Writing the {dataset_name} dict to {file_name}, each "
+                        "key will be a dataset, if the key contains a dict then "
+                        "it will be a group."
                     )
                 for key in to_save:
                     # We're using the attributes as a mask, where if True then we know
@@ -425,7 +448,9 @@ def save(
                 )
                 if logger:
                     logger.warning(
-                        "Not a dict or numpy array, pyfhd won't write other types at this time, refer to pyfhd.io.pyfhd_io.save to see what is supported"
+                        "Not a dict or numpy array, pyfhd won't write other types "
+                        "at this time, refer to pyfhd.io.pyfhd_io.save to see "
+                        "what is supported"
                     )
 
 
@@ -433,11 +458,13 @@ def load_dataset(
     h5py_obj: h5py.File | h5py.Group, key: str, dataset: h5py.Dataset
 ) -> Any:
     """
-    Loads a single dataset from a HDF5 File or Group, the key here is the dataset name from the
-    file or group and is only used to check the attributes of said file or group. If the attribute
-    associated with the key is True, then we assume the value saved is an empty dataset and we should
-    return None. If this is False, load the value and check if this value should be a single value. There
-    are special checks for byte arrays, if there is byte arrays, pyfhd assumes these are meant to be strings.
+    Loads a single dataset from a HDF5 File or Group, the key here is the dataset
+    name from the file or group and is only used to check the attributes of said
+    file or group. If the attribute associated with the key is True, then we
+    assume the value saved is an empty dataset and we should return None. If
+    this is False, load the value and check if this value should be a single value.
+    There are special checks for byte arrays, if there is byte arrays, pyfhd
+    assumes these are meant to be strings.
 
     Parameters
     ----------
@@ -575,20 +602,25 @@ def load(
 
 def recarray_to_dict(data: np.recarray | dict) -> dict:
     """
-    Turns a record array into a dict, but does it as a deep convert. This was needed due to scipy's readsav
-    returning an inception like experience of record arrays. This would mean to access values from something
-    like the obs structure for a test, the code had to be obs[0]['baseline_info'][0]['tile_a'], which was became
-    untenable as the full python translation won't require these leaving us two codebases for IDL compatible and
-    Python compatible. Instead, this function turns all record arrays into dictionaries, which are easier to understand
-    and are faster.
+    Turns a record array into a dict, but does it as a deep convert. This was
+    needed due to scipy's readsav returning an inception like experience of
+    record arrays. This would mean to access values from something like the obs
+    structure for a test, the code had to be obs[0]['baseline_info'][0]['tile_a'],
+    which was became untenable as the full python translation won't require
+    these leaving us two codebases for IDL compatible and Python compatible.
+    Instead, this function turns all record arrays into dictionaries, which are
+    easier to understand and are faster.
 
-    This was made specifically to work with the readsav function, to get compatibility with general recarrays remove the
-    zero index, as readsav for some reason adds a single dimension to all recarrays.
+    This was made specifically to work with the readsav function, to get
+    compatibility with general recarrays remove the zero index, as readsav for
+    some reason adds a single dimension to all recarrays.
 
-    This was updated later to also take a dictionary which may contain record arrays too.
+    This was updated later to also take a dictionary which may contain record
+    arrays too.
 
-    This was also updated later to turn object arrays into multidimensional arrays if they can be one. In the
-    case the object array couldn't be turned into a multidimensional array it was turned into a list
+    This was also updated later to turn object arrays into multidimensional
+    arrays if they can be one. In the case the object array couldn't be turned
+    into a multidimensional array it was turned into a list
 
     Parameters
     ----------
@@ -605,7 +637,8 @@ def recarray_to_dict(data: np.recarray | dict) -> dict:
         data = {name.lower(): data[name] for name in data.dtype.names}
     # For every key, if it's a record array, recursively call the function
     for key in data:
-        # Every now and then you do get object arrays that contain only one element or arrays that contain only one element
+        # Every now and then you do get object arrays that contain only one
+        # element or arrays that contain only one element
         # These are not useful so I will extract the element out
         if (
             isinstance(data[key], np.ndarray)
@@ -613,7 +646,8 @@ def recarray_to_dict(data: np.recarray | dict) -> dict:
             and data[key].size == 1
         ):
             data[key] = data[key][0]
-        # Sometimes the recarray is in a standard numpy object array and other times its not for some reason...
+        # Sometimes the recarray is in a standard numpy object array and other
+        # times its not for some reason...
         if isinstance(data[key], np.recarray):
             data[key] = recarray_to_dict(data[key])
         elif isinstance(data[key], np.ndarray) and isinstance(
@@ -628,7 +662,8 @@ def recarray_to_dict(data: np.recarray | dict) -> dict:
             if np.size(none_values) > 0:
                 data[key][none_values] = np.nan
             # If all of the values were None, then set the array dtype to float64
-            # (as we don't know what dtype it actually was), probably only relevant for testing
+            # (as we don't know what dtype it actually was), probably only
+            # relevant for testing
             if np.size(none_values) == np.size(data[key]):
                 data[key] = data[key].astype(np.float64)
         # Assume we found a string array since it's bytes, convert to a string list
@@ -637,9 +672,10 @@ def recarray_to_dict(data: np.recarray | dict) -> dict:
         # Found only bytes, assume it's a string, convert the string
         elif isinstance(data[key], bytes):
             data[key] = data[key].decode()
-        # You can also get object arrays which themselves contain numpy arrays, it's best to turn these
-        # into multidimensional arrays. If they can't turn into multidimensional arrays due to them
-        # being different types or not of the same size then it will convert the numpy object array
+        # You can also get object arrays which themselves contain numpy arrays,
+        # it's best to turn these into multidimensional arrays. If they can't
+        # turn into multidimensional arrays due to them being different types or
+        # not of the same size then it will convert the numpy object array
         # into a list of objects instead.
         elif (
             isinstance(data[key], np.ndarray)
@@ -652,12 +688,14 @@ def recarray_to_dict(data: np.recarray | dict) -> dict:
                 if np.size(none_values) > 0:
                     data[key][none_values] = np.nan
                 # If all of the values were None, then set the array dtype to float64
-                # (as we don't know what dtype it actually was), probably only relevant for testing
+                # (as we don't know what dtype it actually was), probably only
+                # relevant for testing
                 if (np.size(none_values) // len(data[key].shape)) == np.size(data[key]):
                     data[key] = data[key].astype(np.float64)
-                # If it's not an object array, numpy will stack the axes, which isn't desired here
-                # as we want to maintain the multidimensional nature of the data. So we'll create an
-                # array of the desired size using the shape of the first element.
+                # If it's not an object array, numpy will stack the axes, which
+                # isn't desired here as we want to maintain the multidimensional
+                # nature of the data. So we'll create an array of the desired
+                # size using the shape of the first element.
                 elif data[key][0].dtype != object:
                     new_array = np.empty(
                         [data[key].size, *data[key][0].shape], dtype=data[key][0].dtype
@@ -666,8 +704,10 @@ def recarray_to_dict(data: np.recarray | dict) -> dict:
                         new_array[idx] = data[key][idx]
                     data[key] = new_array
                 else:
-                    # For an object array you can flatten it, and stack all inner arrays together until it's not an object array
-                    # Crucially this assumes the array not as an object array can fit in memory! If you're doing the beam_ptr
+                    # For an object array you can flatten it, and stack all inner
+                    # arrays together until it's not an object array
+                    # Crucially this assumes the array not as an object array
+                    # can fit in memory! If you're doing the beam_ptr
                     # conversion take this into consideration
                     while data[key].dtype == object:
                         data[key] = np.vstack(data[key].flatten()).reshape(
@@ -691,7 +731,8 @@ def convert_sav_to_dict(sav_path: str, logger: Logger, tmp_dir="temp_pyfhd"):
     assumed many files are to be converted, so `tmp_pyfhd` should be deleted
     after all calls.
 
-    Mostly used just for testing, if you;re not a developer you can safely ignore this function
+    Mostly used just for testing, if you;re not a developer you can safely
+    ignore this function
 
     Parameters
     ----------

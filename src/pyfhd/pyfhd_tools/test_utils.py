@@ -16,8 +16,10 @@ def get_data(data_dir: Path, data_filename: str, *args: list[str]) -> list:
     has been made with the scripts inside the scripts directory.
     Use splitter.py to put the files and directories in the right
     format if you have used histogram runner and rebin runner.
-    Paths are expected to be of data_dir/data/function_name/[data,expected]_filename.npy
-    data_dir is given by pytest-datadir, it should be the directory where the test file is in.
+    Paths are expected to be of:
+    data_dir/data/function_name/[data,expected]_filename.npy
+    data_dir is given by pytest-datadir, it should be the directory where the
+    test file is in.
 
     Parameters
     ----------
@@ -31,7 +33,8 @@ def get_data(data_dir: Path, data_filename: str, *args: list[str]) -> list:
     Returns
     -------
     return_list: list
-        Contains just the input if only one file given, otherwise, it also gives the output if other files given
+        Contains just the input if only one file given, otherwise, it also gives
+        the output if other files given
     """
     # Put as Paths and read the files
     input_path = Path(data_dir, data_filename)
@@ -107,7 +110,8 @@ def get_data_sav(data_dir: Path, sav_file: Path, *args: list[Path]) -> list:
     Returns
     -------
     return_list: list
-        Contains just the data if only one file given, otherwise, it also gives the output if other files given
+        Contains just the data if only one file given, otherwise, it also gives
+        the output if other files given
     """
     data = get_data(data_dir, sav_file)
     key = list(data.keys())[0]
@@ -128,7 +132,8 @@ def get_savs(data_dir: Path, sav_file: Path, *args: list[Path]) -> dict | list[d
     """
     Takes in the path for many sav files and reads them without
     reading their keys. Assumes the sav files here have more than one key.
-    If you use one sav_path only then the function acts as a wrapper for scipy's readsav.
+    If you use one sav_path only then the function acts as a wrapper for scipy's
+    readsav.
 
     Parameters
     ----------
@@ -157,9 +162,10 @@ def try_assert_all_close(
     actual: NDArray, target: NDArray, name: str, tolerance=1e-8
 ) -> None:
     """
-    Uses the numpy testing assert_all_close but uses a try and except wrapper around it to print
-    the error instead of doing an AssertionError which stops the running of the program. This is helpful
-    when doing testing with expected precision errors, but wanting to avoid stopping the program or constantly
+    Uses the numpy testing assert_all_close but uses a try and except wrapper
+    around it to print the error instead of doing an AssertionError which stops
+    the running of the program. This is helpful when doing testing with expected
+    precision errors, but wanting to avoid stopping the program or constantly
     setting the tolerances on multiple assert statements.
 
     Parameters
@@ -194,12 +200,16 @@ def try_assert_all_close(
 
 def convert_to_h5(test_path: Path, save_path: Path, *args: list[Path]) -> None:
     """
-    For every file specified as an arg, read the file from the test_path into a python dictionary.
-    If it's a dict or recarray that contaisn recarrays, convert all the recarrays using recarray_to_dict.
-    The files can be .npy or .sav files. The python dict will then be written into a HDF5 file for testing
+    For every file specified as an arg, read the file from the test_path into a
+    python dictionary.
+    If it's a dict or recarray that contains recarrays, convert all the recarrays
+    using recarray_to_dict.
+    The files can be .npy or .sav files. The python dict will then be written
+    into a HDF5 file for testing
     purposes.
 
-    This function was made to convert many of the .npy and .sav files into something that can be read and written more
+    This function was made to convert many of the .npy and .sav files into
+    something that can be read and written more
     easily by other packages other than numpyt or scipy.
 
     Parameters
@@ -290,8 +300,10 @@ def sav_file_rearrange_psf(sav_psf):
 
 def print_types(dictionary: dict, dict_name: str, indent_level: int = 1) -> None:
     """
-    When generating the tests, Sometimes I'd find it useful to see the types of all the keys and value pairs inside
-    the dictionary I'm manipulating. The Debug mode is helpful for this too, but this can be easily used
+    When generating the tests, Sometimes I'd find it useful to see the types of
+    all the keys and value pairs inside
+    the dictionary I'm manipulating. The Debug mode is helpful for this too, but
+    this can be easily used
     inside a notebook if experimenting in there too.
 
     Parameters
@@ -307,11 +319,14 @@ def print_types(dictionary: dict, dict_name: str, indent_level: int = 1) -> None
         # Print this if it's a NumPy array
         if isinstance(dictionary[key], np.ndarray):
             print(
-                f"{dict_name}[{key}] : {dictionary[key].dtype} {dictionary[key].shape}\n{indent_level * 2 * ' '}Inside Type: {type(dictionary[key][0])}"
+                f"{dict_name}[{key}] : {dictionary[key].dtype} "
+                f"{dictionary[key].shape}\n{indent_level * 2 * ' '}Inside "
+                f"Type: {type(dictionary[key][0])}"
             )
             if isinstance(dictionary[key][0], np.ndarray):
                 print(
-                    f"{indent_level * 2 * ' '}NumPy Array Dtype: {dictionary[key][0].dtype}"
+                    f"{indent_level * 2 * ' '}NumPy Array "
+                    f"Dtype: {dictionary[key][0].dtype}"
                 )
         # Recursively call the function on another sub dict
         elif isinstance(dictionary[key], dict):

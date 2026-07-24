@@ -242,7 +242,8 @@ def log_color_calc(
     elif color_profile == "sym_log":
         if data_range[0] >= 0 or data_range[1] <= 0:
             raise ValueError(
-                "sym_log color profile requires both negative and positive values in data_range."
+                "sym_log color profile requires both negative and positive "
+                "values in data_range."
             )
 
         # Calculate the minimum absolute value
@@ -326,31 +327,49 @@ def log_color_calc(
     # Generate colorbar ticks and tick names
     if color_profile == "log_cut":
         cb_ticks = np.linspace(data_color_range[0], data_color_range[1], num=5)
-        cb_ticknames = [
-            f"{10 ** (tick * (log_data_range[1] - log_data_range[0]) / (data_n_colors - 1) + log_data_range[0]):.2g}"
+        tick_vals = [
+            10
+            ** (
+                tick * (log_data_range[1] - log_data_range[0]) / (data_n_colors - 1)
+                + log_data_range[0]
+            )
             for tick in cb_ticks
         ]
+        cb_ticknames = [f"{val:.2g}" for val in tick_vals]
     elif color_profile == "sym_log":
         pos_ticks = np.linspace(midpoint, data_color_range[1], num=5)
         neg_ticks = np.linspace(data_color_range[0], midpoint, num=5)
         cb_ticks = np.concatenate([neg_ticks, [midpoint], pos_ticks])
+        neg_tick_vals = [
+            10
+            ** (
+                log_data_range[1]
+                - (tick - data_color_range[0])
+                * (log_data_range[1] - log_data_range[0])
+                / midpoint
+            )
+            for tick in neg_ticks
+        ]
+        pos_tick_vals = [
+            10
+            ** (
+                (tick - midpoint) * (log_data_range[1] - log_data_range[0]) / midpoint
+                + log_data_range[0]
+            )
+            for tick in pos_ticks
+        ]
         cb_ticknames = (
-            [
-                f"-{10 ** (log_data_range[1] - (tick - data_color_range[0]) * (log_data_range[1] - log_data_range[0]) / midpoint):.2g}"
-                for tick in neg_ticks
-            ]
+            [f"-{val:.2g}" for val in neg_tick_vals]
             + ["0"]
-            + [
-                f"{10 ** ((tick - midpoint) * (log_data_range[1] - log_data_range[0]) / midpoint + log_data_range[0]):.2g}"
-                for tick in pos_ticks
-            ]
+            + [f"{val:.2g}" for val in pos_tick_vals]
         )
     elif color_profile == "abs":
         cb_ticks = np.linspace(data_color_range[0], data_color_range[1], num=5)
-        cb_ticknames = [
-            f"{tick * (data_range[1] - data_range[0]) / (data_n_colors - 1) + data_range[0]:.2g}"
+        tick_vals = [
+            tick * (data_range[1] - data_range[0]) / (data_n_colors - 1) + data_range[0]
             for tick in cb_ticks
         ]
+        cb_ticknames = [f"{val:.2g}" for val in tick_vals]
 
     return data_log_norm, cb_ticks, cb_ticknames, percent_clipped
 
@@ -473,7 +492,8 @@ def quick_image(
     alpha : float | None, optional
         The alpha transparency of the image, by default None
     missing_value : float | int, optional
-        The value in the data array that represents missing data. If None, no missing data handling is performed.
+        The value in the data array that represents missing data. If None, no
+        missing data handling is performed.
     savefile : str | Path | None, optional
         The path to save the image file. If None, the image is displayed on screen.
     png : bool, optional
@@ -575,8 +595,9 @@ def quick_image(
         wh_high = np.nonzero(image > data_range[1])
 
         # Scale image data to be in the color range
+        full_range = data_range[1] - data_range[0]
         image = (image - data_range[0]) * (data_n_colors - 1) / (
-            data_range[1] - data_range[0]
+            full_range
         ) + data_color_range[0]
 
         # Handle out-of-bounds values
@@ -591,7 +612,7 @@ def quick_image(
 
         cb_ticks = np.linspace(data_color_range[0], data_color_range[1], num=5)
         cb_ticknames = [
-            f"{tick * (data_range[1] - data_range[0]) / (data_n_colors - 1) + data_range[0]:.2g}"
+            f"{tick * (full_range) / (data_n_colors - 1) + data_range[0]:.2g}"
             for tick in cb_ticks
         ]
 
@@ -665,7 +686,8 @@ def quick_image(
     if cb_title:
         cbar.set_label(cb_title, fontsize=charsize or 10)
 
-    # Add note about clipping if clipping was applied, including the percentage of data that was clipped.
+    # Add note about clipping if clipping was applied, including the percentage
+    # of data that was clipped.
     if sigma_clip_level is not None or percentile_clip_level is not None:
         clip_note = f"{percent_clipped:.2f}% of data clipped."
         if note is not None:

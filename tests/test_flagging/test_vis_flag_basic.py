@@ -76,7 +76,8 @@ def after_file(tag, run, data_dir):
 def test_many_points(before_file, after_file):
     if before_file is None or after_file is None:
         pytest.skip(
-            f"This test has been skipped because the test was listed in the skipped tests due to FHD not outputting them: {skip_tests}"
+            "This test has been skipped because the test was listed in the "
+            f"skipped tests due to FHD not outputting them: {skip_tests}"
         )
 
     logger = Logger(1)

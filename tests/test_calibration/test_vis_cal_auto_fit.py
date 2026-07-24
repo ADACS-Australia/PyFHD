@@ -94,7 +94,8 @@ def test_vis_cal_auto_fit(before_file, after_file):
     and then calls `vis_cal_bandpass`, checking the outputs match expectations"""
     if before_file is None or after_file is None:
         pytest.skip(
-            f"This test has been skipped because the test was listed in the skipped tests due to FHD not outputting them: {skip_tests}"
+            "This test has been skipped because the test was listed in the "
+            f"skipped tests due to FHD not outputting them: {skip_tests}"
         )
 
     h5_before = load(before_file)
@@ -109,10 +110,13 @@ def test_vis_cal_auto_fit(before_file, after_file):
     # return_cal_fit =
     vis_cal_auto_fit(obs, cal, vis_auto, vis_model_auto, auto_tile_i)
 
-    # Plots have been made already testing this against FHD, uncomment to regenerate them.
+    # Plots have been made already testing this against FHD, uncomment to
+    # regenerate them.
 
     # auto_scale is nan, nan from FHD and Python, can't compare them due to the nans
-    # assert np.array_equal(return_cal_fit['auto_scale'], expected_cal_fit['auto_scale'])
+    # assert np.array_equal(
+    #    return_cal_fit['auto_scale'], expected_cal_fit['auto_scale']
+    # )
     # cal_fit['auto_params'] came in as an object array
     # auto_params = np.empty([2, cal["n_pol"], cal['n_tile']], dtype = np.float64)
     # auto_params[0] = expected_cal_fit['auto_params'][0].transpose()
@@ -127,14 +131,30 @@ def test_vis_cal_auto_fit(before_file, after_file):
 
     # fig, axs = plt.subplots(2, 1)
 
-    # axs[0].plot(np.abs(gx[0, :]), 's', mfc='none', linestyle='none', label='Sim gains')
-    # axs[0].plot(return_cal_fit['gain'][0, 0, :], 'x', mfc='none', linestyle='none', label='Fit pyfhd')
+    # axs[0].plot(
+    #   np.abs(gx[0, :]), 's', mfc='none', linestyle='none', label='Sim gains'
+    # )
+    # axs[0].plot(
+    #     return_cal_fit['gain'][0, 0, :],
+    #     'x',
+    #     mfc='none',
+    #     linestyle='none',
+    #     label='Fit pyfhd'
+    # )
 
     # print(expected_cal_fit['gain'][0, 0, 1])
     # print(return_cal_fit['gain'][0, 0, 1])
 
-    # axs[1].plot(np.abs(gx[0, :]), 's', mfc='none', linestyle='none', label='Sim gains')
-    # axs[1].plot(expected_cal_fit['gain'][0, 0, :]*0.5, '^', mfc='none', linestyle='none', label='Fit FHD')
+    # axs[1].plot(
+    #   np.abs(gx[0, :]), 's', mfc='none', linestyle='none', label='Sim gains'
+    # )
+    # axs[1].plot(
+    #     expected_cal_fit['gain'][0, 0, :]*0.5,
+    #     '^',
+    #     mfc='none',
+    #     linestyle='none',
+    #     label='Fit FHD'
+    # )
 
     # axs[1].set_xlabel('Tile index')
 
@@ -145,7 +165,9 @@ def test_vis_cal_auto_fit(before_file, after_file):
     # axs[1].legend()
 
     # plt.tight_layout()
-    # fig.savefig(f"test_vis_cal_auto_fit_{tag}_{run}.png", bbox_inches='tight', dpi=300)
+    # fig.savefig(
+    #   f"test_vis_cal_auto_fit_{tag}_{run}.png", bbox_inches='tight', dpi=300
+    # )
     # plt.close()
 
     # rtol = 1e-5

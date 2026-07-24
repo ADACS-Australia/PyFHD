@@ -110,7 +110,8 @@ def after_file(tag, run, array_type, data_dir, request):
 def test_healpix_cnv_apply(before_file, after_file, request):
     if before_file is None or after_file is None:
         pytest.skip(
-            f"This test has been skipped because the test was listed in the skipped tests due to FHD not outputting them: {skip_tests}"
+            "This test has been skipped because the test was listed in the "
+            f"skipped tests due to FHD not outputting them: {skip_tests}"
         )
     # This was done here to make it work in GitHub Actions
     if request.node.get_closest_marker("github_actions"):
