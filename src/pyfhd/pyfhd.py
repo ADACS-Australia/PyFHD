@@ -4,10 +4,10 @@ import time
 from datetime import timedelta
 from pathlib import Path
 
-from astropy import constants
 import h5py
-from h5py import File
 import numpy as np
+from astropy import constants
+from h5py import File
 
 from .beam_setup.beam import create_psf
 from .calibration.calibrate import calibrate, calibrate_qu_mixing
@@ -21,48 +21,26 @@ from .data_setup.uvfits import (
 from .flagging.flagging import vis_flag, vis_flag_basic
 from .gridding.gridding_utils import crosspol_reformat
 from .gridding.visibility_grid import visibility_grid
+from .healpix.export import healpix_snapshot_cube_generate
+from .io.pyfhd_io import SAVEFILES, checkpoint_filenames, load, product_file, save
+from .io.pyfhd_quickview import quickview
+from .plotting.gridding import plot_gridding
 from .pyfhd_tools.pyfhd_setup import (
-    pyfhd_parser,
     pyfhd_logger,
+    pyfhd_parser,
     pyfhd_setup,
     setup_directory,
     write_collated_yaml_config,
 )
 from .pyfhd_tools.pyfhd_utils import (
+    _print_time_diff,
     simple_deproject_w_term,
     vis_noise_calc,
     vis_weights_update,
 )
 from .source_modeling.vis_model_transfer import vis_model_transfer
-from .io.pyfhd_io import SAVEFILES, checkpoint_filenames, product_file, save, load
-from .io.pyfhd_quickview import quickview
-from .healpix.export import healpix_snapshot_cube_generate
-from .plotting.gridding import plot_gridding
 
 logger = logging.getLogger(__name__)
-
-
-def _print_time_diff(start: float, end: float, description: str):
-    """
-    Print the time difference in a nice format between start and end time
-
-    Parameters
-    ----------
-    start : float
-        Start time in seconds since epoch
-    end : float
-        End time in seconds since epoch
-    """
-    runtime = end - start
-    if runtime > 60:
-        runtime = timedelta(seconds=end - start)
-        logger.info(f"{description} completed in: {runtime}")
-    elif runtime < 1:
-        logger.info(
-            f"{description} completed in: {round(runtime * 1000, 5)} milliseconds"
-        )
-    else:
-        logger.info(f"{description} completed in: {round(runtime, 5)} seconds")
 
 
 def _finish_pyfhd(pyfhd_start: float, psf: dict | File, pyfhd_config: dict):

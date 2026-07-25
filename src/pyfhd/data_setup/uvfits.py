@@ -1,16 +1,16 @@
 import logging
 from pathlib import Path
 
+import numpy as np
 from astropy.coordinates import EarthLocation
 from astropy.io import fits
 from astropy.io.fits.fitsrec import FITS_rec
 from astropy.io.fits.header import Header
 from astropy.time import Time
-import numpy as np
 from numpy.typing import NDArray
 from pyuvdata.utils.io import fits as fits_utils
 
-from pyfhd.io.pyfhd_io import product_file, save
+from ..io.pyfhd_io import product_file, save
 
 logger = logging.getLogger(__name__)
 

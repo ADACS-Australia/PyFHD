@@ -1,13 +1,13 @@
-import importlib_resources
 import sys
 import time
 
 import configargparse
+import importlib_resources
 import pytest
 from pyuvdata.testing import check_warnings
 
-from pyfhd.pyfhd_tools.pyfhd_setup import pyfhd_parser, pyfhd_setup, deprecated_args
 from pyfhd.pyfhd import setup_directory
+from pyfhd.pyfhd_tools.pyfhd_setup import deprecated_args, pyfhd_parser, pyfhd_setup
 
 
 @pytest.mark.github_actions
