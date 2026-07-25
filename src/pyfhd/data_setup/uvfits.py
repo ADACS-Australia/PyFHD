@@ -268,9 +268,8 @@ def create_params(pyfhd_header: dict, params_data: np.recarray) -> dict:
             exponent = np.log(np.min(baseline_min)) / np.log(2)
             antenna_mod_index = 2 ** np.floor(exponent)
             tile_b_test = np.min(baseline_min) % antenna_mod_index
-            if tile_b_test > 1:
-                if baseline_min % 2 == 1:
-                    antenna_mod_index /= 2 ** np.floor(np.log(tile_b_test) / np.log(2))
+            if tile_b_test > 1 and baseline_min % 2 == 1:
+                antenna_mod_index /= 2 ** np.floor(np.log(tile_b_test) / np.log(2))
             # antenna numbers start from 1
             params["antenna1"] = np.floor(params["baseline_arr"] / antenna_mod_index)
             params["antenna2"] = np.trunc(params["baseline_arr"] % antenna_mod_index)
@@ -366,11 +365,12 @@ def _check_layout_valid(layout: dict, key: str, check_min_max=False):
         so its only one number, by default False
     """
 
-    if check_min_max:
-        if isinstance(layout[key], np.ndarray) and np.min(layout[key]) == np.max(
-            layout[key]
-        ):
-            layout[key] = layout[key][0]
+    if (
+        check_min_max
+        and isinstance(layout[key], np.ndarray)
+        and np.min(layout[key]) == np.max(layout[key])
+    ):
+        layout[key] = layout[key][0]
 
     if isinstance(layout[key], np.ndarray) and (
         layout[key].size != layout["n_antenna"]

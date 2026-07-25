@@ -154,10 +154,7 @@ def checkpoint_complete(checkpoint: checkpoint_literal, pyfhd_config: dict) -> b
         else:
             files_exist.append(filename.exists())
 
-    if np.all(files_exist):
-        return True
-    else:
-        return False
+    return bool(np.all(files_exist))
 
 
 def dtype_picker(dtype: DTypeLike) -> type:

@@ -1588,7 +1588,7 @@ def write_collated_yaml_config(
         outfile.write(
             "# git dirty status for this run: {}\n".format(pyfhd_config["dirty_flag"])
         )
-        for key in pyfhd_config.keys():
+        for key in pyfhd_config:
             # These either a direct argument or are variables set internally to
             # each run,so should not appear in the yaml
             if key in [
@@ -1604,9 +1604,7 @@ def write_collated_yaml_config(
                 yaml_key = key.replace("_", "-")
                 if pyfhd_config[key] is None:
                     outfile.write(f"{yaml_key} : ~\n")
-                elif isinstance(pyfhd_config[key], float | int):
-                    outfile.write(f"{yaml_key} : {pyfhd_config[key]}\n")
-                elif isinstance(pyfhd_config[key], bool):
+                elif isinstance(pyfhd_config[key], float | int | bool):
                     outfile.write(f"{yaml_key} : {pyfhd_config[key]}\n")
                 # If it's a list, write it out as a list of strings
                 # (Unless it's empty)
@@ -2084,24 +2082,26 @@ def pyfhd_setup(pyfhd_config: dict, run_time: float, output_dir_exists: bool) ->
             "Setting cal_model_file_path to what was passed to model_file_path."
         )
 
-    if pyfhd_config["cal_model_file_path"] is not None:
-        if pyfhd_config["cal_model_file_type"] is None:
-            if pyfhd_config["model_file_type"] is not None:
-                pyfhd_config["cal_model_file_type"] = pyfhd_config["model_file_type"]
-                del pyfhd_config["model_file_type"]
-                warnings.warn(
-                    "model_file_type is deprecated. Please use cal_model_file_type "
-                    "instead. Setting cal_model_file_type to what was passed to "
-                    "model_file_type."
-                )
-            else:
-                # sav was the old default for model_file_type, so preserve it here
-                # for backwards compatibility.
-                pyfhd_config["cal_model_file_type"] = "sav"
-                warnings.warn(
-                    "cal_model_file_path is set but cal_model_file_type is not. "
-                    "Defaulting cal_model_file_type to sav."
-                )
+    if (
+        pyfhd_config["cal_model_file_path"] is not None
+        and pyfhd_config["cal_model_file_type"] is None
+    ):
+        if pyfhd_config["model_file_type"] is not None:
+            pyfhd_config["cal_model_file_type"] = pyfhd_config["model_file_type"]
+            del pyfhd_config["model_file_type"]
+            warnings.warn(
+                "model_file_type is deprecated. Please use cal_model_file_type "
+                "instead. Setting cal_model_file_type to what was passed to "
+                "model_file_type."
+            )
+        else:
+            # sav was the old default for model_file_type, so preserve it here
+            # for backwards compatibility.
+            pyfhd_config["cal_model_file_type"] = "sav"
+            warnings.warn(
+                "cal_model_file_path is set but cal_model_file_type is not. "
+                "Defaulting cal_model_file_type to sav."
+            )
 
     # make recalculate options be sensible
     if (
@@ -2184,10 +2184,9 @@ def pyfhd_setup(pyfhd_config: dict, run_time: float, output_dir_exists: bool) ->
             pyfhd_config["antenna_size"] = 10
 
     # require psf_dim to be a multiple of 2
-    if pyfhd_config["psf_dim"] is not None:
-        if pyfhd_config["psf_dim"] % 2 != 0:
-            logger.error("If set, psf-dim must be a multiple of 2.")
-            n_errors += 1
+    if pyfhd_config["psf_dim"] is not None and pyfhd_config["psf_dim"] % 2 != 0:
+        logger.error("If set, psf-dim must be a multiple of 2.")
+        n_errors += 1
 
     if pyfhd_config["beam_offset_time"] < 0:
         pyfhd_config["beam_offset_time"] = 0
