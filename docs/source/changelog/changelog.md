@@ -3,6 +3,9 @@
 ## Unreleased
 
 ### Breaking Changes!
+* Updated function parameter names to conform to pep8 guidelines.
+The affected function and parameter is:
+`pyfhd_tools.pyfhd_utils.region_grow` (`roiPixels`->`roi_pixels`);
 * The following configuration options have been deprecated (using them will
 generate deprecation warnings): `save-checkpoints`, `obs-checkpoint`, `beam-checkpoint`,
 `calibrate-checkpoint`, `gridding-checkpoint`, `save-weights`, `save-model`,
