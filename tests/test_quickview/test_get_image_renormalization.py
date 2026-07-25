@@ -91,11 +91,11 @@ def test_get_image_renormalization(before_file, after_file):
     h5_before["obs"]["obsy"] = int(h5_before["obs"]["obsy"])
 
     renorm_factor = get_image_renormalization(
-        h5_before["obs"],
-        h5_before["weights_arr"],
-        h5_before["beam_base"],
-        h5_before["filter_arr"],
-        h5_before["pyfhd_config"],
+        obs=h5_before["obs"],
+        weights=h5_before["weights_arr"],
+        beam_base=h5_before["beam_base"],
+        filter_arr=h5_before["filter_arr"],
+        pyfhd_config=h5_before["pyfhd_config"],
     )
     # Interestingly we are at the limit of single precision for this result so
     # IDL can't actually use the decimal places here where we can i.e. in IDL
