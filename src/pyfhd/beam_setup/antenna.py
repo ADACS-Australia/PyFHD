@@ -504,13 +504,14 @@ def init_beam(obs: dict, pyfhd_config: dict, logger: Logger) -> dict:
     )
 
     # First get the feed aligned response (F) on the psf["image_dim"] scale
-    # use squeeze to remove the initial shallow dimension in aligned_response
+    # remove the initial shallow dimension in aligned_response
+    # don't use squeeze in case only 1 freq.
     antenna["aligned_response_psf_image"] = get_beam_values(
         f_beam,
         za_array=psf_zenith_angle_arr.flatten(),
         az_array=psf_azimuth_arr.flatten(),
         freq_array=freq_center,
-    ).squeeze()
+    )[0]
 
     # Next get the feed aligned projection (K) on the obs["dimension"] scale
     (
