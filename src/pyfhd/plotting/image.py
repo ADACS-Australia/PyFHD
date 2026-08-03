@@ -9,7 +9,7 @@ from matplotlib.figure import Figure
 from matplotlib.colors import Colormap
 import numpy as np
 from numpy.typing import NDArray
-from typing import Literal
+from typing import Literal, cast
 
 logger = logging.getLogger(__name__)
 
@@ -50,7 +50,7 @@ def color_range(count_missing: int = 0) -> tuple:
 
 
 def log_color_calc(
-    data: NDArray[np.integer | np.floating | np.complexfloating],
+    data: NDArray[np.integer | np.floating],
     *,
     data_range: NDArray[np.integer | np.floating] | None = None,
     color_profile: Literal["log_cut", "sym_log", "abs"] = "log_cut",
@@ -67,7 +67,7 @@ def log_color_calc(
 
     Parameters
     ----------
-    data : NDArray[np.integer | np.floating | np.complexfloating]
+    data : NDArray[np.integer | np.floating]
         A 2D array of data to be displayed as an image.
         The data can be of type int, float, or complex.
     data_range : NDArray[np.integer | np.floating] | None, optional
@@ -216,6 +216,7 @@ def log_color_calc(
 
         data_log = np.zeros_like(data)
         data_log[wh_pos] = np.log10(data[wh_pos])
+        assert log_cut_val is not None
         wh_under = np.nonzero(data < 10**log_cut_val)
         if len(wh_under[0]) > 0:
             data_log[wh_under] = log_data_range[0]
@@ -247,11 +248,11 @@ def log_color_calc(
         # Calculate the minimum absolute value
         if min_abs is None:
             if count_pos > 0 and count_neg > 0:
-                min_abs = min(min_pos, abs(max_neg))
+                min_abs = float(min(min_pos, abs(max_neg)))
             elif count_pos > 0:
-                min_abs = min_pos
+                min_abs = float(min_pos)
             elif count_neg > 0:
-                min_abs = abs(max_neg)
+                min_abs = float(abs(max_neg))
             else:
                 min_abs = 1.0
 
@@ -508,6 +509,7 @@ def quick_image(
             "Image is complex, showing real part."
         )
         image = np.real(image)
+    image = cast(NDArray[np.integer | np.floating], image)
 
     # Handle missing values by setting them to NaN
     if missing_value is not None:
@@ -588,7 +590,7 @@ def quick_image(
             image[wh_high] = data_color_range[1]
 
         # Handle missing values
-        if missing_value is not None and count_missing > 0:
+        if count_missing > 0 and missing_color is not None:
             image[wh_missing] = missing_color
 
         cb_ticks = np.linspace(data_color_range[0], data_color_range[1], num=5)
@@ -630,7 +632,7 @@ def quick_image(
     elif xrange is not None and yrange is not None:
         # If xvals and yvals are not provided, use xrange and yrange directly
         extent = [xrange[0], xrange[1], yrange[0], yrange[1]]
-        image = image[np.ix_(yrange, xrange)]
+        image = image[np.ix_(yrange.astype(np.intp), xrange.astype(np.intp))]
 
     im = ax.imshow(
         image,
@@ -685,7 +687,7 @@ def quick_image(
             raise ValueError(
                 "multi_pos must be a 4-element list defining the plot position."
             )
-        ax.set_position(multi_pos)
+        ax.set_position(tuple(multi_pos))
 
     # Handle start_multi_params for multi-panel layout
     if start_multi_params is not None:
@@ -693,12 +695,12 @@ def quick_image(
         ncols = start_multi_params.get("ncol", 1)
         index = start_multi_params.get("index", 1) - 1  # Convert to 0-based index
         ax.set_position(
-            [
+            (
                 (index % ncols) / ncols,
                 1 - (index // ncols + 1) / nrows,
                 1 / ncols,
                 1 / nrows,
-            ]
+            )
         )
 
     _save_or_display(fig, savefile, png, pdf, eps)
