@@ -490,24 +490,18 @@ def quick_image(
     """
     # Validate the image input
     if image is None or not isinstance(image, np.ndarray):
-        raise ValueError(
-            "Image is undefined or not a valid numpy array."
-        )
-    
+        raise ValueError("Image is undefined or not a valid numpy array.")
+
     # Ensure the image is 2D
     if image.ndim != 2:
-        raise ValueError(
-            "Image must be 2-dimensional."
-        )
+        raise ValueError("Image must be 2-dimensional.")
 
     if transpose:
         image = image.T
 
     # Handle complex images. Default is to show the real part.
     if np.iscomplexobj(image):
-        logger.warning(
-            "Image is complex, showing real part."
-        )
+        logger.warning("Image is complex, showing real part.")
         image = np.real(image)
     image = cast(NDArray[np.integer | np.floating], image)
 
@@ -570,7 +564,9 @@ def quick_image(
                 )
                 logger.info(f"Percentage of data clipped: {percent_clipped:.2f}%")
             else:
-                data_range = np.array([np.nanmin(image), np.nanmax(image)], dtype=np.float64)
+                data_range = np.array(
+                    [np.nanmin(image), np.nanmax(image)], dtype=np.float64
+                )
 
         data_color_range, data_n_colors = color_range(count_missing=count_missing)
 
@@ -633,10 +629,7 @@ def quick_image(
         # If xvals and yvals are not provided, use xrange and yrange directly
         extent = [xrange[0], xrange[1], yrange[0], yrange[1]]
         image = image[
-            np.ix_(
-                np.asarray(yrange, dtype=np.intp),
-                np.asarray(xrange, dtype=np.intp)
-            )
+            np.ix_(np.asarray(yrange, dtype=np.intp), np.asarray(xrange, dtype=np.intp))
         ]
 
     im = ax.imshow(
@@ -712,13 +705,13 @@ def quick_image(
 
 
 def _save_or_display(
-        fig: Figure, 
-        savefile: str | Path | None,
-        png: bool = False,
-        pdf: bool = False,
-        eps: bool = False
-    ) -> None:
-    """ 
+    fig: Figure,
+    savefile: str | Path | None,
+    png: bool = False,
+    pdf: bool = False,
+    eps: bool = False,
+) -> None:
+    """
     Save the figure to a file if a savefile path is provided or if any of the
     format flags (png, pdf, eps) are True. If no savefile path is provided and
     all format flags are False, display the figure on screen.
@@ -754,9 +747,7 @@ def _save_or_display(
                 elif extension == ".pdf":
                     pdf = True
                 else:
-                    logger.warning(
-                        "Unrecognized extension, using PNG"
-                    )
+                    logger.warning("Unrecognized extension, using PNG")
                     png = True
 
         # Set default savefile if not provided
@@ -770,9 +761,7 @@ def _save_or_display(
         # Ensure only one output format is set
         formats_set = sum([png, eps, pdf])
         if formats_set > 1:
-            logger.warning(
-                "Only one of eps, png, pdf can be set. Defaulting to png."
-            )
+            logger.warning("Only one of eps, png, pdf can be set. Defaulting to png.")
             eps = pdf = False
             png = True
 
