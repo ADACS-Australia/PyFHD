@@ -632,7 +632,12 @@ def quick_image(
     elif xrange is not None and yrange is not None:
         # If xvals and yvals are not provided, use xrange and yrange directly
         extent = [xrange[0], xrange[1], yrange[0], yrange[1]]
-        image = image[np.ix_(yrange.astype(np.intp), xrange.astype(np.intp))]
+        image = image[
+            np.ix_(
+                np.asarray(yrange, dtype=np.intp),
+                np.asarray(xrange, dtype=np.intp)
+            )
+        ]
 
     im = ax.imshow(
         image,
