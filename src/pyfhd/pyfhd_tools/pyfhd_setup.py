@@ -302,10 +302,17 @@ def pyfhd_parser():
         "--obs-checkpoint",
         default=False,
         action=OrderedBooleanOptionalAction,
-        help="Load the checkpoint just after the creation of observation metadata "
-        "dictionary. It should contain the observation metadata dictionary "
-        "and the uncalibrated visibility parameters, arrays, and weights. If "
-        "calibrate-checkpoint has been set, then obs-checkpoint will be ignored.",
+        help="Load the checkpoint just after creating the observation metadata "
+        "dictionary, should contain the observation metadata dictionary, "
+        "uncalibrated visibility parameters, array and weights.",
+    )
+    checkpoints.add_argument(
+        "--beam-checkpoint",
+        default=False,
+        action=OrderedBooleanOptionalAction,
+        help="Load the checkpoint just after setting up the beam, should contain "
+        "the observation metadata dictionary, "
+        "uncalibrated visibility parameters, array and weights.",
     )
     checkpoints.add_argument(
         "--calibrate-checkpoint",
