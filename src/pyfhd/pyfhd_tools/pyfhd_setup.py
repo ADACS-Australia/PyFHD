@@ -1945,17 +1945,6 @@ def pyfhd_setup(options: argparse.Namespace) -> Tuple[dict, logging.Logger]:
     #     )
     #     warnings += 1
 
-    # allow_sidelobe_model_sources depends on model_visibilities (Error)
-    if (
-        pyfhd_config["allow_sidelobe_model_sources"]
-        and not pyfhd_config["model_visibilities"]
-    ):
-        logger.error(
-            "allow_sidelobe_model_sources shouldn't be True when model_visibilities "
-            "is not, check if you meant to turn on model_visibilities"
-        )
-        errors += 1
-
     # if importing model visiblities from a uvfits file, check that file
     # exists
     if pyfhd_config["model_file_path"] is not None:
