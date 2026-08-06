@@ -176,7 +176,7 @@ def log_color_calc(
             # Report display range and clipping percentage.
             logger.info(
                 f"Sigma clipping of level {sigma_clip_level} applied: "
-                "{data_range[0]:.2e} to {data_range[1]:.2e}"
+                f"{data_range[0]:.2e} to {data_range[1]:.2e}"
             )
             logger.info(f"Percentage of data clipped: {percent_clipped:.2f}%")
         else:
