@@ -560,7 +560,7 @@ def quick_image(
 
                 logger.info(
                     f"Percentile clipping of level {percentile_clip_level} "
-                    "applied: {data_range[0]:.2e} to {data_range[1]:.2e}"
+                    f"applied: {data_range[0]:.2e} to {data_range[1]:.2e}"
                 )
                 logger.info(f"Percentage of data clipped: {percent_clipped:.2f}%")
             else:
