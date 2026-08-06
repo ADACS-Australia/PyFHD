@@ -78,7 +78,7 @@ def log_color_calc(
     log_cut_val : int | float | None, optional
         Minimum log value to cut at, by default None
     sigma_clip_level : float | None, optional
-        Number of standard deviations to use as clipping threshold, only used it
+        Number of standard deviations to use as clipping threshold, only used if
         log is True. Default is None meaning that true min and max are used.
     min_abs : int | float | None, optional
         The minimum absolute value for the color bar, by default None
@@ -430,7 +430,7 @@ def quick_image(
     data_min_abs : float | None, optional
         The minimum absolute value for the color bar, by default None
     sigma_clip_level : float | None, optional
-        Number of standard deviations to use as clipping threshold, only used it
+        Number of standard deviations to use as clipping threshold, only used if
         log is True. Default is None meaning that true min and max are used.
     percentile_clip_level : float | None, optional
         Percentile level to use for clipping. For example, a value of 1 means that
