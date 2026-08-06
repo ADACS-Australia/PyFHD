@@ -69,7 +69,7 @@ def log_color_calc(
     ----------
     data : NDArray[np.integer | np.floating]
         A 2D array of data to be displayed as an image.
-        The data can be of type int, float, or complex.
+        The data can be of type int or float.
     data_range : NDArray[np.integer | np.floating] | None, optional
         Min/max color bar range, by default [np.nanmin(image), np.nanmax(image)]
     color_profile : Literal["log_cut", "sym_log", "abs"], optional
