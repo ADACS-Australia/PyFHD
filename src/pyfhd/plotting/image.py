@@ -217,7 +217,6 @@ def log_color_calc(
 
         data_log = np.zeros_like(data)
         data_log[wh_pos] = np.log10(data[wh_pos])
-        assert log_cut_val is not None
         wh_under = np.nonzero(data < 10**log_cut_val)
         if len(wh_under[0]) > 0:
             data_log[wh_under] = log_data_range[0]
