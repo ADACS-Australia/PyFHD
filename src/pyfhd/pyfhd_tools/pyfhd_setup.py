@@ -513,7 +513,7 @@ def pyfhd_parser():
         "beam sidelobes, must be readable by pyradiosky's SkyModel object. ",
     )
     calibration.add_argument(
-        "--calibration-allow_sidelobe-sources",
+        "--calibration-allow-sidelobe-sources",
         default=False,
         action=OrderedBooleanOptionalAction,
         help="Option to allow sidelobe sources when creating calibration model "
