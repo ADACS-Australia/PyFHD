@@ -1,11 +1,12 @@
 from copy import deepcopy
 from logging import Logger
+from pathlib import Path
 import time
 
 import numpy as np
 from numpy.typing import NDArray
 
-from pyfhd.calibration.calibration_utils import (
+from .calibration_utils import (
     vis_extract_autocorr,
     vis_cal_auto_init,
     vis_calibration_flag,
@@ -17,15 +18,16 @@ from pyfhd.calibration.calibration_utils import (
     cal_auto_ratio_divide,
     cal_auto_ratio_remultiply,
 )
-from pyfhd.calibration.vis_calibrate_subroutine import vis_calibrate_subroutine
-from pyfhd.pyfhd_tools.pyfhd_utils import (
+from .vis_calibrate_subroutine import vis_calibrate_subroutine
+from ..pyfhd_tools.pyfhd_utils import (
     resistant_mean,
     reshape_and_average_in_time,
     _print_time_diff,
 )
-from pyfhd.plotting.calibration import plot_cals
-from pyfhd.source_modeling.source_utils import generate_source_cal_skymodel
-from pyfhd.source_modeling.vis_source_model import vis_source_model
+from ..plotting.calibration import plot_cals
+from ..source_modeling.source_utils import generate_source_cal_skymodel
+from ..source_modeling.vis_source_model import vis_source_model
+from ..io.pyfhd_io import save
 
 
 def calibrate(
@@ -113,6 +115,14 @@ def calibrate(
         catalog_end = time.time()
         _print_time_diff(catalog_start, catalog_end, "Catalog setup", logger)
 
+        cal_skymodel_path = Path(
+            pyfhd_config["output_dir"],
+            "calibration",
+            f"{pyfhd_config['obs_id']}_cal_skymodel.skyh5",
+        )
+        logger.info(f"Saving the calibration skymodel to {cal_skymodel_path}")
+        sky.write_skyh5(filename=cal_skymodel_path, clobber=True)
+
         logger.info("Creating calibration model visibilities")
         degrid_start = time.time()
         vis_model_arr = vis_source_model(
@@ -131,6 +141,15 @@ def calibrate(
         degrid_end = time.time()
         _print_time_diff(degrid_start, degrid_end, "Model visibility creation", logger)
 
+        # Option to save unflagged model visibilities as part of a calibration-only loop.
+        if pyfhd_config["cal_stop"]:
+            model_vis_arr_path = Path(
+                pyfhd_config["output_dir"],
+                "visibilities",
+                f"{pyfhd_config['obs_id']}_model_vis_arr.h5",
+            )
+            logger.info(f"Saving the models visibilities to {model_vis_arr_path}")
+            save(model_vis_arr_path, vis_model_arr, "visibilities", logger=logger)
     # Calculate auto-correlation visibilities, optionally use them for initial calibration estimates
     vis_auto, auto_tile_i = vis_extract_autocorr(obs, vis_arr, pyfhd_config)
     # Calculate auto-correlation visibilities

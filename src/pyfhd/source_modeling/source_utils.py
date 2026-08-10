@@ -194,7 +194,6 @@ def generate_source_cal_skymodel(
             restrict_sources=restrict_sources,
             flux_threshold=flux_threshold,
             no_extend=no_extend,
-            max_sources=max_sources,
             spectral_index=spectral_index,
             preserve_zero_spectral_indices=preserve_zero_spectral_indices,
         )
@@ -361,13 +360,9 @@ def generate_source_cal_skymodel(
                     skymodel.dec[first_comp] = dec
                     skymodel.extended_model_group[first_comp] = ""
 
-                    assert skymodel.ra[first_comp] == ra
-                    assert skymodel.dec[first_comp] == dec
-
                     keep_comp[comp_arr[1:]] = False
 
                 skymodel.select(component_inds=np.nonzero(keep_comp)[0])
-                assert np.all(skymodel.extended_model_group == "")
                 skymodel.extended_model_group = None
 
         if flux_threshold is not None:
@@ -439,14 +434,6 @@ def generate_source_cal_skymodel(
                 # truncation of the float to an int. Here we use a round, but
                 # it should be a very small difference (and only affects sorting
                 # unless cutting on number of sources)
-                influence = (
-                    skymodel.extra_columns["flux_I_use"]
-                    * beam[
-                        skymodel.extra_columns["x_use"].round().astype(int),
-                        skymodel.extra_columns["y_use"].round().astype(int),
-                    ]
-                )
-
                 skymodel.add_extra_columns(
                     names=["beam_I"],
                     values=beam[
@@ -455,16 +442,14 @@ def generate_source_cal_skymodel(
                     ],
                 )
 
+                influence = (
+                    skymodel.extra_columns["flux_I_use"]
+                    * skymodel.extra_columns["beam_I"]
+                )
+
                 # remove the extra columns just used internally
                 skymodel.remove_extra_columns(
-                    [
-                        "ra_deg_use",
-                        "dec_deg_use",
-                        "x_use",
-                        "y_use",
-                        "flux_I_use",
-                        "beam_I",
-                    ]
+                    ["ra_deg_use", "dec_deg_use", "x_use", "y_use", "flux_I_use"]
                 )
 
                 # sort from max to min apparent flux

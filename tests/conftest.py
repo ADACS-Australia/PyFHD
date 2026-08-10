@@ -107,6 +107,7 @@ def mwa_aee_beam_zenith_2013(zenith_obs_2013_main, tmp_path_factory):
         "uvbeam_mwa_include_cross_feed_coupling": False,
         "output_dir": tmp_path_factory.mktemp("zenith_2013"),
         "obs_id": 1061316296,
+        "cal_stop": False,
     }
 
     psf, antenna = create_psf(obs, pyfhd_config, logger=logging.getLogger())

@@ -1,3 +1,4 @@
+from pathlib import Path
 import copy
 import logging
 import time
@@ -9,6 +10,7 @@ from .source_utils import source_dft_model, vis_delay_filter
 from ..gridding.visibility_degrid import visibility_degrid
 from ..pyfhd_tools.types import BoolArray, ComplexArray, FloatArray
 from ..pyfhd_tools.pyfhd_utils import _print_time_diff
+from ..io.pyfhd_io import save
 
 
 def vis_source_model(
@@ -143,12 +145,23 @@ def vis_source_model(
     dft_end = time.time()
     _print_time_diff(dft_start, dft_end, "source DFT", logger)
 
+    # Option to save model uv plane as part of a calibration-only loop.
+    # put this here rather than in calibrate because the model_uv plane is not
+    # used in calibrate.
+    if pyfhd_config["cal_stop"]:
+        model_uv_path = Path(
+            pyfhd_config["output_dir"],
+            "calibration",
+            f"{pyfhd_config['obs_id']}_model_uv_arr.h5",
+        )
+        logger.info(f"Saving the models uv plane to {model_uv_path}")
+        save(model_uv_path, model_uv_arr, "model_uv", logger=logger)
+
     vis_arr = np.zeros((n_pol, n_freq, vis_dimension), dtype=np.cdouble)
 
     logger.info("Begin Degridding")
-    t_degrid = np.zeros(n_pol)
+    degrid_start = time.time()
     for pol_i in range(n_pol):
-        t0 = time.time()
         if vis_model is not None:
             vis_input = vis_model[pol_i]
         else:
@@ -170,8 +183,8 @@ def vis_source_model(
             vis_input=vis_input,
             logger=logger,
         )
-        t_degrid[pol_i] = time.time() - t0
-    _print_time_diff(dft_start, dft_end, "Degridding", logger)
+    degrid_end = time.time()
+    _print_time_diff(degrid_start, degrid_end, "Degridding", logger)
 
     if model_delay_filter:
         logger.info("Applying a horizon delay filter")
