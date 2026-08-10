@@ -18,6 +18,7 @@ from ..pyfhd_tools.pyfhd_utils import (
     weight_invert,
     histogram,
     deriv_coefficients,
+    _print_time_diff,
 )
 
 
@@ -183,7 +184,7 @@ def visibility_degrid(
     vis_dimension = n_baselines * n_samples
     visibility_array = np.zeros((n_freq, vis_dimension), dtype=np.cdouble)
 
-    ind_ref = np.arange(max(bin_n))
+    ind_ref = np.arange(bin_n.max())
 
     if n_spectral:
         prefactor = np.empty(n_spectral, dtype=object)
@@ -195,21 +196,21 @@ def visibility_degrid(
     reporting_frac = 0.2
     logger.info(
         "degridding setup complete, begin degridding polarization "
-        f"{obs['pol_names'][polarization]} (in {n_bin_use} steps)"
+        f"{obs['pol_names'][polarization]} (in {n_bin_use} unequal size steps)"
     )
     for bi in range(n_bin_use):
-        vis_n = bin_n[bin_i[bi]]
-        inds = ri[ri[bin_i[bi]] : ri[bin_i[bi] + 1]]
+        vis_n_full = bin_n[bin_i[bi]]
+        inds_full = ri[ri[bin_i[bi]] : ri[bin_i[bi] + 1]]
 
         # if constraining memory usage, then est number of loops needed
         if conserve_memory:
-            required_bytes = 16 * vis_n * psf_dim3
+            required_bytes = 16 * vis_n_full * psf_dim3
             mem_iter = int(np.ceil(required_bytes / memory_threshold))
             if mem_iter > 1:
-                vis_n_full = vis_n
-                inds_full = inds
                 vis_n_per_iter = int(np.ceil(vis_n_full / mem_iter))
-        else:
+        if not conserve_memory or mem_iter == 1:
+            vis_n = vis_n_full.copy()
+            inds = inds_full.copy()
             mem_iter = 1
         # loop over chunks of visibilities to grid to conserve memory
         for mem_i in range(mem_iter):
@@ -361,7 +362,13 @@ def visibility_degrid(
                 f"loop time: {round(ave_loop_time, 3)} seconds. Estimated "
                 f"time remaining: {est_time_left}"
             )
-    logger.info(f"finished degridding polarization {obs['pol_names'][polarization]}")
+    end_time = time.time()
+    _print_time_diff(
+        t0,
+        end_time,
+        f"degridding polarization {obs['pol_names'][polarization]}",
+        logger,
+    )
 
     if beam_per_baseline:
         # factor of kbinsize^2 is FFT units normalization
