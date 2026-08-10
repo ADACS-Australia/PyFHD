@@ -11,12 +11,7 @@ from pyfhd.beam_setup.beam_utils import beam_image
 from pyfhd.gridding.visibility_grid import visibility_grid
 from pyfhd.gridding.gridding_utils import dirty_image_generate
 from pyfhd.io.pyfhd_io import load, save
-from pyfhd.pyfhd_tools.pyfhd_utils import (
-    angle_difference,
-    histogram,
-    meshgrid,
-    region_grow,
-)
+from pyfhd.pyfhd_tools.pyfhd_utils import angle_difference, histogram, region_grow
 from pyfhd.pyfhd_tools.unit_conv import radec_to_altaz, radec_to_pixel
 from astropy.coordinates import EarthLocation
 
@@ -461,8 +456,11 @@ def phase_shift_uv_image(obs: dict) -> NDArray[np.complex128]:
     dx = (x - (obs["dimension"] / 2)) * (2 * np.pi / obs["dimension"])
     dy = (y - (obs["elements"] / 2)) * (2 * np.pi / obs["dimension"])
 
-    xvals = meshgrid(obs["dimension"], obs["elements"], 1) - (obs["dimension"] / 2)
-    yvals = meshgrid(obs["dimension"], obs["elements"], 2) - (obs["elements"] / 2)
+    xvals, yvals = np.meshgrid(
+        np.arange(obs["dimension"]) - (obs["dimension"] / 2),
+        np.arange(obs["elements"]) - (obs["elements"] / 2),
+        indexing="ij",
+    )
 
     phase = xvals * dx + yvals * dy
     rephase_vals = np.cos(phase) + np.sin(phase) * 1j
