@@ -84,8 +84,8 @@ def visibility_grid(
     Returns
     -------
     gridding_dict : dict
-        A dictionary with all the gridded {u,v} planes, updated observation
-        metadata dic, and the number of visibilties that where gridded.
+        A dictionary which contains all the gridded {u,v} planes, an updated
+        obs dict, and the number of visibilities that were gridded.
 
     Raises
     ------

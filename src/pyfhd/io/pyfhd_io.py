@@ -731,8 +731,8 @@ def convert_sav_to_dict(sav_path: str, logger: Logger, tmp_dir="temp_pyfhd"):
     assumed many files are to be converted, so `tmp_pyfhd` should be deleted
     after all calls.
 
-    Mostly used just for testing, if you;re not a developer you can safely
-    ignore this function
+    Mostly used just for testing, if you are not a developer you can safely
+    ignore this function.
 
     Parameters
     ----------
