@@ -46,7 +46,6 @@ def test_beam_power():
 
     pyfhd_config = {
         "instrument": "mwa",
-        "beam_model_version": "aee",
         "psf_dim": 14,
         "psf_resolution": 10,
         "beam_mask_threshold": 1e2,

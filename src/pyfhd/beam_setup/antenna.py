@@ -105,7 +105,6 @@ def init_beam(obs: dict, pyfhd_config: dict, logger: Logger) -> dict:
         "antenna_type": pyfhd_config["instrument"],
         "size_meters": ant_size_m,
         "names": ant_names,
-        "beam_model_version": pyfhd_config["beam_model_version"],
         "freq": freq_center,
         "nfreq_bin": nfreq_bin,
         "n_ant_elements": n_dipoles,
