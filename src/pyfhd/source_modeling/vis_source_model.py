@@ -89,7 +89,7 @@ def vis_source_model(
     else:
         # mask half the uv plane by default
         uv_mask_use = np.full((dimension, elements), True)
-        uv_mask_use[:, elements // 2 + psf["dim"] :] = 0.0
+        uv_mask_use[:, elements // 2 + psf["dim"] :] = False
 
     freq_bin_i = obs["baseline_info"]["fbin_i"]
     frequency_array = obs["baseline_info"]["freq"]

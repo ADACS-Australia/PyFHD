@@ -798,7 +798,9 @@ def _setup_uv_vals(
         if xvals is not None or yvals is not None:
             raise ValueError("either pass uv_i_use or xvals and yvals not both.")
         xvals, yvals = np.meshgrid(
-            np.arange(dimension) - dimension / 2.0, np.arange(elements) - elements / 2.0
+            np.arange(dimension) - dimension / 2.0,
+            np.arange(elements) - elements / 2.0,
+            indexing="ij",
         )
         xvals = xvals[uv_i_use]
         yvals = yvals[uv_i_use]
@@ -809,7 +811,9 @@ def _setup_uv_vals(
             raise ValueError("xvals and yvals must have the same shape")
     else:
         xvals, yvals = np.meshgrid(
-            np.arange(dimension) - dimension / 2.0, np.arange(elements) - elements / 2.0
+            np.arange(dimension) - dimension / 2.0,
+            np.arange(elements) - elements / 2.0,
+            indexing="ij",
         )
         xvals = xvals.flatten()
         yvals = yvals.flatten()
