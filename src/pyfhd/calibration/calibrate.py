@@ -115,12 +115,12 @@ def calibrate(
         catalog_end = time.time()
         _print_time_diff(catalog_start, catalog_end, "Catalog setup", logger)
 
+        cal_folder = Path(pyfhd_config["output_dir"], "calibration")
         cal_skymodel_path = Path(
-            pyfhd_config["output_dir"],
-            "calibration",
-            f"{pyfhd_config['obs_id']}_cal_skymodel.skyh5",
+            cal_folder, f"{pyfhd_config['obs_id']}_cal_skymodel.skyh5"
         )
         logger.info(f"Saving the calibration skymodel to {cal_skymodel_path}")
+        cal_folder.mkdir(exist_ok=True)
         sky.write_skyh5(filename=cal_skymodel_path, clobber=True)
 
         logger.info("Creating calibration model visibilities")
