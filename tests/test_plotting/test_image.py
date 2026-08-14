@@ -94,3 +94,60 @@ def test_quick_image_pyramid(tmp_path, pyramid, file_type, file_is_path):
     )
 
     assert Path(savefile).is_file()
+
+@pytest.mark.github_actions
+@pytest.mark.skip(reason="TODO")
+class TestValueErrors:
+    class TestQuickImageValueErrors:
+        def test_invalid_image_type(self, pyramid): 
+            # image is none
+            # image is not valid numpy array
+            pass
+
+        def test_invalid_image_dimensions(self, pyramid):
+            # image has < 2 dimensions
+            # image has > 2 dimensions
+            pass
+
+        def test_data_range_values(self, pyramid):
+            # data range is not an array
+            # data range has < 2 values
+            # data range has > 2 values
+            pass
+
+        def test_xrange_values(self, pyramid):
+            # xrange is not an array
+            # xrange has < 2 values
+            # xrange has > 2 values
+            pass
+
+        def test_yrange_values(self, pyramid):
+            # yrange is not an array
+            # yrange has < 2 values
+            # yrange has > 2 values
+            pass
+
+        def test_multi_pos_values(self, pyramid):
+            # multi_pos has < 4 elements
+            # multi_pos has > 4 elements
+            pass
+
+        def test_invalid_color_profile(self, pyramid):
+            # color_profile is not "log_cut", "sym_log", or "abs"
+            pass
+
+    class TestLogColorCalcValueErrors:
+        def test_data_range_less_than(self, pyramid):
+            # data_range[0] > data_range[1]
+            pass
+
+        def test_log_cut(self, pyramid):
+            # color_profile is log_cut and data_range[1] is negative
+            pass
+
+        def test_sym_log(self, pyramid):
+            # color_profile is sym_log and data_range[0] is positive or
+            # data_range[1] is negative
+            # color_profile is sym_log and data_range[0] is positive and
+            # data_range[1] is negative
+            pass
