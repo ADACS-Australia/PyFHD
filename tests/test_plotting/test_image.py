@@ -1,6 +1,7 @@
 import numpy as np
 import pytest
 from scipy.signal import convolve2d
+from pathlib import Path
 
 from pyfhd.plotting.image import quick_image
 
@@ -40,7 +41,6 @@ def test_quick_image_pyramid(tmp_path, pyramid, file_type, file_is_path):
     percentile_clip_level = None
 
     if not file_is_path:
-        savepath = savefile
         savefile = str(savefile)
         # set parameters differently to access different parts of the code
         cmap = "magma"
@@ -56,8 +56,8 @@ def test_quick_image_pyramid(tmp_path, pyramid, file_type, file_is_path):
         ytitle = None
         cb_title = None
         note = "foo"
-        xrange = [1, 21]
-        yrange = [1, 21]
+        xrange = np.array([1, 21])
+        yrange = np.array([1, 21])
         missing_value = 0
         sigma_clip_level = 3
         percentile_clip_level = 1
@@ -68,9 +68,9 @@ def test_quick_image_pyramid(tmp_path, pyramid, file_type, file_is_path):
         cmap = None
         color_profile = "sym_log"
         if log:
-            data_range = [-1 * pyramid_max, pyramid_max]
+            data_range = np.array([-1 * pyramid_max, pyramid_max])
         else:
-            data_range = [nonzero_min, pyramid_max - nonzero_min]
+            data_range = np.array([nonzero_min, pyramid_max - nonzero_min])
 
     quick_image(
         pyramid,
@@ -92,7 +92,5 @@ def test_quick_image_pyramid(tmp_path, pyramid, file_type, file_is_path):
         percentile_clip_level=percentile_clip_level,
         savefile=savefile,
     )
-    if not file_is_path:
-        savefile = savepath
 
-    assert savefile.is_file()
+    assert Path(savefile).is_file()
