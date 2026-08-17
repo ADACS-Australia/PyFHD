@@ -13,6 +13,7 @@ from pyfhd.source_modeling.source_utils import (
     stokes_cnv,
     source_dft,
     vis_delay_filter,
+    _setup_uv_vals,
 )
 from pyfhd.source_modeling.vis_source_model import vis_source_model
 from pyfhd.pyfhd_tools.test_utils import get_savs
@@ -257,6 +258,58 @@ def test_vis_delay_filter(zenith_obs_2013, zenith_params_2013):
     np.testing.assert_allclose(
         filtered_vis_arr, fhd_filtered_vis_model, atol=1e-10, rtol=0
     )
+
+
+@pytest.mark.github_actions
+def test_setup_uv_vals():
+    img_size = 2048
+
+    xvals, yvals = _setup_uv_vals(dimension=img_size, elements=img_size)
+
+    assert xvals.shape == (img_size**2,)
+    assert yvals.shape == (img_size**2,)
+    assert xvals.min() == -1 * img_size / 2.0
+    assert xvals.max() == img_size / 2.0 - 1
+    assert yvals.min() == -1 * img_size / 2.0
+    assert yvals.max() == img_size / 2.0 - 1
+
+    psf_dim = 14
+    uv_mask = np.full((img_size, img_size), True, dtype=bool)
+
+    # use typical mask
+    uv_mask = np.full((img_size, img_size), True)
+    uv_mask[:, img_size // 2 + psf_dim :] = False
+    uv_i_use = np.nonzero(uv_mask)
+
+    xvals, yvals = _setup_uv_vals(
+        dimension=img_size, elements=img_size, uv_i_use=uv_i_use
+    )
+
+    assert xvals.shape == (img_size * (img_size // 2 + psf_dim),)
+    assert yvals.shape == (img_size * (img_size // 2 + psf_dim),)
+    assert xvals.min() == -1 * img_size / 2.0
+    assert xvals.max() == img_size / 2.0 - 1
+    assert yvals.min() == -1 * img_size / 2.0
+    assert yvals.max() == psf_dim - 1
+
+    with pytest.raises(
+        ValueError, match="either pass uv_i_use or xvals and yvals not both."
+    ):
+        xvals, yvals = _setup_uv_vals(
+            dimension=img_size, elements=img_size, uv_i_use=uv_i_use, xvals=xvals
+        )
+
+    with pytest.raises(
+        ValueError, match="If xvals or yvals is provided they must both be provided"
+    ):
+        xvals, yvals = _setup_uv_vals(
+            dimension=img_size, elements=img_size, xvals=xvals
+        )
+
+    with pytest.raises(ValueError, match="xvals and yvals must have the same shape"):
+        xvals, yvals = _setup_uv_vals(
+            dimension=img_size, elements=img_size, xvals=xvals, yvals=yvals[0]
+        )
 
 
 @pytest.mark.github_actions

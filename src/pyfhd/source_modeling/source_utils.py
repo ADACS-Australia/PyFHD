@@ -797,13 +797,8 @@ def _setup_uv_vals(
     if uv_i_use is not None:
         if xvals is not None or yvals is not None:
             raise ValueError("either pass uv_i_use or xvals and yvals not both.")
-        xvals, yvals = np.meshgrid(
-            np.arange(dimension) - dimension / 2.0,
-            np.arange(elements) - elements / 2.0,
-            indexing="ij",
-        )
-        xvals = xvals[uv_i_use]
-        yvals = yvals[uv_i_use]
+        xvals = uv_i_use[0] - dimension / 2.0
+        yvals = uv_i_use[1] - elements / 2.0
     elif xvals is not None or yvals is not None:
         if xvals is None or yvals is None:
             raise ValueError("If xvals or yvals is provided they must both be provided")
