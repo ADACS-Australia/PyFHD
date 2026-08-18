@@ -1,11 +1,11 @@
 # Default Arguments for pyfhd
 # ~ returns None in Python (i.e. NULL)
-input-path: './input'
+input-path: '.'
 recalculate-all: false
 silent: false
 log-file: true
-conserve-memory: false
-memory-threshold: 1000000000
+conserve-memory: true
+memory-threshold: 1e9
 n-pol: 2
 FoV: ~
 kbinsize: 0.5
@@ -16,9 +16,10 @@ deproject-w-term: ~
 
 # Checkpointing
 save-checkpoints: true
-obs-checkpoint: ~
-calibrate-checkpoint: ~
-gridding-checkpoint: ~
+obs-checkpoint: true
+beam-checkpoint: true
+calibrate-checkpoint: true
+gridding-checkpoint: true
 
 # Instrument
 instrument: 'mwa'
@@ -26,30 +27,52 @@ override-target-phasera: ~
 override-target-phasedec: ~
 
 # Beam Setup
-lazy-load-beam: false
-recalculate-beam: true
+recalculate-beam: false
 interpolate-kernel: true
-# use this for an FHD saved beam:
-# saved-beam-file-path: './input'
-# this is for a UVBeam readable file:
-uvbeam-file-path: './input'
-# uvbeam-zfile-path: ~
-# uvbeam-mwa-include-cross-feed-coupling: true
+# options for an FHD saved beam:
+saved-beam-file-path: ~
+lazy-load-beam: false
+# options for a UVBeam readable file (update the path):
+uvbeam-file-path: '../mwa_full_embedded_element_pattern.h5'
 uvbeam-freq-buffer: 2e6
-# use this for an analytic beam (e.g. short dipole shown here)
-# analytic-beam-yaml : "!AnalyticBeam
+# Options for the MWA average embedded element beam (JMatrix.fits):
+uvbeam-zfile-path: ~ # '../ZMatrix.fits'
+uvbeam-mwa-include-cross-feed-coupling: true
+# Options for an analytic beam (e.g. short dipole shown here):
+analytic-beam-yaml : ~ # "!AnalyticBeam
 #   class: ShortDipoleBeam
 # "
 beam-offset-time: 56
 beam-per-baseline: false
 beam-nfreq-avg: 16
-psf-dim: 54
+psf-dim: 14
 psf-resolution: 100
 beam-mask-threshold: 100
 beam-clip-floor: true
 
 # Calibration
 calibrate-visibilities: true
+# options for choosing sources to go into model visibiliites:
+# The calibration catalog file must be readable by pyradiosky's SkyModel object
+calibration-catalog-file-path : '../GLEAM_v2_plus_rlb2019.sav'
+calibration-sidelobe-catalog-file-path: ~
+calibration-allow-sidelobe-sources: true
+calibration-beam-threshold: ~ # Defaults to 0.05 unless allow-sidelobe-sources is True, in which case the default is 0.01.
+calibration-restrict-sources: False
+calibration-catalog-flux-threshold: ~
+calibration-max-sources: ~
+calibration-catalog-refraction: ~
+calibration-catalog-spectral-index: ~
+calibration-catalog-preserve-zero-spectral-index: false
+calibration-collapse-extended-sources: false
+calibration-catalog-flatten-spectrum: false
+# Use model-file-path to pass in model visibilities. None of the source selection
+# options above will be used when passing in model visibilities.
+model-file-type: 'sav'  # choices are sav, uvfits and h5 (prefer sav and uvfits)
+# If you set model-file-type to uvfits or HDF5, set import-model-uvfits to the (ideally absolute) path of the fits file
+# If model-file-type is set to sav then it will look for the sav files as said in the function import_vis_model_from_sav
+model-file-path: ~
+# options for calibration fitting:
 bandpass-calibrate: true
 cal-bp-transfer: ~
 calibration-polyfit: true
@@ -77,7 +100,6 @@ cal-phase-fit-iter: 4
 digital-gain-jump-polyfit: false
 vis-baseline-hist: true
 cal-stop: false
-
 
 # Flagging
 time-cut: ~
@@ -111,8 +133,9 @@ dft-threshold : true
 # deconvolution-filter : 'filter_uv_uniform'
 
 # Export
-output-path: './output'
-description: ~
+output-path: '.'
+# If you don't set description, your run will be named by the run date/time
+description: ~  # Add a string name here to name your run
 pad-uv-image: 1.
 ring-radius-multi: 10.
 export-images: true
@@ -132,14 +155,6 @@ image-plots: true
 log_plots: true
 sigma_clipping: 3
 percentile_clipping: 1
-
-# Model
-# Current choices of model-file-type are sav, uvfits and h5 (prefer sav and uvfits)
-model-file-type: 'sav'
-# If you set model-file-type to uvfits or HDF5, set import-model-uvfits to the (ideally absolute) path of the fits file
-# If model-file-type is set to sav then it will look for the sav files as said in the function import_vis_model_from_sav
-model-file-path: './input'
-allow-sidelobe-model-sources: false
 
 # Simulation
 # run-simulation : false

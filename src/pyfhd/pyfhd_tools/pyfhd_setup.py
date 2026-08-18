@@ -197,9 +197,8 @@ def pyfhd_parser():
         "-i",
         "--input-path",
         type=Path,
-        help="Directory for the uvfits files and other inputs. By default it "
-        "looks for a directory called input in the working directory",
-        default="./input/",
+        help="Directory for the uvfits files and other inputs.",
+        default=None,
     )
     parser.add_argument(
         "-r",
@@ -1048,7 +1047,7 @@ def pyfhd_parser():
         type=Path,
         help="Set the output path for the current run, note a directory will "
         "still be created inside the given path",
-        default="./output/",
+        default=".",
     )
     export.add_argument(
         "--description",

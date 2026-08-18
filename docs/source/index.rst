@@ -14,25 +14,18 @@ Fast Holographic Deconvolution in Python
 
 Started as a project created in IDL, FHD is an open-source imaging algorithm for
 radio interferometers, specifically tested on MWA Phase I, MWA Phase II, PAPER,
-and HERA. There are three main use-cases for FHD:
+HERA and OVRO-LWA. There are three main use-cases for FHD:
 
 - efficient image deconvolution for general radio astronomy
 - fast-mode Epoch of Reionization analysis
 - simulation
 
-Now, FHD has been translated to Python, giving us **pyfhd**, free to use and free of IDL.
-
-An image displaying the progress of pyfhd translation is shown below:
-
-.. image:: _static/FHD_flow_color.png
-   :alt: pyfhd-Translaton Progress
-   :align: center
-   :width: 1000px
-
-Boxes that are greyed out, have not been translated. In the case of the beam
-kernel generation and the Jones Matrix calculation, these have been translated
-but are in an alpha state and need testing. Degridding has also been translated
-also, but hasn't been tested in anyway at all.
+**pyfhd** is a project to translate FHD into python to make it more widely available
+to the community. pyfhd is under activate development as we work to translate
+all the major components of FHD. The only major missing block currently is
+deconvolution, but some less used options in FHD have not yet been implemented.
+We invite the community to engage with us either by directly contributing to the
+code via PRs or by making issues in our Issue Log.
 
 Contents
 -----------------

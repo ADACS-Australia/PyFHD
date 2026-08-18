@@ -1,8 +1,7 @@
-.. _MWA ASVO: https://asvo.mwatelescope.org/
-.. _Birli: https://github.com/MWATelescope/Birli
 .. _WODEN: https://woden.readthedocs.io/en/latest/index.html
 .. _FHD: https://github.com/EoRImaging/FHD
 .. _pyuvdata: https://pyuvdata.readthedocs.io/en/latest/index.html
+.. _pyradiosky: https://pyradiosky.readthedocs.io/en/latest/index.html
 
 .. _tutorial:
 
@@ -20,8 +19,8 @@ simulated using `WODEN`_. To run ``pyfhd`` we will use the command line interfac
 
 .. _sample-data:
 
-Sample Data
------------
+Initial Test Run
+----------------
 
 To run the example data, you'll need to get the sample data first, to do this run:
 
@@ -32,8 +31,9 @@ To run the example data, you'll need to get the sample data first, to do this ru
 Which will copy the sample data built into the pyfhd package to your current
 working directory, inside a directory and sub-directory called ``input/1088285600_example``.
 
+
 Running the sample data
------------------------
++++++++++++++++++++++++
 
 From there in that directory, you should be able to run the following command to
 run the example data:
@@ -55,7 +55,7 @@ This will run the entire pyfhd pipeline in this order:
 
 4. Import the beam
 
-5. Importing the skymodel
+5. Importing the model visibilities
 
 6. Running calibration
 
@@ -489,7 +489,7 @@ Take note of the line:
 
 .. code-block:: text
 
-  Logging and configuration file created and copied to here: /home/skywatcher/projects/pyfhd/output/pyfhd_1088285600_example
+  Logging and configuration file created and copied to here: <your current working directory>/output/pyfhd_1088285600_example
 
 More details about the output of the pyfhd pipeline and the required inputs is
 clarified in the next section.
@@ -497,51 +497,83 @@ clarified in the next section.
 .. important::
   The configuration used for the sample is very different to a full MWA run due
   to limited use of frequencies and times used in the sample data to keep it small.
-  For a better template to base your configuration on go to :ref:`pyfhd-config-file`.
+  For a better template to base your configuration on see the next section.
 
-The Required Inputs and the outputs of ``pyfhd``
-----------------------------------------------------------
+Running ``pyfhd``
+-----------------
 
-``pyfhd`` only requires an observation ID to run.
-``pyfhd`` will get a default ``pyfhd.yaml`` configuration file from it's resources
-directory inside the package, so when specifying only the observation ID, it will
-use the default configuration file. The default configuration is not suitable for
-every observation, so it's likely you'll need to adjust the default configuration
-file to suit your needs. Some validation is performed before and during runtime of
-``pyfhd`` to check for incompatibilities though it is not exhaustive.
-
-.. _pyfhd-config-file:
+To run ``pyfhd``, you must provide observation ID and a yaml config file. You can
+see a default configuration file
+`here <https://raw.githubusercontent.com/EoRImaging/pyfhd/refs/heads/main/pyfhd/resources/config/pyfhd.yaml>`_.
+We suggest copying it and making the appropriate changes to reflect your directory
+structure and dataset. There are many options (and more are being added frequently),
+some of the most common ones are discussed in later sections of this tutorial.
+All the options can be seen at our :doc:`API documentation page <../documentation/documentation>`.
+Some validation is performed before and during runtime of ``pyfhd`` to check for
+incompatibilities though it is not exhaustive.
 
 .. note::
-  If you wish to use the default configuration file to do your own configurations,
-  from inside the repository, you can find the configuration file in the
-  resources directory of pyfhd, ``pyfhd/src/pyfhd/resources/config/pyfhd.yaml``.
-  You can also find the default configuration file at this link here:
-
-  `pyfhd.yaml <https://raw.githubusercontent.com/EoRImaging/pyfhd/refs/heads/main/pyfhd/resources/config/pyfhd.yaml>`_
-
   Note that to provide a ``None`` input in the yaml you must use ``~`` or ``null``
   as those are translated to ``None`` when yamls are read into python.
 
-Some files can be discovered automatically through the ``input-path`` option of
-``pyfhd`` so read through the usage help text to work out how you wish to
-configure your input. ``pyfhd`` is rather flexible on how you do your input
-as many of the files you may require can be in completely separate directories.
+The yaml config unifies all the settings for pyfhd. Most of the options come from
+`FHD`_ (detailed in the `dictionary.md <https://github.com/EoRImaging/FHD/blob/master/dictionary.md>`_),
+however some of the options are new and specific to ``pyfhd``. Some have been
+renamed from `FHD`_ and, in the case of being renamed, the old name is referenced
+inside the help text of the option.
 
-The output of ``pyfhd`` is automatically generated and stores everything in one
-directory with the name ``pyfhd_YYYY_MM_DD_HH_mm_ss`` if you don't use the
-``--description`` option. In the case of using the ``--description`` option then
-the output directory generated will be ``pyfhd_your_description_here``. The
-example run we used above uses the ``--description`` as ``'1088285600_example'``
-option so the output directory generated will be ``pyfhd_1088285600_example``.
+Most of the options are numbers, lists of numbers, strings, or list of strings,
+however some of the options are booleans. These booleans will have at minimum
+two arguments that target the one option, one is the option itself, for example,
+``--silent`` which when used will set the ``silent`` option to ``True``, and
+``--no-silent`` which when used will set the ``silent`` option to ``False``.
+All boolean options have the ``no-`` prefix available to you, in case you wish
+to temporarily negate the options set in the configuration file via the command line.
+
+You can adjust the configuration of ``pyfhd`` at run time by using command line
+arguments like ``--calibrate-checkpoint`` to override what is set in the yaml
+config file (these changes will be captured in the final yaml file described below).
+
+.. tip::
+
+  The hierarchy of the configuration in pyfhd is as follows:
+
+  .. code-block::
+
+         Code
+          ⬇️
+      Command Line
+          ⬇️
+         YAML
+
+  The command line argument will override the YAML file, and the code will
+  override the command line argument in certain situations. In situations where
+  the code overrides the command line or YAML, ideally, a warning should be
+  triggered or some error should be found. If no warning is logged when the
+  code overrides the YAML or command line options, either add the warning to
+  the code yourself and do a Pull request or open an issue on the repository.
+
+``pyfhd`` outputs
++++++++++++++++++
+
+``pyfhd`` writes out many files, all stored in one directory with the name set
+by the ``--description`` option with ``pyfhd_`` prepended. If you don't set the
+``--description`` option, the output directory name will be
+``pyfhd_YYYY_MM_DD_HH_mm_ss`` using the time of the run. This is usually
+undesireable because if you need to re-run anything it will start over in another
+directory. In the example run above we set ``--description: "1088285600_example"``
+so the output directory generated will be ``pyfhd_1088285600_example``.
 The path where the output directory will be generated is ``--output-path``
-(by default ``./output``), assuming you're looking at the example run above,
-the output directory structure will look like this:
+(by default ``.`` meaning the working directory), assuming you're looking at the
+example run above (which set ``--output-path:  "./output"``), the output directory
+structure will look like this:
 
 .. code-block:: bash
 
   output
   └── pyfhd_1088285600_example
+      ├── beams
+      │   └── 1088285600_beam.h5
       ├── calibration
       │   └── 1088285600_cal.h5
       ├── checkpoints
@@ -629,210 +661,73 @@ the output directory structure will look like this:
 The difference between the final and non-final yaml is that the final yaml is
 generated at the end of the run so you can observe any changes made to
 ``pyfhd_config``, the config is also saved as a HDF5 file at the end of the run.
-Changes may happen due to conflicts in the options of your configuration file,
-if they are minor that's when the configuration will change and you should see
-the change mentioned in the log file. Most of the directories should be self
-explanatory, but there are two I wish to explain in more detail.
+Changes may happen if you override anything on the command line when you call pyfhd
+or due to defaults being set by pyfhd when you passed a None (``~`` in the yaml),
+or due to minor conflicts in the options of your configuration file. Major conflicts
+will raise errors, but minor conflicts will lead to warnings in the log file and
+config changes that you will see in the final yaml.
 
-First the ``plots`` directory, for the plots directory, the intent is to store
-all the plots generated by ``pyfhd`` in there, with a directory for plots
-generated for each part of the pipeline. For example, if you wish to add diagnostic
-plots for ``gridding`` as a pyfhd developer, then the policy is to create a
-``gridding`` directory in ``plots`` directory and store your plots generated from
-``gridding`` there. If the plots aren't generated in ``gridding`` but are related
-to ``gridding`` then those plots should also go into the ``gridding`` subdirectory.
-
-The second directory I want to explain is the ``checkpoints`` directory, please
-read on to the next section for this explaantion.
-
-Checkpointing
--------------
-The checkpointing system in ``pyfhd`` is designed to save the state of the
-pipeline after important, potentially long running steps. The checkpoints are
-stored in the ``checkpoints`` directory and they are saved at the following points:
-
-- ``obs_checkpoint`` - ``obs`` dict creation, reading of visibilities and weights,
-  creation of the ``params`` dict
-- ``calibrate_checkpoint`` - End of calibration, creation of the ``cal`` dict
-  which saves the observations, params, calibrated visibilities, model visibilities,
-  and visibility weights.
-- ``gridding_checkpoint`` - End of gridding, creation of the ``gridding`` dict
-  which holds the gridded visibilities, associated weights, variances, models, etc.
-
-In the case that you wish to skip a step in the pipeline, you can use the
-``--calibrate-checkpoint`` or ``--grid-checkpoint`` options to skip the calibration
-or gridding steps respectively.
-
-.. attention::
-  The ``--obs-checkpoint`` and ``--calibrate-checkpoint`` will check for each
-  other's existence and if both are used ``--calibrate-checkpoint`` will be
-  prioritised and ``obs-checkpoint`` will be ignored.
-
-In the example below, we will run ``pyfhd`` with the ``--calibrate-checkpoint``
-option, which will skip the calibration and visibility step and go straight to
-gridding.
-
-.. code-block:: bash
-
-  pyfhd -c ./input/1088285600_example/1088285600_example.yaml --calibrate-checkpoint 1088285600
-
-Within the logs of the ``pyfhd`` you should see the following message::
-
-.. code-block:: text
-  yyyy-mm-dd HH:MM:SS - INFO:
-      Checkpoint Loaded: Calibrated and Flagged visibility parameters, array and weights, the flagged observation metadata dictionary and the calibration dictionary loaded from output/pyfhd_1088285600_example/calibrate_checkpoint.h5
-
-Do note if you wish to use the ``gridding-checkpoint`` then you also need ``calibrate-checkpoint``.
+The ``plots`` directory stores all the plots generated by ``pyfhd``, with
+subdirectories for plots generated for each part of the pipeline. As a developer,
+please maintain and expand this structure as appropriate.
 
 
-Configuration
--------------
-We have shown that you can adjust the configuration of ``pyfhd`` using command
-like arguments like ``--calibrate-checkpoint`` and ``-c`` / ``--config``, however
-we have mentioned that we used `ConfigArgParse <https://pypi.org/project/ConfigArgParse/>`_
-to allow the use of ``YAML`` files. Inside the repository we have 2 examples of
-configuration files, one is in the root of the repository and is the template
-yaml file, ``pyfhd.yaml``, use this to create your own configuration file.
-Alternatively, you can use the example configuration file ``1088285600_example.yaml``
-in the ``input/1088285600_example`` directory to build your configuration file.
-All of these options replace the
-`dictionary.md <https://github.com/EoRImaging/FHD/blob/master/dictionary.md>`_
-file that is used in `FHD`_, most of the options come from `FHD`_, however some of
-the options are new and specific to ``pyfhd``. Some have been renamed from `FHD`_
-and, in the case of being renamed, the old name is referenced inside the help
-text of the option.
+Beams
+-----
+There are several choices for how to set up a beam in ``pyfhd``, beams are
+required for gridding and de-gridding (making model visibilities).
 
-Most of the options are numbers, lists of numbers, strings, or list of strings,
-however some of the options are booleans. These booleans will have at minimum
-two arguments that target the one option, one is the option itself, for example,
-``--silent`` which when used will set the ``silent`` option to ``True``, and
-``--no-silent`` which when used will set the ``silent`` option to ``False``.
-All boolean options have the ``no-`` prefix available to you, in case you wish
-to temporarily negate the options set in the configuration file via the command line.
+The most common approach is to use the ``UVBeam`` object from `pyuvdata`_ to read
+in a beam ``Jones`` matrix and decompose it into the terms needed for FHD.
+To use this option, pass the beam file location using the ``uvbeam-file-path``
+configuration option. If you are using this option, you can also use the
+``uvbeam-freq-buffer`` to specify a buffer in Hz around the data frequency range
+to use when reading in the beam. It should be set to at least twice the frequency
+resolution of the beam (e.g. ``2e6`` is a reasonable value for the MWA beam,
+which has 1 MHz resolution). Setting the buffer too small can result in
+interpolation errors. If you do not set ``uvbeam-freq-buffer``, the full beam
+file will be read in, which can increase the memory usage.
 
-.. tip::
+You can also use analytic beams that are sub-classes of the `pyuvdata`_
+``AnalyticBeam`` object (a number are built into pyuvdata, but the infrastructure
+is extensible and writing your own analytic beam is straight forward).
+Note that analytic beams are currently sampled in image space and then Fourier
+Transformed to uv space in pyFHD. They are not used as analytic functions in uv space.
+To use this option, you must pass a yaml string enclosed in quotations to the
+``analytic-beam-yaml`` configuration option. Details on how to compose these
+yaml strings are in the `pyuvdata`_ documentation, but generally you must include
+the analytic beam class and any required parameters to initialize the beam.
 
-  The hierarchy of the configuration in pyfhd is as follows:
+The approach used in the sample tutorial data is to use a beam that is saved out
+of FHD (you can also used one save out of a prior pyFHD run). To use this option,
+pass the beam file location using the ``saved-beam-file-path`` configuration option.
 
-  .. code-block::
+Currently, pyfhd does not support using different beams for different antennas,
+but that functionality can be added (it exists in FHD).
 
-         Code
-          ⬇️
-      Command Line
-          ⬇️
-         YAML
+You may run into memory limitations with your machine during testing, you can
+decrease memory use by setting ``beam-nfreq-avg`` to larger values
+(as high as the number of frequencies in your input file) at the cost of reduced
+accuracy in the frequency evolution of the beam.
 
-  The command line argument will override the YAML file, and the code will
-  override the command line argument in certain situations. In situations where
-  the code overrides the command line or YAML, ideally, a warning should be
-  triggered or some error should be found. If no warning is logged when the
-  code overrides the YAML or command line options, either add the warning to
-  the code yourself and do a Pull request or open an issue on the repository.
-
-If you wish to see all the options ``pyfhd`` has available, you can find them
-in one of the following places:
-
-CLI
-+++
-  .. code-block:: bash
-
-    pyfhd --help # -h also works
-
-    usage: pyfhd [-h] [-c CONFIG] [-v] [-i INPUT_PATH] [-r] [-s] [-l] [--instrument {mwa}] [--dimension DIMENSION] [--elements ELEMENTS] [--kbinsize KBINSIZE] [--FoV FOV] [--deproject_w_term DEPROJECT_W_TERM] [--conserve-memory]
-                [--memory-threshold MEMORY_THRESHOLD] [--min-baseline MIN_BASELINE] [--n-pol {0,2,4}] [--save-checkpoints] [--obs-checkpoint OBS_CHECKPOINT] [--calibrate-checkpoint CALIBRATE_CHECKPOINT] [--gridding-checkpoint GRIDDING_CHECKPOINT]
-                ...
-
-Read The Docs
-++++++++++++++
-
-Go to the Usage section inside the API Documentation and you will see the full
-list of options available to you. The usage is generated using`sphinx <https://www.sphinx-doc.org/en/master/>`_.
-
-Find them Here: :doc:`Usage <../documentation/documentation>`
-
-``pyfhd.pyfhd_tools.pyfhd_setup.pyfhd_parser()``
-+++++++++++++++++++++++++++++++++++++++++++++++++
-
-You can also find the options in the ``pyfhd_setup.py`` file, this is the file
-that is used to generate the command line interface and the configuration file.
-Specifically look for the ``pyfhd_parser()`` function.
-You can see the source here: `pyfhd_parser <../_modules/pyfhd/pyfhd_tools/pyfhd_setup.html#pyfhd_parser>`_
-
-Downloading MWA Data
----------------------
-Data can be obtained via the `MWA ASVO`_ service (head to the webpage to get an
-account setup). There are multiple ways to download data (please refer to the
-`MWA ASVO`_ to learn more); here we will use the Web Dashboard as an example.
-
-``pyfhd`` uses a UVFITS file as the input. The raw data out of the MWA telescope
-comes in a bespoke format, so we must convert the data into a UVFITS file. On
-the `MWA ASVO`_, login with your credentials, then head to 'My Jobs' in the top
-right corner, and click "New Data Job". Select the 'Visibility Conversion Job'
-tab as shown below:
-
-.. image:: data_job_form.png
-  :width: 800px
-
-In this download we are using an observation with Observation ID
-(which is the GPS time) 1091128160. We set the Time Resolution (s) to ``2``,
-Frequency Resolution and Edge Width to ``80 kHz``, Phase Centre to
-``Centre on pointing centre`` and swap the 'Output' format to ``UVFITS``.
-Click Submit to launch the job.
-
-.. tip::
-
-  If you change these values for time resolution, frequency resolution, and/or
-  edge width, double check your skymodel is using the same parameters.
-
-We also need a metafits file, which we can access via the 'Visibility Download Job' tab.
-Input the Obs ID, and be sure to click the 'PPD, Metafits, and Flags' option
-as shown below (otherwise you download the raw data as well, which we don't need):
-
-.. image:: meta_job_form.png
-  :width: 800px
-
-You can check the status of your download by clicking 'My Jobs' in the top left.
-Once they are ready to download, you'll see something like:
-
-.. image:: jobs_ready.png
-  :width: 800px
-
-Getting the tutorial data
--------------------------
-
-For the data we use for the full MWA observations, you can download the required
-files from here:
-
-`pyfhd Tutorial Data <https://tinyurl.com/pyfhd-tutorial-data>`_
-
-Each directory is an observation, and inside each directory it will contain the
-following files:
-
-- ``<obs_id>.uvfits`` - The UVFITS file for the observation
-- ``<obs_id>.metafits`` - The MWA metafits file for the observation
-- ``puma_LoBES_2s_80kHz_hbeam_<obs_id>.uvfits`` - The model visibilities generated
-  by `WODEN`_ for the observation
-
-Separately, there will be a beam file ``decomp_beam_pointing0.h5`` which is the
-beam file for an observation at pointing 0 for MWA. The beam file is used for
-gridding, and isn't required for calibration.
 
 Calibration
 -----------
 
 Calibration is fully available in ``pyfhd`` and can be enabled using the
-``--calibrate-visibilities`` option being set to true. Most of the options for
-calibration are found under the
-`Calibration <https://pyfhd.readthedocs.io/en/latest/documentation/documentation.html#calibration>`_
-in the Calibration section of the API documentation. The first example we'll do
-is the calibration of the sample data using only
-the command line interface to show the options that changed
-in comparison to the default config file located in
-``pyfhd/src/pyfhd/resources/config/pyfhd.yaml``
-(which will be used by default here).
+``--calibrate-visibilities`` option being set to true. There are many options
+for calibration, see the :doc:`API documentation page <../documentation/documentation>`
+for all of them. In the example we ran above, we used simulated visibilities from
+`WODEN`_, passing them in using the ``model-file-path`` option, and a beam saved
+out of `FHD`_, passed in using the ``saved-beam-file-path``.
 
 Running calibration on the sample data
 ++++++++++++++++++++++++++++++++++++++
+
+We can re-run the example calibration using the command line to override various
+options compared in the default config file located in
+``pyfhd/src/pyfhd/resources/config/pyfhd.yaml`` (which is used if we don't specify
+a config file -- something that only makes sense to do in a toy example like this).
 
 .. tip::
 
@@ -863,7 +758,8 @@ Running calibration on the sample data
     --image-plots \
     1088285600
 
-Here you have some solutions from the calibration of the sample data:
+You can look at the ``plots/calibration`` folder to see plots of the calibration
+solutions generated in this run:
 
 .. image:: 1088285600_cal_amp.png
   :width: 800px
@@ -871,338 +767,30 @@ Here you have some solutions from the calibration of the sample data:
 .. image:: 1088285600_cal_phase.png
   :width: 800px
 
-Running calibration on a full MWA observation
-+++++++++++++++++++++++++++++++++++++++++++++
+Running calibration on a full data set
+++++++++++++++++++++++++++++++++++++++
 
-For this observation, I put everything inside the ``./input`` directory
-under ``uvfits``, ``models`` and ``beams`` sub-directories.
-The input visibility data is inside the ``uvfits`` directory, the model generated
-by WODEN is inside the ``models`` directory, and the beam is inside the ``beams``
-directory (not that we need it for this run, as we use ``--cal-stop`` to stop
-``pyfhd`` after calibration).
+First you must choose whether you are using simulated visibilities from an external
+simulator or whether you want ``pyfhd`` to make simulated visibilities for you.
+If you want to use existing simulated visibilities, pass them in using the
+``model-file-path`` and ``model-file-type`` options.
 
-.. code-block:: bash
+To have ``pyfhd`` make simulated visibilities for you, you must set the
+``calibration-catalog-file-path`` option to a file that is readable by
+`pyradiosky`_'s ``SkyModel`` object. You can optionally set a number of
+other options to control which sources are included, the most commonly used
+ones are ``calibration-allow-sidelobe-sources`` and ``calibration-catalog-flux-threshold``.
 
-    pyfhd \
-        1091128160 \
-        --input-path=/path/to/input/uvfits/1091128160 \
-        --calibrate-visibilities \
-        --cable-bandpass-fit \
-        --calibration-polyfit \
-        --cal-amp-degree-fit 2 \
-        --cal-phase-degree-fit 1 \
-        --cal-reflection-hyperresolve \
-        --cal-reflection-mode-theory=150 \
-        --no-cal-reflection-mode-delay \
-        --no-cal-reflection-mode-file \
-        --no-calibration-auto-fit \
-        --no-calibration-auto-initialize \
-        --no-cal-adaptive-calibration-gain \
-        --vis-baseline-hist \
-        --bandpass-calibrate \
-        --auto-ratio-calibration \
-        --no-cal-time-average \
-        --no-digital-gain-jump-polyfit \
-        --calibration-plots \
-        --cal-stop \
-        --output-path "/path/to/output/" \
-        --description 1091128160 \
-        --model-file-type "uvfits" \
-        --model-file-path "/path/to/input/models/1091128160/puma_LoBES_2s_80kHz_hbeam_1091128160.uvfits" \
-        --saved-beam-file-path "/path/to/beams/decomp_beam_pointing0.h5" \
-        --lazy-load-beam
+If you would like the run to stop after calibration and not continue on to
+gridding, set ``--cal-stop: true``.
 
-.. tip::
-
-  The full configuration file to set all the options in the above command can be seen below
-
-  .. raw:: html
-
-    <details>
-    <summary>1091128160.yaml</summary>
-    <p>
-
-  .. code-block:: yaml
-
-    # Default Arguments for pyfhd
-    # ~ returns None in Python (i.e. NULL)
-    input-path: '/path/to/input/uvfits/1091128160'
-    recalculate-all: false
-    silent: false
-    log-file: true
-    conserve-memory: false
-    memory-threshold: 100000000
-    n-pol: 2
-    FoV: ~
-    kbinsize: 0.5
-    dimension: 2048
-    elements: 2048
-    min-baseline: 1.
-    deproject-w-term: ~
-
-    # Checkpointing
-    save-checkpoints: false
-    obs-checkpoint: ~
-    calibrate-checkpoint: ~
-    gridding-checkpoint: ~
-
-    # Instrument
-    instrument: 'mwa'
-    override-target-phasera: ~
-    override-target-phasedec: ~
-
-    # Beam Setup
-    lazy-load-beam: true
-    recalculate-beam: true
-    interpolate-kernel: true
-    saved-beam-file-path: /path/to/beams/decomp_beam_pointing0.h5
-    beam-offset-time: 0
-    beam-per-baseline: false
-    beam-nfreq-avg: 16
-    psf-dim: 54
-    psf-resolution: 100
-    beam-mask-threshold: 100
-    beam-clip-floor: true
-
-    # Calibration
-    calibrate-visibilities: true
-    bandpass-calibrate: true
-    cal-bp-transfer: ~
-    calibration-polyfit: true
-    auto-ratio-calibration: true
-    cable-bandpass-fit: true # Depends on instrument cable length text file
-    cal-amp-degree-fit: 2
-    cal-phase-degree-fit: 1
-    cal-reflection-mode-theory: 150
-    cal-reflection-mode-delay: false
-    cal-reflection-hyperresolve: true
-    cal-reflection-mode-file: false
-    transfer-calibration: ~
-    cal-base-gain: ~ # This is set to None by default to set the default based on cal-adaptive-calibration-gain as per FHD
-    cal-convergence-threshold: 1e-7
-    cal-time-average: false
-    calibration-auto-fit: false
-    calibration-auto-initialize: false
-    cal-gain-init: 1
-    min-cal-baseline : 50.
-    max-cal-iter: 100
-    cal-adaptive-calibration-gain: false
-    cal-phase-fit-iter: 4
-    digital-gain-jump-polyfit: false
-    vis-baseline-hist: true
-    cal-stop: true
-    diffuse-calibrate: ~
-    calibration-catalog-file-path:  ~ # 'GLEAM_v2_plus_rlb2019.sav' (FHD Default)
-    transfer-model-uv: ~
-    return-cal-visibilities: true
-    calibration-flag-iterate: 0
-    allow-sidelobe-cal-sources: true
-
-    # Flagging
-    time-cut: ~
-    flag-basic: true
-    flag-freq-start: ~
-    flag-freq-end: ~
-    flag-tiles: []
-    flag-frequencies: false
-    flag-model: true
-    flag-calibration: true
-    flag-calibration-frequencies: false
-    flag-visibilities: false
-    transfer-weights: ~
-
-    # Gridding
-    recalculate-grid: true
-    mask-mirror-indices: false
-    image-filter: 'filter_uv_uniform'
-    grid-spectral: false
-    grid-weights: true
-    grid-variance: true
-    grid-uniform: false
-
-    # Deconvolution
-    # deconvolve: false
-    # max-deconvolution-components: 20000
-    # filter-background: true
-    # smooth-width: 32
-    dft-threshold: true
-    # return-decon-visibilities: false
-    # deconvolution-filter: 'filter_uv_uniform'
-
-    # Export
-    output-path: '/path/to/output'
-    description: 1091128160
-    pad-uv-image: 1.
-    ring-radius-multi: 10.
-    export-images: true
-    save-visibilities: false
-    save-weights: false
-    save-model: true
-    save-obs: true
-    save-params: true
-    save-cal: true
-    save-healpix-fits: false
-    snapshot-healpix-export: false
-
-    # Plotting
-    calibration-plots: true
-    gridding-plots: true
-    image-plots: true
-
-    # Model
-    # Current choices of model-file-type are sav and uvfits
-    model-file-type: 'uvfits'
-    # If you set model-file-type to uvfits, set import-model-uvfits to the
-    # (ideally absolute) path of the fits file
-    # If model-file-type is set to sav then it will look for the sav files as
-    # said in the function import_vis_model_from_sav
-    model-file-path: '/path/to/models/1091128160/puma_LoBES_2s_80kHz_hbeam_1091128160.uvfits'
-    diffuse-model: ~
-    model-catalog-file-path:  ~ # 'GLEAM_v2_plus_rlb2019.sav' (FHD Default)
-    allow-sidelobe-model-sources: false
-
-    # Simulation
-    # run-simulation: false
-    # in-situ-sim-input: ~
-    # eor-vis-filepath: ~
-    # enhance-eor: 1
-    # sim-noise: ~
-    # tile-flag-list: ~
-    # remove-sim-flags: false
-
-    # HEALPIX
-    healpix-inds: ~
-    restrict-healpix-inds: true
-    split-ps-export: true
-    ps-kbinsize: 0.5
-    ps-fov: ~
-    ps-kspan: 200
-    ps-dimension: ~
-    ps-degpix: ~
-    ps-nfreq-avg: ~
-    ps-beam-threshold: 0
-    ps-tile-flag-list: []
-    n-avg: 2
-    rephase-weights: true
-
-  .. raw:: html
-
-    </p>
-    </details>
-
-.. note:: On a system with 20 cores (AMD Ryzen 5900X) this command took around 31 minutes to run.
-
-If you look in the ``/path/to/output/pyfhd_1091128160/plots/calibration`` you
-will find plots including the calibration amplitude and phases:
-
-.. image:: 1091128160_cal_amp_pyfhd.png
-  :width: 600px
-
-.. image:: 1091128160_cal_phase_pyfhd.png
-  :width: 600px
-
-We have solutions!
-
-.. Running advanced calibration
-.. ++++++++++++++++++++++++++++
-.. .. todo::
-
-..    Check what this calibration is actually doing, and whether it is actually updating the solutions in the second part. The add motivation as to why we have to run in this manner
-
-.. .. note:: This mode of running is intended for power users of ``FHD`` who already know what they want to run, but want to take advantage of ``pyfhd`` already.
-
-.. Sometimes it makes sense to get an initial set of calibration solutions using one sky model, and then update them using a different sky model. First, run an initial calibration with default arguments:
-
-.. .. code-block:: bash
-
-..     pyfhd \
-..         1088281328 \
-..         --input_path=data \
-..         --output_path=/place/for/outputs/ \
-..         --description=cal_data \
-..         --calibration_catalog_file_path=/path/to/sky_model/GLEAM_v2_plus_rlb2019.sav \
-..         --conserve_memory --memory_threshold=1000000000 \
-..         --IDL_calibrate
-
-.. This results in calibration solutions that look somewhat ratty:
-
-.. .. image:: 1088281328_cal_amp.png
-..   :width: 600px
-
-.. .. image:: 1088281328_cal_phase.png
-..   :width: 600px
-
-.. If you have a set of ``FHD`` ``IDL`` keywords to control calibration, you can simply add them into a text file (as they would appear in ``IDL``) and supply that text file as the argument to ``--IDL_keywords_file``. ``pyfhd`` will then copy these lines and add them into the ``.pro`` templates used to run ``FHD``. Here we'll update the calibration using a different sky model:
-
-.. .. code-block:: bash
-
-..   time pyfhd \
-..     '1088281328' \
-..     --input_path=/fred/oz048/MWA/data/2014/van_vleck_corrected/coarse_corr_no_ao/ \
-..     --output_path=/fred/oz048/jline/ADACS/test_pyfhd/calibrate_real_data/ \
-..     --description=cal_data_advanced \
-..     --conserve_memory --memory_threshold=1000000000 \
-..     --IDL_calibrate \
-..     --IDL_variables_file fhd_variables.pro
-
-.. where ``fhd_variables.pro`` looks like:
-
-.. .. code-block:: idl
-
-..     pointing='-2'
-..     calibrate_visibilities=1
-..     return_cal_visibilities=1
-..     ;save_uvf=1
-..     noao_coarse=1
-..     model_visibilities=1
-..     model_transfer='/fred/oz048/MWA/CODE/FHD/fhd_nb_data_gd_woden_calstop/woden_models/combined/'
-..     conserve_memory=1e9
-..     recalculate_all=1
-..     mapfn_recalculate=0
-..     beam_nfreq_avg=1
-..     ps_kspan=200.
-..     transfer_psf='/fred/oz048/MWA/CODE/FHD/fhd_nb_data_pointing_beam/beams/gauss_beam_pointing'+pointing+'.sav'
-..     transfer_weights='/fred/oz048/MWA/CODE/FHD/fhd_nb_data_gd_woden_redo_redo/vis_data/'+obs_id+'_flags.sav'
-..     export_images=1
-..     force_data=1
-..     grid_recalculate=0
-..     transfer_calibration='/fred/oz048/MWA/CODE/FHD/fhd_nb_data_gd_woden_calstop/cal_transfer/'+obs_id+'_cal.sav'
-..     restrict_hpx_inds='EoR0_high_healpix_inds_3x.idlsave'
-..     interpolate_kernel=1
-..     psf_dim=30
-..     ;54 on 1e6 mask with -2, 62 on 1e7 with -2
-..     beam_gaussian_decomp=1
-..     psf_image_resolution=10.
-..     psf_resolution=50.
-..     ;54*250=13500 pixel side and 300sec fit, 54*50=2700 pixel side and 280sec fit
-..     beam_mask_threshold=1e6
-..     save_beam_metadata_only=1
-..     beam_clip_floor=0
-
-.. This advanced calibration is transferring an initial set of calibration solutions (using ``transfer_calibration``) and running calibration again using an existing sky model (using ``model_transfer``). Amongst other things, it's also using a different primary beam model via the keyword ``transfer_psf``, and a pervious set of flags via ``transfer_weights``. This calibration results in tighter amplitude and flatter phase solutions:
-
-.. .. image:: 1088281328_cal_amp_advanced.png
-..   :width: 600px
-
-.. .. image:: 1088281328_cal_phase_advanced.png
-..   :width: 600px
 
 Gridding
 ---------
 
-.. note::
-
-  In order to perform gridding in pyfhd, a beam must be provided. The recommended
-  method for ``pyfhd`` is to use an object or beam file that can be read by ``UVBeam``.
-  For more information, see *Beam Setup* and `pyuvdata.UVBeam <https://pyuvdata.readthedocs.io/en/latest/uvbeam.html>`
-  Beams that have been generated by ``FHD `` and stored as ``sav`` files can also
-  be used. They can be converted into ``HDF5`` files using ``scipy.io.readsav``,
-  but this method is not recommended.
-
 Running the gridding step in ``pyfhd`` is relatively simple as its enabled by
-default, and the small number of options available to you are found here
-`Gridding <https://pyfhd.readthedocs.io/en/latest/documentation/documentation.html#gridding>`_
-in the Gridding section of the API Documentation.
+default, and the small number of options available to you are found
+in the Gridding section of the :doc:`API documentation page <../documentation/documentation>`.
 
 Running Gridding with the sample data
 +++++++++++++++++++++++++++++++++++++
@@ -1242,56 +830,11 @@ polarizations, XX and YY, for the sample data.
 .. image:: 1088285600_grid_apparent_image_YY.png
   :width: 600px
 
-Running Gridding with a full MWA observation
-++++++++++++++++++++++++++++++++++++++++++++
+Gridding outputs for a full MWA observation
++++++++++++++++++++++++++++++++++++++++++++
 
-In this observation, we will run calibration and then use the results for gridding,
-you'll notice some more advanced options being used here. Such options, like
-``--digital-gain-jump-polyfit`` should only be used if you know that it's needed
-(although ``pyfhd`` will warn you if you try to use it on the wrong data). Also
-take notice that the beam is being loaded here, through the use of the
-``--saved-beam-file-path`` option, this is required for gridding to work. If you
-wish to learn more about the ``--lazy-load-beam`` option, refer to :ref:`lazy-loading`
-section below, but note that it currently has no effect when using UVBeam beam models.
-
-.. code-block:: bash
-
-   pyfhd \
-      1088281328 \
-      --input-path "/path/to/input/uvfits/1088281328" \
-      --output-path "/path/to/output/" \
-      --description 1088281328 \
-      --saved-beam-file-path "path/to/beams/decomp_beam_pointing0.h5" \
-      --lazy-load-beam: true \
-      --model-file-type "uvfits" \
-      --model-file-path "./path/to/models/1088281328/puma_LoBES_2s_80kHz_hbeam_1088281328.uvfits" \
-      --recalculate-grid \
-      --image-filter "filter_uv_uniform" \
-      --grid-weights \
-      --grid-variance \
-      --calibrate-visibilities \
-      --cable-bandpass-fit \
-      --calibration-polyfit \
-      --cal-amp-degree-fit 2 \
-      --cal-phase-degree-fit 1 \
-      --cal-reflection-hyperresolve \
-      --cal-reflection-mode-theory 150 \
-      --no-cal-reflection-mode-delay \
-      --no-cal-reflection-mode-file \
-      --no-calibration-auto-fit \
-      --no-calibration-auto-initialize \
-      --no-cal-adaptive-calibration-gain \
-      --vis-baseline-hist \
-      --bandpass-calibrate \
-      --auto-ratio-calibration \
-      --no-cal-time-average \
-      --digital-gain-jump-polyfit \
-      --calibration-plots \
-      --gridding-plots
-
-
-Below we have the example plots of the gridded continuum data for the two
-polarizations, XX and YY, for the full MWA data.
+Here are example plots of the gridded continuum data for a full MWA observation
+and two polarizations, XX and YY.
 
 .. image:: 1088281328_grid_apparent_image_XX.png
   :width: 600px
@@ -1315,26 +858,138 @@ We can also plot the variance of the gridded visibilities.
 .. image:: 1088281328_grid_variance_YY.png
   :width: 600px
 
+
+Checkpointing
+-------------
+The checkpointing system in ``pyfhd`` is designed to save the state of the
+pipeline after important, potentially long running steps. The checkpoints are
+stored in the ``checkpoints`` directory and they are saved at the following points:
+
+- ``obs_checkpoint``: ``obs`` dict creation, reading of visibilities and weights,
+  creation of the ``params`` dict.
+- ``beam_checkpoint``: beam setup, creation of the ``antenna`` and ``psf`` dicts.
+- ``calibrate_checkpoint``: End of calibration, creation of the ``cal`` dict
+  which saves the observations, params, calibrated visibilities, model visibilities,
+  and visibility weights.
+- ``gridding_checkpoint``: End of gridding, creation of the ``gridding`` dict
+  which holds the gridded visibilities, associated weights, variances, models, etc.
+
+In the case that you wish to skip a step in the pipeline, you can use the
+``--calibrate-checkpoint`` or ``--grid-checkpoint`` options to skip the calibration
+or gridding steps respectively.
+
+.. attention::
+  The ``--obs-checkpoint`` and ``--calibrate-checkpoint`` will check for each
+  other's existence and if both are used ``--calibrate-checkpoint`` will be
+  prioritised and ``obs-checkpoint`` will be ignored.
+
+In the example below, we will run ``pyfhd`` with the ``--calibrate-checkpoint``
+option, which will skip the calibration and visibility step and go straight to
+gridding.
+
+.. code-block:: bash
+
+  pyfhd -c ./input/1088285600_example/1088285600_example.yaml --calibrate-checkpoint 1088285600
+
+Within the logs of the ``pyfhd`` you should see the following message::
+
+.. code-block:: text
+
+  yyyy-mm-dd HH:MM:SS - INFO:
+      Checkpoint Loaded: Calibrated and Flagged visibility parameters, array and weights, the flagged observation metadata dictionary and the calibration dictionary loaded from output/pyfhd_1088285600_example/calibrate_checkpoint.h5
+
+Do note if you wish to use the ``gridding-checkpoint`` then you also need ``calibrate-checkpoint``.
+
+
 Other Telescopes
 ----------------
-``pyfhd`` was translated and tested with MWA data, but in theory should only need
-minor adjusting to support additional telescopes.
+``pyfhd`` has been primarily tested with MWA data, with some limited testing on
+LWA and HERA data. we are interested in supporting other telescopes, please reach
+out in our issue log if you need help getting it working on other telescopes.
 
-.. important::
+Note that we use `pyuvdata`_'s UVBeam object to represent beams in pyfhd, so a
+necessary first step is getting a beam into a file readable by UVBeam.
 
-  Getting data for testing additional telescopes is under way. If you wish for
-  pyfhd to support a new telescope, we need the following for testing:
+Known Limitations
+-----------------
 
-  - UVFITS file
-  - Any associated metadata files you use -- MWA uses metafits, but other telescopes
-    may use different formats if any at all
-  - A beam file - IDL SAVE (sav) files, HDF5 (h5) files, if the beam can be done
-    with `pyuvdata`_, please give an example of how to create the beam response
-  - A skymodel file - ideally UVFITS, but we can potentially support other file
-    types as well depending on the complexity
+.. attention::
+
+  This entire section is a call to action!
+
+  If you believe you can address these problems, and or do the features, then
+  give it a go, please read the :doc:`Contribution Guide <../develop/contribution_guide>`
+  and do a pull request!
+
+  We await your contributions!
+
+HEALPIX
++++++++
+The HEALPIX outputs from ``pyfhd`` are stored in the ``healpix`` directory. The
+translated parts of ``healpix_snapshot_cube_generate.pro`` from ``FHD`` may have
+precision errors and potential bugs. When comparing power spectrum from pyfhd
+and FHD, a power issue was observed. Calibrating and gridding have been
+validated down to floating point precision, so we assume the issue lies
+in Healpix generation.
+
+By default, healpix files are generated, as long as the entirety of ``pyfhd``
+runs in full. In the config file, the most important options are the
+``save-healpix-fits`` and the ``snapshot-healpix-export`` options, which
+are set to ``true`` by default and are the toggles which allow the HEALPIX
+functions to be called. The config file has the following options:
+
+.. code-block:: yaml
+
+  # Export
+  output-path: './output'
+  save-healpix-fits: true # IMPORTANT
+  snapshot-healpix-export: true # IMPORTANT
+
+  # HEALPIX (These are the defaults)
+  healpix-inds: ~
+  restrict-healpix-inds: true
+  split-ps-export: true
+  ps-kbinsize: 0.5
+  ps-fov: ~
+  ps-kspan: 600
+  ps-dimension: ~
+  ps-degpix: ~
+  ps-nfreq-avg: ~
+  ps-beam-threshold: 0
+  ps-tile-flag-list: []
+  n-avg : 2
+  rephase-weights: true
+
+Beams
++++++
+
+Currently, pyfhd only supports using one beam per observation and does not
+currently support different beams for different antennas. Furthermore, more
+advanced features like gaussian decomposition and many of the debugging options
+are not implemented, so there are plenty of opportunities to add to the ``beam_setup``,
+both in small and large pieces of code.
+
+Deconvolution
+++++++++++++++
+Deconvolution is currently in active development.
+
+Four Polarizations
+++++++++++++++++++
+The ability for pyfhd to handle four polarizations is under development but has
+not been well tested, and may not be fully implemented in places.
+
+Simulation
+++++++++++
+`FHD`_ has the ability to do simulations but many of these simulation features
+haven't been translated to ``pyfhd``.
+
+
+Advanced Topics
+---------------
 
 Saving and Loading files
-------------------------------------------------
+++++++++++++++++++++++++
+
 ``pyfhd`` uses ``HDF5`` files to store data in general.
 ``pyfhd`` uses ``h5py`` to read and write the files, the main functions that you
 can see how ``pyfhd``
@@ -1386,6 +1041,7 @@ H5 Web is shown below:
 
 Lazy Loading
 +++++++++++++
+
 The load function inside of ``pyfhd`` also has the capability to lazy load the
 data, which means that the data is not loaded into memory until you access it.
 This is done by setting the ``lazy_load`` argument to ``True`` when calling the
@@ -1422,6 +1078,7 @@ long time to load into memory and can use a lot of memory.
 
 Loading pyfhd Outputs into FHD
 ++++++++++++++++++++++++++++++
+
 ``pyfhd`` outputs can be loaded into ``FHD`` if you need it. pyfhd outputs are
 typically ``HDF5`` files, IDL is capable of reading in HDF5 files using functions like:
 `H5F_OPEN <https://www.nv5geospatialsoftware.com/docs/H5F_OPEN.html>`_,
@@ -1692,7 +1349,7 @@ it to the format that `FHD`_ expects.
   </details>
 
 Docker
-------
+++++++
 ``pyfhd`` has a docker image available to use available on
 `Docker Hub <https://hub.docker.com/r/skywa7ch3r/pyfhd>`_.
 There will be multiple images available, there will be an image for each version
@@ -1742,7 +1399,7 @@ and ``output`` directories inside the container.
     1091128160
 
 Apptainer (formerly Singularity)
---------------------------------
+++++++++++++++++++++++++++++++++
 
 Creating an Apptainer image for using ``pyfhd`` where using docker isn't possible
 (such as on HPCs) can be done like so:
@@ -1783,111 +1440,3 @@ and ``output`` directories inside the container.
     pyfhd -c ./input/1091128160.yaml \
     --description 1091128160_docker_example \
     1091128160
-
-Problems that need to be solved
--------------------------------
-
-.. attention::
-
-  This entire section is a call to action!
-
-  If you believe you can address these problems, and or do the features, then
-  give it a go, please read the :doc:`Contribution Guide <../develop/contribution_guide>`
-  and do a pull request!
-
-  We await your contributions!
-
-HEALPIX
-+++++++
-The HEALPIX outputs from ``pyfhd`` are stored in the ``healpix`` directory. The
-translated parts of ``healpix_snapshot_cube_generate.pro`` from ``FHD`` may have
-precision errors and potential bugs. When comparing power spectrum from pyfhd
-and FHD, a power issue was observed. Calibrating and gridding have been
-validated down to floating point precision, so we assume the issue lies
-in Healpix generation.
-
-By default, healpix files are generated, as long as the entirety of ``pyfhd``
-runs in full. In the config file, the most important options are the
-``save-healpix-fits`` and the ``snapshot-healpix-export`` options, which
-are set to ``true`` by default and are the toggles which allow the HEALPIX
-functions to be called. The config file has the following options:
-
-.. code-block:: yaml
-
-  # Export
-  output-path: './output'
-  save-healpix-fits: true # IMPORTANT
-  snapshot-healpix-export: true # IMPORTANT
-
-  # HEALPIX (These are the defaults)
-  healpix-inds: ~
-  restrict-healpix-inds: true
-  split-ps-export: true
-  ps-kbinsize: 0.5
-  ps-fov: ~
-  ps-kspan: 600
-  ps-dimension: ~
-  ps-degpix: ~
-  ps-nfreq-avg: ~
-  ps-beam-threshold: 0
-  ps-tile-flag-list: []
-  n-avg : 2
-  rephase-weights: true
-
-Beam Setup
-++++++++++
-There are several choices for how to set up a beam in ``pyfhd``, beams are
-required for gridding and de-gridding operations.
-
-The approach used in the sample data and tutorial data is to use a beam that is
-saved out of FHD (or pyFHD). To use this option, pass the beam file location
-using the ``saved-beam-file-path`` configuration option.
-
-The most common approach is to use the ``UVBeam`` object from `pyuvdata`_ to read
-in a beam ``Jones`` matrix and decompose it into the terms needed for FHD. Then
-``FHD`` translation is used to create the representation of the beam in UV space.
-To use this option, pass the beam file location using the ``uvbeam-file-path``
-configuration option. If you are using this option, you can also use the
-``uvbeam-freq-buffer`` to specify a buffer in Hz around the data frequency range
-to use when reading in the beam. It should be set to at least twice the frequency
-resolution of the beam (e.g. ``2e6`` is a reasonable value for the MWA beam,
-which has 1 MHz resolution). Setting the buffer too small can result in
-interpolation errors. If you do not set ``uvbeam-freq-buffer``, the full beam
-file will be read in, which can increase the memory usage.
-
-Finally, you can use analytic beams that are sub-classes of the `pyuvdata`_
-``AnalyticBeam`` object (a number are built into pyuvdata, but the infrastructure
-is extensible and writing your own analytic beam is straight forward).
-Note that analytic beams are currently sampled in image space and then Fourier
-Transformed to uv space in pyFHD. They are not used as analytic functions in uv space.
-To use this option, you must pass a yaml string enclosed in quotations to the
-``analytic-beam-yaml`` configuration option. Details on how to compose these
-yaml strings are in the `pyuvdata`_ documentation, but generally you must include
-the analytic beam class and any required parameters to initialize the beam.
-
-For the moment, pyfhd only supports using one beam per observation and does not
-currently support different beams for different antennas. Furthermore, more
-advanced features like gaussian decomp and many of the debugging options are not
-implemented, so there are plenty of opportunities to add to the ``beam_setup``,
-both in small and large pieces of code.
-
-You may run into memory limitations with your machine during testing, you can
-decrease memory use by setting ``beam-nfreq-avg`` to larger values
-(as high as the number of frequencies in your input file) at the cost of reduced
-accuracy in the frequency evolution of the beam.
-
-Deconvolution
-++++++++++++++
-Deconvolution is currently in active development. The degridding branch can be found at
-`<https://github.com/EoRImaging/pyfhd/compare/main...degridding>`_.
-
-Four Polarizations
-++++++++++++++++++
-The ability for pyfhd to handle four polarizations is not well tested, and may not
-be fully implemented in places. Another great opportunity to contribute.
-
-Simulation
-++++++++++
-`FHD`_ has the ability to do simulations. Many of these simulation features haven't
-been translated to ``pyfhd``, this would be a large piece of work. The work being done
-in the degridding branch will help enable this feature.
