@@ -55,6 +55,7 @@ calibrate-visibilities: true
 # options for choosing sources to go into model visibiliites:
 # The calibration catalog file must be readable by pyradiosky's SkyModel object
 calibration-catalog-file-path : '../GLEAM_v2_plus_rlb2019.sav'
+calibration-model-delay-filter: true
 calibration-sidelobe-catalog-file-path: ~
 calibration-allow-sidelobe-sources: true
 calibration-beam-threshold: ~ # Defaults to 0.05 unless allow-sidelobe-sources is True, in which case the default is 0.01.

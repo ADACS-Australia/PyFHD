@@ -779,7 +779,7 @@ To have ``pyfhd`` make simulated visibilities for you, you must set the
 ``calibration-catalog-file-path`` option to a file that is readable by
 `pyradiosky`_'s ``SkyModel`` object. You can optionally set a number of
 other options to control which sources are included, the most commonly used
-ones are ``calibration-allow-sidelobe-sources`` and ``calibration-catalog-flux-threshold``.
+ones are ``calibration-allow-sidelobe-sources`` and ``calibration-model-delay-filter``.
 
 If you would like the run to stop after calibration and not continue on to
 gridding, set ``--cal-stop: true``.

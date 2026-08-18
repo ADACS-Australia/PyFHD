@@ -512,6 +512,15 @@ def pyfhd_parser():
         "SkyModel object. ",
     )
     calibration.add_argument(
+        "--calibration-model-delay-filter",
+        default=True,
+        action=OrderedBooleanOptionalAction,
+        help="Option to apply a delay filter to the model visibilities after "
+        "degridding. When this is done, the bandwidth of the simulated "
+        "visibilities is doubled and then reduced back to the input frequency "
+        "array after filtering.",
+    )
+    calibration.add_argument(
         "--calibration-sidelobe-catalog-file-path",
         default=None,
         type=Path,

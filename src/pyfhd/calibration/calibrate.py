@@ -135,6 +135,7 @@ def calibrate(
             vis_weights=None,
             logger=logger,
             fill_model_visibilities=True,
+            model_delay_filter=pyfhd_config["calibration_model_delay_filter"],
             conserve_memory=pyfhd_config["conserve_memory"],
             mem_thresh=pyfhd_config["memory_threshold"],
         )
