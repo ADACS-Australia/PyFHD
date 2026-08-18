@@ -13,6 +13,15 @@ repo and passing None to `beam_file-path`.
 to avoid confusion with the new `uvbeam-file-path` option.
 
 ### New Features
+* pyfhd can now create model visibilities for calibration using degridding. The
+source catalog to be used in degridding must be specified as a file readable by
+the pyradiosky SkyModel object to the `calibration-catalog-file-path` option.
+A number of source selection options have also been added (see API docs for details).
+The top level function for creating model visibilities is in
+`src/pyfhd/source_modeling/vis_source_model.py`. Functions to manage the source
+catalog creation, DFT sources to the uvplane, convert between Stokes and
+instrumental polarization and delay filter the model visibilities are in
+`src/pyfhd/source_modeling/source_utils.py`.
 * Set up a new test data repo (https://github.com/EoRImaging/pyfhd-datasets),
 use pooch to download and cache the test data in testing and in tutorials.
 * Added pooch as a testing dependency.
@@ -80,12 +89,15 @@ fully propagated, causing shape errors.
 * Fixed fixtures in `test_vis_model_transfer` and `test_quickview` to handle
 computer-specific paths in test data.
 
-
 ### Dependency Changes
+* Added pyradiosky>=1.1.1 as a dependency for managing source catalogs.
 
 ### Version Changes
 
 ### Translation Changes
+* Degridding to create model visibilities has now been translated, along with
+various required functions for selecting sources from catalogs, converting from
+Stokes to instrument polarization fluxes and DFTing the sources to the uvplane.
 
 ## 1.0.2
 
