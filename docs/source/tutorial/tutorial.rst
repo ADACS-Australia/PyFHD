@@ -692,14 +692,14 @@ You can also use analytic beams that are sub-classes of the `pyuvdata`_
 ``AnalyticBeam`` object (a number are built into pyuvdata, but the infrastructure
 is extensible and writing your own analytic beam is straight forward).
 Note that analytic beams are currently sampled in image space and then Fourier
-Transformed to uv space in pyFHD. They are not used as analytic functions in uv space.
+Transformed to uv space in pyfhd. They are not used as analytic functions in uv space.
 To use this option, you must pass a yaml string enclosed in quotations to the
 ``analytic-beam-yaml`` configuration option. Details on how to compose these
 yaml strings are in the `pyuvdata`_ documentation, but generally you must include
 the analytic beam class and any required parameters to initialize the beam.
 
 The approach used in the sample tutorial data is to use a beam that is saved out
-of FHD (you can also used one save out of a prior pyFHD run). To use this option,
+of FHD (you can also used one save out of a prior pyfhd run). To use this option,
 pass the beam file location using the ``saved-beam-file-path`` configuration option.
 
 Currently, pyfhd does not support using different beams for different antennas,
