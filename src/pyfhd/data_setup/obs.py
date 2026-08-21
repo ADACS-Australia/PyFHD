@@ -576,8 +576,8 @@ def update_obs(
     # Adjust the obs dictionary based on the new dimension and kbinsize
     obs["dimension"] = dimension
     obs["elements"] = dimension
-    obs["obsx"] = dimension / 2
-    obs["obsy"] = dimension / 2
+    obs["obsx"] = dimension // 2
+    obs["obsy"] = dimension // 2
     obs["kpix"] = kbinsize if fov is None else (180 / np.pi) / fov
     obs["degpix"] = (180 / np.pi) / (obs["kpix"] * dimension)
     obs["max_baseline"] = min(

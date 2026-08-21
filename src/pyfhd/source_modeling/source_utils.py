@@ -128,7 +128,7 @@ def generate_source_cal_skymodel(
 
     if skymodel.spectral_type != "spectral_index":
         raise NotImplementedError(
-            "pyFHD currently only supports spectral index catalogs."
+            "pyfhd currently only supports spectral index catalogs."
         )
 
     if skymodel.frame.lower() != "fk5":
@@ -141,9 +141,9 @@ def generate_source_cal_skymodel(
     freq_use = obs["freq_center"]
     n_pol = obs["n_pol"]
 
+    # use at most xx & yy beams
+    n_pol_use = np.min([n_pol, 2])
     if beam is None:
-        # use at most xx & yy beams
-        n_pol_use = np.min([n_pol, 2])
         beam = np.zeros((n_pol_use, dimension, dimension))
 
         for pol_i in range(n_pol_use):
@@ -151,14 +151,18 @@ def generate_source_cal_skymodel(
 
         beam[np.nonzero(beam < 0)] = 0
     else:
+        if not isinstance(beam, np.ndarray):
+            raise TypeError("beam must be an array.")
         if (
             len(beam.shape) != 3
-            or (beam.shape)[0] < np.min(n_pol, 2)
-            or (beam.shape)[0] > np.max(n_pol, 2)
+            or (beam.shape)[0] < np.min([n_pol, 2])
+            or (beam.shape)[0] > np.max([n_pol, 2])
             or (beam.shape)[1:] != (dimension, dimension)
         ):
             raise ValueError("beam does not have expected shape.")
 
+    if sidelobe_catalog_path is not None:
+        beam_in = beam.copy()
     beam = np.sqrt(np.sum(beam[:n_pol_use] ** 2.0, axis=0) / n_pol_use)
 
     if beam_threshold is None:
@@ -187,7 +191,7 @@ def generate_source_cal_skymodel(
             psf=psf,
             logger=logger,
             catalog_path=sidelobe_catalog_path,
-            beam=beam,
+            beam=beam_in,
             mask=beam_sidelobe_mask,
             allow_sidelobe_sources=True,
             beam_threshold=beam_threshold,
@@ -198,6 +202,8 @@ def generate_source_cal_skymodel(
             preserve_zero_spectral_indices=preserve_zero_spectral_indices,
         )
         allow_sidelobe_sources = False
+
+        del beam_in
 
     if not restrict_sources:
         fft_alias_range = dimension / 32.0
@@ -326,7 +332,7 @@ def generate_source_cal_skymodel(
             ext_src_lists = {}
             for src in extended_srcs:
                 wh_src = np.nonzero(skymodel.extended_model_group == src)
-                ext_src_lists[src] = wh_src
+                ext_src_lists[src] = wh_src[0]
 
                 avg_x = np.average(
                     skymodel.extra_columns["x_use"][wh_src],
@@ -456,6 +462,18 @@ def generate_source_cal_skymodel(
                 order = np.flip(np.argsort(influence))
                 skymodel._select_along_param_axis({"Ncomponents": order})
 
+    if flatten_spectrum:
+        wh_pos_I_flux = np.nonzero(skymodel.stokes[0, 0] > 0)[0]
+        alpha_avg = np.average(
+            skymodel.spectral_index[wh_pos_I_flux],
+            weights=skymodel.stokes[0, 0, wh_pos_I_flux],
+        )
+        obs["alpha_avg"] = alpha_avg
+        skymodel.spectral_index -= alpha_avg
+
+    # call `at_frequencies` method to get it at the central obs freq:
+    skymodel.at_frequencies(np.atleast_1d(freq_use) * units.Hz)
+
     if sidelobe_catalog_path is not None:
         if skymodel is not None:
             skymodel.concat(sidelobe_skymodel)
@@ -482,19 +500,17 @@ def generate_source_cal_skymodel(
                 compact_src_inds = np.nonzero(skymodel.extended_model_group == "")[0]
 
                 # get the extended sources in their original order
-                extended_srcs = np.unique(
+                extended_srcs, extended_start_inds = np.unique(
                     skymodel.extended_model_group[extended_comps], return_index=True
-                )[1]
+                )
 
                 ext_src_lists = {}
-                extended_start_inds = np.zeros_like(extended_srcs)
-                for src_i, src in enumerate(extended_srcs):
+                for src in extended_srcs:
                     wh_src = np.nonzero(skymodel.extended_model_group == src)[0]
                     ext_src_lists[src] = wh_src
-                    extended_start_inds[src_i] = wh_src
 
                 src_inds_select = np.sort(
-                    np.concatenate(compact_src_inds, extended_start_inds)
+                    np.concatenate((compact_src_inds, extended_start_inds))
                 )[:max_sources]
                 compact_keep = np.intersect1d(compact_src_inds, src_inds_select)
                 extended_start_keep = np.intersect1d(
@@ -508,20 +524,9 @@ def generate_source_cal_skymodel(
                     ]
                 )
 
-                comp_keep = np.concatenate(compact_keep, extended_keep)
+                comp_keep = np.sort(np.concatenate((compact_keep, extended_keep)))
+
         skymodel.select(component_inds=comp_keep)
-
-    if flatten_spectrum:
-        wh_pos_I_flux = np.nonzero(skymodel.stokes[0, 0] > 0)[0]
-        alpha_avg = np.average(
-            skymodel.spectral_index[wh_pos_I_flux],
-            weights=skymodel.stokes[0, 0, wh_pos_I_flux],
-        )
-        obs["alpha_avg"] = alpha_avg
-        skymodel.spectral_index -= alpha_avg
-
-    # call `at_frequencies` method to get it at the central obs freq:
-    skymodel.at_frequencies(np.atleast_1d(freq_use) * units.Hz)
 
     return skymodel
 
