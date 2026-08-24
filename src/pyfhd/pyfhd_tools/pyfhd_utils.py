@@ -688,8 +688,7 @@ def weight_invert(
         An array of values of some dtype
     threshold: float | None, optional
         A real number set as the threshold for the array.
-        By default its set to None, in this case function checks
-        for zeros, by default None
+        By default its set to None, in this case function checks for zeros.
     use_abs: bool, optional
         If True, take the absolute value (sometimes useful for complex numbers)
         By default this is False, so will leave as a complex number and invert.
@@ -702,11 +701,20 @@ def weight_invert(
     """
     # IDL is able to treat one number as an array (because every number is aprrently an array of size 1?)
     # As such we need to check if it's a number less than or equal to 0 and make a zeros array of size 1
+    scalar = False
     if np.isscalar(weights):
-        result = np.zeros(1, dtype=type(weights))
-        weights = np.array([weights], dtype=type(weights))
+        scalar = True
+        weights = np.array([weights])
     else:
-        result = np.zeros_like(weights, dtype=weights.dtype)
+        # convert lists or tuples to arrays
+        weights = np.asarray(weights)
+
+    dtype_use = weights.dtype
+    if np.issubdtype(weights.dtype, np.integer):
+        # must convert ints to floats
+        dtype_use = float
+    result = np.zeros_like(weights, dtype=dtype_use)
+
     weights_use = weights
     if use_abs or np.iscomplexobj(weights_use):
         """
@@ -715,12 +723,12 @@ def weight_invert(
         and if you apply an imaginary threshold it applies to only imaginary numbers.
         For example Python:
         test = np.array([1j, 2 + 2j, 3j])
-        np.where(test >= 2) == array([1])
-        np.where(test >= 2j) == array([1,2])
+        np.nonzero(test >= 2) == array([1])
+        np.nonzero(test >= 2j) == array([1,2])
         Meanwhile in IDL:
         test = COMPLEX([0,2,0],[1,2,3]) ;COMPLEX(REAL, IMAGINARY)
-        where(test ge 2) == [1, 2]
-        where(test ge COMPLEX(0,2)) == [1, 2]
+        np.nonzero(test ge 2) == [1, 2]
+        np.nonzero(test ge COMPLEX(0,2)) == [1, 2]
 
         IDL on the otherhand, uses the ABS function on COMPLEX numbers before using WHERE.
         Hence the behaviour we're seeing above. This is why we also check for a complexobj
@@ -731,24 +739,21 @@ def weight_invert(
     # If threshold has been set then...
     if threshold is not None:
         # Get the indexes which meet the threshold
-        # As indicated before IDL applies abs before using where to complex numbers
-        i_use = np.where(weights_use >= threshold)
+        i_use = np.nonzero(
+            (weights_use >= threshold)
+            & (~np.isnan(weights_use))
+            & (~np.isinf(weights_use))
+        )
     else:
         # Otherwise get where they are not zero
-        i_use = np.nonzero(weights_use)
-
+        i_use = np.nonzero(
+            (weights_use != 0) & (~np.isnan(weights_use)) & (~np.isinf(weights_use))
+        )
     if np.size(i_use) > 0:
-        result[i_use] = 1 / weights[i_use]
+        result[i_use] = 1.0 / weights[i_use]
 
-    # Replace all NaNs with Zeros
-    if np.size(np.where(np.isnan(result))) != 0:
-        result[np.where(np.isnan(result))] = 0
-    # Replace all Infinities with Zeros
-    if np.size(np.where(np.isinf(result))) != 0:
-        result[np.where(np.isinf(result))] = 0
-
-    # If the result is an array containing 1 result, then return the result, not an array
-    if np.size(result) == 1:
+    # If a scalar was passed in, then return the result, not an array
+    if scalar:
         return result[0]
     return result
 
