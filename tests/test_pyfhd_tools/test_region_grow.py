@@ -150,8 +150,8 @@ def test_simple_2D_region_grow():
 def test_FHD_region_grow(before_file, after_file):
     if before_file is None or after_file is None:
         pytest.skip(
-            "This test has been skipped because the test was listed in the "
-            f"skipped tests due to FHD not outputting them: {skip_tests}"
+            "This test has been skipped, likely because we don't have the "
+            f"required FHD output. It was listed in the skipped tests: {skip_tests}"
         )
     before = load(before_file)
     expected_beam_i = load(after_file)

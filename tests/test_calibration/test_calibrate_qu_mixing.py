@@ -77,15 +77,16 @@ def after_file(tag, run, data_dir):
 
 
 def test_qu_mixing(before_file, after_file):
-    """Runs the test on `calibrate_qu_mixing` - reads in the data in `data_loc`,
+    """Runs the test on `calibrate_qu_mixing`. It reads in the data in `data_loc`,
     and then calls `calibrate_qu_mixing`, checking the outputs match expectations"""
     if before_file is None or after_file is None:
-        pytest.skip(f""""This test has been skipped because the test was listed
-                    in the skipped tests due to FHD not outputting them: {skip_tests}.
-                    In this case it as due to the LA_LEAST_SQUARES differences
-                    compared to np.linalg.lstsq which doesn't use double precision
-                    by default which for some reason makes a difference for values
-                    close to 0 in single precision.""")
+        pytest.skip(
+            "This test has been skipped. In this case it was due to the differences"
+            "between IDL's LA_LEAST_SQUARES function and np.linalg.lstsq. The IDL "
+            "function doesn't use double precision by default which for some "
+            "reason makes a bigger difference for values close to 0 in single "
+            f"precision. The skipped tests are: {skip_tests}"
+        )
 
     h5_before = load(before_file)
     expected_calc_phase = load(after_file)

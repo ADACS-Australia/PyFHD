@@ -59,8 +59,8 @@ def vis_extract_autocorr(
             auto_corr = np.zeros((obs["n_pol"], obs["n_freq"], auto_tile_i_single.size))
 
         for pol_i in range(obs["n_pol"]):
-            # Auto-correlations by definition are enirely real, so take the real
-            # part here index this way in case people have vis_arr as one dimensional
+            # Auto-correlations are by definition real, so take the real part here.
+            # Index this way in case people have vis_arr as one dimensional
             # array, containing two further 2D arrays, rather than a proper 3D
             # array. Turns out this indexing is consistent across both cases
             auto_vals = np.real(vis_arr[pol_i][:, autocorr_i])
@@ -412,11 +412,13 @@ def transfer_bandpass(
                 logger.info("Calfits adheres to the Fall 2018 pyuvdata convention")
                 if calfits[0].header["naxis5"] != 1:
                     raise RuntimeWarning(
-                        "Calfits file includes more than one spectral window. "
-                        "Note that this feature is not yet supported in pyfhd."
+                        "Calfits file uses an old format which had a spectral "
+                        "window axis and includes more than one spectral window, "
+                        "which was never supported by pyuvdata. Just using the "
+                        "first spectral window."
                     )
                 # Remove spectral window dimension for compatibility
-                data_array = np.mean(data_array, axis=0)
+                data_array = data_array[0]
             else:
                 raise RuntimeWarning(
                     "Calfits file does not appear to adhere to standard. Please "
@@ -508,7 +510,7 @@ def transfer_bandpass(
                     f"of {freq_factor}. Using linear interpolation"
                 )
                 # The IDL code has 5 nested loops, and I can't think of the
-                # vectorization right now in a reasonable ampount of time
+                # vectorization right now in a reasonable amount of time
                 # Someone please vectorize laster if you can
                 data_array_temp = np.zeros(
                     (data_dims[4], obs["n_freq"], n_time, n_jones, 2)
@@ -581,12 +583,11 @@ def transfer_bandpass(
                     )
                 obs_julian_date = obs["astr"]["mjdobs"] + 2400000.5
 
-                # Find corresponding in the calfits
-                # Number of days since Auguest 23 2013
+                # Figure out the time difference between the time of the data
+                # and the time of the calibration solutions
                 days_since_ref = np.floor(obs_julian_date) - np.floor(time_start)
                 # pointing start shift amount depending on how many days since ref
                 obs_pointing_shift_since_ref = ((24 - 23.9344699) / 24) * days_since_ref
-                # pointing start time for HH:MM:SS on Aug23 (in JD) plus
                 # comparable pointing start time for reference, using calculated shift
                 pointing_jdhms_ref = (
                     np.array(
@@ -766,10 +767,6 @@ def vis_cal_bandpass(
     if pyfhd_config["cable_bandpass_fit"]:
         # Using preexisting file to extract information about which tiles have
         # which cable length
-        # cable_len = np.loadtxt(
-        #   Path(pyfhd_config["input"],
-        #   pyfhd_config["cable-reflection-coefficients"]
-        # ), skiprows=1)[:, 2].flatten()
         cable_len_filepath = importlib_resources.files(
             "pyfhd.resources.instrument_config"
         ).joinpath(f"{pyfhd_config['instrument']}_cable_reflection_coefficients.txt")
@@ -1463,12 +1460,12 @@ def vis_calibration_apply(
     logger: Logger,
 ) -> tuple[NDArray[np.complex128], dict]:
     """
-    Apply the calibration solutions to the input, data visibilities to create
-    calibrated, data visibilities using the definition of the gains.
+    Apply the calibration solutions to the input data visibilities to create
+    calibrated visibilities using the definition of the gains.
 
     Definition of the gain:
-    (visibility for baseline of tile i and tile j) = (gain of tile i)
-        (gain of tile j) (model visibility for baseline of tile i and tile j)
+    (visibility for baseline of tile i and tile j) = (gain of tile i) x
+        (gain of tile j) x (model visibility for baseline of tile i and tile j)
 
     If only two othogonal polarizations were used to calibrate, calculate the
     phase offset between the two orthogonal dipoles to solve for a degeneracy in
@@ -1700,8 +1697,6 @@ def cal_auto_ratio_divide(
     auto_ratio = np.empty([cal["n_pol"], obs["n_freq"], obs["n_tile"]])
     # This should be possible to Vectorize if it's slow
     for pol_i in range(cal["n_pol"]):
-        # fhd_struct_init_cal puts the ref_antenna as 1 if it's not set, which
-        # is never appears to be
         v0 = vis_auto[pol_i, :, auto_tile_i[cal["ref_antenna"]]]
         auto_ratio[pol_i, :, auto_tile_i] = np.sqrt(
             vis_auto[pol_i, :, np.arange(auto_tile_i.size)] * weight_invert(v0)

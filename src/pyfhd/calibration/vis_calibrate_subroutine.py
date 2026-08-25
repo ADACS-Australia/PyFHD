@@ -52,11 +52,11 @@ def vis_calibrate_subroutine(
     ------
     ValueError
         Should almost never happen, only gets raised for max_cal_iter has been
-        set to less than 5, however since it's currently hardcoded in here it's
+        set to less than 1, however since it's currently hardcoded in here it's
         more of an exception for any developers of pyfhd
     """
     # Retrieve values from data structures
-    # There is a few hardcoded values in here that were previously hardcoded in
+    # There are a few hardcoded values in here that were previously hardcoded in
     # fhd_struct_init_cal. If you wish to change them, add them to the
     # pyfhd_config through pyfhd_setup and the config in pyfhd.yaml
     reference_tile = 1
@@ -91,8 +91,7 @@ def vis_calibrate_subroutine(
         )
     elif max_cal_iter < 1:
         raise ValueError(
-            "max_cal_iter should be 1 or more. A max_cal_iter of 5 or more is "
-            "recommended"
+            "max_cal_iter must be 1 or more. A max_cal_iter of 5 or more is recommended"
         )
     conv_thresh = pyfhd_config["cal_convergence_threshold"]
     use_adaptive_gain = pyfhd_config["cal_adaptive_calibration_gain"]
@@ -459,7 +458,7 @@ def vis_calibrate_subroutine(
                 conv_iter_arr[fi, tile_use] = i
             if i == max_cal_iter:
                 logger.info(
-                    f"Calibration reach max iterations before converging for "
+                    f"Calibration reached max iterations before converging for "
                     f"pol_i: {pol_i} and freq_i: {fi}. Convergence was: "
                     f"{conv_test[fii, i - 1]} and the threshold was: {conv_thresh}"
                 )

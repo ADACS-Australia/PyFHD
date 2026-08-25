@@ -99,13 +99,13 @@ def after_file(tag, run, data_dir):
 
 
 def test_points_offzenith_zenith_1088716296(before_file, after_file):
-    """Runs the test on `vis_extract_autocorr` - reads in the data in before_file
+    """Runs the test on `vis_extract_autocorr`. It reads in the data in before_file
     and after_file, and then calls `vis_extract_autocorr`, checking the outputs
     match expectations"""
     if before_file is None or after_file is None:
         pytest.skip(
-            "This test has been skipped because the test was listed in the "
-            f"skipped tests due to FHD not outputting them: {skip_tests}"
+            "This test has been skipped, likely because we don't have the "
+            f"required FHD output. It was listed in the skipped tests: {skip_tests}"
         )
 
     h5_before = load(before_file)

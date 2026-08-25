@@ -126,10 +126,7 @@ def pyfhd_parser():
     )
     flag = parser.add_argument_group("Flagging", "Adjust Parameters for Flagging")
     gridding = parser.add_argument_group("Gridding", "Tune the Gridding in pyfhd")
-    # Ready for deconvolution translation
-    # deconv = parser.add_argument_group(
-    #   "Deconvolution", "Tune the Degridding in pyfhd"
-    # )
+
     export = parser.add_argument_group(
         "Export", "Adjust the outputs of the pyfhd pipeline"
     )
@@ -137,10 +134,7 @@ def pyfhd_parser():
         "Plotting", "Adjust the plotting of the pyfhd pipeline"
     )
     model = parser.add_argument_group("Model", "Tune the modelling in pyfhd")
-    # Ready for simulation translation
-    # sim = parser.add_argument_group(
-    #     "Simulation", "Turn On Simulation and Tune the simulation"
-    # )
+
     healpix = parser.add_argument_group("HEALPIX", "Adjust the HEALPIX output")
 
     # Version Argument
@@ -1645,7 +1639,7 @@ def pyfhd_logger(pyfhd_config: dict) -> Tuple[logging.Logger, Path]:
         log_file.setFormatter(logging.Formatter("%(message)s"))
         logger.addHandler(log_file)
 
-    # Show that start message in the terminal and/or log file, unless both are
+    # Show the start message in the terminal and/or log file, unless both are
     # turned off.
     logger.info(log_string)
     if not pyfhd_config["silent"]:

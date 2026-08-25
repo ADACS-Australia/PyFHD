@@ -90,12 +90,12 @@ def after_file(tag, run, data_dir):
 
 
 def test_vis_cal_auto_fit(before_file, after_file):
-    """Runs the test on `vis_cal_bandpass` - reads in the data in `data_loc`,
+    """Runs the test on `vis_cal_bandpass`. It reads in the data in `data_loc`,
     and then calls `vis_cal_bandpass`, checking the outputs match expectations"""
     if before_file is None or after_file is None:
         pytest.skip(
-            "This test has been skipped because the test was listed in the "
-            f"skipped tests due to FHD not outputting them: {skip_tests}"
+            "This test has been skipped, likely because we don't have the "
+            f"required FHD output. It was listed in the skipped tests: {skip_tests}"
         )
 
     h5_before = load(before_file)

@@ -50,7 +50,7 @@ def visibility_degrid(
     sources towards the edge of the sky image will be distorted (smeared) due to
     the projection of the 2D {u,v} plane.
 
-    The kernel is a extremely hyperresolved look-up table, which is (optionally)
+    The kernel is an extremely hyperresolved look-up table, which is (optionally)
     interpolated even further. Since the {u,v} pixels are discrete and the baseline
     locations are not, the kernel will integrate the pixels in a unique way for
     each individual baseline. This code is optimized to provide the best estimate
@@ -109,7 +109,7 @@ def visibility_degrid(
         interp_flag = False
 
     # For each unflagged baseline, get the minimum contributing pixel number for
-    # griddingmand the 2D derivatives for bilinear interpolation
+    # gridding and the 2D derivatives for bilinear interpolation
     baselines_dict = baseline_grid_locations(
         obs=obs,
         psf=psf,

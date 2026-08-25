@@ -119,8 +119,8 @@ def calc_test_after(data_dir, calc_test):
 def test_point_offzenith_and_zenith(before_file, after_file):
     if before_file is None or after_file is None:
         pytest.skip(
-            "This test has been skipped because the test was listed in the "
-            f"skipped tests due to FHD not outputting them: {skip_tests}"
+            "This test has been skipped, likely because we don't have the "
+            f"required FHD output. It was listed in the skipped tests: {skip_tests}"
         )
 
     h5_before = load(before_file)
@@ -163,9 +163,9 @@ PRINT, MEDIAN([1, 2, 3, 4])
 
 One has to use the EVEN keyword to get the *proper* median behaviour that most
 mathematicians and scientists
-expect. This was the only thing that produced the wrong results was the use of
+expect. The only thing that produced the wrong results was the use of
 numpy median instead of IDL MEDIAN.
-The array that went into it est_final_conv produced the exact same results in
+The array that went into est_final_conv produced the exact same results in
 Python and IDL (with the exception of
 Python producing a more accurate result due to double precision)
 

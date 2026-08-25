@@ -86,8 +86,8 @@ def before_file(tag, run, data_dir):
 def test_quickview(before_file, data_dir):
     if before_file is None:
         pytest.skip(
-            "This test has been skipped because the test was listed in the "
-            "skipped tests due to FHD not outputting them: {skip_tests}"
+            "This test has been skipped, likely because we don't have the "
+            f"required FHD output. It was listed in the skipped tests: {skip_tests}"
         )
 
     h5_before = load(before_file)

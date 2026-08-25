@@ -606,8 +606,8 @@ def recarray_to_dict(data: np.recarray | dict) -> dict:
     needed due to scipy's readsav returning an inception like experience of
     record arrays. This would mean to access values from something like the obs
     structure for a test, the code had to be obs[0]['baseline_info'][0]['tile_a'],
-    which was became untenable as the full python translation won't require
-    these leaving us two codebases for IDL compatible and Python compatible.
+    which became untenable as the full python translation won't require
+    these, leaving us two codebases for IDL compatible and Python compatible.
     Instead, this function turns all record arrays into dictionaries, which are
     easier to understand and are faster.
 

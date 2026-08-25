@@ -84,15 +84,15 @@ def after_file(tag, run, data_dir):
 
 def test_vis_baseline_hist(before_file: Path, after_file: Path):
     """
-    Runs the test on `vis_baseline_hist` - reads in the data in before_file and
+    Runs the test on `vis_baseline_hist`. It reads in the data in before_file and
     after_file, and then calls `vis_baseline_hist`, checking the outputs match
     expectations
     """
 
     if before_file is None or after_file is None:
         pytest.skip(
-            "This test has been skipped because the test was listed in the "
-            f"skipped tests due to FHD not outpoutting them: {skip_tests}"
+            "This test has been skipped, likely because we don't have the "
+            f"required FHD output. It was listed in the skipped tests: {skip_tests}"
         )
 
     h5_before = load(before_file)

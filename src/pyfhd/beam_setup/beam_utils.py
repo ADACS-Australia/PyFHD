@@ -369,7 +369,7 @@ def beam_image_hyperresolved(
     ).flatten()
 
     # TODO: Work out the interpolation of the zenith power, it uses cubic interpolation
-    # But the IDL Interpolate function in IDL uses an interpolation paramter of
+    # But the IDL Interpolate function in IDL uses an interpolation parameter of
     # -0.5, where scipy, numpy with their B-Splines seem to use a parameter of 0
     # by default with no way to change it.
     # The interp is a placeholder for now, but it should be replaced with a proper

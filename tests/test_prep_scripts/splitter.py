@@ -112,7 +112,7 @@ if __name__ == "__main__":
     elif args.files is not None:
         # Check the directories argument
         if args.directories is None:
-            # In the case its none ue save_path many times as the size of files,
+            # In the case its None, use save_path as many times as the size of files,
             # if save_path isn't provided, raise an error
             if args.save_path is None:
                 parser.error("You must provide a path to save the files")

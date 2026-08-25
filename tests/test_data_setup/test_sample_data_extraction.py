@@ -25,7 +25,7 @@ def test_obs_creation(obs_id):
     # The obs creation test is more of an integration test, since we will be
     # using the extract_header, create_params, and create_layout to create the
     # obs dictionary.
-    # If this test pass then it essentially means that the dictionaries are
+    # If this test passes then it essentially means that the dictionaries are
     # almost identical
     # to that of the IDL structures in the ways that matter for a pyfhd run.
     # In this case we're only going to test the obs structure from run1 of each test.

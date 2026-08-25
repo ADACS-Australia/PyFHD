@@ -141,8 +141,8 @@ def visibility_grid(
     vis_arr_use = visibility[rows, cols].T
     # Model_flag has been removed in favor of just the model taking advantage
     # that the model default is None. If it has been specified at all with
-    # anything other than None or False, then it should be a numpy array if it
-    # isn't exit
+    # anything other than None or False, then it should be a numpy array.
+    # If it isn't, exit.
     if model is not None:
         if isinstance(model, np.ndarray):
             model_use = model[rows, cols].T
@@ -268,8 +268,7 @@ def visibility_grid(
         y_off = y_offset.flat[inds]
 
         # Since all selected visibilities have the same minimum x,y pixel they
-        # contribute to,
-        # reduce the array
+        # contribute to, reduce the array
         xmin_use = xmin.flat[ind0]
         ymin_use = ymin.flat[ind0]
 
@@ -389,7 +388,7 @@ def visibility_grid(
                     model_box = model_use.flat[inds]
                 vis_box = vis_arr_use.flat[inds]
                 psf_weight = np.ones(vis_n)
-                # IDL had integer / integer i.e. 2015 / 336 == 5, used flooring
+                # IDL had integer / integer e.g. 2015 / 336 == 5, used flooring
                 # divider instead in python
                 # Also do take note that each were very close always within 0.01
                 # of their next number.

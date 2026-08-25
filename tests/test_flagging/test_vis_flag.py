@@ -77,7 +77,7 @@ def after_file(tag, run, data_dir):
 
 
 def test_zenith_offzenith(before_file, after_file):
-    """Runs the test on `vis_flag` - reads in the data in `data_loc`,
+    """Runs the test on `vis_flag`. It reads in the data in `data_loc`,
     and then calls `vis_flag`, checking the outputs match expectations"""
 
     if "point_zenith" in before_file.name:

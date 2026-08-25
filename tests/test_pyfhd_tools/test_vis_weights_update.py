@@ -122,8 +122,8 @@ def cal_after_file(tag, run, data_dir):
 def test_many_points(before_file, after_file):
     if before_file is None or after_file is None:
         pytest.skip(
-            "This test has been skipped because the test was listed in the "
-            "skipped tests due to FHD not outputting them: {skip_tests}"
+            "This test has been skipped, likely because we don't have the "
+            f"required FHD output. It was listed in the skipped tests: {skip_tests}"
         )
 
     h5_before = load(before_file)
@@ -154,8 +154,8 @@ def test_many_points(before_file, after_file):
 def test_many_points_before_cal(cal_before_file, cal_after_file):
     if cal_before_file is None or cal_after_file is None:
         pytest.skip(
-            "This test has been skipped because the test was listed in the "
-            "skipped tests due to FHD not outputting them: {skip_tests}"
+            "This test has been skipped, likely because we don't have the "
+            f"required FHD output. It was listed in the skipped tests: {skip_tests}"
         )
 
     h5_before = load(cal_before_file)

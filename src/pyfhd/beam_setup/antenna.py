@@ -354,8 +354,8 @@ def init_beam(obs: dict, pyfhd_config: dict, logger: Logger) -> dict:
         "l_matrix_image_radec": None,
         # Also need L inverse
         "l_inv_image_radec": None,
-        # pyfhd supports one instrument at a time, so we setup the group so
-        # they're all in the same group.
+        # pyfhd supports one antenna beam at a time, so we setup the group so
+        # all the baselines are in the same group.
         "group_id": np.zeros([n_ant_pol, obs["n_tile"]], dtype=np.int8),
         "pix_window": None,
     }

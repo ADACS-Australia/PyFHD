@@ -75,8 +75,8 @@ def test_2_pol_obs_creation(obs_id, data_dir, obs_dir):
     # The obs creation test is more of an integration test, since we will be
     # using the extract_header, create_params, and create_layout to create the
     # obs dictionary.
-    # If this test pass then it essentially means that the dictionaries are almost
-    # identicalto that of the IDL structures in the ways that matter for a pyfhd run.
+    # If this test passes then it essentially means that the dictionaries are almost
+    # identical to that of the IDL structures in the ways that matter for a pyfhd run.
     # In this case we're only going to test the obs structure from run1 of each test.
     logger = Logger(1)
     pyfhd_config = {
@@ -176,7 +176,7 @@ def test_4_pol_obs_creation(obs_id, data_dir, obs_dir):
     # The obs creation test is more of an integration test, since we will be
     # using the extract_header, create_params, and create_layout to create the
     # obs dictionary.
-    # If this test pass then it essentially means that the dictionaries are
+    # If this test passes then it essentially means that the dictionaries are
     # almost identical to that of the IDL structures in the ways that matter for
     # a pyfhd run.
     # In this case we're only going to test the obs structure from run1 of each test.

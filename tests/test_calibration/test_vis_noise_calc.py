@@ -74,7 +74,7 @@ def after_file(tag, run, data_dir):
 
 
 def test_points_zenith_and_offzenith(before_file, after_file):
-    """Runs the test on `vis_noise_calc` - reads in the data in `data_loc`,
+    """Runs the test on `vis_noise_calc`. It reads in the data in `data_loc`,
     and then calls `vis_noise_calc`, checking the outputs match expectations"""
 
     h5_before = load(before_file)

@@ -47,7 +47,7 @@ def create_obs(
     Returns
     -------
     obs : dict
-        The observatiopn data structure for pyfhd containing data from the config
+        The observation data structure for pyfhd containing data from the config
         and metadata from the observation UVFITS and METAFITS files.
     """
 
@@ -289,9 +289,11 @@ def read_metafits(
     logger: logging.Logger,
 ) -> dict:
     """
-    Reads the metafits file provided inside the same input directory as the UVFITS file.
-    It will process the data found in the METAFITS file and then returns a meta
-    dictionary. Which will eventually end up inside the obs dictionary.
+    Read metadata from the metafits file (if available) or UVFITS file.
+
+    The metafits file is assumed to be inside the same directory as the UVFITS
+    file if it is present. The returned metadata dictionary will eventually end
+    up inside the obs dictionary.
 
     Parameters
     ----------
@@ -443,8 +445,8 @@ def read_metafits(
         # Save the header as a Python dictionary
         meta["meta_hdr"] = {}
         for key in hdr.keys():
-            # Check if they is HISTORY or COMMENT which will be changed to a
-            # list for ease of use with hdf5 files
+            # Check if there are HISTORY or COMMENT fields which will be combined
+            # in a list for ease of use with hdf5 files
             if key in ["HISTORY", "COMMENT"]:
                 meta["meta_hdr"][key] = list(hdr[key])
             else:

@@ -122,8 +122,8 @@ def baseline_grid_locations(
     bi_use : NDArray[np.integer] | None, optional
         Baseline index array for gridding, i.e even vs odd time stamps, by default None
     fi_use : NDArray[np.integer] | None, optional
-        Frequency index array for gridding, i.e. gridding all frequencies for
-        continuum images, by default None
+        Frequency index array for gridding (used e.g. when gridding all frequencies
+        for continuum images), by default None
     fill_model_visibilities : bool, optional
         Calculate baseline grid locations for all baselines, regardless of flags,
         by default False
@@ -196,7 +196,7 @@ def baseline_grid_locations(
 
     if not fill_model_visibilities:
         # Flag baselines on their maximum and minimum extent in the full frequency
-        # range of the observation. This prevents the sudden dissapearance of
+        # range of the observation. This prevents the sudden disappearance of
         # baselines along frequency
         dist_test = np.sqrt(kx_arr**2 + ky_arr**2) * kbinsize
         dist_test_max = np.max(obs["baseline_info"]["freq"]) * dist_test
@@ -488,15 +488,6 @@ def dirty_image_generate(
 
     # Apply padding if it was supplied
     if pad_uv_image is not None:
-        # dimension_new = int(
-        #   np.max([np.max([dimension, elements]) * pad_uv_image,
-        #   np.max([dimension, elements])])
-        # )
-        # di_uv1 = np.zeros((dimension_new, dimension_new), dtype = "complex")
-        # di_uv1[
-        #   dimension_new // 2 - elements // 2 : dimension_new // 2 + elements // 2,
-        #   dimension_new // 2 - dimension // 2 : dimension_new // 2 + dimension // 2,
-        # ] = di_uv_use
         di_uv1 = np.pad(
             di_uv_use, (np.max([dimension, elements]) // 2) * (int(pad_uv_image) - 1)
         )
@@ -757,8 +748,8 @@ def visibility_count(
     logger : Logger
         pyfhd's logger
     fi_use : NDArray[np.integer] | None, optional
-        Frequency index array for gridding, i.e. gridding all frequencies for
-        continuum images, by default None
+        Frequency index array for gridding (used e.g. when gridding all frequencies
+        for continuum images), by default None
     bi_use : NDArray[np.integer] | None, optional
         Baseline index array for gridding, i.e even vs odd time stamps, by default None
     mask_mirror_indices : bool, optional

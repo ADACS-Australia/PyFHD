@@ -81,16 +81,15 @@ def after_file(tag, run, data_dir):
 
 def test_points_zenith_offzenith_and_1088716296(before_file, after_file):
     """
-    Runs the test on `resistant_mean` - reads in the data in before_file and
+    Runs the test on `resistant_mean`. It reads in the data in before_file and
     after_file, and then calls `resistant_mean`, checking the outputs match expectations
     """
     if before_file is None or after_file is None:
         pytest.skip(
-            "This test has been skipped because the test was listed in the "
-            f"skipped tests due to FHD not outputting them: {skip_tests}. In "
-            "this case precision played a major factor, resistant_mean when using "
-            "the double keyword in IDL will get the sameresult as Python, but "
-            "the tests taken here were single_precision."
+            "This test has been skipped. In this case precision played a major "
+            "factor, resistant_mean when using the double keyword in IDL will "
+            "get the same result as Python, but the tests taken here were "
+            f"single_precision. The skipped tests are: {skip_tests}"
         )
 
     h5_before = load(before_file)

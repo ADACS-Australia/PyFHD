@@ -651,7 +651,7 @@ def after_file(tag, run, data_dir):
 
 def test_cal_auto_ratio_divide(before_file, after_file):
     """
-    Runs all the given tests on `cal_auto_ratio_divide` reads in the data in
+    Runs all the given tests on `cal_auto_ratio_divide`. It reads in the data in
     before_file and after_file, and then calls `cal_auto_ratio_divide`, checking
     the outputs match expectations
 
@@ -680,8 +680,10 @@ def test_cal_auto_ratio_divide(before_file, after_file):
     # tell pytest to skip the test, so if you see skips
     # its not a bad thing!
     if (before_file is None or after_file is None):
-        pytest.skip(f"This test has been skipped because the test was listed in
-        the skipped tests due to FHD not outputting them: {skip_tests}")
+        pytest.skip(
+            "This test has been skipped, likely because we don't have the "
+            f"required FHD output. It was listed in the skipped tests: {skip_tests}"
+        )
 
     h5_before = load(before_file)
     h5_after = load(after_file)

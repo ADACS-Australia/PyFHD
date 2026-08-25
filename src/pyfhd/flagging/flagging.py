@@ -70,7 +70,7 @@ def vis_flag_basic(
     logger: Logger,
 ) -> tuple[np.ndarray, dict]:
     """
-    Do some basic flagging on frequencies and tiles based on the confgiruation
+    Do some basic flagging on frequencies and tiles based on the configuration
     given by pyfhd_config such as `flag_freq_start`, `flag_freq_end`, `instrument`
     and `flag_tile_names`. To flag the frequencies and tiles, the arrays in
     `obs['baseline_info']`, *`freq_use`* and *`tile_use`* will be adjusted to 0's

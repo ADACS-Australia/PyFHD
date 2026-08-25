@@ -297,10 +297,7 @@ def create_psf(obs: dict, pyfhd_config: dict, logger: Logger) -> dict | File:
         # will have the psf size twice!
         del beam
         psf["beam_ptr"][0] = psf["beam_ptr"][0].T
-        # Take only the first baseline (as it assumes every baseline points to
-        # the first i.e. the FFT is done per frequency)
-        # Has a bonus of reducing memory use, unless NumPy is really good at using
-        # representations, maybe use double memory
+        # Take only the first baseline (assumes all baselines have the same beam)
         psf["beam_ptr"][0] = psf["beam_ptr"][0][:, :, 0]
         # Transpose the group array
         psf["id"][0] = psf["id"][0].T

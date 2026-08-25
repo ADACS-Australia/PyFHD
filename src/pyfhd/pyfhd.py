@@ -553,8 +553,7 @@ def main():
                 )
             else:
                 model_uv = None
-            # Since it's done per polarization, we can do multi-processing if
-            # it's not fast enough
+
             for pol_i in range(obs["n_pol"]):
                 logger.info(
                     f"Gridding has begun for polarization {obs['pol_names'][pol_i]}"

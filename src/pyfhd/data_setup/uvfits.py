@@ -443,7 +443,7 @@ def create_layout(
 
     layout = {}
 
-    # Extract data from the header
+    # Extract data from the antenna table header
     # array_center
     try:
         layout["array_center"] = [
@@ -451,18 +451,24 @@ def create_layout(
             antenna_header["arrayy"],
             antenna_header["arrayz"],
         ]
-    except KeyError:
-        # if no center given, assume MWA center (Tingay et al. 2013, converted
-        # from lat/lon using pyuvdata)
-        logger.info(
-            "No center was given in the UVFITS file, assuming MWA is the array"
-            "and using a default center for MWA"
-        )
-        layout["array_center"] = [
-            -2559454.07880307,
-            5095372.14368305,
-            -2849057.18534633,
-        ]
+    except KeyError as ke:
+        if pyfhd_config["instrument"] == "mwa":
+            # if no center given, assume MWA center (Tingay et al. 2013, converted
+            # from lat/lon using pyuvdata)
+            logger.info(
+                "No center was given in the UVFITS file, and MWA is the instrument. "
+                "Using a default center for the MWA."
+            )
+            layout["array_center"] = [
+                -2559454.07880307,
+                5095372.14368305,
+                -2849057.18534633,
+            ]
+        else:
+            raise RuntimeError(
+                "Required array location information missing from the UVFITS "
+                "antenna table."
+            ) from ke
 
     # Coordinate_frame
     try:
