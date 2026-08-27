@@ -94,6 +94,7 @@ fully propagated, causing shape errors.
 computer-specific paths in test data.
 
 ### Dependency Changes
+* Updated dependency minimum versions to: pyuvdata>=3.2.7, pyradiosky>=1.1.2
 * Added pyradiosky>=1.1.1 as a dependency for managing source catalogs.
 
 ### Version Changes

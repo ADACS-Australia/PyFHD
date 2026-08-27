@@ -12,7 +12,8 @@ dependencies:
   - numpy>=2.2.5
   - pooch>=1.8
   - pyinstrument
-  - pyuvdata>=3.2.4
+  - pyradiosky>1.1.2
+  - pyuvdata>=3.2.7
   - pytest>=8.3.5
   - ruff
   - scipy>=1.15.3
@@ -23,7 +24,6 @@ dependencies:
   - pip:
     - healpy>=1.18.1
     - myst-parser
-    - pyradiosky>1.1.0
     - pytest-cov
     - pytest-html
     - pytest-html-merger
