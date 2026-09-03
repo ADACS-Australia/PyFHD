@@ -1,7 +1,6 @@
 import argparse
 import importlib_resources
 import logging
-import os
 import re
 import sys
 import time
@@ -1418,7 +1417,8 @@ def _check_file_exists(config: dict, key: str) -> int:
     """
     if config[key]:
         # If it doesn't exist, add error message
-        if not Path(config[key]).expanduser().resolve().exists():
+        test_path = Path(config[key]).expanduser().resolve()
+        if not test_path.exists():
             logging.error(
                 f"{key} has been enabled with a path that doesn't exist, check "
                 "the path."
@@ -1426,7 +1426,7 @@ def _check_file_exists(config: dict, key: str) -> int:
             return 1
         # If it does exist, replace with the absolute path
         else:
-            config[key] = Path(os.path.abspath(config[key]))
+            config[key] = test_path
     return 0
 
 
@@ -1788,15 +1788,7 @@ def pyfhd_setup(options: argparse.Namespace) -> Tuple[dict, logging.Logger]:
             )
             pyfhd_config["analytic_beam_yaml"] = None
 
-        pyfhd_config["saved_beam_file_path"] = (
-            Path(pyfhd_config["saved_beam_file_path"]).expanduser().resolve()
-        )
-        if not Path(pyfhd_config["saved_beam_file_path"]).exists():
-            logger.error(
-                f"Beam file {pyfhd_config['saved_beam_file_path']} does not exist, "
-                "please check your input path"
-            )
-            errors += 1
+        errors += _check_file_exists(pyfhd_config, "saved_beam_file_path")
 
     # If the user has set a uvbeam file, check it exists (Error)
     if pyfhd_config["uvbeam_file_path"] is not None:
@@ -1806,15 +1798,7 @@ def pyfhd_setup(options: argparse.Namespace) -> Tuple[dict, logging.Logger]:
                 "uvbeam_file_path."
             )
             pyfhd_config["analytic_beam_yaml"] = None
-        pyfhd_config["uvbeam_file_path"] = (
-            Path(pyfhd_config["uvbeam_file_path"]).expanduser().resolve()
-        )
-        if not Path(pyfhd_config["uvbeam_file_path"]).exists():
-            logger.error(
-                f"UVBeam file {pyfhd_config['uvbeam_file_path']} does not exist, "
-                "please check your input path"
-            )
-            errors += 1
+        errors += _check_file_exists(pyfhd_config, "uvbeam_file_path")
 
     # If the user has set a uvbeam z file, check it exists (Error)
     if pyfhd_config["uvbeam_zfile_path"] is not None:
@@ -1862,38 +1846,20 @@ def pyfhd_setup(options: argparse.Namespace) -> Tuple[dict, logging.Logger]:
 
     # If the user has set a calibration catalog file, check it exists (Error)
     if pyfhd_config["calibration_catalog_file_path"] is not None:
-        pyfhd_config["calibration_catalog_file_path"] = (
-            Path(pyfhd_config["calibration_catalog_file_path"]).expanduser().resolve()
-        )
-        if not Path(pyfhd_config["calibration_catalog_file_path"]).exists():
-            logger.error(
-                f"Catalog file {pyfhd_config['calibration_catalog_file_path']} "
-                "does not exist, please check your input path"
-            )
-            errors += 1
+        errors += _check_file_exists(pyfhd_config, "calibration_catalog_file_path")
+
     # If the user has set a calibration catalog file, check it exists (Error)
-    if pyfhd_config["calibration_sidelobe_catalog_file_path"] is not None:
-        pyfhd_config["calibration_sidelobe_catalog_file_path"] = (
-            Path(pyfhd_config["calibration_sidelobe_catalog_file_path"])
-            .expanduser()
-            .resolve()
-        )
-        if not Path(pyfhd_config["calibration_sidelobe_catalog_file_path"]).exists():
-            logger.error(
-                "Sidelobe catalog file "
-                f"{pyfhd_config['calibration_sidelobe_catalog_file_path']} "
-                "does not exist, please check your input path"
-            )
-            errors += 1
+    errors += _check_file_exists(pyfhd_config, "calibration_sidelobe_catalog_file_path")
 
     if (
         pyfhd_config["calibrate_visibilities"]
         and pyfhd_config["calibration_catalog_file_path"] is None
         and pyfhd_config["model_file_path"] is None
+        and pyfhd_config["transfer_calibration"] is None
     ):
         logger.error(
-            "If calibrating, either  model_file_path or calibration_catalog_file_path "
-            "must be set."
+            "If calibrating, one of model_file_path, calibration_catalog_file_path "
+            "or transfer_calibration must be set."
         )
         errors += 1
 
@@ -1970,12 +1936,12 @@ def pyfhd_setup(options: argparse.Namespace) -> Tuple[dict, logging.Logger]:
         """
         pyfhd_config["cal_base_gain"] = 0.75
 
-    # calibration_catalog_file_path depends on a file (Error)
-    # errors += _check_file_exists(pyfhd_config, "calibration_catalog_file_path")
-
     # transfer_calibration depends on a file (Error)
     errors += _check_file_exists(pyfhd_config, "transfer_calibration")
 
+    if pyfhd_config["transfer_calibration"] is not None:
+        errors += 1
+        logger.error("transfer_calibration is not yet implemented.")
     # smooth-width depends on filter_background (Warning)
     # if not pyfhd_config["filter_background"] and pyfhd_config["smooth_width"]:
     #     logger.warning(
@@ -1986,9 +1952,6 @@ def pyfhd_setup(options: argparse.Namespace) -> Tuple[dict, logging.Logger]:
     # if importing model visiblities from a uvfits file, check that file
     # exists
     if pyfhd_config["model_file_path"] is not None:
-        pyfhd_config["model_file_path"] = (
-            Path(pyfhd_config["model_file_path"]).expanduser().resolve()
-        )
         errors += _check_file_exists(pyfhd_config, "model_file_path")
 
         if pyfhd_config["model_file_path"] == "sav":
