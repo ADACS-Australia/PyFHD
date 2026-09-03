@@ -91,7 +91,7 @@ def before_gridding(data_dir: Path, number: int, request: pytest.FixtureRequest)
 
     h5_save_dict = recarray_to_dict(h5_save_dict)
 
-    h5_save_dict["uniform_flag"] = (
+    h5_save_dict["calculate_uniform_filter"] = (
         True
         if ("uniform_filter" in h5_save_dict and h5_save_dict["uniform_filter"])
         else False
@@ -244,6 +244,10 @@ def test_visibility_grid(
         new_arr[0] = h5_before["bi_use"][0]
         h5_before["bi_use"] = new_arr
 
+    if "uniform_flag" in h5_before:
+        # This is for the data files used on github actions
+        h5_before["calculate_uniform_filter"] = h5_before["uniform_flag"]
+
     obs = recarray_to_dict(h5_before["obs"])
     psf = recarray_to_dict(h5_before["psf"])
 
@@ -256,7 +260,7 @@ def test_visibility_grid(
         h5_before["polarization"],
         h5_before["pyfhd_config"],
         Logger(1),
-        uniform_flag=h5_before["uniform_flag"],
+        calculate_uniform_filter=h5_before["calculate_uniform_filter"],
         no_conjugate=h5_before["no_conjugate"],
         model=h5_before["model_ptr"],
         fi_use=h5_before["fi_use"],
@@ -311,7 +315,7 @@ def full_before_gridding(data_dir: Path, full_number: int):
     h5_save_dict["psf"] = sav_file_rearrange_psf(h5_save_dict["psf"])
 
     h5_save_dict = recarray_to_dict(h5_save_dict)
-    h5_save_dict["uniform_flag"] = (
+    h5_save_dict["calculate_uniform_filter"] = (
         True
         if ("uniform_filter" in h5_save_dict and h5_save_dict["uniform_filter"])
         else False
@@ -438,7 +442,7 @@ def test_full_visibility_grid(full_before_gridding: Path, full_after_gridding: P
         h5_before["polarization"],
         h5_before["pyfhd_config"],
         Logger(1),
-        uniform_flag=h5_before["uniform_flag"],
+        calculate_uniform_filter=h5_before["calculate_uniform_filter"],
         no_conjugate=h5_before["no_conjugate"],
         model=h5_before["model_ptr"],
         fi_use=h5_before["fi_use"],
@@ -535,7 +539,7 @@ def before_vis_model_freq_gridding(tag, run, data_dir):
     h5_save_dict = readsav(sav_file, python_dict=True)
     h5_save_dict = recarray_to_dict(h5_save_dict)
 
-    h5_save_dict["uniform_flag"] = (
+    h5_save_dict["calculate_uniform_filter"] = (
         True
         if ("uniform_filter" in h5_save_dict and h5_save_dict["uniform_filter"])
         else False
@@ -682,7 +686,7 @@ def test_visibility_grid_in_vis_model_freq_split(
         0,
         h5_before["pyfhd_config"],
         Logger(1),
-        uniform_flag=h5_before["uniform_flag"],
+        calculate_uniform_filter=h5_before["calculate_uniform_filter"],
         no_conjugate=h5_before["no_conjugate"],
         model=h5_before["model_ptr"],
         fi_use=h5_before["fi_use"],
