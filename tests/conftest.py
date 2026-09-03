@@ -108,6 +108,8 @@ def mwa_aee_beam_zenith_2013(zenith_obs_2013_main, tmp_path_factory):
         "output_dir": tmp_path_factory.mktemp("zenith_2013"),
         "obs_id": 1061316296,
         "cal_stop": False,
+        "conserve_memory": True,
+        "memory_threshold": 1e10,
     }
 
     psf, antenna = create_psf(obs, pyfhd_config, logger=logging.getLogger())
@@ -164,7 +166,7 @@ def model_uv_zenith_2013():
         dimension=dim_use,
         elements=dim_use,
         flux=flux_arr,
-        mem_thresh=1e10,
+        memory_threshold=5e9,  # chosen to exercise parts of the code
         conserve_memory=True,
         logger=logging.getLogger(),
     )

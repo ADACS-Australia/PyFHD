@@ -27,8 +27,6 @@ def vis_source_model(
     model_delay_filter: bool = True,
     fill_model_visibilities: bool = False,
     vis_model: BoolArray | None = None,
-    conserve_memory: bool = True,
-    mem_thresh: float = 1e8,
 ) -> ComplexArray:
     """
     Simulate model visibilities via degridding.
@@ -64,12 +62,6 @@ def vis_source_model(
         Create all model visibilities disregarding flags, by default False
     vis_model : ndarray of complex | None, optional
         Extra model visibilities to add to the degridded products, by default None.
-    conserve_memory : bool
-        Option to limit memory use by chunking the number of sources to DFT
-        at a time.
-    mem_thresh : float
-        Memory threshold, which sets the number of sources to DFT at once if
-        conserve_memory is True. Default is 1e8.
 
     Returns
     -------
@@ -139,8 +131,8 @@ def vis_source_model(
         # sigma_threshold=2.,
         uv_mask=uv_mask_use,
         logger=logger,
-        conserve_memory=conserve_memory,
-        mem_thresh=mem_thresh,
+        conserve_memory=pyfhd_config["conserve_memory"],
+        memory_threshold=pyfhd_config["memory_threshold"],
     )
     dft_end = time.time()
     _print_time_diff(dft_start, dft_end, "source DFT", logger)

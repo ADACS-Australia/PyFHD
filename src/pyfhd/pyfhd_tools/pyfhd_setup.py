@@ -222,15 +222,18 @@ def pyfhd_parser():
         "--conserve-memory",
         default=False,
         action=OrderedBooleanOptionalAction,
-        help="Optionally split many loops into chunks in the case of high memory "
-        "usage.",
+        help="Optionally split processing into chunks in various places throughout "
+        "pyfhd (e.g. degridding, source DFTing and mapping function construction) "
+        "to limit memory usage. See `memory-threshold` for the threshold in bytes.",
     )
     parser.add_argument(
         "--memory-threshold",
         type=float,
         default=1e9,
         help="Set a memory threshold for each chunk in bytes. By default "
-        "it is set at ~1GB",
+        "it is set at ~1GB. Note that the full memory usage will be higher, "
+        "this limits additional memory usage in various places throughout pyfhd "
+        "including in degridding, source DFTing and mapping function construction.",
     )
     parser.add_argument(
         "--n-pol",
