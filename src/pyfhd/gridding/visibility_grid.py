@@ -146,7 +146,7 @@ def visibility_grid(
     if model is not None:
         if isinstance(model, np.ndarray):
             model_use = model[rows, cols].T
-            model_return = np.zeros((elements, dimension), dtype=np.complex128)
+            model_return = np.zeros((dimension, elements), dtype=np.complex128)
         else:
             raise ValueError(
                 "Your model must be a numpy array when used as an argument"
@@ -190,7 +190,7 @@ def visibility_grid(
         vv = params["vv"][bi_use]
         ww = params["ww"][bi_use]
         x = (np.arange(dimension) - dimension / 2) * obs["kpix"]
-        y = x.copy()
+        y = x.copy()  # assumes dimension = elements
         psf_intermediate_res = np.min(
             [np.ceil(np.sqrt(psf_resolution) / 2) * 2, psf_resolution]
         )
@@ -208,10 +208,11 @@ def visibility_grid(
         n_tracked = np.zeros_like(n_tracked)
 
     # Initialize uv-arrays
-    image_uv = np.zeros((elements, dimension), dtype=np.complex128)
-    weights = np.zeros((elements, dimension), dtype=np.complex128)
-    variance = np.zeros((elements, dimension))
-    uniform_filter = np.zeros((elements, dimension))
+    # TODO: Is there any point in continuing to support different sizes along the axes?
+    image_uv = np.zeros((dimension, elements), dtype=np.complex128)
+    weights = np.zeros((dimension, elements), dtype=np.complex128)
+    variance = np.zeros((dimension, elements))
+    uniform_filter = np.zeros((dimension, elements))
 
     # If the uniform gridding has been activated we need to activate the uniform
     # filter and switch off mapping if it has been activated
@@ -243,11 +244,11 @@ def visibility_grid(
     arr_type = init_arr.dtype
     if pyfhd_config["grid_spectral"]:
         # Spectral B and Spectral D shouldn't reference each other just in case
-        spectral_A = np.zeros([elements, dimension], dtype=np.complex128)
-        spectral_B = np.zeros([elements, dimension])
-        spectral_D = np.zeros([elements, dimension])
+        spectral_A = np.zeros([dimension, elements], dtype=np.complex128)
+        spectral_B = np.zeros([dimension, elements])
+        spectral_D = np.zeros([dimension, elements])
         if model is not None:
-            spectral_model_A = np.zeros([elements, dimension], dtype=np.complex128)
+            spectral_model_A = np.zeros([dimension, elements], dtype=np.complex128)
 
     frequency_cache: dict[int, np.ndarray] = {}
 
