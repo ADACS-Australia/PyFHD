@@ -598,6 +598,7 @@ def main():
                     pyfhd_config,
                     logger,
                     calculate_uniform_filter=calculate_uniform_filter,
+                    calculate_mapfn=pyfhd_config["recalculate_mapfn"],
                     no_conjugate=no_conjugate,
                     model=vis_model_arr_use,
                 )
