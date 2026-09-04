@@ -1002,6 +1002,14 @@ def pyfhd_parser():
     #     action=OrderedBooleanOptionalAction,
     #     help="Run Fast Holographic Deconvolution",
     # )
+    gridding.add_argument(
+        "--recalculate-mapfn",
+        default=False,
+        action=OrderedBooleanOptionalAction,
+        help="Forces pyfhd to recalculate the holographic mapping function. "
+        "Replaces mapfn_recalculate from FHD",
+    )
+
     # deconv.add_argument(
     #     "--max-deconvolution-components",
     #     type=int,
