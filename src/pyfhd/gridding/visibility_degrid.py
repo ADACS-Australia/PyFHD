@@ -13,6 +13,7 @@ from .gridding_utils import (
     grid_beam_per_baseline,
 )
 from ..pyfhd_tools.pyfhd_utils import (
+    idl_argunique,
     l_m_n,
     rebin,
     weight_invert,
@@ -274,7 +275,7 @@ def visibility_degrid(
                 ) * group_max + group_id
                 xyf_si = np.argsort(xyf_i)
                 xyf_i = xyf_i[xyf_si]
-                _, xyf_ui = np.unique(xyf_i, return_index=True)
+                xyf_ui = idl_argunique(xyf_i)
                 n_xyf_bin = xyf_ui.size
 
                 # There might be a better selection criteria to determine which

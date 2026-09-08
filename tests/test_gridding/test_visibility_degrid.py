@@ -170,7 +170,7 @@ def test_vis_degrid_zenith_2013(
     rel_diff = np.zeros_like(abs_diff)
     rel_diff[mean_nonzero] = abs_diff[mean_nonzero] / mean_abs[mean_nonzero]
 
-    assert np.abs(diff.mean()) < 0.03
-    assert abs_diff.max() < 4.5
+    assert np.abs(diff.mean()) < 0.003
+    assert abs_diff.max() < 0.5
     assert rel_diff[mean_nonzero].mean() < 0.1
     assert rel_diff.max() < 2
