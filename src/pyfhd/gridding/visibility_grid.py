@@ -179,7 +179,6 @@ def visibility_grid(
     n_freq_use = frequency_array.size
     psf_dim2 = 2 * psf_dim
     psf_dim3 = psf_dim**2
-    bi_use_reduced = bi_use % n_baselines
 
     # Flags have been defined in the function definition
     # Instead of reading the flags and then setting them.
@@ -273,12 +272,12 @@ def visibility_grid(
         ymin_use = ymin.flat[ind0]
 
         # Find the frequency group per index
-        freq_i = inds % n_freq_use
+        freq_i, bt_index = np.unravel_index(inds, (n_freq_use, n_baselines * n_samples))
+        _, baseline_inds = np.unravel_index(bt_index, (n_samples, n_baselines))
         fbin = freq_bin_i[freq_i]
 
         # Calculate the number of selected visibilities and their baseline index
         vis_n = bin_n[bin_i[bi]]
-        baseline_inds = bi_use_reduced[((inds / n_f_use) % n_baselines).astype(int)]
 
         if interp_flag:
             # Calculate the interpolated kernel on the uv-grid given the
@@ -323,7 +322,7 @@ def visibility_grid(
 
             # Calculate a unique index for each kernel location and kernel type
             # in order to reduce operations if there are repeats
-            group_id = group_arr.flat[inds]
+            group_id = group_arr[freq_i, baseline_inds]
             group_max = np.max(group_id) + 1
             xyf_i = (
                 x_off + y_off * psf_resolution + fbin * psf_resolution**2
