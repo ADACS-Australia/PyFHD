@@ -264,21 +264,21 @@ def test_visibility_grid(
     )
     # All atols are done by the lowest precision that passed for ALL tests
     npt.assert_allclose(gridding_dict["image_uv"], h5_after["image_uv"], atol=1.5e-7)
-    npt.assert_allclose(gridding_dict["weights"], h5_after["weights"], atol=1e-8)
-    npt.assert_allclose(gridding_dict["variance"], h5_after["variance"], atol=1e-8)
+    npt.assert_allclose(gridding_dict["weights"], h5_after["weights"], atol=1.5e-9)
+    npt.assert_allclose(gridding_dict["variance"], h5_after["variance"], atol=2.5e-13)
     # Differences in baseline grids locations from precision errors in the
     # offsets caused differences in the histogram bin_n
     # The minor difference in bin_n affected the uniform filter. The precision
     # difference could cause errors up to 1
     # This doesn't occur for every test.
-    npt.assert_allclose(gridding_dict["obs"]["nf_vis"], h5_after["nf_vis"], atol=1e-8)
+    npt.assert_allclose(gridding_dict["obs"]["nf_vis"], h5_after["nf_vis"])
     npt.assert_allclose(
         gridding_dict["uniform_filter"], h5_after["uniform_filter"], atol=0.5
     )
 
     if "model_return" in gridding_dict:
         npt.assert_allclose(
-            gridding_dict["model_return"], h5_after["model_return"], atol=1e-7
+            gridding_dict["model_return"], h5_after["model_return"], atol=4.1e-8
         )
 
 
@@ -445,18 +445,10 @@ def test_full_visibility_grid(full_before_gridding: Path, full_after_gridding: P
         bi_use=h5_before["bi_use"],
     )
     # All atols are done by the lowest precision that passed for ALL tests
-    npt.assert_allclose(gridding_dict["image_uv"], h5_after["image_uv"], atol=1e-8)
-    npt.assert_allclose(gridding_dict["weights"], h5_after["weights"], atol=1e-8)
-    npt.assert_allclose(gridding_dict["variance"], h5_after["variance"], atol=1e-8)
-    npt.assert_allclose(gridding_dict["obs"]["nf_vis"], h5_after["nf_vis"], atol=1e-8)
-    # npt.assert_allclose(
-    #   gridding_dict['uniform_filter'], h5_after['uniform_filter'], atol = 1e-8
-    # )
-
-    if "model_return" in gridding_dict:
-        npt.assert_allclose(
-            gridding_dict["model_return"], h5_after["model_return"], atol=1e-8
-        )
+    npt.assert_allclose(gridding_dict["image_uv"], h5_after["image_uv"], atol=2e-11)
+    npt.assert_allclose(gridding_dict["weights"], h5_after["weights"], atol=2e-13)
+    npt.assert_allclose(gridding_dict["variance"], h5_after["variance"])
+    npt.assert_allclose(gridding_dict["obs"]["nf_vis"], h5_after["nf_vis"])
 
 
 # VIS_MODEL_FREQ_SPLIT VISIBILITY GRID TESTS BELOW
@@ -697,15 +689,17 @@ def test_visibility_grid_in_vis_model_freq_split(
         bi_use=h5_before["bi_use"],
     )
     # All atols are done by the lowest precision that passed for ALL tests
-    npt.assert_allclose(gridding_dict["image_uv"], h5_after["dirty_uv"], atol=1.5e-7)
-    npt.assert_allclose(gridding_dict["weights"], h5_after["weights_holo"], atol=1e-8)
-    npt.assert_allclose(gridding_dict["variance"], h5_after["variance_holo"], atol=1e-8)
+    npt.assert_allclose(gridding_dict["image_uv"], h5_after["dirty_uv"], atol=2.1e-9)
+    npt.assert_allclose(gridding_dict["weights"], h5_after["weights_holo"], atol=4e-11)
     npt.assert_allclose(
-        gridding_dict["model_return"], h5_after["model_return"], atol=1e-8
+        gridding_dict["variance"], h5_after["variance_holo"], atol=1.1e-12
+    )
+    npt.assert_allclose(
+        gridding_dict["model_return"], h5_after["model_return"], atol=2.1e-9
     )
     # Differences in baseline grids locations from precision errors in the
     # offsets caused differences in the histogram bin_n
     # The minor difference in bin_n affected the uniform filter. The precision
     # difference could cause errors up to 1
     # This doesn't occur for every test.
-    npt.assert_allclose(gridding_dict["n_vis"], h5_after["n_vis"], atol=1e-8)
+    npt.assert_allclose(gridding_dict["n_vis"], h5_after["n_vis"])
