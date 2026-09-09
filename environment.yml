@@ -6,27 +6,27 @@ dependencies:
   - colorama>=0.4.6
   - configargparse>=1.7
   - h5py>=3.13.0
+  - healpy>=1.18.1
   - importlib_resources>=6.5.2
   - matplotlib>=3.10.3
+  - myst-parser
   - numba>=0.61.2
   - numpy>=2.2.5
   - pooch>=1.8
   - pyinstrument
-  - pyuvdata>=3.2.4
+  - pyradiosky>1.1.2
+  - pyuvdata>=3.2.7
   - pytest>=8.3.5
+  - pytest-cov
+  - pytest-html
   - ruff
   - scipy>=1.15.3
   - setuptools
   - sphinx>=8.1.3
+  - sphinx-rtd-theme
+  - sphinx-argparse
   - pre-commit
   - pip
   - pip:
-    - healpy>=1.18.1
-    - myst-parser
-    - pyradiosky>1.1.0
-    - pytest-cov
-    - pytest-html
     - pytest-html-merger
-    - sphinx-rtd-theme
-    - sphinx-argparse
     - sphinx-reports
