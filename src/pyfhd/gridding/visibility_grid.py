@@ -20,7 +20,7 @@ def visibility_grid(
     polarization: int,
     pyfhd_config: dict,
     logger: Logger,
-    uniform_flag: bool = False,
+    calculate_uniform_filter: bool = False,
     no_conjugate: bool = False,
     model: NDArray[np.complex128] | None = None,
     fi_use: NDArray[np.integer] | None = None,
@@ -64,8 +64,13 @@ def visibility_grid(
         pyfhd's configuration dictionary containing all the options for a run
     logger : Logger
         pyfhd's logger
-    uniform_flag : bool, optional
-        Grid a number count for contributing baselines per pixel, by default False
+    calculate_uniform_filter : bool, optional
+        Option to create a uniform filter by counting the number of baselines
+        contributing for each pixel (called `uniform_filter` in the FHD function
+        signature and `uniform_flag` inside the function in FHD), by default False.
+        When called from the main function, this is set to True for the first
+        polarization and False for the rest because it's the same across pols
+        and only needs to be calculated once.
     no_conjugate : bool, optional
         Do not perform the conjugate mirror to fill half of the {u,v} plane, by
         default False
@@ -217,7 +222,7 @@ def visibility_grid(
     # If the uniform gridding has been activated we need to activate the uniform
     # filter and switch off mapping if it has been activated
     if pyfhd_config["grid_uniform"]:
-        uniform_flag = True
+        calculate_uniform_filter = True
 
     conj_i = np.where(params["vv"][bi_use] > 0)[0]
     if conj_i.size > 0:
@@ -521,7 +526,7 @@ def visibility_grid(
                 xmin_use : xmin_use + psf_dim, ymin_use : ymin_use + psf_dim
             ].flat += var_box
 
-        if uniform_flag:
+        if calculate_uniform_filter:
             uniform_filter[
                 xmin_use : xmin_use + psf_dim, ymin_use : ymin_use + psf_dim
             ] += bin_n[bin_i[bi]]
@@ -594,7 +599,7 @@ def visibility_grid(
             variance = (variance + conjugate_mirror(variance)) / 4
         if model is not None:
             model_return = (model_return + conjugate_mirror(model_return)) / 2
-        if uniform_flag:
+        if calculate_uniform_filter:
             uniform_filter = (uniform_filter + conjugate_mirror(uniform_filter)) / 2
 
     # Arrange returns into a dictionary

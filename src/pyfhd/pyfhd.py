@@ -559,9 +559,11 @@ def main():
                     f"Gridding has begun for polarization {obs['pol_names'][pol_i]}"
                 )
                 if pol_i == 0:
-                    uniform_flag = True
+                    calculate_uniform_filter = True
                 else:
-                    uniform_flag = False
+                    # The filter is the same across pols, so only needs to be
+                    # calculated once.
+                    calculate_uniform_filter = False
                 if pol_i > 1:
                     no_conjugate = True
                 else:
@@ -579,7 +581,7 @@ def main():
                     pol_i,
                     pyfhd_config,
                     logger,
-                    uniform_flag=uniform_flag,
+                    calculate_uniform_filter=calculate_uniform_filter,
                     no_conjugate=no_conjugate,
                     model=vis_model_arr_use,
                 )
@@ -587,7 +589,7 @@ def main():
                     image_uv[pol_i] = gridding_dict["image_uv"]
                     weights_uv[pol_i] = gridding_dict["weights"]
                     variance_uv[pol_i] = gridding_dict["variance"]
-                    if uniform_flag:
+                    if calculate_uniform_filter:
                         uniform_filter_uv = gridding_dict["uniform_filter"]
                     obs["nf_vis"] = gridding_dict["obs"]["nf_vis"]
                     if vis_model_arr is not None:
