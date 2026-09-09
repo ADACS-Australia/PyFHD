@@ -300,7 +300,7 @@ def get_ri(
     bins: NDArray[np.float64 | np.int64],
     hist: NDArray[np.int64],
     min: int | float,
-    max: int | float
+    max: int | float,
 ) -> NDArray[np.int64]:
     """
     Calculates the reverse indices of a data and histogram.
@@ -379,15 +379,16 @@ def get_ri(
     # the types and returns are in there as well
     pass
 
+
 # Again notice the typing, and the typing of the return, again makes it clear to
 # people to always expect three return variables, and not only that, what type
 # to expect them to be.
 def histogram(
-    data : NDArray[np.floating | np.integer | np.complexfloating],
+    data: NDArray[np.floating | np.integer | np.complexfloating],
     bin_size: int = 1,
     num_bins: int | None = None,
     min: int | float | None = None,
-    max: int | float | None = None
+    max: int | float | None = None,
 ) -> tuple[NDArray[np.int64], NDArray[np.float64 | np.int64], NDArray[np.int64]]:
     """
     The histogram function combines the use of the get_bins, get_hist and get_ri
@@ -539,13 +540,15 @@ from pyfhd.pyfhd_tools.test_utils import sav_file_vis_arr_swap_axes
 from pyfhd.io.pyfhd_io import save, load
 import numpy.testing as npt
 
+
 # Here we set up a fixture for the main data directory where all the files
 # required for testing are
 # I set up the testing framework to utlise an environment variable PYFHD_TEST_PATH
 # so where ever you store the files from the FHD runs, adjust it to that path.
 @pytest.fixture()
 def data_dir():
-    return Path(env.get('PYFHD_TEST_PATH'), "calibration", "cal_auto_ratio_divide")
+    return Path(env.get("PYFHD_TEST_PATH"), "calibration", "cal_auto_ratio_divide")
+
 
 # With the FHD runs we used test tags, so all the files had consistent naming formats,
 # for example, one of the test files was point_zenith_run1_before_cal_auto_ratio_divide.sav
@@ -553,19 +556,24 @@ def data_dir():
 # developer and to the tests, which test the files were for and if the files
 # were used for input ("before") or were used for validation ("after"). In this
 # case we're using a fixture to set 3 different parameters.
-@pytest.fixture(scope="function", params=['point_zenith','point_offzenith', '1088716296'])
+@pytest.fixture(
+    scope="function", params=["point_zenith", "point_offzenith", "1088716296"]
+)
 def tag(request):
     return request.param
 
+
 # We're using another fixture to set the run identifiers.
-@pytest.fixture(scope="function", params=['run1', 'run3'])
+@pytest.fixture(scope="function", params=["run1", "run3"])
 def run(request):
     return request.param
+
 
 # Using pairs of tag and run identifiers, we can skip certain tests in the case
 # of the file not existing or for some other reason, why this is needed will become
 # clear soon.
-skip_tests = [['1088716296', "run3"]]
+skip_tests = [["1088716296", "run3"]]
+
 
 # For each combination of tag and run, check if the hdf5 file exists, if not,
 # create it and either way return the path
@@ -593,7 +601,7 @@ def before_file(tag, run, data_dir):
         The path to the directory containing the files required for each test
     """
     # Note the check for skip tests right at the start
-    if ([tag, run] in skip_tests):
+    if [tag, run] in skip_tests:
         return None
     before_file = Path(data_dir, f"{tag}_{run}_before_{data_dir.name}.h5")
     # If the h5 file already exists and has been created, return the path to it
@@ -601,20 +609,22 @@ def before_file(tag, run, data_dir):
     if before_file.exists():
         return before_file
 
-    sav_file = before_file.with_suffix('.sav')
+    sav_file = before_file.with_suffix(".sav")
     sav_dict = convert_sav_to_dict(str(sav_file), "faked")
 
-    obs = recarray_to_dict(sav_dict['obs'])
-    cal = recarray_to_dict(sav_dict['cal'])
-    vis_auto = sav_file_vis_arr_swap_axes(sav_dict['vis_auto'])
+    obs = recarray_to_dict(sav_dict["obs"])
+    cal = recarray_to_dict(sav_dict["cal"])
+    vis_auto = sav_file_vis_arr_swap_axes(sav_dict["vis_auto"])
 
-    #super dictionary to save everything in
+    # super dictionary to save everything in
     h5_save_dict = {}
-    h5_save_dict['obs'] = obs
-    h5_save_dict['cal'] = cal
-    h5_save_dict['cal']['gain'] = sav_file_vis_arr_swap_axes(h5_save_dict['cal']['gain'])
-    h5_save_dict['vis_auto'] = vis_auto
-    h5_save_dict['auto_tile_i'] = sav_dict['auto_tile_i']
+    h5_save_dict["obs"] = obs
+    h5_save_dict["cal"] = cal
+    h5_save_dict["cal"]["gain"] = sav_file_vis_arr_swap_axes(
+        h5_save_dict["cal"]["gain"]
+    )
+    h5_save_dict["vis_auto"] = vis_auto
+    h5_save_dict["auto_tile_i"] = sav_dict["auto_tile_i"]
 
     # This function was made specifically for pyfhd but you could probably use
     # it elsewhere
@@ -625,29 +635,33 @@ def before_file(tag, run, data_dir):
     # with the tag, run and data_dir to check the required file exists.
     return before_file
 
+
 # Same as the before_file fixture, except we're taking the the after files
 @pytest.fixture()
 def after_file(tag, run, data_dir):
-    if ([tag, run] in skip_tests):
+    if [tag, run] in skip_tests:
         return None
     after_file = Path(data_dir, f"{tag}_{run}_after_{data_dir.name}.h5")
     # If the h5 file already exists and has been created, return the path to it
     if after_file.exists():
         return after_file
 
-    sav_file = after_file.with_suffix('.sav')
+    sav_file = after_file.with_suffix(".sav")
     sav_dict = convert_sav_to_dict(str(sav_file), "faked")
 
-    #super dictionary to save everything in
+    # super dictionary to save everything in
     h5_save_dict = {}
 
-    h5_save_dict['cal'] = recarray_to_dict(sav_dict['cal'])
-    h5_save_dict['cal']['gain'] = sav_file_vis_arr_swap_axes(h5_save_dict['cal']['gain'])
-    h5_save_dict['auto_ratio'] = sav_file_vis_arr_swap_axes(sav_dict['auto_ratio'])
+    h5_save_dict["cal"] = recarray_to_dict(sav_dict["cal"])
+    h5_save_dict["cal"]["gain"] = sav_file_vis_arr_swap_axes(
+        h5_save_dict["cal"]["gain"]
+    )
+    h5_save_dict["auto_ratio"] = sav_file_vis_arr_swap_axes(sav_dict["auto_ratio"])
 
     save(after_file, h5_save_dict, "after_file")
 
     return after_file
+
 
 def test_cal_auto_ratio_divide(before_file, after_file):
     """
@@ -679,7 +693,7 @@ def test_cal_auto_ratio_divide(before_file, after_file):
     # Take a note here that if the before_file or after_file returned None we
     # tell pytest to skip the test, so if you see skips
     # its not a bad thing!
-    if (before_file is None or after_file is None):
+    if before_file is None or after_file is None:
         pytest.skip(
             "This test has been skipped, likely because we don't have the "
             f"required FHD output. It was listed in the skipped tests: {skip_tests}"
@@ -688,15 +702,17 @@ def test_cal_auto_ratio_divide(before_file, after_file):
     h5_before = load(before_file)
     h5_after = load(after_file)
 
-    obs = h5_before['obs']
-    cal = h5_before['cal']
-    vis_auto = h5_before['vis_auto']
-    auto_tile_i = h5_before['auto_tile_i']
+    obs = h5_before["obs"]
+    cal = h5_before["cal"]
+    vis_auto = h5_before["vis_auto"]
+    auto_tile_i = h5_before["auto_tile_i"]
 
-    expected_cal = h5_after['cal']
-    expected_auto_ratio = h5_after['auto_ratio']
+    expected_cal = h5_after["cal"]
+    expected_auto_ratio = h5_after["auto_ratio"]
 
-    result_cal, result_auto_ratio = cal_auto_ratio_divide(obs, cal, vis_auto, auto_tile_i)
+    result_cal, result_auto_ratio = cal_auto_ratio_divide(
+        obs, cal, vis_auto, auto_tile_i
+    )
 
     # The only downside to doing things this way is that in order to have different
     # atol or rtol for different tests or need to do something specific you'll
@@ -706,8 +722,8 @@ def test_cal_auto_ratio_divide(before_file, after_file):
     atol = 8e-6
     npt.assert_allclose(expected_auto_ratio, result_auto_ratio, atol=atol)
 
-    #check the gains have been updated
-    npt.assert_allclose(expected_cal['gain'], result_cal['gain'], atol=atol)
+    # check the gains have been updated
+    npt.assert_allclose(expected_cal["gain"], result_cal["gain"], atol=atol)
 ```
 
 Once you have set up the tests, every time you change the code and re-run the
@@ -760,7 +776,7 @@ There is a curated set of tests that have been marked with `pytest.mark` as
 the test function:
 
 ```python
-@pytest.mark.github_actions # Here's the mark
+@pytest.mark.github_actions  # Here's the mark
 def test_idl_example(data_dir: Path):
     """
     This test is based on the example from the IDL documentation.

@@ -210,34 +210,34 @@ but we're not sure why.
 pyfhd has been tested to run with Python `3.10+` with the following packages as
 dependencies:
 
-```python
-"astropy>=6.1.7",
-"colorama>=0.4.6",
-"configargparse>=1.7",
-"h5py>=3.13.0",
-"healpy>=1.18.1",
-"importlib-resources>=6.5.2",
-"matplotlib>=3.10.3",
-"numba>=0.61.2",
-"numpy>=2.2.5",
-"pyuvdata>=3.2.1",
-"scipy>=1.15.3"
+```
+"astropy>=6.1.7"
+"colorama>=0.4.6"
+"configargparse>=1.7"
+"h5py>=3.13.0"
+"healpy>=1.18.1"
+"importlib-resources>=6.5.2"
+"matplotlib>=3.10.3"
+"numba>=0.61.2"
+"numpy>=2.2.5"
+"pyuvdata>=3.2.1"
+"scipy>=1.15.3
 ```
 
 The following packages are development dependencies (if you're developing features
 on pyfhd):
 
-```python
-"black>=25.1.0",
-"ipykernel>=6.29.5",
-"myst-parser>=4.0.1",
-"pip>=25.1.1",
-"pre-commit>=4.2.0",
-"pytest>=8.3.5",
-"pytest-cov>=6.1.1",
-"sphinx>=8.1.3",
-"sphinx-argparse>=0.5.2",
-"sphinx-rtd-theme>=3.0.2",
+```
+"black>=25.1.0"
+"ipykernel>=6.29.5"
+"myst-parser>=4.0.1"
+"pip>=25.1.1"
+"pre-commit>=4.2.0"
+"pytest>=8.3.5"
+"pytest-cov>=6.1.1"
+"sphinx>=8.1.3"
+"sphinx-argparse>=0.5.2"
+"sphinx-rtd-theme>=3.0.2"
 ```
 
 pyfhd has been built using `uv` utilising `pyproject.toml` and has been published
