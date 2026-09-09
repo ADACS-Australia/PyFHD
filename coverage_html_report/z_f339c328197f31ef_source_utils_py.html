@@ -67,7 +67,7 @@
             <a id="nextFileLink" class="nav" href="z_f339c328197f31ef_vis_model_transfer_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.11.0">coverage.py v7.11.0</a>,
-            created at 2026-09-09 17:43 +0000
+            created at 2026-09-09 17:42 +0000
         </p>
         <aside class="hidden">
             <button type="button" class="button_next_chunk" data-shortcut="j"></button>
@@ -436,7 +436,7 @@
     <p class="run"><span class="n"><a id="t352" href="#t352">352</a></span><span class="t">                <span class="nam">keep_comp</span> <span class="op">=</span> <span class="nam">np</span><span class="op">.</span><span class="nam">full</span><span class="op">(</span><span class="op">(</span><span class="nam">skymodel</span><span class="op">.</span><span class="nam">Ncomponents</span><span class="op">,</span><span class="op">)</span><span class="op">,</span> <span class="key">True</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t353" href="#t353">353</a></span><span class="t">                <span class="com"># convert extended models into a single component at the flux</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t354" href="#t354">354</a></span><span class="t">                <span class="com"># weighted average location with the total flux</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run"><span class="n"><a id="t355" href="#t355">355</a></span><span class="t">                <span class="key">for</span> <span class="nam">src</span><span class="op">,</span> <span class="nam">comp_arr</span> <span class="key">in</span> <span class="nam">ext_src_lists</span><span class="op">.</span><span class="nam">items</span><span class="op">(</span><span class="op">)</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t355" href="#t355">355</a></span><span class="t">                <span class="key">for</span> <span class="nam">comp_arr</span> <span class="key">in</span> <span class="nam">ext_src_lists</span><span class="op">.</span><span class="nam">values</span><span class="op">(</span><span class="op">)</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t356" href="#t356">356</a></span><span class="t">                    <span class="nam">first_comp</span> <span class="op">=</span> <span class="nam">comp_arr</span><span class="op">[</span><span class="num">0</span><span class="op">]</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t357" href="#t357">357</a></span><span class="t">                    <span class="nam">skymodel</span><span class="op">.</span><span class="nam">stokes</span><span class="op">[</span><span class="op">:</span><span class="op">,</span> <span class="op">:</span><span class="op">,</span> <span class="nam">first_comp</span><span class="op">]</span> <span class="op">=</span> <span class="nam">skymodel</span><span class="op">.</span><span class="nam">stokes</span><span class="op">[</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t358" href="#t358">358</a></span><span class="t">                        <span class="op">:</span><span class="op">,</span> <span class="op">:</span><span class="op">,</span> <span class="nam">comp_arr</span>&nbsp;</span><span class="r"></span></p>
@@ -1328,7 +1328,7 @@
             <a class="nav" href="z_f339c328197f31ef_vis_model_transfer_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.11.0">coverage.py v7.11.0</a>,
-            created at 2026-09-09 17:43 +0000
+            created at 2026-09-09 17:42 +0000
         </p>
     </div>
 </footer>
