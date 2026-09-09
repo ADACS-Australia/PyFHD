@@ -169,7 +169,7 @@ def save_dataset(
     key: str,
     value: Any,
     to_chunk: dict[str, dict],
-    variable_lengths: [str, DTypeLike],
+    variable_lengths: dict[str, DTypeLike],
     logger: Logger | None,
 ) -> bool:
     """
@@ -360,8 +360,8 @@ def save(
     to_save: NDArray[Any] | dict,
     dataset_name: str,
     logger: Logger | None = None,
-    to_chunk: dict[str, dict] = {},
-    variable_lengths: dict[str, DTypeLike] = {},
+    to_chunk: dict[str, dict] | None = None,
+    variable_lengths: dict[str, DTypeLike] | None = None,
 ) -> None:
     """
     Saves a numpy array or dictionary into a hdf5 file using h5py, with
@@ -419,6 +419,10 @@ def save(
     pyfhd.io.pyfhd_io.format_array : Finds any None is an array and replaces
         them appropriately
     """
+    if to_chunk is None:
+        to_chunk = {}
+    if variable_lengths is None:
+        variable_lengths = {}
     # Create a custom vectorized function to check for complex numbers
     # is_complex_vectorized = np.vectorize(is_complex)
     with h5py.File(file_name, "w") as h5_file:
