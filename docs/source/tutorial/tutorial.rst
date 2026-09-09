@@ -875,8 +875,10 @@ stored in the ``checkpoints`` directory and they are saved at the following poin
   which holds the gridded visibilities, associated weights, variances, models, etc.
 
 In the case that you wish to skip a step in the pipeline, you can use the
-``--calibrate-checkpoint`` or ``--grid-checkpoint`` options to skip the calibration
-or gridding steps respectively.
+``--calibrate-checkpoint`` or ``--gridding-checkpoint`` boolean options to skip the
+calibration or gridding steps respectively. Set them to True to skip the calculations
+and load the previously calcuated products from the checkpoint file in the
+checkpoint directory.
 
 .. attention::
   The ``--obs-checkpoint`` and ``--calibrate-checkpoint`` will check for each
