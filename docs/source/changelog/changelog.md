@@ -38,6 +38,7 @@ the new `analytic-beam-yaml` option to configure them.
 * Added handling for `~` in paths in config yamls.
 
 ### Bug Fixes
+* Fixed a bug in degridding which lead to some visibilities not being calculated.
 * Fixed a couple of bugs in beam and psf setup where the FFT direction or
 normalization convention was wrong.
 * Fixed a couple small bugs in `plotting.image.quick_image` that caused the
