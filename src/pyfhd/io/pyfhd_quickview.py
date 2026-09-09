@@ -79,14 +79,14 @@ def quickview(
     obs: dict,
     psf: dict,
     params: dict,
-    cal: dict,
+    cal: dict | None,
     vis_arr: NDArray[np.complex128],
     vis_weights: NDArray[np.float64],
     image_uv: NDArray[np.complex128],
     weights_uv: NDArray[np.complex128],
     variance_uv: NDArray[np.float64],
     uniform_filter_uv: NDArray[np.float64],
-    model_uv: NDArray[np.complex128],
+    model_uv: NDArray[np.complex128] | None,
     pyfhd_config: dict,
     logger: Logger,
 ) -> None:
@@ -273,18 +273,19 @@ def quickview(
             beam_ptr=beam_base_out[pol_i],
         )
         filter_arr[pol_i] = filter
-        instr_model_arr[pol_i], filter, _ = dirty_image_generate(
-            model_uv[pol_i],
-            pyfhd_config,
-            logger,
-            uniform_filter_uv=uniform_filter_uv,
-            degpix=obs_out["degpix"],
-            weights=weights_uv[pol_i],
-            pad_uv_image=pyfhd_config["pad_uv_image"],
-            filter=filter,
-            not_real=complex_flag,
-            beam_ptr=beam_base_out[pol_i],
-        )
+        if model_uv is not None:
+            instr_model_arr[pol_i], filter, _ = dirty_image_generate(
+                model_uv[pol_i],
+                pyfhd_config,
+                logger,
+                uniform_filter_uv=uniform_filter_uv,
+                degpix=obs_out["degpix"],
+                weights=weights_uv[pol_i],
+                pad_uv_image=pyfhd_config["pad_uv_image"],
+                filter=filter,
+                not_real=complex_flag,
+                beam_ptr=beam_base_out[pol_i],
+            )
     renorm_factor = get_image_renormalization(
         obs_out, weights_uv, beam_base_out, filter_arr, pyfhd_config, logger
     )
@@ -292,8 +293,9 @@ def quickview(
     # [obs["n_pol"], 1, 1]
     renorm_factor = np.expand_dims(renorm_factor.reshape([obs_out["n_pol"], 1]), -1)
     instr_dirty_arr *= renorm_factor
-    instr_model_arr *= renorm_factor
-    instr_residual_arr = instr_dirty_arr - instr_model_arr
+    if model_uv is not None:
+        instr_model_arr *= renorm_factor
+        instr_residual_arr = instr_dirty_arr - instr_model_arr
     # Get the pol_names
     pol_names = obs["pol_names"]
     # The cross-polarization XY and YX images are both complex, but are conjugate
@@ -392,9 +394,10 @@ def quickview(
         png_output.mkdir(exist_ok=True)
     for pol_i in range(obs["n_pol"]):
         logger.info(f"Saving the FITS files for polarization {pol_names[pol_i]}")
-        instr_residual = instr_residual_arr[pol_i] * beam_correction_out[pol_i]
         instr_dirty = instr_dirty_arr[pol_i] * beam_correction_out[pol_i]
-        instr_model = instr_model_arr[pol_i] * beam_correction_out[pol_i]
+        if model_uv is not None:
+            instr_residual = instr_residual_arr[pol_i] * beam_correction_out[pol_i]
+            instr_model = instr_model_arr[pol_i] * beam_correction_out[pol_i]
         beam_use = beam_base_out[pol_i]
 
         # Write the fits files for the dirty images
@@ -405,20 +408,21 @@ def quickview(
         fits_file_apparent.writeto(
             Path(fits_output, f"{instr_dirty_name}.fits"), overwrite=True
         )
-        fits_file_apparent.data = instr_model
-        instr_model_name = (
-            f"{pyfhd_config['obs_id']}_{filter_name}_model_{pol_names[pol_i]}"
-        )
-        fits_file_apparent.writeto(
-            Path(fits_output, f"{instr_model_name}.fits"), overwrite=True
-        )
-        fits_file_apparent.data = instr_residual
-        instr_residual_name = (
-            f"{pyfhd_config['obs_id']}_{filter_name}_residual_{pol_names[pol_i]}"
-        )
-        fits_file_apparent.writeto(
-            Path(fits_output, f"{instr_residual_name}.fits"), overwrite=True
-        )
+        if model_uv is not None:
+            fits_file_apparent.data = instr_model
+            instr_model_name = (
+                f"{pyfhd_config['obs_id']}_{filter_name}_model_{pol_names[pol_i]}"
+            )
+            fits_file_apparent.writeto(
+                Path(fits_output, f"{instr_model_name}.fits"), overwrite=True
+            )
+            fits_file_apparent.data = instr_residual
+            instr_residual_name = (
+                f"{pyfhd_config['obs_id']}_{filter_name}_residual_{pol_names[pol_i]}"
+            )
+            fits_file_apparent.writeto(
+                Path(fits_output, f"{instr_residual_name}.fits"), overwrite=True
+            )
         fits_file.data = beam_use
         beam_name = f"{pyfhd_config['obs_id']}_beam_{pol_names[pol_i]}"
         fits_file.writeto(Path(fits_output, f"{beam_name}.fits"), overwrite=True)
@@ -437,18 +441,19 @@ def quickview(
                 title=f"Dirty Image {pol_names[pol_i]}",
                 logger=logger,
             )
-            plot_fits_image(
-                Path(fits_output, f"{instr_model_name}.fits"),
-                Path(png_output, f"{instr_model_name}.png"),
-                title=f"Model Image {pol_names[pol_i]}",
-                logger=logger,
-            )
-            plot_fits_image(
-                Path(fits_output, f"{instr_residual_name}.fits"),
-                Path(png_output, f"{instr_residual_name}.png"),
-                title=f"Residual Image {pol_names[pol_i]}",
-                logger=logger,
-            )
+            if model_uv is not None:
+                plot_fits_image(
+                    Path(fits_output, f"{instr_model_name}.fits"),
+                    Path(png_output, f"{instr_model_name}.png"),
+                    title=f"Model Image {pol_names[pol_i]}",
+                    logger=logger,
+                )
+                plot_fits_image(
+                    Path(fits_output, f"{instr_residual_name}.fits"),
+                    Path(png_output, f"{instr_residual_name}.png"),
+                    title=f"Residual Image {pol_names[pol_i]}",
+                    logger=logger,
+                )
             plot_fits_image(
                 Path(fits_output, f"{beam_name}.fits"),
                 Path(png_output, f"{beam_name}.png"),

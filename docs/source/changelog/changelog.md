@@ -13,6 +13,7 @@ repo and passing None to `beam_file-path`.
 to avoid confusion with the new `uvbeam-file-path` option.
 
 ### New Features
+* pyfhd now supports running without a model (i.e. gridding without calibration).
 * pyfhd can now create model visibilities for calibration using degridding. The
 source catalog to be used in degridding must be specified as a file readable by
 the pyradiosky SkyModel object to the `calibration-catalog-file-path` option.

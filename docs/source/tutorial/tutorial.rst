@@ -715,7 +715,7 @@ Calibration
 -----------
 
 Calibration is fully available in ``pyfhd`` and can be enabled using the
-``--calibrate-visibilities`` option being set to true. There are many options
+``--calibrate-visibilities`` option. There are many options
 for calibration, see the :doc:`API documentation page <../documentation/documentation>`
 for all of them. In the example we ran above, we used simulated visibilities from
 `WODEN`_, passing them in using the ``model-file-path`` option, and a beam saved
@@ -799,7 +799,7 @@ We'll use the calibrate-checkpoint example earlier to run it
 
 .. code-block:: bash
 
-  pyfhd -c ./input/1088285600_example/1088285600_example.yaml --calibrate-checkpoint ./output/pyfhd_1088285600_example/checkpoints/1088285600_example_calibrate_checkpoint.h5 1088285600
+  pyfhd -c ./input/1088285600_example/1088285600_example.yaml --calibrate-checkpoint 1088285600
 
 This would be the same as runnning the command below:
 
@@ -809,7 +809,7 @@ This would be the same as runnning the command below:
     --input-path "./input/1088285600_example/" \
     --description "1088285600_gridding_example" \
     --saved-beam-file-path "./input/1088285600_example/gauss_beam_pointing0_167635008Hz.h5" \
-    --calibrate-checkpoint "./output/pyfhd_1088285600_example/checkpoints/1088285600_example_calibrate_checkpoint.h5" \
+    --calibrate-checkpoint \
     --recalculate-grid \
     --image-filter 'filter_uv_uniform' \
     --no-mask-mirror-indices \
@@ -875,8 +875,10 @@ stored in the ``checkpoints`` directory and they are saved at the following poin
   which holds the gridded visibilities, associated weights, variances, models, etc.
 
 In the case that you wish to skip a step in the pipeline, you can use the
-``--calibrate-checkpoint`` or ``--grid-checkpoint`` options to skip the calibration
-or gridding steps respectively.
+``--calibrate-checkpoint`` or ``--gridding-checkpoint`` boolean options to skip the
+calibration or gridding steps respectively. Set them to True to skip the calculations
+and load the previously calcuated products from the checkpoint file in the
+checkpoint directory.
 
 .. attention::
   The ``--obs-checkpoint`` and ``--calibrate-checkpoint`` will check for each
