@@ -1,5 +1,6 @@
 import numpy as np
 import pytest
+import re
 from scipy.signal import convolve2d
 from pathlib import Path
 
@@ -191,9 +192,14 @@ class TestValueErrors:
             ):
                 quick_image(pyramid, **args)
 
-        def test_data_range_less_than(self, pyramid):
-            # data_range[0] > data_range[1]
-            pass
+        # Raise ValueError if data_range[0] is greater than data_range[1].
+        def test_data_range_less_than(self, quick_image_defaults, pyramid):
+            args = { **quick_image_defaults, "data_range": [2, 1], "log": True }
+            with pytest.raises(
+                ValueError,
+                match=re.escape("data_range[0] must be less than data_range[1]")
+            ):
+                quick_image(pyramid, **args)
 
         def test_log_cut(self, pyramid):
             # color_profile is log_cut and data_range[1] is negative
