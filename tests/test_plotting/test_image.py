@@ -142,15 +142,19 @@ class TestValueErrors:
             with pytest.raises(ValueError, match="Image must be 2-dimensional."):
                 quick_image(image, **args)
 
-        # Raise ValueError if data_range, xrange, or yrange do not have
-        # exactly two values.
+        # Raise ValueError if data_range, xrange, or yrange are not a numpy array
+        # or list or if they are, they do not have exactly two values.
         @pytest.mark.parametrize("param", ["data_range", "xrange", "yrange"])
         @pytest.mark.parametrize("bad_range", [
-            np.array([1]),          # too short
-            np.array([1, 2, 3]),    # too long
-            np.array([])            # empty
+            np.array([1]),          # right type, too short
+            np.array([1, 2, 3]),    # right type, too long
+            np.array([]),           # right type, empty
+            [1],                    # right type, too short
+            (1, 2),                 # wrong type (tuple)
+            "12",                   # wrong type (string)
+            12                      # wrong type (int)
         ])
-        def test_range_lengths(
+        def test_ranges(
             self, pyramid, quick_image_defaults, param, bad_range
         ):
             args = { **quick_image_defaults, param: bad_range }
@@ -186,7 +190,6 @@ class TestValueErrors:
                 match=f"Color profile must be one of: {', '.join(color_profile_enum)}"
             ):
                 quick_image(pyramid, **args)
-            pass
 
         def test_data_range_less_than(self, pyramid):
             # data_range[0] > data_range[1]
