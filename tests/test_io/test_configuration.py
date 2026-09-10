@@ -1,9 +1,68 @@
 from logging import Logger
-from pyfhd.pyfhd_tools.pyfhd_setup import pyfhd_parser, pyfhd_setup
+from pyfhd.pyfhd_tools.pyfhd_setup import git_info, pyfhd_parser, pyfhd_setup
 import sys
 import importlib_resources
 import configargparse
 import pytest
+
+
+@pytest.mark.github_actions
+@pytest.mark.parametrize(
+    ("git_string", "output_dict"),
+    [
+        (
+            "1.0.3.dev321+gc96fd9451.hmf",
+            {
+                "tag": "1.0.3",
+                "commit": "c96fd9451",
+                "branch": "hmf",
+                "dirty_flag": False,
+            },
+        ),
+        (
+            "1.0.3.dev321+gc96fd9451.hmf.dirty",
+            {
+                "tag": "1.0.3",
+                "commit": "c96fd9451",
+                "branch": "hmf",
+                "dirty_flag": True,
+            },
+        ),
+        (
+            "1.0.3.dev321+gc96fd9451",
+            {
+                "tag": "1.0.3",
+                "commit": "c96fd9451",
+                "branch": None,
+                "dirty_flag": False,
+            },
+        ),
+        (
+            "1.0.3.dev321+gc96fd9451",
+            {
+                "tag": "1.0.3",
+                "commit": "c96fd9451",
+                "branch": None,
+                "dirty_flag": False,
+            },
+        ),
+        (
+            "1.0.3.dev321+gc96fd9451.dirty",
+            {"tag": "1.0.3", "commit": "c96fd9451", "branch": None, "dirty_flag": True},
+        ),
+        (
+            "1.0.2",
+            {"tag": "1.0.2", "commit": None, "branch": None, "dirty_flag": False},
+        ),
+    ],
+)
+def test_git_info(git_string, output_dict):
+    tag, commit, branch, dirty_flag = git_info(git_string)
+
+    assert tag == output_dict["tag"]
+    assert commit == output_dict["commit"]
+    assert branch == output_dict["branch"]
+    assert dirty_flag == output_dict["dirty_flag"]
 
 
 @pytest.mark.github_actions

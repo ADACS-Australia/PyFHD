@@ -38,8 +38,19 @@ class OrderedBooleanOptionalAction(argparse.BooleanOptionalAction):
         self.option_strings = longs + shorts
 
 
-def git_info():
-    version_str = version("pyfhd")
+def git_info(version_str: str | None = None):
+    """
+    Parse the version info.
+
+    Parameters
+    ----------
+    version_str : str, optional
+        Version string to parse. If None, get the pyfhd version. Should only be
+        set to a string for testing purposes.
+
+    """
+    if version_str is None:
+        version_str = version("pyfhd")
     parts = version_str.split(".")
 
     if ".dev" not in version_str:
