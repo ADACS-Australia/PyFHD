@@ -121,10 +121,14 @@ def test_quick_image_pyramid(tmp_path, pyramid, file_type, file_is_path):
 @pytest.mark.skip(reason="TODO")
 class TestValueErrors:
     class TestQuickImageValueErrors:
-        def test_invalid_image_dimensions(self, pyramid):
-            # image has < 2 dimensions
-            # image has > 2 dimensions
-            pass
+        # Run test on 1D, 3D, and 0D images.
+        @pytest.mark.parametrize("dimensions", [(1), (1, 1, 1), ()])
+        def test_invalid_image_dimensions(self, quick_image_defaults, tmp_path, dimensions):
+            image = np.zeros(dimensions)
+            args = { **quick_image_defaults, "savefile": tmp_path / "test.png" } 
+            with pytest.raises(ValueError, match="Image must be 2-dimensional."):
+                quick_image(image, **args)
+                        
 
         def test_data_range_values(self, pyramid):
             # data range is not an array
