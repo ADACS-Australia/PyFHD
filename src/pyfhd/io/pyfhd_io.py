@@ -7,6 +7,7 @@ import h5py
 import numpy as np
 import yaml
 from numpy.typing import NDArray, DTypeLike
+from pyuvdata.analytic_beam import AnalyticBeam
 from scipy.io import readsav
 from scipy.sparse import csr_array
 
@@ -316,7 +317,7 @@ def save_dataset(
             group = h5py_obj.create_group(key)
             dict_to_group(group, csr_attrs, to_chunk, variable_lengths, logger)
         case _:
-            if isinstance(key, str) and "analytic_beam" in key:
+            if isinstance(key, str) and isinstance(value, AnalyticBeam):
                 yaml_str = yaml.safe_dump(value)
                 h5py_obj.create_dataset(key, data=np.bytes_(yaml_str))
             else:
@@ -471,12 +472,6 @@ def save(
                 h5_file.attrs[dataset_name] = save_dataset(
                     h5_file, dataset_name, to_save, to_chunk, variable_lengths, logger
                 )
-                if logger:
-                    logger.warning(
-                        "Not a dict or numpy array, pyfhd won't write other types "
-                        "at this time, refer to pyfhd.io.pyfhd_io.save to see "
-                        "what is supported"
-                    )
 
 
 def load_dataset(
@@ -524,6 +519,8 @@ def load_dataset(
             value = _decode_byte_arr(value)
         if isinstance(value, bytes):
             value = value.decode()
+            if value.startswith("!AnalyticBeam"):
+                value = yaml.safe_load(value)
         return value
 
 
