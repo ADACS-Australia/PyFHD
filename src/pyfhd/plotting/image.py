@@ -52,7 +52,7 @@ def color_range(count_missing: int = 0) -> tuple:
 def log_color_calc(
     data: NDArray[np.integer | np.floating],
     *,
-    data_range: NDArray[np.integer | np.floating] | None = None,
+    data_range: NDArray[np.integer | np.floating] | list | None = None,
     color_profile: Literal["log_cut", "sym_log", "abs"] = "log_cut",
     log_cut_val: int | float | None = None,
     sigma_clip_level: float | None = None,
@@ -70,7 +70,7 @@ def log_color_calc(
     data : NDArray[np.integer | np.floating]
         A 2D array of data to be displayed as an image.
         The data can be of type int or float.
-    data_range : NDArray[np.integer | np.floating] | None, optional
+    data_range : NDArray[np.integer | np.floating] | list | None, optional
         Min/max color bar range, by default [np.nanmin(image), np.nanmax(image)]
     color_profile : Literal["log_cut", "sym_log", "abs"], optional
         Color bar profiles for logarithmic scaling.
@@ -380,12 +380,12 @@ def quick_image(
     yvals: NDArray[np.integer | np.floating] | None = None,
     *,
     transpose: bool = True,
-    data_range: NDArray[np.integer | np.floating] | None = None,
+    data_range: NDArray[np.integer | np.floating] | list | None = None,
     data_min_abs: float | None = None,
     sigma_clip_level: float | None = None,
     percentile_clip_level: float | None = None,
-    xrange: NDArray[np.integer | np.floating] | None = None,
-    yrange: NDArray[np.integer | np.floating] | None = None,
+    xrange: NDArray[np.integer | np.floating] | list | None = None,
+    yrange: NDArray[np.integer | np.floating] | list | None = None,
     data_aspect: float | None = None,
     log: bool = False,
     color_profile: Literal["log_cut", "sym_log", "abs"] = "log_cut",
@@ -444,7 +444,7 @@ def quick_image(
         0th axis along the y axis, which is often not what we want. Setting this
         to True results in the 0th axis being plotted along the x axis.
         Defaults to True.
-    data_range : NDArray[np.integer | np.floating] | None, optional
+    data_range : NDArray[np.integer | np.floating] | list | None, optional
         Min/max color bar range, by default [np.nanmin(image), np.nanmax(image)]
     data_min_abs : float | None, optional
         The minimum absolute value for the color bar, by default None
@@ -456,9 +456,9 @@ def quick_image(
         the display range will be set to the 1st and 99th percentiles of the data.
         Only used if log is False. Default is None meaning that true min and max
         are used.
-    xrange : NDArray[np.integer | np.floating], optional
+    xrange : NDArray[np.integer | np.floating] | list, optional
         The indices (or xvals, if provided) to zoom the image, by default None
-    yrange : NDArray[np.integer | np.floating], optional
+    yrange : NDArray[np.integer | np.floating] | list, optional
         The indices (or yvals, if provided) to zoom the image, by default None
     data_aspect : int | float, optional
         The aspect ratio of y to x, by default None
