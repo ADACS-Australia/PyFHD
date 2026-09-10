@@ -163,11 +163,20 @@ class TestValueErrors:
             ):
                 quick_image(pyramid, **args)
 
-        def test_invalid_color_profile(self, pyramid):
-            # color_profile is not "log_cut", "sym_log", or "abs"
+    class TestLogColorCalcValueErrors:
+        # Raise ValueError if color_profile is not "log_cut", "sym_log", or "abs"
+        def test_invalid_color_profile(self, pyramid, quick_image_defaults):
+            args = {
+                **quick_image_defaults, "color_profile": "invalid" , "log": True
+            }
+            color_profile_enum = ["log_cut", "sym_log", "abs"]
+            with pytest.raises(
+                ValueError,
+                match=f"Color profile must be one of: {', '.join(color_profile_enum)}"
+            ):
+                quick_image(pyramid, **args)
             pass
 
-    class TestLogColorCalcValueErrors:
         def test_data_range_less_than(self, pyramid):
             # data_range[0] > data_range[1]
             pass
