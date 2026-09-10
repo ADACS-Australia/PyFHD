@@ -536,13 +536,13 @@ def quick_image(
 
     # Validate that 2-value inputs are only 2 values
     if data_range is not None:
-        if not isinstance(data_range, np.ndarray | list) or len(data_range) != 2:
+        if len(data_range) != 2:
             raise ValueError("data_range must be an array with exactly two values.")
     if xrange is not None:
-        if not isinstance(xrange, np.ndarray | list) or len(xrange) != 2:
+        if len(xrange) != 2:
             raise ValueError("xrange must be an array with exactly two values.")
     if yrange is not None:
-        if not isinstance(yrange, np.ndarray | list) or len(yrange) != 2:
+        if len(yrange) != 2:
             raise ValueError("yrange must be an array with exactly two values.")
 
     # Apply logarithmic scaling if set. This modifies the image input directly
