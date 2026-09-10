@@ -15,6 +15,28 @@ def pyramid():
     pyramid = convolve2d(top_hat_arr, top_hat_arr)
     yield pyramid
 
+@pytest.fixture
+def quick_image_defaults():
+    """Default keyword arguments for quick_image."""
+    return dict(
+        xvals=None,
+        yvals=None,
+        xrange=None,
+        yrange=None,
+        cmap="idl",
+        log=False,
+        missing_value=None,
+        color_profile="log_cut",
+        data_range=None,
+        title="pyramid",
+        xtitle="East (m)",
+        ytitle="North (m)",
+        cb_title="Height (m)",
+        note=None,
+        sigma_clip_level=None,
+        percentile_clip_level=None,
+    )
+
 
 @pytest.mark.github_actions
 @pytest.mark.parametrize("file_type", ["png", "eps", "pdf"])
