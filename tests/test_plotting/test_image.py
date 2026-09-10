@@ -16,7 +16,7 @@ def pyramid():
     yield pyramid
 
 @pytest.fixture
-def quick_image_defaults():
+def quick_image_defaults(tmp_path):
     """Default keyword arguments for quick_image."""
     return dict(
         xvals=None,
@@ -35,6 +35,7 @@ def quick_image_defaults():
         note=None,
         sigma_clip_level=None,
         percentile_clip_level=None,
+        savefile=tmp_path / "output.png",
     )
 
 
@@ -118,35 +119,35 @@ def test_quick_image_pyramid(tmp_path, pyramid, file_type, file_is_path):
     assert Path(savefile).is_file()
 
 @pytest.mark.github_actions
-@pytest.mark.skip(reason="TODO")
+# @pytest.mark.skip(reason="TODO")
 class TestValueErrors:
     class TestQuickImageValueErrors:
+        # Raise ValueError if image is not 2-dimensional.
         # Run test on 1D, 3D, and 0D images.
         @pytest.mark.parametrize("dimensions", [(1), (1, 1, 1), ()])
-        def test_invalid_image_dimensions(self, quick_image_defaults, tmp_path, dimensions):
+        def test_invalid_image_dimensions(self, quick_image_defaults, dimensions):
             image = np.zeros(dimensions)
-            args = { **quick_image_defaults, "savefile": tmp_path / "test.png" } 
+            args = { **quick_image_defaults } 
             with pytest.raises(ValueError, match="Image must be 2-dimensional."):
                 quick_image(image, **args)
-                        
 
-        def test_data_range_values(self, pyramid):
-            # data range is not an array
-            # data range has < 2 values
-            # data range has > 2 values
-            pass
-
-        def test_xrange_values(self, pyramid):
-            # xrange is not an array
-            # xrange has < 2 values
-            # xrange has > 2 values
-            pass
-
-        def test_yrange_values(self, pyramid):
-            # yrange is not an array
-            # yrange has < 2 values
-            # yrange has > 2 values
-            pass
+        # Raise ValueError if data_range, xrange, or yrange do not have
+        # exactly two values.
+        @pytest.mark.parametrize("param", ["data_range", "xrange", "yrange"])
+        @pytest.mark.parametrize("bad_range", [
+            np.array([1]),          # too short
+            np.array([1, 2, 3]),    # too long
+            np.array([])            # empty
+        ])
+        def test_range_lengths(
+            self, pyramid, quick_image_defaults, param, bad_range
+        ):
+            args = { **quick_image_defaults, param: bad_range }
+            with pytest.raises(
+                ValueError,
+                match=f"{param} must be an array with exactly two values."
+            ):
+                quick_image(pyramid, **args)
 
         def test_multi_pos_values(self, pyramid):
             # multi_pos has < 4 elements
