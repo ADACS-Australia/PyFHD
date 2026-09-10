@@ -149,10 +149,19 @@ class TestValueErrors:
             ):
                 quick_image(pyramid, **args)
 
-        def test_multi_pos_values(self, pyramid):
-            # multi_pos has < 4 elements
-            # multi_pos has > 4 elements
-            pass
+        # Raise ValueError if multi_pos does not have exactly 4 elements.
+        @pytest.mark.parametrize("bad_list", [
+            [ 1, 2, 3 ],        # too short
+            [ 1, 2, 3, 4, 5 ],  # too long
+            []                  # empty
+        ])
+        def test_multi_pos_values(self, pyramid, quick_image_defaults, bad_list):
+            args = { **quick_image_defaults, "multi_pos": bad_list }
+            with pytest.raises(
+                ValueError,
+                match="multi_pos must be a 4-element list defining the plot position."
+            ):
+                quick_image(pyramid, **args)
 
         def test_invalid_color_profile(self, pyramid):
             # color_profile is not "log_cut", "sym_log", or "abs"
