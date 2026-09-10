@@ -187,8 +187,8 @@ def baseline_grid_locations(
     if not fill_model_visibilities:
         # Rather than calculating the flat indexes we want, lets just index the array
         # by the frequency use and baseline_use indexes
-        rows, cols = np.meshgrid(fi_use, bi_use)
-        vis_weights_use = vis_weights[rows, cols].T
+        rows, cols = np.meshgrid(fi_use, bi_use, indexing="ij")
+        vis_weights_use = vis_weights[rows, cols]
 
     # Units in pixel/Hz
     kx_arr = params["uu"][bi_use] / kbinsize
