@@ -201,9 +201,18 @@ class TestValueErrors:
             ):
                 quick_image(pyramid, **args)
 
-        def test_log_cut(self, pyramid):
-            # color_profile is log_cut and data_range[1] is negative
-            pass
+        # Raise ValueError if color_profile is log_cut and data_range is
+        # entirely negative.
+        def test_log_cut(self, pyramid, quick_image_defaults):
+            args = {
+                **quick_image_defaults, "log": True, "data_range": [-2, -1],
+                "color_profile": "log_cut"
+            }
+            with pytest.raises(
+                ValueError,
+                match="log_cut color profile will not work for entirely negative arrays."
+            ):
+                quick_image(pyramid, **args)
 
         def test_sym_log(self, pyramid):
             # color_profile is sym_log and data_range[0] is positive or
