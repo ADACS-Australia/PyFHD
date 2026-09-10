@@ -111,8 +111,6 @@ def log_color_calc(
     if data_range is None:
         true_range = np.array([np.nanmin(data), np.nanmax(data)], dtype=np.float64)
     else:
-        if len(data_range) != 2:
-            raise ValueError("data_range must be a 2-element vector")
         if data_range[1] < data_range[0]:
             raise ValueError("data_range[0] must be less than data_range[1]")
 
