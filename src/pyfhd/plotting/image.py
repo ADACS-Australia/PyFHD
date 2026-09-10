@@ -508,9 +508,6 @@ def quick_image(
     None
         The function saves the image to a file or displays it on screen.
     """
-    # Validate the image input
-    if image is None or not isinstance(image, np.ndarray):
-        raise ValueError("Image is undefined or not a valid numpy array.")
 
     # Ensure the image is 2D
     if image.ndim != 2:

@@ -99,11 +99,6 @@ def test_quick_image_pyramid(tmp_path, pyramid, file_type, file_is_path):
 @pytest.mark.skip(reason="TODO")
 class TestValueErrors:
     class TestQuickImageValueErrors:
-        def test_invalid_image_type(self, pyramid): 
-            # image is none
-            # image is not valid numpy array
-            pass
-
         def test_invalid_image_dimensions(self, pyramid):
             # image has < 2 dimensions
             # image has > 2 dimensions
