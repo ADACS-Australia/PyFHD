@@ -122,6 +122,17 @@ def test_quick_image_pyramid(tmp_path, pyramid, file_type, file_is_path):
 # @pytest.mark.skip(reason="TODO")
 class TestValueErrors:
     class TestQuickImageValueErrors:
+        # Raise ValueError if image is undefined or not a numpy array.
+        # Run test with image as None and as a list.
+        @pytest.mark.parametrize("image_input", [ None, [1, 1] ])
+        def test_image_type(self, quick_image_defaults, image_input):
+            args = { **quick_image_defaults }
+            with pytest.raises(
+                ValueError,
+                match="Image is undefined or not a valid numpy array."
+            ):
+                quick_image(image_input, **args)
+                
         # Raise ValueError if image is not 2-dimensional.
         # Run test on 1D, 3D, and 0D images.
         @pytest.mark.parametrize("dimensions", [(1), (1, 1, 1), ()])
