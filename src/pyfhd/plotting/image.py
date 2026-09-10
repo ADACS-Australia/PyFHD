@@ -508,6 +508,9 @@ def quick_image(
     None
         The function saves the image to a file or displays it on screen.
     """
+    # Validate the image input
+    if image is None or not isinstance(image, np.ndarray):
+        raise ValueError("Image is undefined or not a valid numpy array.")
 
     # Ensure the image is 2D
     if image.ndim != 2:
@@ -536,13 +539,13 @@ def quick_image(
 
     # Validate that 2-value inputs are only 2 values
     if data_range is not None:
-        if len(data_range) != 2:
+        if not isinstance(data_range, np.ndarray | list) or len(data_range) != 2:
             raise ValueError("data_range must be an array with exactly two values.")
     if xrange is not None:
-        if len(xrange) != 2:
+        if not isinstance(xrange, np.ndarray | list) or len(xrange) != 2:
             raise ValueError("xrange must be an array with exactly two values.")
     if yrange is not None:
-        if len(yrange) != 2:
+        if not isinstance(yrange, np.ndarray | list) or len(yrange) != 2:
             raise ValueError("yrange must be an array with exactly two values.")
 
     # Apply logarithmic scaling if set. This modifies the image input directly
