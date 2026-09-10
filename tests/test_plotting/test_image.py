@@ -214,9 +214,16 @@ class TestValueErrors:
             ):
                 quick_image(pyramid, **args)
 
-        def test_sym_log(self, pyramid):
-            # color_profile is sym_log and data_range[0] is positive or
-            # data_range[1] is negative
-            # color_profile is sym_log and data_range[0] is positive and
-            # data_range[1] is negative
-            pass
+        # Raise ValueError if color_profile is sym_log and data_range does not
+        # have both positive and negative values.
+        @pytest.mark.parametrize("bad_range", [ [-2, -1], [-1, 0], [0, 1] ])
+        def test_sym_log(self, pyramid, quick_image_defaults, bad_range):
+            args = {
+                **quick_image_defaults, "log": True, "color_profile": "sym_log",
+                "data_range": bad_range
+            }
+            with pytest.raises(
+                ValueError,
+                match="sym_log color profile requires both negative and positive values in data_range."
+            ):
+                quick_image(pyramid, **args)
