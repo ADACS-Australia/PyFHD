@@ -142,15 +142,15 @@ def visibility_grid(
 
     # Instead of checking the visibilitity pointer we just take the vis_inds_use
     # from visibility
-    rows, cols = np.meshgrid(fi_use, bi_use)
-    vis_arr_use = visibility[rows, cols].T
+    rows, cols = np.meshgrid(fi_use, bi_use, indexing="ij")
+    vis_arr_use = visibility[rows, cols]
     # Model_flag has been removed in favor of just the model taking advantage
     # that the model default is None. If it has been specified at all with
     # anything other than None or False, then it should be a numpy array.
     # If it isn't, exit.
     if model is not None:
         if isinstance(model, np.ndarray):
-            model_use = model[rows, cols].T
+            model_use = model[rows, cols]
             model_return = np.zeros((dimension, elements), dtype=np.complex128)
         else:
             raise ValueError(
@@ -278,8 +278,9 @@ def visibility_grid(
         ymin_use = ymin.flat[ind0]
 
         # Find the frequency group per index
-        freq_i, bt_index = np.unravel_index(inds, (n_freq_use, n_baselines * n_samples))
-        _, baseline_inds = np.unravel_index(bt_index, (n_samples, n_baselines))
+        freq_i, bt_index = np.unravel_index(inds, (n_freq_use, bi_use.size))
+        bt_index_full = bi_use[bt_index]
+        _, baseline_inds = np.unravel_index(bt_index_full, (n_samples, n_baselines))
         fbin = freq_bin_i[freq_i]
 
         # Calculate the number of selected visibilities and their baseline index
@@ -393,12 +394,6 @@ def visibility_grid(
                     model_box = model_use.flat[inds]
                 vis_box = vis_arr_use.flat[inds]
                 psf_weight = np.ones(vis_n)
-                # IDL had integer / integer e.g. 2015 / 336 == 5, used flooring
-                # divider instead in python
-                # Also do take note that each were very close always within 0.01
-                # of their next number.
-                # e.g. 2015 / 336 = 5.99, should ceiling be be used instead?
-                bt_index = inds // n_freq_use
 
             box_matrix = np.zeros((vis_n, psf_dim3), dtype=arr_type)
             if pyfhd_config["beam_per_baseline"]:

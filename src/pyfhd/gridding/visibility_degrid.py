@@ -95,7 +95,7 @@ def visibility_degrid(
     """
 
     n_spectral = obs["degrid_spectral_terms"]
-    interp_flag = psf["interpolate_kernel"]
+    interp_flag = pyfhd_config["interpolate_kernel"]
     if conserve_memory:
         # memory threshold is in bytes
         if memory_threshold < 1e6:
@@ -125,6 +125,7 @@ def visibility_degrid(
     bin_n = baselines_dict["bin_n"]
     bin_i = baselines_dict["bin_i"]
     n_bin_use = baselines_dict["n_bin_use"]
+    bi_use = baselines_dict["bi_use"]
     ri = baselines_dict["ri"]
     xmin = baselines_dict["xmin"]
     ymin = baselines_dict["ymin"]
@@ -238,10 +239,13 @@ def visibility_degrid(
             # xmin and ymin should be all the same
             xmin_use = xmin.flat[inds[0]]
             ymin_use = ymin.flat[inds[0]]
-            freq_i, bt_index = np.unravel_index(inds, (n_freq_use, vis_dimension))
-            _, baseline_inds = np.unravel_index(bt_index, (n_samples, n_baselines))
+            freq_i, bt_index = np.unravel_index(inds, (n_freq_use, bi_use.size))
+            bt_index_full = bi_use[bt_index]
+            _, baseline_inds = np.unravel_index(bt_index_full, (n_samples, n_baselines))
             fbin = freq_bin_i[freq_i]
-
+            vis_arr_inds = np.ravel_multi_index(
+                (fbin, bt_index_full), (n_freq, vis_dimension)
+            )
             box_matrix = np.zeros((vis_n, psf_dim3), dtype=np.complex128)
             box_arr = image_uv[
                 xmin_use : xmin_use + psf_dim, ymin_use : ymin_use + psf_dim
@@ -263,9 +267,7 @@ def visibility_degrid(
                         dx0dy1[ii],
                         dx1dy1[ii],
                     )
-                    box_matrix.flat[psf_dim3 * ii : psf_dim3 * ii + kernel.size] = (
-                        kernel
-                    )
+                    box_matrix[ii] = kernel
             else:
                 group_id = group_arr[freq_i, baseline_inds]
                 group_max = np.max(group_id) + 1
@@ -280,22 +282,21 @@ def visibility_degrid(
 
                 # There might be a better selection criteria to determine which
                 # is more efficient
-                if vis_n > np.ceil(1.1 * n_xyf_bin) and not beam_per_baseline:
+                if vis_n > 1.1 * n_xyf_bin and not beam_per_baseline:
                     ind_remap_flag = True
                     inds = inds[xyf_si]
+                    vis_arr_inds = vis_arr_inds[xyf_si]
                     inds_use = xyf_si[xyf_ui]
                     freq_i = freq_i[inds_use]
                     x_off = x_off[inds_use]
                     y_off = y_off[inds_use]
                     fbin = fbin[inds_use]
-                    baseline_inds = baseline_inds[inds_use]
 
                     if n_xyf_bin == 1:
                         ind_remap = np.zeros(vis_n, dtype=int)
                     else:
                         hist_inds_u, _, ri_xyf = histogram(xyf_ui, bin_size=1, min=0)
                         ind_remap = ind_ref[ri_xyf[0 : hist_inds_u.size] - ri_xyf[0]]
-
                     vis_n = n_xyf_bin
                 else:
                     ind_remap_flag = False
@@ -356,8 +357,7 @@ def visibility_degrid(
                 vis_box = np.dot(box_arr, np.transpose(box_matrix))
             if ind_remap_flag:
                 vis_box = vis_box[ind_remap]
-
-            visibility_array.flat[inds] = vis_box
+            visibility_array.flat[vis_arr_inds] = vis_box
 
         loop_time = time.time()
         if (
