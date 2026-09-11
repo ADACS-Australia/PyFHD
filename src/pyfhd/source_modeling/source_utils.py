@@ -835,7 +835,7 @@ def source_dft(
     yvals: FloatArray | None = None,
     inds_use: IntArray | None = None,
     conserve_memory: bool = True,
-    mem_thresh: float = 1e8,
+    memory_threshold: float = 1e8,
 ) -> ComplexArray:
     """
     DFT sources to a model uv plane.
@@ -865,7 +865,7 @@ def source_dft(
     conserve_memory : bool
         Option to limit memory use by chunking the number of sources to DFT
         at a time.
-    mem_thresh : float
+    memory_threshold : float
         Memory threshold, which sets the number of sources to DFT at once if
         conserve_memory is True. Default is 1e8.
 
@@ -900,12 +900,12 @@ def source_dft(
 
     n_calc = xvals.size * n_src
     mem_factor = 32.0  # from rough empirical estimations
-    if conserve_memory and (n_calc * mem_factor > mem_thresh):
+    if conserve_memory and (n_calc * mem_factor > memory_threshold):
         # DFT with memory management
         # If the max memory is less than the estimated memory needed to DFT all
         # sources at once, then break the DFT into chunks
         sources_per_bin = int(
-            np.round(n_src / np.ceil(n_calc * mem_factor / mem_thresh))
+            np.round(n_src / np.ceil(n_calc * mem_factor / memory_threshold))
         )
         sources_per_bin = max([sources_per_bin, 1])
         memory_bins = int(np.ceil(n_src / sources_per_bin))
@@ -941,7 +941,7 @@ def source_dft(
         )
         loop_time = time.time()
         if (
-            memory_bins > 1
+            memory_bins > int(1.0 / reporting_frac)
             and bin_i % int(np.round(memory_bins * reporting_frac)) == 0
             and (bin_i + 1) < memory_bins
         ):
@@ -968,7 +968,7 @@ def source_dft_multi(
     logger: logging.Logger,
     uv_i_use: tuple[IntArray] | None = None,
     conserve_memory: bool = True,
-    mem_thresh: float = 1e8,
+    memory_threshold: float = 1e8,
 ) -> ComplexArray:
     """
     DFT multiple sources to a model uv plane.
@@ -997,7 +997,7 @@ def source_dft_multi(
     conserve_memory : bool
         Option to limit memory use by chunking the number of sources to DFT
         at a time.
-    mem_thresh : float
+    memory_threshold : float
         Memory threshold, which sets the number of sources to DFT at once if
         conserve_memory is True. Default is 1e8.
 
@@ -1044,7 +1044,7 @@ def source_dft_multi(
         dimension=dimension,
         elements=elements,
         flux=flux_arr,
-        mem_thresh=mem_thresh,
+        memory_threshold=memory_threshold,
         conserve_memory=conserve_memory,
         logger=logger,
     )
@@ -1063,7 +1063,7 @@ def source_dft_model(
     uv_mask: BoolArray | None = None,
     sigma_threshold: float | None = None,
     conserve_memory: bool = True,
-    mem_thresh: float = 1e8,
+    memory_threshold: float = 1e8,
 ) -> ComplexArray:
     """
     Coordinate DFTing sources to a model uv plane.
@@ -1093,7 +1093,7 @@ def source_dft_model(
     conserve_memory : bool
         Option to limit memory use by chunking the number of sources to DFT
         at a time.
-    mem_thresh : float
+    memory_threshold : float
         Memory threshold, which sets the number of sources to DFT at once if
         conserve_memory is True. Default is 1e8.
 
@@ -1123,7 +1123,7 @@ def source_dft_model(
         logger=logger,
         uv_i_use=uv_i_use,
         conserve_memory=conserve_memory,
-        mem_thresh=mem_thresh,
+        memory_threshold=memory_threshold,
     )
 
     return model_uv_arr

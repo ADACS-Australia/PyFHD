@@ -37,8 +37,6 @@ def visibility_degrid(
     vis_input: NDArray[np.complex128] | None = None,
     spectral_model_uv_arr: NDArray[np.float64] | None = None,
     beam_per_baseline: bool = False,
-    conserve_memory: bool = False,
-    memory_threshold: float | int = 1e8,
 ):
     """
     Generate visibilities from a 2D hyperresolved {u,v} plane using the Fourier
@@ -82,8 +80,6 @@ def visibility_degrid(
     beam_per_baseline : bool, optional
         Generate beams with corrective phases given the baseline location, by
         default False
-    conserve_memory : bool, optional
-        Reduce memory load by running loops, by default False
 
     Returns
     -------
@@ -96,10 +92,10 @@ def visibility_degrid(
 
     n_spectral = obs["degrid_spectral_terms"]
     interp_flag = pyfhd_config["interpolate_kernel"]
-    if conserve_memory:
+    if pyfhd_config["conserve_memory"]:
         # memory threshold is in bytes
-        if memory_threshold < 1e6:
-            memory_threshold = 1e8
+        if pyfhd_config["memory_threshold"] < 1e6:
+            pyfhd_config["memory_threshold"] = 1e8
 
     # If both beam and interp_flag leave a warning, prioritise beam_per_baseline
     if beam_per_baseline and interp_flag:
@@ -213,12 +209,12 @@ def visibility_degrid(
         inds_full = ri[ri[bin_i[bi]] : ri[bin_i[bi] + 1]]
 
         # if constraining memory usage, then est number of loops needed
-        if conserve_memory:
+        if pyfhd_config["conserve_memory"]:
             required_bytes = 16 * vis_n_full * psf_dim3
-            mem_iter = int(np.ceil(required_bytes / memory_threshold))
+            mem_iter = int(np.ceil(required_bytes / pyfhd_config["memory_threshold"]))
             if mem_iter > 1:
                 vis_n_per_iter = int(np.ceil(vis_n_full / mem_iter))
-        if not conserve_memory or mem_iter == 1:
+        if not pyfhd_config["conserve_memory"] or mem_iter == 1:
             vis_n = vis_n_full.copy()
             inds = inds_full.copy()
             mem_iter = 1
@@ -361,7 +357,7 @@ def visibility_degrid(
 
         loop_time = time.time()
         if (
-            n_bin_use > 1
+            n_bin_use > int(1.0 / reporting_frac)
             and bi % int(np.round(n_bin_use * reporting_frac)) == 0
             and (bi + 1) < n_bin_use
         ):

@@ -1,6 +1,7 @@
 from logging import Logger
 from os import environ as env
 from pathlib import Path
+import copy
 
 import pytest
 import numpy as np
@@ -76,13 +77,15 @@ def before_degridding(data_dir: Path, number: int, request: pytest.FixtureReques
     h5_save_dict["beam_per_baseline"] = beam_per_baseline
 
     if h5_save_dict["conserve_memory"] > 1e6:
-        h5_save_dict["memory_threshold"] = h5_save_dict["conserve_memory"]
-        h5_save_dict["conserve_memory"] = True
+        h5_save_dict["pyfhd_config"]["memory_threshold"] = h5_save_dict[
+            "conserve_memory"
+        ]
+        h5_save_dict["pyfhd_config"]["conserve_memory"] = True
     elif h5_save_dict["conserve_memory"] > 0:
-        h5_save_dict["memory_threshold"] = 1e8
-        h5_save_dict["conserve_memory"] = True
+        h5_save_dict["pyfhd_config"]["memory_threshold"] = 1e8
+        h5_save_dict["pyfhd_config"]["conserve_memory"] = True
     else:
-        h5_save_dict["conserve_memory"] = False
+        h5_save_dict["pyfhd_config"]["conserve_memory"] = False
 
     save(before_gridding, h5_save_dict, "before_file")
 
@@ -125,8 +128,6 @@ def test_visibility_degrid(
         vis_input=h5_before["vis_input"],
         spectral_model_uv_arr=h5_before["spectral_model_uv_arr"],
         beam_per_baseline=h5_before["beam_per_baseline"],
-        conserve_memory=h5_before["conserve_memory"],
-        memory_threshold=h5_before["memory_threshold"],
     )
 
     npt.assert_allclose(vis_return, vis_expected, atol=1e-15)
@@ -141,18 +142,19 @@ def test_vis_degrid_zenith_2013(
     _, psf, obs, pyfhd_config = mwa_aee_beam_zenith_2013
     params = zenith_params_2013
 
+    pyfhd_config_use = copy.deepcopy(pyfhd_config)
+    pyfhd_config_use["conserve_memory"] = True
+    pyfhd_config_use["memory_threshold"] = 1e10
     vis_model = visibility_degrid(
         image_uv=model_uv_full,
         vis_weights=None,
         obs=obs,
         psf=psf,
         params=params,
-        pyfhd_config=pyfhd_config,
+        pyfhd_config=pyfhd_config_use,
         logger=Logger(1),
         polarization=pol_i,
         fill_model_visibilities=True,
-        conserve_memory=True,
-        memory_threshold=1e10,
     )
 
     fhd_vis_model_file = fetch_data("2013_zenith_gleam_model_vis_2freq")

@@ -138,8 +138,6 @@ def calibrate(
             logger=logger,
             fill_model_visibilities=True,
             model_delay_filter=pyfhd_config["calibration_model_delay_filter"],
-            conserve_memory=pyfhd_config["conserve_memory"],
-            mem_thresh=pyfhd_config["memory_threshold"],
         )
         degrid_end = time.time()
         _print_time_diff(degrid_start, degrid_end, "Model visibility creation", logger)
