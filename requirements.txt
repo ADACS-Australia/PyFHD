@@ -54,7 +54,7 @@ packaging==25.0
     #   astropy
     #   matplotlib
     #   setuptools-scm
-pillow==11.2.1
+pillow==12.3.0
     # via matplotlib
 pyerfa==2.0.1.5
     # via
