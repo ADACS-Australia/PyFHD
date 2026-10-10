@@ -74,7 +74,7 @@ scipy==1.15.3
     # via
     #   pyfhd (pyproject.toml)
     #   pyuvdata
-setuptools==80.9.0
+setuptools==83.0.0
     # via setuptools-scm
 setuptools-scm==8.3.1
     # via pyuvdata
