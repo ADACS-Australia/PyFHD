@@ -341,8 +341,7 @@ def read_metafits(
         meta["phasedec"] = hdr["DECPHASE"]
         meta["time_res"] = hdr["INTTIME"]
         delays = hdr["DELAYS"].split(",")
-        # TODO: this is wrong. It should go like the number of feeds not the
-        # number of pols. Will break things for n_pol=4.
+        # TODO: fix for n_pol > 2. See https://github.com/EoRImaging/pyfhd/issues/173
         meta["delays"] = (
             np.asarray(delays, np.int64)
             .repeat(obs["n_pol"])
