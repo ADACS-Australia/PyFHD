@@ -3,6 +3,10 @@
 ## Unreleased
 
 ### Breaking Changes!
+* The following configuration options have been deprecated (using them will
+generate deprecation warnings): `save-checkpoints`, `obs-checkpoint`, `beam-checkpoint`,
+`calibrate-checkpoint`, `gridding-checkpoint`, `save-weights`, `save-model`,
+`save-obs`, `save-params`, `save-cal`, `model-file-type`, `model-file-path`.
 * Updated function parameter names to avoid shadowing python builtins.
 The affected functions and parameters are:
 `beam_setup.beam_utils.beam_image` (`abs`->`use_abs`);
@@ -22,6 +26,10 @@ repo and passing None to `beam_file-path`.
 to avoid confusion with the new `uvbeam-file-path` option.
 
 ### New Features
+* The following configuration options have been added: `antenna-size`,
+`recalculate-beam`, `recalculate-cal-model-vis`, `recalculate-cal`,
+`recalculate-healpix`, `save-beam`, `save-skymodel`, `save-model-uv`,
+`cal-model-file-path`, `scal-model-file-type`.
 * pyfhd now supports running without a model (i.e. gridding without calibration).
 * pyfhd can now create model visibilities for calibration using degridding. The
 source catalog to be used in degridding must be specified as a file readable by
@@ -104,6 +112,8 @@ fully propagated, causing shape errors.
 * Fixed a bug in `pyfhd_io.load` that did not properly read HDF5 files created by other writers.
 
 ## Refactoring/Restructuring Changes
+* Major re-working of the checkpoint system to avoid duplicating data on disk
+and save products as soon as they are made.
 * Major re-working of the logging to avoid passing loggers between functions and
 use a context manager for the logger in the main function.
 
