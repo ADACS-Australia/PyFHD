@@ -1,12 +1,12 @@
-from pyfhd.io.pyfhd_io import recarray_to_dict
-import numpy as np
-from scipy.io import readsav
 from pathlib import Path
+
+import numpy as np
 import numpy.testing as npt
-from colorama import Fore
-from colorama import Style
-from pyfhd.io.pyfhd_io import save
+from colorama import Fore, Style
 from numpy.typing import NDArray
+from scipy.io import readsav
+
+from ..io.pyfhd_io import recarray_to_dict, save
 
 
 def get_data(data_dir: Path, data_filename: str, *args: list[str]) -> list:
@@ -181,19 +181,14 @@ def try_assert_all_close(
     """
     try:
         npt.assert_allclose(actual, target, atol=tolerance)
-        print(
-            Fore.GREEN
-            + Style.BRIGHT
-            + "Test Passed for {}".format(name)
-            + Style.RESET_ALL
-        )
+        print(Fore.GREEN + Style.BRIGHT + f"Test Passed for {name}" + Style.RESET_ALL)
     except AssertionError as error:
         print(
             Fore.RED
             + Style.BRIGHT
-            + "Test Failed for {}:".format(name)
+            + f"Test Failed for {name}:"
             + Style.RESET_ALL
-            + "{}".format(error)
+            + f"{error}"
             + Style.RESET_ALL
         )
 
@@ -315,7 +310,7 @@ def print_types(dictionary: dict, dict_name: str, indent_level: int = 1) -> None
     indent_level : int
         Sets the indent levels for printing as it's a recursive function, by default 1
     """
-    for key in dictionary.keys():
+    for key in dictionary:
         # Print this if it's a NumPy array
         if isinstance(dictionary[key], np.ndarray):
             print(

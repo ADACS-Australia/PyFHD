@@ -1,19 +1,19 @@
-import importlib_resources
 import logging
 from copy import deepcopy
-
-import numpy as np
-from astropy.io import fits
-from astropy.constants import c
-from numpy.typing import NDArray
 from pathlib import Path
+
+import importlib_resources
+import numpy as np
+from astropy.constants import c
+from astropy.io import fits
+from numpy.typing import NDArray
 from scipy.ndimage import uniform_filter
 
 from pyfhd.pyfhd_tools.pyfhd_utils import (
+    histogram,
+    rebin,
     resistant_mean,
     weight_invert,
-    rebin,
-    histogram,
 )
 
 logger = logging.getLogger(__name__)
@@ -377,15 +377,15 @@ def transfer_bandpass(obs: dict, cal: dict, pyfhd_config: dict) -> tuple[dict, d
             )
         data_types = np.array(data_types)
         # Get the indexes for the FITS standard checks
-        data_index = np.nonzero("narrays" == data_types)[0][0]
-        ant_index = np.nonzero("antaxis" == data_types)[0][0]
-        freq_index = np.nonzero("freqs" == data_types)[0][0]
-        time_index = np.nonzero("time" == data_types)[0][0]
-        jones_index = np.nonzero("jones" == data_types)[0][0]
+        data_index = np.nonzero(data_types == "narrays")[0][0]
+        ant_index = np.nonzero(data_types == "antaxis")[0][0]
+        freq_index = np.nonzero(data_types == "freqs")[0][0]
+        time_index = np.nonzero(data_types == "time")[0][0]
+        jones_index = np.nonzero(data_types == "jones")[0][0]
         # Deal with spec_wind_index separately as default highband file doesn't
         # have this in
         # May cause issues with other fits files, adjust the code then.
-        spec_wind_index = np.nonzero("if" == data_types)[0]
+        spec_wind_index = np.nonzero(data_types == "if")[0]
         if spec_wind_index.size == 0:
             spec_wind_index = -1
 
@@ -744,7 +744,7 @@ def vis_cal_bandpass(obs: dict, cal: dict, pyfhd_config: dict) -> tuple[dict, di
     # has been set (fits only supported right now)
     if pyfhd_config["cal_bp_transfer"] is not None:
         cal_bandpass, cal_remainder = transfer_bandpass(obs, cal, pyfhd_config)
-        if len(cal_bandpass.keys()) != 0 and len(cal_remainder.keys()) != 0:
+        if len(cal_bandpass) != 0 and len(cal_remainder) != 0:
             logger.info(
                 f"Calibration Bandpass FITS file {pyfhd_config['cal_bp_transfer']} "
                 "transferred in for cal_bandpass and cal_remainder"
@@ -1110,20 +1110,20 @@ def vis_cal_polyfit(
                 np.maximum(np.zeros_like(cable_reflections[4]), cable_reflections[4]),
                 np.ones_like(cable_reflections[4]),
             )
-            tile_mode_X = cable_reflections[5]
-            tile_amp_X = cable_reflections[6]
-            tile_phase_X = cable_reflections[7]
-            tile_mode_Y = cable_reflections[8]
-            tile_amp_Y = cable_reflections[9]
-            tile_phase_Y = cable_reflections[10]
+            tile_mode_x = cable_reflections[5]
+            tile_amp_x = cable_reflections[6]
+            tile_phase_x = cable_reflections[7]
+            tile_mode_y = cable_reflections[8]
+            tile_amp_y = cable_reflections[9]
+            tile_phase_y = cable_reflections[10]
 
             # Modes in fourier transform units
             mode_i_arr = np.zeros((cal["n_pol"], obs["n_tile"]))
-            mode_i_arr[0, :] = tile_mode_X * tile_ref_flag
-            mode_i_arr[1, :] = tile_mode_Y * tile_ref_flag
+            mode_i_arr[0, :] = tile_mode_x * tile_ref_flag
+            mode_i_arr[1, :] = tile_mode_y * tile_ref_flag
 
-            amp_arr = np.vstack([tile_amp_X, tile_amp_Y])
-            phase_arr = np.vstack[[tile_phase_X, tile_phase_Y]]
+            amp_arr = np.vstack([tile_amp_x, tile_amp_y])
+            phase_arr = np.vstack[[tile_phase_x, tile_phase_y]]
 
         elif pyfhd_config["cal_reflection_mode_theory"]:
             logger.info(

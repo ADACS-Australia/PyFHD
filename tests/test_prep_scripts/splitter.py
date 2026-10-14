@@ -1,7 +1,8 @@
+import argparse
+from pathlib import Path
+
 import numpy as np
 from scipy.io import readsav
-from pathlib import Path
-import argparse
 
 
 def splitter(sav_file, save_path):
@@ -47,7 +48,7 @@ def splitter(sav_file, save_path):
         if save_path.is_dir():
             # For every key, value pair, save a numpy file with key as the file
             # name in the save_path directory
-            for key in dict_to_iter.keys():
+            for key in dict_to_iter:
                 np.save(
                     str(save_path) + "/" + str(key) + ".npy",
                     dict_to_iter[key],

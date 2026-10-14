@@ -1,8 +1,9 @@
-import numpy as np
-from pyfhd.pyfhd_tools.pyfhd_utils import histogram, region_grow
 import h5py
+import numpy as np
 from numpy.typing import NDArray
 from scipy.ndimage import map_coordinates
+
+from ..pyfhd_tools.pyfhd_utils import histogram, region_grow
 
 
 def gaussian_decomp(
@@ -278,9 +279,8 @@ def beam_image(
             beam_single = np.zeros([psf_dim, psf_dim], dtype=np.complex128)
         for f_idx in range(nf_use):
             fi = freq_i_use[f_idx]
-            if freq_i is not None:
-                if freq_i != fi:
-                    continue
+            if freq_i is not None and freq_i != fi:
+                continue
             fbin = freq_bin_i[fi]
             beam_single[:, :] = 0
             if beam_gaussian_params is not None:

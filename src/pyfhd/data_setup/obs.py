@@ -1,22 +1,21 @@
 import copy
 import logging
-from math import pi, log10
 from pathlib import Path
 
 import numpy as np
+from astropy.coordinates import EarthLocation
 from astropy.io import fits
 from astropy.table import Table
 from astropy.time import Time
-from astropy.coordinates import EarthLocation
 from astropy.units import Quantity
 
-from pyfhd.pyfhd_tools.pyfhd_utils import (
-    idl_argunique,
-    histogram,
+from ..pyfhd_tools.pyfhd_utils import (
     angle_difference,
+    histogram,
+    idl_argunique,
     parallactic_angle,
 )
-from pyfhd.pyfhd_tools.unit_conv import altaz_to_radec, radec_to_pixel, radec_to_altaz
+from ..pyfhd_tools.unit_conv import altaz_to_radec, radec_to_altaz, radec_to_pixel
 
 logger = logging.getLogger(__name__)
 
@@ -112,10 +111,10 @@ def create_obs(
         baseline_min = np.min(params["baseline_arr"])
         exponent = np.log(np.min(baseline_min)) / np.log(2)
         antenna_mod_index = 2 ** np.floor(exponent)
-        tile_B_test = baseline_min % antenna_mod_index
+        tile_b_test = baseline_min % antenna_mod_index
         # Check if a bad fit and if autocorrelations or the first tile are missing
-        if (tile_B_test > 1) and (baseline_min % 2 == 1):
-            antenna_mod_index /= 2 ** np.floor(np.log(np.min(tile_B_test)) / np.log(2))
+        if (tile_b_test > 1) and (baseline_min % 2 == 1):
+            antenna_mod_index /= 2 ** np.floor(np.log(np.min(tile_b_test)) / np.log(2))
         baseline_info["tile_a"] = np.floor(params["baseline_arr"] / antenna_mod_index)
         baseline_info["tile_b"] = np.trunc(params["baseline_arr"] % antenna_mod_index)
         max_tile = max(np.max(baseline_info["tile_a"]), np.max(baseline_info["tile_b"]))
@@ -170,7 +169,7 @@ def create_obs(
 
     # Determine the imaging parameters to use
     if pyfhd_config["FoV"] is not None:
-        obs["kpix"] = (180 / pi) / pyfhd_config["FoV"]
+        obs["kpix"] = (180 / np.pi) / pyfhd_config["FoV"]
     if pyfhd_config["kbinsize"] is None:
         obs["kpix"] = 0.5
     else:
@@ -180,7 +179,7 @@ def create_obs(
     # in x direction (dimension)
     if pyfhd_config["dimension"] is None and pyfhd_config["elements"] is None:
         obs["dimension"] = 2 ** int(
-            (log10((2 * max_baseline) / pyfhd_config["kpix"]) / log10(2))
+            np.log10((2 * max_baseline) / pyfhd_config["kpix"]) / np.log10(2)
         )
         obs["elements"] = obs["dimension"]
     elif pyfhd_config["dimension"] is not None and pyfhd_config["elements"] is None:
@@ -195,7 +194,7 @@ def create_obs(
     # Ensure both dimension and elements are ints to prevent issues down the pipeline
     obs["dimension"] = int(obs["dimension"])
     obs["elements"] = int(obs["elements"])
-    obs["degpix"] = (180 / pi) / (obs["kpix"] * pyfhd_config["dimension"])
+    obs["degpix"] = (180 / np.pi) / (obs["kpix"] * pyfhd_config["dimension"])
 
     # Set the max and min baseline
     max_baseline_inds = np.where(
@@ -243,7 +242,7 @@ def create_obs(
 
     # Set the last of obs values
     if pyfhd_config["dft_threshold"]:
-        obs["dft_threshold"] = 1 / (2 * pi) ** 2 * obs["dimension"]
+        obs["dft_threshold"] = 1 / (2 * np.pi) ** 2 * obs["dimension"]
     else:
         obs["dft_threshold"] = 0
     obs["degrid_spectral_terms"] = 0
@@ -269,8 +268,8 @@ def create_obs(
     obs["baseline_info"] = baseline_info
 
     # Save the last of the metadata into obs
-    for key in meta.keys():
-        if key not in baseline_info.keys():
+    for key in meta:
+        if key not in baseline_info:
             obs[key] = meta[key]
 
     return obs
@@ -354,11 +353,11 @@ def read_metafits(
         )
         hdr = None
         # Simulate the flagging of tiles by taking where tiles don't exist
-        tile_A1 = params["antenna1"]
-        tile_B1 = params["antenna2"]
-        hist_A1, _, _ = histogram(tile_A1, min_val=1, max_val=obs["n_tile"])
-        hist_B1, _, _ = histogram(tile_B1, min_val=1, max_val=obs["n_tile"])
-        hist_AB = hist_A1 + hist_B1
+        tile_a1 = params["antenna1"]
+        tile_b1 = params["antenna2"]
+        hist_a1, _, _ = histogram(tile_a1, min_val=1, max_val=obs["n_tile"])
+        hist_b1, _, _ = histogram(tile_b1, min_val=1, max_val=obs["n_tile"])
+        hist_ab = hist_a1 + hist_b1
         meta["tile_names"] = layout["antenna_names"]
         # if pyuvdata is available, get antenna heights using pyuvdata utils
         try:
@@ -377,7 +376,7 @@ def read_metafits(
             meta["tile_height"] = ant_enu[:, 2]
         except ImportError:
             meta["tile_height"] = np.zeros(obs["n_tile"])
-        tile_use = np.where(hist_AB == 0)[0]
+        tile_use = np.where(hist_ab == 0)[0]
         meta["tile_flag"] = np.zeros(obs["n_tile"], dtype=np.int8)
         if tile_use.size > 0:
             meta["tile_flag"][tile_use] = 1
@@ -434,7 +433,7 @@ def read_metafits(
         # Save the raw header and data into the meta dictionary
         # Save the header as a Python dictionary
         meta["meta_hdr"] = {}
-        for key in hdr.keys():
+        for key in hdr:
             # Check if there are HISTORY or COMMENT fields which will be combined
             # in a list for ease of use with hdf5 files
             if key in ["HISTORY", "COMMENT"]:

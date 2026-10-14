@@ -1,12 +1,13 @@
-from pyfhd.io.pyfhd_io import recarray_to_dict
-import pytest
-import numpy as np
-import numpy.testing as npt
 from os import environ as env
 from pathlib import Path
-from pyfhd.pyfhd_tools.test_utils import get_data, get_data_items
+
+import numpy as np
+import numpy.testing as npt
+import pytest
+
 from pyfhd.gridding.gridding_utils import baseline_grid_locations
-from pyfhd.io.pyfhd_io import save, load
+from pyfhd.io.pyfhd_io import load, recarray_to_dict, save
+from pyfhd.pyfhd_tools.test_utils import get_data, get_data_items
 
 
 @pytest.fixture
@@ -50,16 +51,14 @@ def baseline_before(data_dir, number):
     h5_save_dict["vis_weights"] = vis_weights.transpose()
     h5_save_dict["bi_use"] = get_file(data_dir, f"input_bi_use_arr_{number}.npy")
     h5_save_dict["fi_use"] = get_file(data_dir, f"input_fi_use_{number}.npy")
-    h5_save_dict["fill_model_visibilities"] = (
-        True
-        if get_file(data_dir, f"input_fill_model_visibilities_{number}.npy")
-        else False
+    h5_save_dict["fill_model_visibilities"] = bool(
+        get_file(data_dir, f"input_fill_model_visibilities_{number}.npy")
     )
-    h5_save_dict["interp_flag"] = (
-        True if get_file(data_dir, f"input_interp_flag_{number}.npy") else False
+    h5_save_dict["interp_flag"] = bool(
+        get_file(data_dir, f"input_interp_flag_{number}.npy")
     )
-    h5_save_dict["mask_mirror_indices"] = (
-        True if get_file(data_dir, f"input_mask_mirror_indices_{number}.npy") else False
+    h5_save_dict["mask_mirror_indices"] = bool(
+        get_file(data_dir, f"input_mask_mirror_indices_{number}.npy")
     )
     # Save it
     save(baseline_before, h5_save_dict, "before_file")

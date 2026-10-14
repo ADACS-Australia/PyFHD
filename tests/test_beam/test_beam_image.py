@@ -5,10 +5,10 @@ import numpy as np
 import numpy.testing as npt
 import pytest
 
-from pyfhd.io.pyfhd_io import convert_sav_to_dict, load, recarray_to_dict, save
-from pyfhd.pyfhd_tools.test_utils import get_savs
 from pyfhd.beam_setup.beam_utils import beam_image
 from pyfhd.data.datasets import fetch_data
+from pyfhd.io.pyfhd_io import convert_sav_to_dict, load, recarray_to_dict, save
+from pyfhd.pyfhd_tools.test_utils import get_savs
 
 
 @pytest.fixture
@@ -112,8 +112,8 @@ def test_beam_image(before_file, after_file, beam_dir):
         psf,
         h5_before["obs"],
         h5_before["pol_i"],
-        freq_i=h5_before["freq_i"] if "freq_i" in h5_before else None,
-        square=h5_before["square"] if "square" in h5_before else False,
+        freq_i=h5_before.get("freq_i", None),
+        square=h5_before.get("square", False),
     )
 
     npt.assert_allclose(beam_base, expected_beam_base, atol=1e-8)

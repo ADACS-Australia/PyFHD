@@ -1,11 +1,12 @@
-import pytest
-import numpy.testing as npt
-import numpy as np
 from os import environ as env
 from pathlib import Path
+
+import numpy as np
+import numpy.testing as npt
+import pytest
+
+from pyfhd.io.pyfhd_io import convert_sav_to_dict, load, recarray_to_dict, save
 from pyfhd.source_modeling.vis_model_transfer import vis_model_transfer
-from pyfhd.io.pyfhd_io import save, load, recarray_to_dict
-from pyfhd.io.pyfhd_io import convert_sav_to_dict
 
 
 @pytest.fixture
@@ -46,7 +47,7 @@ def before_file(tag, run, data_dir, model_dir):
     del h5_save_dict["model_transfer"]
     # For point_zenith let's test the uvfits we have
     h5_save_dict["pyfhd_config"] = {
-        "flag_model": False if "skip_model_flagging" in h5_save_dict["extra"] else True,
+        "flag_model": "skip_model_flagging" not in h5_save_dict["extra"],
         "cal_model_file_type": "uvfits" if tag == "point_zenith" else "sav",
         "cal_model_file_path": (
             str(Path(model_dir, f"{tag}.uvfits"))

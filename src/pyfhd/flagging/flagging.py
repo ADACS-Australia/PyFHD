@@ -1,9 +1,9 @@
 import logging
 
 import numpy as np
-from numpy.typing import NDArray, ArrayLike
+from numpy.typing import ArrayLike, NDArray
 
-from pyfhd.pyfhd_tools.pyfhd_utils import idl_median, histogram
+from ..pyfhd_tools.pyfhd_utils import histogram, idl_median
 
 logger = logging.getLogger(__name__)
 
@@ -105,16 +105,16 @@ def vis_flag_basic(
         logger.info(
             f"Flagging frequencies less than {pyfhd_config['flag_freq_start']}MHz"
         )
-        frequency_MHz = freq_arr / 1e6
-        freq_start_cut = np.where(frequency_MHz < pyfhd_config["flag_freq_start"])
+        frequency_mhz = freq_arr / 1e6
+        freq_start_cut = np.where(frequency_mhz < pyfhd_config["flag_freq_start"])
         if np.size(freq_start_cut) > 0:
             vis_weight_arr[:, freq_start_cut, :] = 0
     if pyfhd_config["flag_freq_end"]:
         logger.info(
             f"Flagging frequencies more than {pyfhd_config['flag_freq_end']}MHz"
         )
-        frequency_MHz = freq_arr / 1e6
-        freq_end_cut = np.where(frequency_MHz > pyfhd_config["flag_freq_end"])
+        frequency_mhz = freq_arr / 1e6
+        freq_end_cut = np.where(frequency_mhz > pyfhd_config["flag_freq_end"])
         if np.size(freq_end_cut) > 0:
             vis_weight_arr[:, freq_end_cut, :] = 0
     # This section replaces the function vis_flag_tile

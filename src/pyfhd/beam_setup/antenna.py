@@ -1,17 +1,17 @@
-import importlib_resources
 import logging
 from typing import Literal
 
+import importlib_resources
 import numpy as np
-from astropy.coordinates import SkyCoord, EarthLocation
 from astropy import units
+from astropy.coordinates import EarthLocation, SkyCoord
 from astropy.time import Time
 from pyuvdata import BeamInterface, UVBeam
 from scipy.interpolate import interp1d
 
-from ..pyfhd_tools.unit_conv import pixel_to_radec, radec_to_altaz
 from ..pyfhd_tools.pyfhd_utils import parallactic_angle
 from ..pyfhd_tools.types import ComplexArray, FloatArray
+from ..pyfhd_tools.unit_conv import pixel_to_radec, radec_to_altaz
 
 
 def _azza_beam_arrays(image_dim, scale, obs, jdate):
@@ -422,22 +422,22 @@ def init_beam(obs: dict, pyfhd_config: dict) -> dict:
             beam = UVBeam.from_file(mwa_beam_file, **uvbeam_kwargs)
 
         # check for nans in beam. If they can be removed by a horizon cut do it.
-        if np.any(np.isnan(beam.data_array)):
-            if beam.pixel_coordinate_system != "healpix":
-                above_hor_inc = np.nonzero(beam.axis2_array > (np.pi / 2))[0]
-                above_hor_exc = np.nonzero(beam.axis2_array >= (np.pi / 2))[0]
-                if not np.any(np.isnan(beam.data_array[above_hor_inc])):
-                    logger.info("Cutting the beam below the horizon to remove NaNs.")
-                    beam.select(axis2_inds=above_hor_inc)
-                elif not np.any(np.isnan(beam.data_array[above_hor_exc])):
-                    logger.info(
-                        "Cutting the beam at and below the horizon to remove NaNs."
-                    )
-                    beam.select(axis2_inds=above_hor_exc)
-                else:
-                    raise ValueError(
-                        "UVBeam object has NaNs in the data array above the horizon."
-                    )
+        if (
+            np.any(np.isnan(beam.data_array))
+            and beam.pixel_coordinate_system != "healpix"
+        ):
+            above_hor_inc = np.nonzero(beam.axis2_array > (np.pi / 2))[0]
+            above_hor_exc = np.nonzero(beam.axis2_array >= (np.pi / 2))[0]
+            if not np.any(np.isnan(beam.data_array[above_hor_inc])):
+                logger.info("Cutting the beam below the horizon to remove NaNs.")
+                beam.select(axis2_inds=above_hor_inc)
+            elif not np.any(np.isnan(beam.data_array[above_hor_exc])):
+                logger.info("Cutting the beam at and below the horizon to remove NaNs.")
+                beam.select(axis2_inds=above_hor_exc)
+            else:
+                raise ValueError(
+                    "UVBeam object has NaNs in the data array above the horizon."
+                )
         f_obj, k_obj = beam.decompose_feed_aligned_terms()
         f_beam = BeamInterface(f_obj)
 

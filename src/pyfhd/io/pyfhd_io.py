@@ -6,7 +6,7 @@ from typing import Any, Literal
 import h5py
 import numpy as np
 import yaml
-from numpy.typing import NDArray, DTypeLike
+from numpy.typing import DTypeLike, NDArray
 from scipy.io import readsav
 
 logger = logging.getLogger(__name__)
@@ -154,10 +154,7 @@ def checkpoint_complete(checkpoint: checkpoint_literal, pyfhd_config: dict) -> b
         else:
             files_exist.append(filename.exists())
 
-    if np.all(files_exist):
-        return True
-    else:
-        return False
+    return bool(np.all(files_exist))
 
 
 def dtype_picker(dtype: DTypeLike) -> type:
@@ -847,7 +844,7 @@ def recarray_to_dict(data: np.recarray | dict) -> dict:
                             list(data[key].shape) + list(data[key].flat[0].shape)
                         )
             except ValueError:
-                data[key] = list(x for x in data[key])
+                data[key] = list(data[key])
     return data
 
 

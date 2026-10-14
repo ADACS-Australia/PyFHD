@@ -7,19 +7,19 @@ import h5py
 import numpy as np
 from numpy.typing import NDArray
 
-from .gridding_utils import (
-    baseline_grid_locations,
-    interpolate_kernel,
-    grid_beam_per_baseline,
-)
 from ..pyfhd_tools.pyfhd_utils import (
+    _print_time_diff,
+    deriv_coefficients,
+    histogram,
     idl_argunique,
     l_m_n,
     rebin,
     weight_invert,
-    histogram,
-    deriv_coefficients,
-    _print_time_diff,
+)
+from .gridding_utils import (
+    baseline_grid_locations,
+    grid_beam_per_baseline,
+    interpolate_kernel,
 )
 
 logger = logging.getLogger(__name__)
@@ -93,10 +93,9 @@ def visibility_degrid(
 
     n_spectral = obs["degrid_spectral_terms"]
     interp_flag = pyfhd_config["interpolate_kernel"]
-    if pyfhd_config["conserve_memory"]:
+    if pyfhd_config["conserve_memory"] and pyfhd_config["memory_threshold"] < 1e6:
         # memory threshold is in bytes
-        if pyfhd_config["memory_threshold"] < 1e6:
-            pyfhd_config["memory_threshold"] = 1e8
+        pyfhd_config["memory_threshold"] = 1e8
 
     # If both beam and interp_flag leave a warning, prioritise beam_per_baseline
     if beam_per_baseline and interp_flag:
@@ -180,11 +179,10 @@ def visibility_degrid(
         y = x.copy()
 
     conj_i = np.where(params["vv"] > 0)
-    if conj_i[0].size > 0:
-        if beam_per_baseline:
-            uu[conj_i] = -uu[conj_i]
-            vv[conj_i] = -vv[conj_i]
-            ww[conj_i] = -ww[conj_i]
+    if conj_i[0].size > 0 and beam_per_baseline:
+        uu[conj_i] = -uu[conj_i]
+        vv[conj_i] = -vv[conj_i]
+        ww[conj_i] = -ww[conj_i]
 
     # Create the correct size visibility array
     vis_dimension = n_baselines * n_samples
