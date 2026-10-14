@@ -24,6 +24,7 @@ logger = logging.getLogger(__name__)
 
 
 def get_image_renormalization(
+    *,
     obs: dict,
     weights: NDArray[np.float64],
     beam_base: NDArray[np.complex128],
@@ -45,7 +46,7 @@ def get_image_renormalization(
         Beam orthoslant image per polarization.
     filter_arr : NDArray[np.float64]
         u-v array of filter weights, relevant for
-        a uniform filter.
+        a uniform filter. Shape is [n_pol, dimension, elements].
     pyfhd_config : dict
         pyfhd configuration settings.
 
@@ -62,7 +63,7 @@ def get_image_renormalization(
             pyfhd_config,
             weights=weights[pol_i],
             pad_uv_image=pyfhd_config["pad_uv_image"],
-            filter=filter_arr[pol_i],
+            filter_uv=filter_arr[pol_i],
             beam_ptr=beam_base[pol_i],
             degpix=obs["degpix"],
         )
@@ -251,34 +252,38 @@ def quickview(
     filter_arr = np.zeros([obs["n_pol"], obs["dimension"], obs["elements"]])
     for pol_i in range(obs["n_pol"]):
         complex_flag = pol_i > 1
-        filter = np.empty(0)
+        filter_use = np.empty(0)
         # Get the dirty image of the uv plane and the filter from filter_uv_uniform
-        instr_dirty_arr[pol_i], filter, _ = dirty_image_generate(
+        instr_dirty_arr[pol_i], filter_use, _ = dirty_image_generate(
             image_uv[pol_i],
             pyfhd_config,
             uniform_filter_uv=uniform_filter_uv,
             degpix=obs_out["degpix"],
             weights=weights_uv[pol_i],
             pad_uv_image=pyfhd_config["pad_uv_image"],
-            filter=filter,
+            filter_uv=filter_use,
             not_real=complex_flag,
             beam_ptr=beam_base_out[pol_i],
         )
-        filter_arr[pol_i] = filter
+        filter_arr[pol_i] = filter_use
         if model_uv is not None:
-            instr_model_arr[pol_i], filter, _ = dirty_image_generate(
+            instr_model_arr[pol_i], filter_use, _ = dirty_image_generate(
                 model_uv[pol_i],
                 pyfhd_config,
                 uniform_filter_uv=uniform_filter_uv,
                 degpix=obs_out["degpix"],
                 weights=weights_uv[pol_i],
                 pad_uv_image=pyfhd_config["pad_uv_image"],
-                filter=filter,
+                filter_uv=filter_use,
                 not_real=complex_flag,
                 beam_ptr=beam_base_out[pol_i],
             )
     renorm_factor = get_image_renormalization(
-        obs_out, weights_uv, beam_base_out, filter_arr, pyfhd_config
+        obs=obs_out,
+        weights=weights_uv,
+        beam_base=beam_base_out,
+        filter_arr=filter_arr,
+        pyfhd_config=pyfhd_config,
     )
     # Reshape renorm factor to multiply per polarization without loop to
     # [obs["n_pol"], 1, 1]
