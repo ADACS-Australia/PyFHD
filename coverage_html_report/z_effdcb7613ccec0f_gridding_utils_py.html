@@ -67,7 +67,7 @@
             <a id="nextFileLink" class="nav" href="z_effdcb7613ccec0f_visibility_degrid_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.11.0">coverage.py v7.11.0</a>,
-            created at 2026-10-13 21:32 +0000
+            created at 2026-10-13 21:40 +0000
         </p>
         <aside class="hidden">
             <button type="button" class="button_next_chunk" data-shortcut="j"></button>
@@ -302,10 +302,10 @@
     <p class="run"><span class="n"><a id="t218" href="#t218">218</a></span><span class="t">    <span class="nam">ycen</span> <span class="op">=</span> <span class="nam">np</span><span class="op">.</span><span class="nam">outer</span><span class="op">(</span><span class="nam">frequency_array</span><span class="op">,</span> <span class="nam">ky_arr</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t219" href="#t219">219</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t220" href="#t220">220</a></span><span class="t">    <span class="com"># Pixel number offset per baseline for each uv-box subset</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run"><span class="n"><a id="t221" href="#t221">221</a></span><span class="t">    <span class="nam">x_offset</span> <span class="op">=</span> <span class="nam">np</span><span class="op">.</span><span class="nam">fix</span><span class="op">(</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t221" href="#t221">221</a></span><span class="t">    <span class="nam">x_offset</span> <span class="op">=</span> <span class="nam">np</span><span class="op">.</span><span class="nam">trunc</span><span class="op">(</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t222" href="#t222">222</a></span><span class="t">        <span class="nam">np</span><span class="op">.</span><span class="nam">floor</span><span class="op">(</span><span class="op">(</span><span class="nam">xcen</span> <span class="op">-</span> <span class="nam">np</span><span class="op">.</span><span class="nam">floor</span><span class="op">(</span><span class="nam">xcen</span><span class="op">)</span><span class="op">)</span> <span class="op">*</span> <span class="nam">psf_resolution</span><span class="op">)</span> <span class="op">%</span> <span class="nam">psf_resolution</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t223" href="#t223">223</a></span><span class="t">    <span class="op">)</span><span class="op">.</span><span class="nam">astype</span><span class="op">(</span><span class="nam">np</span><span class="op">.</span><span class="nam">int64</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run"><span class="n"><a id="t224" href="#t224">224</a></span><span class="t">    <span class="nam">y_offset</span> <span class="op">=</span> <span class="nam">np</span><span class="op">.</span><span class="nam">fix</span><span class="op">(</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t224" href="#t224">224</a></span><span class="t">    <span class="nam">y_offset</span> <span class="op">=</span> <span class="nam">np</span><span class="op">.</span><span class="nam">trunc</span><span class="op">(</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t225" href="#t225">225</a></span><span class="t">        <span class="nam">np</span><span class="op">.</span><span class="nam">floor</span><span class="op">(</span><span class="op">(</span><span class="nam">ycen</span> <span class="op">-</span> <span class="nam">np</span><span class="op">.</span><span class="nam">floor</span><span class="op">(</span><span class="nam">ycen</span><span class="op">)</span><span class="op">)</span> <span class="op">*</span> <span class="nam">psf_resolution</span><span class="op">)</span> <span class="op">%</span> <span class="nam">psf_resolution</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t226" href="#t226">226</a></span><span class="t">    <span class="op">)</span><span class="op">.</span><span class="nam">astype</span><span class="op">(</span><span class="nam">np</span><span class="op">.</span><span class="nam">int64</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t227" href="#t227">227</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
@@ -1014,7 +1014,7 @@
             <a class="nav" href="z_effdcb7613ccec0f_visibility_degrid_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.11.0">coverage.py v7.11.0</a>,
-            created at 2026-10-13 21:32 +0000
+            created at 2026-10-13 21:40 +0000
         </p>
     </div>
 </footer>
