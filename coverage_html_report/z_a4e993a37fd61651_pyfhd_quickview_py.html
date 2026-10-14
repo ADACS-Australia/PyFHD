@@ -67,7 +67,7 @@
             <a id="nextFileLink" class="nav" href="z_def9efda294557d3___init___py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.11.0">coverage.py v7.11.0</a>,
-            created at 2026-10-14 17:20 +0000
+            created at 2026-10-14 17:27 +0000
         </p>
         <aside class="hidden">
             <button type="button" class="button_next_chunk" data-shortcut="j"></button>
@@ -506,7 +506,7 @@
     <p class="mis show_mis"><span class="n"><a id="t422" href="#t422">422</a></span><span class="t">        <span class="nam">fits_file</span><span class="op">.</span><span class="nam">data</span> <span class="op">=</span> <span class="nam">beam_use</span>&nbsp;</span><span class="r"></span></p>
     <p class="mis show_mis"><span class="n"><a id="t423" href="#t423">423</a></span><span class="t">        <span class="nam">beam_name</span> <span class="op">=</span> <span class="fst">f"</span><span class="op">{</span><span class="nam">pyfhd_config</span><span class="op">[</span><span class="str">'obs_id'</span><span class="op">]</span><span class="op">}</span><span class="fst">_beam_</span><span class="op">{</span><span class="nam">pol_names</span><span class="op">[</span><span class="nam">pol_i</span><span class="op">]</span><span class="op">}</span><span class="fst">"</span>&nbsp;</span><span class="r"></span></p>
     <p class="mis show_mis"><span class="n"><a id="t424" href="#t424">424</a></span><span class="t">        <span class="nam">fits_file</span><span class="op">.</span><span class="nam">writeto</span><span class="op">(</span><span class="nam">Path</span><span class="op">(</span><span class="nam">fits_output</span><span class="op">,</span> <span class="fst">f"</span><span class="op">{</span><span class="nam">beam_name</span><span class="op">}</span><span class="fst">.fits</span><span class="fst">"</span><span class="op">)</span><span class="op">,</span> <span class="nam">overwrite</span><span class="op">=</span><span class="key">True</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
-    <p class="mis show_mis"><span class="n"><a id="t425" href="#t425">425</a></span><span class="t">        <span class="nam">fits_file_uv</span><span class="op">.</span><span class="nam">data</span> <span class="op">=</span> <span class="nam">np</span><span class="op">.</span><span class="nam">abs</span><span class="op">(</span><span class="nam">weights_uv</span><span class="op">)</span> <span class="op">*</span> <span class="nam">obs</span><span class="op">[</span><span class="str">"n_vis"</span><span class="op">]</span>&nbsp;</span><span class="r"></span></p>
+    <p class="mis show_mis"><span class="n"><a id="t425" href="#t425">425</a></span><span class="t">        <span class="nam">fits_file_uv</span><span class="op">.</span><span class="nam">data</span> <span class="op">=</span> <span class="nam">np</span><span class="op">.</span><span class="nam">abs</span><span class="op">(</span><span class="nam">weights_uv</span><span class="op">[</span><span class="nam">pol_i</span><span class="op">]</span><span class="op">)</span> <span class="op">*</span> <span class="nam">obs</span><span class="op">[</span><span class="str">"n_vis"</span><span class="op">]</span>&nbsp;</span><span class="r"></span></p>
     <p class="mis show_mis"><span class="n"><a id="t426" href="#t426">426</a></span><span class="t">        <span class="nam">weights_name</span> <span class="op">=</span> <span class="fst">f"</span><span class="op">{</span><span class="nam">pyfhd_config</span><span class="op">[</span><span class="str">'obs_id'</span><span class="op">]</span><span class="op">}</span><span class="fst">_uv_weights_</span><span class="op">{</span><span class="nam">pol_names</span><span class="op">[</span><span class="nam">pol_i</span><span class="op">]</span><span class="op">}</span><span class="fst">"</span>&nbsp;</span><span class="r"></span></p>
     <p class="mis show_mis"><span class="n"><a id="t427" href="#t427">427</a></span><span class="t">        <span class="nam">fits_file_uv</span><span class="op">.</span><span class="nam">writeto</span><span class="op">(</span><span class="nam">Path</span><span class="op">(</span><span class="nam">fits_output</span><span class="op">,</span> <span class="fst">f"</span><span class="op">{</span><span class="nam">weights_name</span><span class="op">}</span><span class="fst">.fits</span><span class="fst">"</span><span class="op">)</span><span class="op">,</span> <span class="nam">overwrite</span><span class="op">=</span><span class="key">True</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t428" href="#t428">428</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
@@ -550,7 +550,7 @@
             <a class="nav" href="z_def9efda294557d3___init___py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.11.0">coverage.py v7.11.0</a>,
-            created at 2026-10-14 17:20 +0000
+            created at 2026-10-14 17:27 +0000
         </p>
     </div>
 </footer>
