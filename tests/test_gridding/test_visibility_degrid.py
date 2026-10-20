@@ -199,6 +199,28 @@ def test_vis_degrid_ones(mwa_aee_beam_zenith_2013, zenith_params_2013, pol_i):
     # There are some long baseline visibilities which end up as zeros
     wh_nonzero = np.nonzero(vis_ones)
 
-    # I believe the deviation from 1 is due to discretization and grid offsets...
+    # np.min(np.abs(vis_ones[wh_nonzero])): np.float64(0.9936304519463216)
+    # np.max(np.abs(vis_ones[wh_nonzero])): np.float64(1.003107355148317)
+    # np.min(np.abs(vis_ones[wh_nonzero] - 1)): np.float64(0.0007558655791102952)
+    # np.max(np.abs(vis_ones[wh_nonzero] -1 )): np.float64(0.006411859080975993)
+
+    # Running the same thing in FHD results in:
+    # minmax abs(vis_ones): 0.99631601572369954       1.0022820234298810
+    # minmax abs(vis_ones - 1): 2.5749374514175653e-05    0.0036839853799395107
+
+    # I believe the deviation from 1 is due to the discretization and grid
+    # offsets. The discrepancy is of a similar magnitude to what is seen in FHD.
+    # The normalization is done on the highly overresolved beam in uv space. The
+    # kernels are extracted from this highly overresolved uv beam as a set of
+    # points spaced on the uv pixel spacing with various sub-uv pixel offsets
+    # from the center of the beam. These kernels are saved as a lookup table
+    # (the "beam_ptr" in the psf dictionary). These kernels are not individually
+    # renormalized so the sum over the kernels is not precisely 1, which I believe
+    # leads to the difference from one after degridding. I think this is likely
+    # deliberate because renormalizing each kernel independently could lead to
+    # jitter in the response of a baseline to a portion of the uv plane as the
+    # baseline moves smoothly in frequency or time, but this tradeoff could be
+    # investigated further in future.
+
     npt.assert_allclose(vis_ones[wh_nonzero], 1.0, atol=7e-3, rtol=0)
     npt.assert_allclose(np.abs(vis_ones[wh_nonzero]), 1.0, atol=7e-3, rtol=0)
