@@ -32,7 +32,7 @@ SAVEFILES = {
     "uniform_filter_uv": {"folder": "grid_data", "tag": "vis_count"},
     "grid_model_uv": {"folder": "grid_data", "tag": "uv_model"},
     "map_fn": {"folder": "grid_data", "tag": "map_fn"},
-    "healpix_cube": {"folder": "healpix", "tag": "h*.h5"},
+    "healpix_cube": {"folder": "healpix", "tag": "*_h*.h5"},
     "config": {"folder": "config", "tag": "pyfhd_config"},
 }
 
@@ -52,7 +52,7 @@ CHECKPOINTS = {
     "healpix": ["healpix_cube"],
 }
 
-checkpoint_literal = Literal["setup", "beam", "cal", "gridding", "healpix"]
+checkpoint_literal = Literal["setup", "beam", "cal", "gridding", "map_fn", "healpix"]
 
 
 def product_file(
@@ -83,6 +83,8 @@ def product_file(
 
     if "*" in file_info["tag"]:
         root_dir = Path(pyfhd_config["output_dir"], file_info["folder"])
+        if mkdir:
+            root_dir.mkdir(exist_ok=True)
         return list(root_dir.glob(file_info["tag"]))
     else:
         if "exten" in file_info:
