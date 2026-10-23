@@ -224,3 +224,12 @@ def test_vis_degrid_ones(mwa_aee_beam_zenith_2013, zenith_params_2013, pol_i):
 
     npt.assert_allclose(vis_ones[wh_nonzero], 1.0, atol=7e-3, rtol=0)
     npt.assert_allclose(np.abs(vis_ones[wh_nonzero]), 1.0, atol=7e-3, rtol=0)
+
+    fhd_vis_ones_file = fetch_data("2013_zenith_ones_model_vis_2freq")
+    fhd_vis_ones_dict = get_savs(fhd_vis_ones_file, "")
+    fhd_vis_ones = (fhd_vis_ones_dict["vis_ones"].T)[pol_i]
+
+    # fhd & pyfhd are slighly closer to each other than to exactly one, but they
+    # are using somewhat different kernels here, so this level of difference
+    # isn't too surprising.
+    npt.assert_allclose(vis_ones, fhd_vis_ones, atol=5e-3, rtol=0)
